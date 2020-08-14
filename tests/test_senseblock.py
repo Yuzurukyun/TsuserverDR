@@ -152,7 +152,6 @@ class _UnittestSenseBlock(_TestSenseBlock):
     def test_07_canunaffectstaff(self):
         """
         Situation: Authorized user attempts to sense unblock a staff member and succeeds.
-        TODO: Figure out repetition.
         """
 
         self.c2.ooc('/{} {}'.format(self.sense, 1))
