@@ -473,4 +473,6 @@
 * Deaf players now only see an IC notification for screams
 
 ### (4.2.5-post4)
-* Fixed /scream, /whisper and /party_whisper raising errors if a message was sent to a deafened player with a bypass message starter
+* Fixed /scream, /whisper and /party_whisper raising errors if a message was sent to a deafened player with a bypass message starter. They now send messages but filtered.
+* Fixed blankposts or double empty spaces being filtered out for deafened players
+* Fixed wrongly formatted OOC notifications being sent if a player moves to an area where there are players bleeding and sneaking, and players bleeding but not sneaking
