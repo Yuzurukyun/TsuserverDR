@@ -317,13 +317,15 @@ class ClientManager:
 
                 # Change "message" parts of IC port
                 allowed_starters = ('(', '*', '[')
-
+                allowed_messages = (' ', '  ')
                 # Nerf message for deaf
                 # TEMPORARY: REMOVE FOR 4.3+CLIENT UPDATE
                 # Remove the send_deaf_space requirement
                 if self.is_deaf and pargs['msg']:
-                    if (not pargs['msg'].startswith(allowed_starters) or
-                        (sender and sender.is_gagged and gag_replaced) or bypass_deafened_starters):
+                    if ((bypass_deafened_starters) or
+                        (sender and sender.is_gagged and gag_replaced) or
+                        (not (pargs['msg'].startswith(allowed_starters) or
+                              pargs['msg'] in allowed_messages))):
                         pargs['msg'] = '(Your ears are ringing)'
                         if self.send_deaf_space:
                             pargs['msg'] = pargs['msg'] + ' '
