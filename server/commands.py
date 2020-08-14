@@ -544,12 +544,20 @@ def ooc_cmd_blind(client: ClientManager.Client, arg: str):
     status = {False: 'unblinded', True: 'blinded'}
     new_blind = not target.is_blind
 
-    client.send_ooc('You have {} {}.'.format(status[new_blind], target.displayname))
-    target.send_ooc('You have been {}.'.format(status[new_blind]))
-    target.send_ooc_others('(X) {} [{}] has {} {} ({}).'
-                           .format(client.displayname, client.id, status[new_blind],
-                                   target.displayname, target.area.id),
-                           not_to={client}, is_zstaff_flex=True)
+    if client != target:
+        client.send_ooc('You have {} {}.'.format(status[new_blind], target.displayname))
+        target.send_ooc('You have been {}.'.format(status[new_blind]))
+        target.send_ooc_others('(X) {} [{}] has {} {} ({}).'
+                               .format(client.displayname, client.id, status[new_blind],
+                                       target.displayname, target.area.id),
+                               not_to={client}, is_zstaff_flex=True)
+    else:
+        client.send_ooc('You have {} yourself.'.format(status[new_blind]))
+        client.send_ooc_others('(X) {} [{}] has {} themselves ({}).'
+                               .format(client.displayname, client.id, status[new_blind],
+                                       client.area.id),
+                               is_zstaff_flex=True)
+
 
     target.change_blindness(new_blind)
 
@@ -1531,12 +1539,19 @@ def ooc_cmd_deafen(client: ClientManager.Client, arg: str):
     status = {False: 'undeafened', True: 'deafened'}
     new_deaf = not target.is_deaf
 
-    client.send_ooc('You have {} {}.'.format(status[new_deaf], target.displayname))
-    target.send_ooc('You have been {}.'.format(status[new_deaf]))
-    target.send_ooc_others('(X) {} [{}] has {} {} ({}).'
-                           .format(client.displayname, client.id, status[new_deaf],
-                                   target.displayname, target.area.id),
-                           is_zstaff_flex=True, not_to={client})
+    if client != target:
+        client.send_ooc('You have {} {}.'.format(status[new_deaf], target.displayname))
+        target.send_ooc('You have been {}.'.format(status[new_deaf]))
+        target.send_ooc_others('(X) {} [{}] has {} {} ({}).'
+                               .format(client.displayname, client.id, status[new_deaf],
+                                       target.displayname, target.area.id),
+                               is_zstaff_flex=True, not_to={client})
+    else:
+        client.send_ooc('You have {} yourself.'.format(status[new_deaf]))
+        client.send_ooc_others('(X) {} [{}] has {} themselves ({}).'
+                               .format(client.displayname, client.id, status[new_deaf],
+                                       client.area.id),
+                               is_zstaff_flex=True)
 
     target.change_deafened(new_deaf)
 
@@ -1873,12 +1888,19 @@ def ooc_cmd_gag(client: ClientManager.Client, arg: str):
     status = {False: 'ungagged', True: 'gagged'}
     new_gagged = not target.is_gagged
 
-    client.send_ooc('You have {} {}.'.format(status[new_gagged], target.displayname))
-    target.send_ooc('You have been {}.'.format(status[new_gagged]))
-    target.send_ooc_others('(X) {} [{}] has {} {} ({}).'
-                           .format(client.displayname, client.id, status[new_gagged],
-                                   target.displayname, target.area.id),
-                           is_zstaff_flex=True, not_to={client})
+    if client != target:
+        client.send_ooc('You have {} {}.'.format(status[new_gagged], target.displayname))
+        target.send_ooc('You have been {}.'.format(status[new_gagged]))
+        target.send_ooc_others('(X) {} [{}] has {} {} ({}).'
+                               .format(client.displayname, client.id, status[new_gagged],
+                                       target.displayname, target.area.id),
+                               is_zstaff_flex=True, not_to={client})
+    else:
+        client.send_ooc('You have {} yourself.'.format(status[new_gagged]))
+        client.send_ooc_others('(X) {} [{}] has {} themselves ({}).'
+                               .format(client.displayname, client.id, status[new_gagged],
+                                       client.area.id),
+                               is_zstaff_flex=True)
 
     target.change_gagged(new_gagged)
 
