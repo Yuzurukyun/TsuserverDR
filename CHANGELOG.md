@@ -471,3 +471,6 @@
 * Fixed /scream not showing default or custom shownames in IC for non-deaf players
 * Reworded the /scream OOC notification so it is more in line with other OOC/IC notifications
 * Deaf players now only see an IC notification for screams
+
+### (4.2.5-post4)
+* Fixed /scream, /whisper and /party_whisper raising errors if a message was sent to a deafened player with a bypass message starter

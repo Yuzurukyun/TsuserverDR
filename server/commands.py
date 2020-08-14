@@ -4315,10 +4315,12 @@ def ooc_cmd_scream(client: ClientManager.Client, arg: str):
 
         client.send_ic(msg=arg, pos=client.pos, cid=client.char_id, showname=client.showname)
         client.send_ic_others(msg=arg, to_deaf=False, showname=client.showname,
+                              bypass_deafened_starters=True, # send_ic handles nerfing for deafened
                               pred=lambda c: (not c.muted_global and
                                               (c.area == client.area or
                                                c.area.name in client.area.scream_range)))
         client.send_ic_others(msg=arg, to_deaf=True,
+                              bypass_deafened_starters=True, # send_ic handles nerfing for deafened
                               pred=lambda c: (not c.muted_global and
                                               (c.area == client.area or
                                                c.area.name in client.area.scream_range)))

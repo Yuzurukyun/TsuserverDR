@@ -323,7 +323,7 @@ class ClientManager:
                 # Remove the send_deaf_space requirement
                 if self.is_deaf and pargs['msg']:
                     if (not pargs['msg'].startswith(allowed_starters) or
-                        (sender.is_gagged and gag_replaced) or bypass_deafened_starters):
+                        (sender and sender.is_gagged and gag_replaced) or bypass_deafened_starters):
                         pargs['msg'] = '(Your ears are ringing)'
                         if self.send_deaf_space:
                             pargs['msg'] = pargs['msg'] + ' '
@@ -358,9 +358,10 @@ class ClientManager:
             self.send_command('MS', *to_send)
 
         def send_ic_others(self, ic_params=None, params=None, sender=None, bypass_replace=False,
-                           pred=None, not_to=None, gag_replaced=False, is_staff=None, in_area=None,
-                           to_blind=None, to_deaf=None,
-                           msg=None, pos=None, cid=None, ding=None, color=None, showname=None):
+                           bypass_deafened_starters=False, pred=None, not_to=None,
+                           gag_replaced=False, is_staff=None, in_area=None, to_blind=None,
+                           to_deaf=None,  msg=None, pos=None, cid=None, ding=None, color=None,
+                           showname=None):
             if ic_params is not None:
                 self.ic_params_deprecation_warning()
             if not_to is None:
@@ -370,6 +371,7 @@ class ClientManager:
 
             for c in self.server.client_manager.clients:
                 c.send_ic(ic_params=None, params=None, sender=sender, bypass_replace=bypass_replace,
+                          bypass_deafened_starters=bypass_deafened_starters,
                           pred=pred, not_to=not_to, gag_replaced=gag_replaced, is_staff=is_staff,
                           in_area=in_area, to_blind=to_blind, to_deaf=to_deaf,
                           msg=msg, pos=pos, cid=cid, ding=ding, color=color, showname=showname)
