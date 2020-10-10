@@ -219,7 +219,7 @@ class NonStopDebate(TrialMinigame):
         self._timer.unpause()
         self._player_refresh_timer.unpause()
         for player in self.get_players():
-            player.send_command('VA', 'nsd')
+            player.send_command('GM', 'nsd')
             player.send_command('TR', self._client_timer_id)
             self._update_player_timer(player)
 
@@ -274,7 +274,7 @@ class NonStopDebate(TrialMinigame):
 
         def _variant():
             for player in self.get_players():
-                player.send_command('VA', 'trial')
+                player.send_command('GM', 'trial')
 
         # this causes a concurrency issue!!!!!!!!
         variant_timer = self.new_timer(start_value=0, max_value=max(delay_variant, 0.016),)
@@ -320,7 +320,7 @@ class NonStopDebate(TrialMinigame):
         self._message_timer.unpause()
 
         for player in self.get_players():
-            player.send_command('VA', 'nsd')
+            player.send_command('GM', 'nsd')
             player.send_command('TR', self._client_timer_id)
         self._display_next_message()
 
@@ -384,10 +384,10 @@ class NonStopDebate(TrialMinigame):
             user.send_command('TP', self._client_timer_id)
 
         if self._mode in [NSDMode.LOOPING, NSDMode.RECORDING, NSDMode.PRERECORDING]:
-            user.send_command('VA', 'nsd')
+            user.send_command('GM', 'nsd')
             user.send_command('RT', 'testimony4')
         elif self._mode in [NSDMode.INTERMISSION, NSDMode.INTERMISSION_POSTBREAK]:
-            user.send_command('VA', 'trial')
+            user.send_command('GM', 'trial')
         else:
             raise RuntimeError(f'Unrecognized mode {self._mode}')
 
@@ -417,7 +417,7 @@ class NonStopDebate(TrialMinigame):
         """
 
         super().remove_player(user)
-        user.send_command('VA', 'trial')
+        user.send_command('GM', 'trial')
 
     def accept_break(self):
         if not self._mode == NSDMode.INTERMISSION_POSTBREAK:
@@ -681,11 +681,12 @@ class NonStopDebate(TrialMinigame):
 
         """
 
-        if self._message_index < len(self._messages):
+        # Mind the -1
+        if self._message_index < len(self._messages)-1:
+            self._message_index += 1
             sender, contents = self._messages[self._message_index]
             for player in self.get_players():
                 player.send_ic(params=contents, sender=sender)
-            self._message_index += 1
         else:
             self.set_intermission()
 

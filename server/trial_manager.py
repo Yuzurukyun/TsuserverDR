@@ -210,7 +210,7 @@ class _Trial(GameWithAreas):
 
         user.send_command('HP', 1, int(self._player_to_focus[user.id][0]))
         user.send_command('HP', 2, int(self._player_to_influence[user.id][0]))
-        user.send_command('VA', 'trial')
+        user.send_command('GM', 'trial')
 
     def remove_player(self, user):
         """
@@ -251,7 +251,7 @@ class _Trial(GameWithAreas):
 
         user.send_command('HP', 1, user.area.hp_pro)
         user.send_command('HP', 2, user.area.hp_def)
-        user.send_command('VA', '')
+        user.send_command('GM', '')
 
     def get_influence(self, user) -> float:
         """
