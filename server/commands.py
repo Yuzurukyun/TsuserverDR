@@ -2809,21 +2809,31 @@ def ooc_cmd_logout(client: ClientManager.Client, arg: str):
 
 def ooc_cmd_look(client: ClientManager.Client, arg: str):
     """
-    Obtain the current area's description, which is either the description in the area list
-    configuration, or a customized one defined via /look_set. If the area has no set description,
-    it will return the server's default description stored in the default_area_description server
-    parameter. If the area has its lights turned off, it will send a generic 'cannot see anything'
+    If given no arguments, it will return a list of players in the area followed by the current area
+    description. For the player list, it will show players sorted by having custom statuses,
+    being in thee same party as the runner, their custom showname/folder name, and finally their ID.
+    Players in the same party are marked with (P), players with a custom status are marked with (!),
+    players that are multiclienting are marked with (MC) (only visible to staff) and players that
+    are senaking are marked with (S) (only visible to staff).
+    The area description is either a customized one defined via /look_set, the description in
+    the area list configuration, or the server's default description stored in the
+    default_area_description server parameter.
+
+    If given a client ID, it will return the custom status of the given player, provided they are
+    in the same area.
+
+    If the area has its lights turned off, it will send a generic 'cannot see anything'
     message to non-staff members.
 
     SYNTAX
-    /look
+    /look {client_id}
 
-    PARAMETERS
-    None
+    OPTIONAL PARAMETERS
+    {client_id}: Client ID
 
     EXAMPLES
     If the current area's description is "Literally a courtroom"...
-    /look               :: Returns "Literally a courtroom"
+    /look               :: Returns the list of players followed by "Literally a courtroom"
     """
 
     if not client.is_staff() and client.is_blind:
