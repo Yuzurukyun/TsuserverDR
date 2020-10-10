@@ -1200,11 +1200,10 @@ class AreaManager:
 
         return {self.get_area_by_id(i) for i in range(area1.id, area2.id+1)}
 
-    def change_passage_lock(self, client, areas, bilock=False, change_passage_visibility=False):
+    def check_change_passage_lock(self, client, areas, bilock=False):
         now_reachable = []
         num_areas = 2 if bilock else 1
 
-        # First check if the player should be able to change the passage at all
         for i in range(num_areas):
             # First check if it is the case a non-authorized use is trying to change passages to
             # areas that do not allow their passages to be modified
@@ -1217,6 +1216,16 @@ class AreaManager:
                 not (client.is_staff() or areas[1-i].name in areas[i].visible_reachable_areas)):
                 raise AreaError('You must be authorized to create a new passage from {} to '
                                 '{}.'.format(areas[i].name, areas[1-i].name))
+
+        return True
+
+    def change_passage_lock(self, client, areas, bilock=False, change_passage_visibility=False,
+                            check=True):
+        now_reachable = []
+        num_areas = 2 if bilock else 1
+
+        if check:
+            self.check_change_passage_lock(client, areas, bilock=bilock)
 
         # If we are at this point, we are committed to changing the passage locks
         for i in range(num_areas):
