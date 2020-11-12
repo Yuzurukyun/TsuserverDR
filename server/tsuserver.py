@@ -226,7 +226,9 @@ class TsuserverDR:
         backup = [self.char_list.copy(), self.music_list.copy(), self.backgrounds.copy()]
 
         # Do a dummy YAML load to see if the files can be loaded and parsed at all first.
-        reloaded_assets = [self.load_characters, self.load_backgrounds, self.load_music]
+        reloaded_assets = [self._validate_characters,
+                           self._validate_backgrounds,
+                           self._validate_music_list]
         for reloaded_asset in reloaded_assets:
             try:
                 reloaded_asset()
@@ -238,6 +240,11 @@ class TsuserverDR:
             except ServerError.FileSyntaxError as exc:
                 msg = f'{exc} Reload was undone.'
                 raise ServerError(msg)
+            except ServerError as exc:
+                if hasattr(exc, 'code') and exc.code == 'FileNotFound':
+                    msg = (f'{exc}. Reload was undone.')
+                    raise ServerError.YAMLNotFoundError(msg)
+                raise
 
         # Only on success reload
         self.load_characters()

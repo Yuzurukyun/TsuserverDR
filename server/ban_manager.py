@@ -25,14 +25,22 @@ from server.exceptions import ServerError
 class BanManager:
     def __init__(self, server):
         self.bans = []
-        self.load_banlist()
+        try:
+            self.load_banlist()
+        except ServerError.JSONNotFoundError:
+            pass
         self.server = server
 
     def load_banlist(self):
+        filename = 'storage/banlist.json'
         try:
-            self.bans = Constants.json_load('storage/banlist.json')
-        except ServerError.JSONNotFoundError:
-            pass
+            with Constants.fopen(filename) as file:
+                self.bans = Constants.json_load(file)
+        except ServerError as exc:
+            if hasattr(exc, 'code') and exc.code == 'FileNotFound':
+                msg = f'File not found: {filename}'
+                raise ServerError.JSONNotFoundError(msg)
+            raise
 
     def write_banlist(self):
         with open('storage/banlist.json', 'w') as banlist_file:

@@ -445,22 +445,18 @@ class Constants():
 
     @staticmethod
     def json_load(file):
+        # Extract the name of the yaml in case of errors
+        separator = max(file.name.rfind('\\'), file.name.rfind('/'))
+        file_name = file.name[separator+1:]
+
         try:
-            with Constants.fopen(file, 'r') as f:
-                # First check if file is empty by reading first character
-                if not f.read(1):
-                    msg = f'File {file} was empty. Populate it properly and try again.'
-                    raise ServerError.JSONInvalidError(msg)
-                f.seek(0)  # Move cursor back one character to undo empty check
-                contents = json.load(f)
+            # First check if file is empty by reading first character
+            if not file.read(1):
+                msg = f'File {file_name} was empty. Populate it properly and try again.'
+                raise ServerError.JSONInvalidError(msg)
+            file.seek(0)  # Move cursor back one character to undo empty check
+            contents = json.load(file)
             return contents
-        except ServerError.JSONInvalidError:
-            raise  # Put here to prevent the next except from catching this
-        except ServerError as exc:
-            if exc.code == 'FileNotFound':
-                msg = f'File not found: {file}'
-                raise ServerError.JSONNotFoundError(msg) from exc
-            raise
         except json.decoder.JSONDecodeError as exc:
             msg = ('File {} returned the following JSON error when loading: `{}`. Fix the syntax '
                    'error and try again.'
