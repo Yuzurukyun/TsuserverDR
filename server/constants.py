@@ -18,12 +18,14 @@
 
 import asyncio
 import functools
+import os
 import random
 import re
 import time
 import warnings
 from enum import Enum
 
+import json
 import yaml
 from server.exceptions import ClientError, ServerError, ArgumentError, AreaError
 from server.exceptions import TsuserverException
@@ -440,6 +442,36 @@ class Constants():
                    'characters and try again.'
                    .format(file_name, exc))
             raise ServerError.YAMLInvalidError(msg)
+
+    @staticmethod
+    def json_load(file):
+        try:
+            with Constants.fopen(file, 'r') as f:
+                # First check if file is empty by reading first character
+                if not f.read(1):
+                    msg = f'File {file} was empty. Populate it properly and try again.'
+                    raise ServerError.JSONInvalidError(msg)
+                f.seek(0)  # Move cursor back one character to undo empty check
+                contents = json.load(f)
+            return contents
+        except ServerError.JSONInvalidError:
+            raise  # Put here to prevent the next except from catching this
+        except ServerError as exc:
+            if exc.code == 'FileNotFound':
+                msg = f'File not found: {file}'
+                raise ServerError.JSONNotFoundError(msg) from exc
+            raise
+        except json.decoder.JSONDecodeError as exc:
+            msg = ('File {} returned the following JSON error when loading: `{}`. Fix the syntax '
+                   'error and try again.'
+                   .format(file, exc))
+            raise ServerError.JSONInvalidError(msg)
+        except UnicodeDecodeError as exc:
+            msg = ('File {} returned the following UnicodeDecode error when loading: `{}`. Make '
+                   'sure this is an actual JSON file and that it does not contain any unusual '
+                   'characters and try again.'
+                   .format(file, exc))
+            raise ServerError.JSONInvalidError(msg)
 
     @staticmethod
     def get_time():

@@ -88,6 +88,12 @@ class ServerError(TsuserverException):
     class YAMLInvalidError(TsuserverException):
         pass
 
+    class JSONNotFoundError(TsuserverException):
+        pass
+
+    class JSONInvalidError(TsuserverException):
+        pass
+
 class PartyError(TsuserverException):
     pass
 
