@@ -581,7 +581,7 @@ class TestAuthorization_04_Integration(_TestAuthorization):
             self.assertFalse(c.is_gm)
 
 
-class TestAuthorization_05_Shortcuts(_TestAuthorization):
+class TestAuthorization_06_Shortcuts(_TestAuthorization):
     """
     Tester of authorization shortcuts.
     """
@@ -651,7 +651,7 @@ class TestAuthorization_05_Shortcuts(_TestAuthorization):
         self.assertTrue(self.c2.is_mod and not self.c2.is_cm and not self.c2.is_gm)
 
 
-class TestAuthorization_06_GMSelf(_TestSituation4):
+class TestAuthorization_07_GMSelf(_TestSituation4):
     @classmethod
     def setUpClass(self):
         super().setUpClass()
@@ -743,7 +743,7 @@ class TestAuthorization_06_GMSelf(_TestSituation4):
         self.c3.assert_no_packets()
 
 
-class TestAuthorization_07_Effect(_TestSituation5):
+class TestAuthorization_08_Effect(_TestSituation5):
     @classmethod
     def setUpClass(self):
         super().setUpClass()

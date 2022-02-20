@@ -87,7 +87,6 @@ class AreaManager:
             self.current_music_player = ''
             self.current_music_source = ''
             self.evi_list = EvidenceList()
-            self.is_recording = False
             self.recorded_messages = []
             self.owned = False
             self.ic_lock = False

@@ -22,187 +22,55 @@ act as aliases for existing commands in commands.py
 """
 
 
-def do_command(command, client, arg):
+def get_command_alias(command):
     """
     Wrapper function for calling commands.
     """
-    source = client.server.commands
-    adapted_command = 'ooc_cmd_{}'.format(command)
-    function = getattr(source, adapted_command)
-    function(client, arg)
+    if command not in command_aliases:
+        return ''
+    return command_aliases[command]
 
 
-def do_command_deprecated(command, client, arg):
+def get_command_deprecated(command):
     """
     Wrapper function for commands that are deprecated and pending removal.
     """
-    client.send_ooc('This command is deprecated and pending removal in 4.4. '
-                    'Please use /{} next time.'.format(command))
-    do_command(command, client, arg)
-
-
-def ooc_cmd_slit(client, arg):
-    """
-    Alias for /bloodtrail.
-
-    """
-
-    do_command('bloodtrail', client, arg)
-
-
-def ooc_cmd_clock_cancel(client, arg):
-    """
-    Old name for /clock_end.
-
-    """
-
-    do_command_deprecated('clock_end', client, arg)
-
-
-def ooc_cmd_lurk_cancel(client, arg):
-    """
-    Old name for /lurk_end.
-
-    """
-
-    do_command_deprecated('lurk_end', client, arg)
-
-
-def ooc_cmd_party_disband(client, arg):
-    """
-    Old name for /party_end.
-
-    """
-
-    do_command_deprecated('party_end', client, arg)
-
-
-def ooc_cmd_timer_cancel(client, arg):
-    """
-    Old name for /timer_end.
-
-    """
-
-    do_command_deprecated('timer_end', client, arg)
-
-
-def ooc_cmd_zone_delete(client, arg):
-    """
-    Old name for /zone_end.
-
-    """
-
-    do_command('zone_end', client, arg)
-
-
-
-def ooc_cmd_pw(client, arg):
-    """
-    Alias for /party_whisper.
-    """
-
-    do_command('party_whisper', client, arg)
-
-
-def ooc_cmd_huddle(client, arg):
-    """
-    Alias for /party_whisper.
-    """
-
-    do_command('party_whisper', client, arg)
-
-
-def ooc_cmd_logingm(client, arg):
-    """
-    Alias for /loginrp.
-    """
-
-    do_command('loginrp', client, arg)
-
-
-def ooc_cmd_sa(client, arg):
-    """
-    Alias for /showname_area.
-    """
-
-    do_command('showname_area', client, arg)
-
-
-def ooc_cmd_sas(client, arg):
-    """
-    Alias for /showname_areas.
-    """
-
-    do_command('showname_areas', client, arg)
-
-
-def ooc_cmd_shout(client, arg):
-    """
-    Alias for /scream.
-    """
-
-    do_command('scream', client, arg)
-
-
-def ooc_cmd_unsneak(client, arg):
-    """
-    Alias for /reveal.
-    """
-
-    do_command('reveal', client, arg)
-
-
-def ooc_cmd_yell(client, arg):
-    """
-    Alias for /scream.
-    """
-
-    do_command('scream', client, arg)
-
-
-def ooc_cmd_zi(client, arg):
-    """
-    Alias for /zone_info.
-    """
-
-    do_command('zone_info', client, arg)
-
-
-def ooc_cmd_zg(client, arg):
-    """
-    Alias for /zone_global.
-    """
-
-    do_command('zone_global', client, arg)
-
-
-def ooc_cmd_showname_list(client, arg):
-    """
-    Alias for /showname_areas.
-    """
-
-    do_command('showname_areas', client, arg)
-
-
-def ooc_cmd_fa(client, arg):
-    """
-    Alias for /files_area.
-    """
-
-    do_command('files_area', client, arg)
-
-
-def ooc_cmd_l(client, arg):
-    """
-    Alias for /look.
-    """
-
-    do_command('look', client, arg)
-
-
-def ooc_cmd_forcepos(client, arg):
-    """
-    Alias for /pos_force.
-    """
-
-    do_command('pos_force', client, arg)
+    if command not in command_deprecated:
+        return ''
+    return command_deprecated[command]
+
+
+command_aliases = {
+    'slit': 'bloodtrail',
+    'pw': 'party_whisper',
+    'huddle': 'party_whisper',
+    'logingm': 'loginrp',
+    'sa': 'showname_area',
+    'sas': 'showname_areas',
+    'shout': 'scream',
+    'unsneak': 'reveal',
+    'yell': 'scream',
+    'zi': 'zone_info',
+    'zg': 'zone_global',
+    'showname_list': 'showname_areas',
+    'fa': 'files_area',
+    'l': 'look',
+    'forcepos': 'pos_force',
+}
+
+command_deprecated = {
+    'clock_cancel': 'clock_end',
+    'lurk_cancel': 'lurk_end',
+    'party_disband': 'party_end',
+    'party_members': 'party_info',
+    'timer_cancel': 'timer_end',
+    'zone_delete': 'zone_end',
+    'area_list': 'map',
+    'area_lists': 'map_list',
+    'cleardoc': 'doc_clear',
+    'reload': 'char_reload',
+    'charselect': 'char_select',
+    'defaultarea': 'area_default',
+    'currentmusic': 'play_info',
+    'randommusic': 'play_random',
+}
