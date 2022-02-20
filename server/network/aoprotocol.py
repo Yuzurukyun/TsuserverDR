@@ -77,6 +77,10 @@ class AOProtocol(asyncio.Protocol):
         self.ping_timeout = asyncio.get_event_loop().call_later(self.server.config['timeout'],
                                                                 self.client.disconnect)
         if not valid:
+            self.client.send_command_dict('PN', {
+                'player_count': self.server.get_player_count(),
+                'player_limit': self.server.config['playerlimit']
+                })
             self.client.disconnect()
             return
 
