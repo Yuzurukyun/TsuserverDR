@@ -30,7 +30,6 @@ from server import logger, clients
 from server.network import client_commands
 from server.constants import ArgType, Constants
 from server.exceptions import AOProtocolError
-from server.fantacrypt import fanta_decrypt
 
 if typing.TYPE_CHECKING:
     # Avoid circular referencing
@@ -87,9 +86,8 @@ class AOProtocol(asyncio.Protocol):
             self.client.disconnect()
             return
 
-        self.client.send_command_dict('decryptor', {
-            'key': 34,  # just fantacrypt things
-            })
+        fantacrypt_key = 34  # just fantacrypt things
+        self.client.send_command_dict('decryptor', {'key': fantacrypt_key})
 
     def connection_lost(self, exc):
         """ User disconnected
@@ -100,7 +98,7 @@ class AOProtocol(asyncio.Protocol):
         self.server.remove_client(self.client)
         self.ping_timeout.cancel()
 
-    def get_messages(self):
+    def _get_messages(self):
         """ Parses out full messages from the buffer.
 
         :return: yields messages
@@ -109,11 +107,49 @@ class AOProtocol(asyncio.Protocol):
             spl = self.buffer.split('#%', 1)
             self.buffer = spl[1]
             yield spl[0]
-        # exception because bad netcode
-        askchar2 = '#615810BC07D12A5A#'
-        if self.buffer == askchar2:
-            self.buffer = ''
-            yield askchar2
+
+    def _process_message(self, msg):
+        if len(msg) < 2:
+            # This immediatelly kills any client that does not even try to follow the proper
+            # client protocol
+            msg = self.buffer if len(self.buffer) < 512 else self.buffer[:512] + '...'
+            logger.log_server(f'Terminated {self.client.get_ipreal()} (packet too short): '
+                              f'sent {msg} ({len(self.buffer)} bytes)')
+            self.client.disconnect()
+            return False
+
+        # general netcode structure is not great
+        if msg[0] == '#':
+            msg = msg[1:]
+        raw_parameters = msg.split('#')
+        msg = '#'.join(raw_parameters)
+
+        logger.log_debug(f'[INC][RAW]{msg}', self.client)
+        try:
+            if self.server.print_packets:
+                print(f'> {self.client.id}: {msg}')
+            self.server.log_packet(self.client, msg, True)
+            # Decode AO clients' encoding
+            cmd, *args = Constants.decode_ao_packet(msg.split('#'))
+            if cmd not in self.net_cmd_dispatcher:
+                logger.log_pserver(f'Client {self.client.id} sent abnormal packet {msg} '
+                                   f'(client version: {self.client.version}).')
+                return False
+
+            dispatched = self.net_cmd_dispatcher[cmd]
+            pargs = self._process_arguments(cmd, args, needs_auth=dispatched.needs_auth,
+                                            fallback_protocols=[clients.ClientDROLegacy])
+            self.client.publish_inbound_command(cmd, pargs)
+
+            dispatched.function(self.client, pargs)
+            self.ping_timeout.cancel()
+            self.ping_timeout = asyncio.get_event_loop().call_later(
+                self.client.server.config['timeout'], self.client.disconnect)
+        except AOProtocolError.InvalidInboundPacketArguments:
+            pass
+        except Exception as ex: # pylint: disable=broad-except
+            self.server.send_error_report(self.client, cmd, args, ex)
+        return True
 
     def data_received(self, data):
         """ Handles any data received from the network.
@@ -139,49 +175,11 @@ class AOProtocol(asyncio.Protocol):
             return
 
         found_message = False
-        for msg in self.get_messages():
+        for msg in self._get_messages():
             found_message = True
-            if len(msg) < 2:
-                # This immediatelly kills any client that does not even try to follow the proper
-                # client protocol
-                msg = self.buffer if len(self.buffer) < 512 else self.buffer[:512] + '...'
-                logger.log_server(f'Terminated {self.client.get_ipreal()}, (packet too short): '
-                                  f'sent {msg} ({len(self.buffer)} bytes)')
-                self.client.disconnect()
+            if not self._process_message(msg):
                 return
-            # general netcode structure is not great
-            if msg[0] in ('#', '3', '4'):
-                if msg[0] == '#':
-                    msg = msg[1:]
-                raw_parameters = msg.split('#')
-                raw_parameters[0] = fanta_decrypt(raw_parameters[0])
-                msg = '#'.join(raw_parameters)
 
-            logger.log_debug(f'[INC][RAW]{msg}', self.client)
-            try:
-                if self.server.print_packets:
-                    print(f'> {self.client.id}: {msg}')
-                self.server.log_packet(self.client, msg, True)
-                # Decode AO clients' encoding
-                cmd, *args = Constants.decode_ao_packet(msg.split('#'))
-                try:
-                    dispatched = self.net_cmd_dispatcher[cmd]
-                except KeyError:
-                    logger.log_pserver(f'Client {self.client.id} sent abnormal packet {msg} '
-                                       f'(client version: {self.client.version}).')
-                else:
-                    pargs = self.process_arguments(cmd, args, needs_auth=dispatched.needs_auth,
-                                                   fallback_protocols=[clients.ClientDROLegacy])
-                    self.client.publish_inbound_command(cmd, pargs)
-
-                    dispatched.function(self.client, pargs)
-                    self.ping_timeout.cancel()
-                    self.ping_timeout = asyncio.get_event_loop().call_later(
-                        self.client.server.config['timeout'], self.client.disconnect)
-            except AOProtocolError.InvalidInboundPacketArguments:
-                pass
-            except Exception as ex: # pylint: disable=broad-except
-                self.server.send_error_report(self.client, cmd, args, ex)
         if not found_message:
             # This immediatelly kills any client that does not even try to follow the proper
             # client protocol
@@ -190,7 +188,7 @@ class AOProtocol(asyncio.Protocol):
                               f'unrecognized): sent {msg} ({len(self.buffer)} bytes)')
             self.client.disconnect()
 
-    def validate_net_cmd(self, args, *types, needs_auth=True):
+    def _validate_net_cmd(self, args, *types, needs_auth=True):
         """ Makes sure the net command's arguments match expectations.
 
         :param args: actual arguments to the net command
@@ -218,7 +216,7 @@ class AOProtocol(asyncio.Protocol):
                     return False
         return True
 
-    def process_arguments(self, identifier, args, needs_auth=True, fallback_protocols=None):
+    def _process_arguments(self, identifier, args, needs_auth=True, fallback_protocols=None):
         """
         Process the parameters associated with an incoming client packet.
         """
@@ -235,7 +233,7 @@ class AOProtocol(asyncio.Protocol):
                 continue
             expected_argument_names = [x[0] for x in expected_pairs]
             expected_types = [x[1] for x in expected_pairs]
-            if not self.validate_net_cmd(args, *expected_types, needs_auth=needs_auth):
+            if not self._validate_net_cmd(args, *expected_types, needs_auth=needs_auth):
                 continue
             return dict(zip(expected_argument_names, args))
         raise AOProtocolError.InvalidInboundPacketArguments
