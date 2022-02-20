@@ -24,7 +24,7 @@ from typing import List, Set
 
 from unittest.mock import Mock
 
-from server.aoprotocol import AOProtocol
+from server.network.aoprotocol import AOProtocol
 from server.area_manager import AreaManager
 from server.client_manager import ClientManager
 from server.constants import Constants
