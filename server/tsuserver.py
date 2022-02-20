@@ -304,14 +304,14 @@ class TsuserverDR:
         entry = ('R:' if incoming else 'S:', Constants.get_time_iso(), str(client.id), packet)
         self.logged_packets.append(entry)
 
-    def new_client(self, transport, ip=None, my_protocol=None) -> ClientManager.Client:
-        c = self.client_manager.new_client(transport, my_protocol=my_protocol)
+    def new_client(self, transport, ip=None, protocol=None) -> ClientManager.Client:
+        c, valid = self.client_manager.new_client(transport, protocol=protocol)
         if self.rp_mode:
             c.in_rp = True
         c.server = self
         c.area = self.area_manager.default_area()
         c.area.new_client(c)
-        return c
+        return c, valid
 
     def remove_client(self, client: ClientManager.Client):
         client.area.remove_client(client)

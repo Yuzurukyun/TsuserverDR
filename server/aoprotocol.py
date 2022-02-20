@@ -16,18 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+"""
+The class that manages incoming connections.
+"""
+
 from __future__ import annotations
-import typing
-from typing import List
-if typing.TYPE_CHECKING:
-    # Avoid circular referencing
-    from server.tsuserver import TsuserverDR
 
 import asyncio
 import random
 import re
+import typing
 
 from time import localtime, strftime
+from typing import List
 
 from server import logger, clients
 from server.constants import ArgType, Constants
@@ -35,6 +36,11 @@ from server.exceptions import AOProtocolError
 from server.exceptions import AreaError, ClientError, ServerError, PartyError, TsuserverException
 from server.fantacrypt import fanta_decrypt
 # from server.evidence import EvidenceList
+
+if typing.TYPE_CHECKING:
+    # Avoid circular referencing
+    from server.tsuserver import TsuserverDR
+
 
 class AOProtocol(asyncio.Protocol):
     """
@@ -82,8 +88,8 @@ class AOProtocol(asyncio.Protocol):
 
         if len(self.buffer) > 8192:
             msg = self.buffer if len(self.buffer) < 512 else self.buffer[:512] + '...'
-            logger.log_server('Terminated {} (packet too long): sent {} ({} bytes)'
-                              .format(self.client.get_ipreal(), msg, len(self.buffer)))
+            logger.log_server(f'Terminated {self.client.get_ipreal()} (packet too long): '
+                              f'sent {msg} ({len(self.buffer)} bytes)')
             self.client.disconnect()
             return
 
@@ -94,8 +100,8 @@ class AOProtocol(asyncio.Protocol):
                 # This immediatelly kills any client that does not even try to follow the proper
                 # client protocol
                 msg = self.buffer if len(self.buffer) < 512 else self.buffer[:512] + '...'
-                logger.log_server('Terminated {} (packet too short): sent {} ({} bytes)'
-                                  .format(self.client.get_ipreal(), msg, len(self.buffer)))
+                logger.log_server(f'Terminated {self.client.get_ipreal()}, (packet too short): '
+                                  f'sent {msg} ({len(self.buffer)} bytes)')
                 self.client.disconnect()
                 return
             # general netcode structure is not great
@@ -106,7 +112,7 @@ class AOProtocol(asyncio.Protocol):
                 raw_parameters[0] = fanta_decrypt(raw_parameters[0])
                 msg = '#'.join(raw_parameters)
 
-            logger.log_debug('[INC][RAW]{}'.format(msg), self.client)
+            logger.log_debug(f'[INC][RAW]{msg}', self.client)
             try:
                 if self.server.print_packets:
                     print(f'> {self.client.id}: {msg}')
@@ -122,30 +128,41 @@ class AOProtocol(asyncio.Protocol):
                     dispatched(self, args)
             except AOProtocolError.InvalidInboundPacketArguments:
                 pass
-            except Exception as ex:
+            except Exception as ex: # pylint: disable=broad-except
                 self.server.send_error_report(self.client, cmd, args, ex)
         if not found_message:
             # This immediatelly kills any client that does not even try to follow the proper
             # client protocol
             msg = self.buffer if len(self.buffer) < 512 else self.buffer[:512] + '...'
-            logger.log_server('Terminated {} (packet syntax unrecognized): sent {} ({} bytes)'
-                              .format(self.client.get_ipreal(), msg, len(self.buffer)))
+            logger.log_server(f'Terminated {self.client.get_ipreal()} (packet syntax '
+                              f'unrecognized): sent {msg} ({len(self.buffer)} bytes)')
             self.client.disconnect()
 
-    def connection_made(self, transport, my_protocol=None):
+    def connection_made(self, transport):
         """ Called upon a new client connecting
 
         :param transport: the transport object
         """
 
-        self.client = self.server.new_client(transport, my_protocol=my_protocol)
+        self.connection_made_protocol(transport, protocol=None)
+
+    def connection_made_protocol(self, transport, protocol=None):
+        """
+        connection_made but allowing to set a custom protocol (e.g. implementation of AOProtocol.)
+        """
+
+        self.client, valid = self.server.new_client(transport, protocol=protocol)
         self.ping_timeout = asyncio.get_event_loop().call_later(self.server.config['timeout'],
                                                                 self.client.disconnect)
+        if not valid:
+            self.client.disconnect()
+            return
+
         self.client.send_command_dict('decryptor', {
             'key': 34,  # just fantacrypt things
             })
 
-    def connection_lost(self, exc, client=None):
+    def connection_lost(self, exc):
         """ User disconnected
 
         :param exc: reason
@@ -198,10 +215,14 @@ class AOProtocol(asyncio.Protocol):
         return True
 
     def process_arguments(self, identifier, args, needs_auth=True, fallback_protocols=None):
+        """
+        Process the parameters associated with an incoming client packet.
+        """
+
         if fallback_protocols is None:
             fallback_protocols = list()
 
-        packet_type = '{}_INBOUND'.format(identifier.upper())
+        packet_type = f'{identifier.upper()}_INBOUND'
         protocols = [self.client.packet_handler]+fallback_protocols
         for protocol in protocols:
             try:
@@ -215,7 +236,7 @@ class AOProtocol(asyncio.Protocol):
             return dict(zip(expected_argument_names, args))
         raise AOProtocolError.InvalidInboundPacketArguments
 
-    def net_cmd_hi(self, args: List[str]):
+    def _net_cmd_hi(self, args: List[str]):
         """ Handshake.
 
         HI#<hdid:string>#%
@@ -244,16 +265,16 @@ class AOProtocol(asyncio.Protocol):
         # Check if the client is banned
         for ipid in self.client.server.hdid_list[self.client.hdid]:
             if self.server.ban_manager.is_banned(ipid):
-                self.client.send_ooc_others('Banned client with HDID {} and IPID {} attempted to '
-                                            'join the server but was refused entrance.'
-                                            .format(self.client.hdid, self.client.ipid),
-                                            is_officer=True)
+                self.client.send_ooc_others(
+                    f'Banned client with HDID {self.client.hdid} and IPID {self.client.ipid} '
+                    f'attempted to join the server but was refused entrance.',
+                    is_officer=True)
                 self.client.send_command_dict('BD', dict())
                 self.client.disconnect()
                 return
 
         if self.client.hdid != 'ms2-prober' or self.server.config['show_ms2-prober']:
-            logger.log_server('Connected. HDID: {}.'.format(self.client.hdid), self.client)
+            logger.log_server(f'Connected. HDID: {self.client.hdid}.', self.client)
         self.client.send_command_dict('ID', {
             'client_id': self.client.id,
             'server_software': self.server.software,
@@ -264,7 +285,7 @@ class AOProtocol(asyncio.Protocol):
             'player_limit': self.server.config['playerlimit'],
             })
 
-    def net_cmd_id(self, args: List[str]):
+    def _net_cmd_id(self, args: List[str]):
         """ Client version
 
         ID#<software:string>#<version:string>#%
@@ -391,7 +412,7 @@ class AOProtocol(asyncio.Protocol):
         self.ping_timeout = asyncio.get_event_loop().call_later(self.server.config['timeout'],
                                                                 self.client.disconnect)
 
-    def net_cmd_askchaa(self, args: List[str]):
+    def _net_cmd_askchaa(self, args: List[str]):
         """ Ask for the counts of characters/evidence/music
 
         askchaa#%
@@ -421,7 +442,7 @@ class AOProtocol(asyncio.Protocol):
             'music_list_count': music_cnt+area_cnt,
             })
 
-    def net_cmd_ae(self, args: List[str]):
+    def _net_cmd_ae(self, args: List[str]):
         """ Asks for specific pages of the evidence list.
 
         AE#<page:int>#%
@@ -435,7 +456,7 @@ class AOProtocol(asyncio.Protocol):
             return
         # TODO evidence maybe later
 
-    def net_cmd_rc(self, args: List[str]):
+    def _net_cmd_rc(self, args: List[str]):
         """ Asks for the whole character list(AO2)
 
         AC#%
@@ -451,7 +472,7 @@ class AOProtocol(asyncio.Protocol):
             'chars_ao2_list': self.server.char_list,
             })
 
-    def net_cmd_rm(self, args: List[str]):
+    def _net_cmd_rm(self, args: List[str]):
         """ Asks for the whole music list(AO2)
 
         AM#%
@@ -472,7 +493,7 @@ class AOProtocol(asyncio.Protocol):
             'music_ao2_list': full_music_list,
             })
 
-    def net_cmd_rd(self, args: List[str]):
+    def _net_cmd_rd(self, args: List[str]):
         """ Asks for server metadata(charscheck, motd etc.) and a DONE#% signal(also best packet)
 
         RD#%
@@ -496,7 +517,7 @@ class AOProtocol(asyncio.Protocol):
         # so that it only includes areas reachable from that default area.
         self.client.can_askchaa = True  # Allow rejoining if left to lobby but did not dc.
 
-    def net_cmd_cc(self, args: List[str]):
+    def _net_cmd_cc(self, args: List[str]):
         """ Character selection.
 
         CC#<client_id:int>#<char_id:int>#<client_hdid:string>#%
@@ -527,7 +548,7 @@ class AOProtocol(asyncio.Protocol):
                 # Only if there is no current music in the area
                 pass
 
-    def net_cmd_ms(self, args: List[str]):
+    def _net_cmd_ms(self, args: List[str]):
         """ IC message.
 
         Refer to the implementation for details.
@@ -655,9 +676,8 @@ class AOProtocol(asyncio.Protocol):
                 gag_replaced = True
                 msg = Constants.gagged_message()
             if msg != raw_msg:
-                self.client.send_ooc_others('(X) {} [{}] tried to say `{}` but is currently gagged.'
-                                            .format(self.client.displayname, self.client.id,
-                                                    raw_msg),
+                self.client.send_ooc_others(f'(X) {self.client.displayname} [{self.client.id}] '
+                                            f'tried to say `{raw_msg}` but is currently gagged.',
                                             is_zstaff_flex=True, in_area=True)
 
         # Censor passwords if login command accidentally typed in IC
@@ -688,11 +708,11 @@ class AOProtocol(asyncio.Protocol):
 
             truncated_msg = msg.replace(self.client.multi_ic_pre, '', 1)
             if start != end-1:
-                self.client.send_ooc('Sent global IC message "{}" to areas {} through {}.'
-                                     .format(truncated_msg, start_area.name, end_area.name))
+                self.client.send_ooc(f'Sent global IC message "{truncated_msg}" to areas '
+                                     f'{start_area.name} through {end_area.name}.')
             else:
-                self.client.send_ooc('Sent global IC message "{}" to area {}.'
-                                     .format(truncated_msg, start_area.name))
+                self.client.send_ooc(f'Sent global IC message "{truncated_msg}" to area '
+                                     f'{start_area.name}.')
 
         pargs['msg'] = msg
         # Try to change our showname if showname packet exists, and doesn't match our current showname
@@ -765,27 +785,25 @@ class AOProtocol(asyncio.Protocol):
 
         for area_id in area_range:
             target_area = self.server.area_manager.get_area_by_id(area_id)
-            for c in target_area.clients:
-                c.send_ic(params=pargs, sender=self.client, gag_replaced=gag_replaced)
+            for target in target_area.clients:
+                target.send_ic(params=pargs, sender=self.client, gag_replaced=gag_replaced)
 
             target_area.set_next_msg_delay(len(msg))
 
             # Deal with shoutlog
             if pargs['button'] > 0:
-                info = 'used shout {} with the message: {}'.format(pargs['button'], msg)
+                info = f'used shout {pargs["button"]} with the message: {msg}'
                 target_area.add_to_shoutlog(self.client, info)
 
         self.client.area.set_next_msg_delay(len(msg))
-        logger.log_server('[IC][{}][{}]{}'
-                          .format(self.client.area.id, self.client.get_char_name(), msg),
+        logger.log_server(f'[IC][{self.client.area.id}][{self.client.get_char_name()}]{msg}',
                           self.client)
 
         # Sending IC messages reveals sneaked players
         if not self.client.is_staff() and not self.client.is_visible:
             self.client.change_visibility(True)
-            self.client.send_ooc_others('(X) {} [{}] revealed themselves by talking ({}).'
-                                        .format(self.client.displayname, self.client.id,
-                                                self.client.area.id),
+            self.client.send_ooc_others(f'(X) {self.client.displayname} [{self.client.id}] '
+                                        f'revealed themselves by talking ({self.client.area.id}).',
                                         is_zstaff=True)
 
         # Restart AFK kick timer and lurk callout timers, if needed
@@ -800,7 +818,32 @@ class AOProtocol(asyncio.Protocol):
         self.client.last_ic_message = msg
         self.client.last_active = Constants.get_time()
 
-    def net_cmd_ct(self, args: List[str]):
+    def _process_ooc_command(self, cmd, client):
+        called_function = f'ooc_cmd_{cmd}'
+        if hasattr(self.server.commands, called_function):
+            function = getattr(self.server.commands, called_function)
+            return function
+
+        get_command_alias = getattr(self.server.commands_alt, 'get_command_alias')
+        command_alias = get_command_alias(cmd)
+        if command_alias:
+            called_function = f'ooc_cmd_{command_alias}'
+            function = getattr(self.server.commands, called_function)
+            return function
+
+        get_command_deprecated = getattr(self.server.commands_alt, 'get_command_deprecated')
+        command_deprecated = get_command_deprecated(cmd)
+        if command_deprecated:
+            called_function = f'ooc_cmd_{command_deprecated}'
+            function = getattr(self.server.commands, called_function)
+
+            client.send_ooc(f'This command is deprecated and pending removal in 4.4. '
+                            f'Please use /{command_deprecated} next time.')
+            return function
+
+        return None
+
+    def _net_cmd_ct(self, args: List[str]):
         """ OOC Message
 
         CT#<name:string>#<message:string>#%
@@ -876,12 +919,11 @@ class AOProtocol(asyncio.Protocol):
             for client in self.client.area.clients:
                 client.send_ooc(message, username=self.client.name)
             self.client.last_ooc_message = args[1]
-            logger.log_server('[OOC][{}][{}][{}]{}'
-                              .format(self.client.area.id, self.client.get_char_name(),
-                                      self.client.name, message), self.client)
+            logger.log_server(f'[OOC][{self.client.area.id}][{self.client.get_char_name()}]'
+                              f'[{self.client.name}]{message}', self.client)
         self.client.last_active = Constants.get_time()
 
-    def net_cmd_mc(self, args: List[str]):
+    def _net_cmd_mc(self, args: List[str]):
         """ Play music.
 
         MC#<song_name:int>#<char_id:int>#%
@@ -922,7 +964,7 @@ class AOProtocol(asyncio.Protocol):
                 self.client.area.play_track(pargs['name'], self.client, raise_if_not_found=True,
                                             reveal_sneaked=True, pargs=pargs)
             except ServerError.MusicNotFoundError:
-                self.client.send_ooc('Unrecognized area or music `{}`.'.format(args[0]))
+                self.client.send_ooc(f'Unrecognized area or music `{args[0]}`.')
             except ServerError:
                 return
         except (ClientError, PartyError) as ex:
@@ -930,7 +972,7 @@ class AOProtocol(asyncio.Protocol):
 
         self.client.last_active = Constants.get_time()
 
-    def net_cmd_rt(self, args: List[str]):
+    def _net_cmd_rt(self, args: List[str]):
         """ Plays the Testimony/CE animation.
 
         RT#<type:string>#%
@@ -951,13 +993,12 @@ class AOProtocol(asyncio.Protocol):
 
         for client in self.client.area.clients:
             client.send_splash(name=name)
-        self.client.area.add_to_judgelog(self.client, 'used judge button {}.'.format(name))
-        logger.log_server('[{}]{} used judge button {}.'
-                          .format(self.client.area.id, self.client.get_char_name(), name),
-                          self.client)
+        self.client.area.add_to_judgelog(self.client, f'used judge button {name}.')
+        logger.log_server(f'[{self.client.area.id}][{self.client.get_char_name()}] used judge '
+                          f'button {name}.', self.client)
         self.client.last_active = Constants.get_time()
 
-    def net_cmd_hp(self, args: List[str]):
+    def _net_cmd_hp(self, args: List[str]):
         """ Sets the penalty bar.
 
         HP#<type:int>#<new_value:int>#%
@@ -974,16 +1015,15 @@ class AOProtocol(asyncio.Protocol):
         try:
             side, health = pargs['side'], pargs['health']
             self.client.area.change_hp(side, health)
-            info = 'changed penalty bar {} to {}.'.format(side, health)
+            info = f'changed penalty bar {side} to {health}.'
             self.client.area.add_to_judgelog(self.client, info)
-            logger.log_server('[{}]{} changed HP ({}) to {}'
-                              .format(self.client.area.id, self.client.get_char_name(),
-                                      side, health), self.client)
+            logger.log_server(f'[{self.client.area.id}]{self.client.get_char_name()} changed HP '
+                              f'({side}) to {health}.', self.client)
         except AreaError:
             pass
         self.client.last_active = Constants.get_time()
 
-    def net_cmd_pe(self, args: List[str]):
+    def _net_cmd_pe(self, args: List[str]):
         """ Adds a piece of evidence.
 
         PE#<name: string>#<description: string>#<image: string>#%
@@ -1001,7 +1041,7 @@ class AOProtocol(asyncio.Protocol):
         self.client.area.broadcast_evidence_list()
         self.client.last_active = Constants.get_time()
 
-    def net_cmd_de(self, args: List[str]):
+    def _net_cmd_de(self, args: List[str]):
         """ Deletes a piece of evidence.
 
         DE#<id: int>#%
@@ -1016,7 +1056,7 @@ class AOProtocol(asyncio.Protocol):
         self.client.area.broadcast_evidence_list()
         self.client.last_active = Constants.get_time()
 
-    def net_cmd_ee(self, args: List[str]):
+    def _net_cmd_ee(self, args: List[str]):
         """ Edits a piece of evidence.
 
         EE#<id: int>#<name: string>#<description: string>#<image: string>#%
@@ -1033,7 +1073,7 @@ class AOProtocol(asyncio.Protocol):
         self.client.area.broadcast_evidence_list()
         self.client.last_active = Constants.get_time()
 
-    def net_cmd_zz(self, args: List[str]):
+    def _net_cmd_zz(self, args: List[str]):
         """ Sent on mod call.
 
         """
@@ -1050,22 +1090,20 @@ class AOProtocol(asyncio.Protocol):
         self.client.publish_inbound_command('ZZ', pargs)
         self.client.send_ooc('You have called for a moderator.')
         current_time = strftime("%H:%M", localtime())
-        message = ('[{}] {} ({}) called for a moderator in {} ({}).'
-                   .format(current_time, self.client.get_char_name(), self.client.get_ip(),
-                           self.client.area.name, self.client.area.id))
+        message = (f'[{current_time}] {self.client.get_char_name()} ({self.client.get_ip()}) '
+                   f'called for a moderator in {self.client.area.name} ({self.client.area.id}).')
 
-        for c in self.server.get_clients():
-            if c.is_officer():
-                c.send_command_dict('ZZ', {
+        for target in self.server.get_clients():
+            if target.is_officer():
+                target.send_command_dict('ZZ', {
                     'message': message
                     })
 
         self.client.set_mod_call_delay()
-        logger.log_server('[{}][{}]{} called a moderator.'
-                          .format(self.client.get_ip(), self.client.area.id,
-                                  self.client.get_char_name()))
+        logger.log_server(f'[{self.client.get_ip()}][{self.client.area.id}]'
+                          f'{self.client.get_char_name()} called a moderator.')
 
-    def net_cmd_sp(self, args: List[str]):
+    def _net_cmd_sp(self, args: List[str]):
         """
         Set position packet.
         """
@@ -1075,7 +1113,7 @@ class AOProtocol(asyncio.Protocol):
 
         self.client.change_position(pargs['position'])
 
-    def net_cmd_sn(self, args: List[str]):
+    def _net_cmd_sn(self, args: List[str]):
         """
         Set showname packet.
         """
@@ -1091,7 +1129,7 @@ class AOProtocol(asyncio.Protocol):
         except ClientError as exc:
             self.client.send_ooc(exc)
 
-    def net_cmd_chrini(self, args: List[str]):
+    def _net_cmd_chrini(self, args: List[str]):
         """
         Char.ini information
         """
@@ -1104,11 +1142,11 @@ class AOProtocol(asyncio.Protocol):
             pargs['actual_character_showname'],
         )
 
-    def net_cmd_re(self, _):
+    def _net_cmd_re(self, _):
         # Ignore packet
         return
 
-    def net_cmd_charscheck(self, args: List[str]):
+    def _net_cmd_charscheck(self, args: List[str]):
         """
         Character availability request.
         """
@@ -1118,7 +1156,7 @@ class AOProtocol(asyncio.Protocol):
 
         self.client.refresh_visible_char_list()
 
-    def net_cmd_pw(self, _):
+    def _net_cmd_pw(self, _):
         # Ignore packet
         # For now, TsuserverDR will not implement a character password system
         # However, so that it stops raising errors for clients, an empty method is implemented
@@ -1126,39 +1164,29 @@ class AOProtocol(asyncio.Protocol):
         # but not code is run.
         return
 
-    def net_cmd_opKICK(self, _):
-        # Ignore packet
-        return
-
-    def net_cmd_opBAN(self, _):
-        # Ignore packet
-        return
-
     net_cmd_dispatcher = {
-        'HI': net_cmd_hi,  # handshake
-        'ID': net_cmd_id,  # client version
-        'CH': net_cmd_ch,  # keepalive
-        'askchaa': net_cmd_askchaa,  # ask for list lengths
-        'AE': net_cmd_ae,  # evidence list
-        'RC': net_cmd_rc,  # character list
-        'RM': net_cmd_rm,  # music list
-        'RD': net_cmd_rd,  # done request, charscheck etc.
-        'CC': net_cmd_cc,  # select character
-        'MS': net_cmd_ms,  # IC message
-        'CT': net_cmd_ct,  # OOC message
-        'MC': net_cmd_mc,  # play song
-        'RT': net_cmd_rt,  # WT/CE buttons
-        'HP': net_cmd_hp,  # penalties
-        'PE': net_cmd_pe,  # add evidence
-        'DE': net_cmd_de,  # delete evidence
-        'EE': net_cmd_ee,  # edit evidence
-        'ZZ': net_cmd_zz,  # call mod button
-        'RE': net_cmd_re,  # ??? (Unsupported), deprecated
-        'PW': net_cmd_pw,  # character password (only on CC/KFO clients), deprecated
-        'SP': net_cmd_sp,  # set position
-        'SN': net_cmd_sn,  # set showname
-        'chrini': net_cmd_chrini,  # char.ini information
-        'CharsCheck': net_cmd_charscheck,  # character availability request
-        'opKICK': net_cmd_opKICK,  # /kick with guard on, deprecated
-        'opBAN': net_cmd_opBAN,  # /ban with guard on, deprecated
+        'HI': _net_cmd_hi,  # handshake
+        'ID': _net_cmd_id,  # client version
+        'CH': _net_cmd_ch,  # keepalive
+        'askchaa': _net_cmd_askchaa,  # ask for list lengths
+        'AE': _net_cmd_ae,  # evidence list
+        'RC': _net_cmd_rc,  # character list
+        'RM': _net_cmd_rm,  # music list
+        'RD': _net_cmd_rd,  # done request, charscheck etc.
+        'CC': _net_cmd_cc,  # select character
+        'MS': _net_cmd_ms,  # IC message
+        'CT': _net_cmd_ct,  # OOC message
+        'MC': _net_cmd_mc,  # play song
+        'RT': _net_cmd_rt,  # WT/CE buttons
+        'HP': _net_cmd_hp,  # penalties
+        'PE': _net_cmd_pe,  # add evidence
+        'DE': _net_cmd_de,  # delete evidence
+        'EE': _net_cmd_ee,  # edit evidence
+        'ZZ': _net_cmd_zz,  # call mod button
+        'RE': _net_cmd_re,  # ??? (Unsupported), deprecated
+        'PW': _net_cmd_pw,  # character password (only on CC/KFO clients), deprecated
+        'SP': _net_cmd_sp,  # set position
+        'SN': _net_cmd_sn,  # set showname
+        'chrini': _net_cmd_chrini,  # char.ini information
+        'CharsCheck': _net_cmd_charscheck,  # character availability request
     }

@@ -43,7 +43,7 @@ from server.timer_manager import TimerManager
 class ClientManager:
     class Client:
         def __init__(self, server: TsuserverDR, transport, user_id: int, ipid: int,
-                     my_protocol=None, ip=None):
+                     protocol=None, ip=None):
             self.server = server
             self.transport = transport
             self.area_changer = client_changearea.ClientChangeArea(self)
@@ -2062,8 +2062,10 @@ class ClientManager:
         self.phantom_peek_timer.start()
 
     def new_client(self, transport, client_obj: typing.Type[ClientManager.Client] = None,
-                   my_protocol=None):
-        ipid = None
+                   protocol=None, ip=None):
+        if ip is None:
+            ip = transport.get_extra_info('peername')[0]
+        ipid = self.server.get_ipid(ip)
 
         if client_obj is None:
             client_obj = self.Client
@@ -2073,7 +2075,7 @@ class ClientManager:
             if not self.cur_id[i]:
                 cur_id = i
                 break
-        c = client_obj(self.server, transport, cur_id, ipid, my_protocol=my_protocol)
+        c = client_obj(self.server, transport, cur_id, ipid, protocol=protocol)
         self.clients.add(c)
 
         # Check if server is full, and if so, send number of players and disconnect
@@ -2082,11 +2084,10 @@ class ClientManager:
                 'player_count': self.server.get_player_count(),
                 'player_limit': self.server.config['playerlimit']
                 })
-            c.disconnect()
-            return c
+            return c, False
         self.cur_id[cur_id] = True
         self.server.tasker.client_tasks[cur_id] = dict()
-        return c
+        return c, True
 
     def remove_client(self, client: ClientManager.Client):
         # Clients who are following the now leaving client should no longer follow them
