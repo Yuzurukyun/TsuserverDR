@@ -25,6 +25,7 @@ from __future__ import annotations
 import asyncio
 import typing
 from collections import namedtuple
+from typing import List
 
 from server import logger, clients
 from server.network import client_commands
@@ -72,14 +73,7 @@ class AOProtocol(asyncio.Protocol):
         :param transport: the transport object
         """
 
-        self.connection_made_protocol(transport, protocol=None)
-
-    def connection_made_protocol(self, transport, protocol=None):
-        """
-        connection_made but allowing to set a custom protocol (e.g. implementation of AOProtocol.)
-        """
-
-        self.client, valid = self.server.new_client(transport, protocol=protocol)
+        self.client, valid = self.server.new_client(transport, protocol=self)
         self.ping_timeout = asyncio.get_event_loop().call_later(self.server.config['timeout'],
                                                                 self.client.disconnect)
         if not valid:
@@ -237,6 +231,35 @@ class AOProtocol(asyncio.Protocol):
                 continue
             return dict(zip(expected_argument_names, args))
         raise AOProtocolError.InvalidInboundPacketArguments
+
+    def data_send(self, command: str, *args: List):
+        if args:
+            if command == 'MS':
+                for evi_num, evi_value in enumerate(self.client.evi_list):
+                    if evi_value == args[11]:
+                        lst = list(args)
+                        lst[11] = evi_num
+                        args = tuple(lst)
+                        break
+
+        command, *args = Constants.encode_ao_packet([command] + list(args))
+        message = f'{command}#'
+        for arg in args:
+            message += f'{arg}#'
+        message += '%'
+
+        # Only send messages to players that are.. players who are still connected
+        # This should only be relevant in the case there is a function that requests packets
+        # be sent to multiple clients, but the function does not check if all targets are
+        # still clients.
+        if self.server.is_client(self.client):
+            if self.server.print_packets:
+                print(f'< {self.client.id}: {message}')
+            self.server.log_packet(self.client, message, False)
+            self.client.transport.write(message.encode('utf-8'))
+        else:
+            if self.server.print_packets:
+                print(f'< {self.client.id}: {message} || FAILED: Socket closed')
 
     net_cmd_dispatcher = {
         'HI': _command(function=client_commands.net_cmd_hi,

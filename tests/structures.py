@@ -231,8 +231,6 @@ class _TestClientManager(ClientManager):
 
             super().__init__(*args)
 
-            if protocol is None:
-                protocol = self.server.ao_protocol()
             self.protocol = protocol
             self.received_packets = list()
             self.received_ooc = list()
@@ -869,14 +867,6 @@ class _TestClientManager(ClientManager):
 
         super().__init__(server, client_obj=self._TestClient)
 
-    def new_client(self, transport, ip=None, protocol=None):
-        """ Overwrites client_manager.ClientManager.new_client """
-
-        if ip is None:
-            ip = "127.0.0.1"
-        c, valid = super().new_client(transport, client_obj=self._TestClient, ip=ip,
-                                      protocol=protocol)
-        return c, valid
 
 class _TestTsuserverDR(TsuserverDR):
     def __init__(self):
@@ -891,7 +881,7 @@ class _TestTsuserverDR(TsuserverDR):
 
     def create_client(self):
         new_ao_protocol = self.ao_protocol(self)
-        new_ao_protocol.connection_made_protocol(None, protocol=new_ao_protocol)
+        new_ao_protocol.connection_made(None)
         return new_ao_protocol.client
 
     def make_client(self, char_id, hdid='FAKEHDID'):

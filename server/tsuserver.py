@@ -304,7 +304,7 @@ class TsuserverDR:
         entry = ('R:' if incoming else 'S:', Constants.get_time_iso(), str(client.id), packet)
         self.logged_packets.append(entry)
 
-    def new_client(self, transport, ip=None, protocol=None) -> ClientManager.Client:
+    def new_client(self, transport, protocol=None) -> Tuple[ClientManager.Client, bool]:
         c, valid = self.client_manager.new_client(transport, protocol=protocol)
         if self.rp_mode:
             c.in_rp = True
@@ -735,12 +735,6 @@ class TsuserverDR:
                     source = song['source'] if 'source' in song else ''
                     return name, length, source
         raise ServerError.MusicNotFoundError('Music not found.')
-
-    def send_all_cmd_pred(self, cmd: str, *args: List[str],
-                          pred: Callable[[ClientManager.Client], bool] = lambda x: True):
-        for client in self.get_clients():
-            if pred(client):
-                client.send_command(cmd, *args)
 
     def make_all_clients_do(self, function: str, *args: List[str],
                             pred: Callable[[ClientManager.Client], bool] = lambda x: True,
