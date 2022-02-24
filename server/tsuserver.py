@@ -43,7 +43,7 @@ from server.constants import Constants
 from server.client_manager import ClientManager
 from server.exceptions import ServerError
 from server.game_manager import GameManager
-from server.network.masterserverclient import MasterServerClient
+from server.network.ms3_protocol import MasterServerClient
 from server.party_manager import PartyManager
 from server.tasker import Tasker
 from server.timer_manager import TimerManager
@@ -204,9 +204,8 @@ class TsuserverDR:
             self.ms_client = MasterServerClient(self)
             self.masterserver_connection = asyncio.create_task(self.ms_client.connect())
             print(' ')
-            logger.log_print('Attempting to connect to the master server at {}:{} with the '
-                             'following details:'.format(self.config['masterserver_ip'],
-                                                         self.config['masterserver_port']))
+            logger.log_print('Attempting to connect to the master server at {} with the '
+                             'following details:'.format(self.config['masterserver_ip']))
             logger.log_print('*Server name: {}'.format(self.config['masterserver_name']))
             logger.log_print('*Server description: {}'
                              .format(self.config['masterserver_description']))
