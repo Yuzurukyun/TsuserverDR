@@ -33,7 +33,6 @@ import time
 
 from server import clients
 from server import client_changearea
-from server import fantacrypt
 from server import logger
 from server.exceptions import AreaError, ClientError, GameError, PartyError, TrialError
 from server.constants import TargetType, Constants
@@ -1560,7 +1559,7 @@ class ClientManager:
                 'unknown': 1,
                 })
             self.send_command_dict('OPPASS', {
-                'guard_pass': fantacrypt.fanta_encrypt(self.server.config['guardpass']),
+                'guard_pass': '',
                 })
 
             if self.char_id is None:
@@ -2054,6 +2053,10 @@ class ClientManager:
 
         # Check if server is full, and if so, send number of players and disconnect
         if cur_id == -1:
+            c.send_command_dict('PN', {
+                'player_count': self.server.get_player_count(),
+                'player_limit': self.server.config['playerlimit']
+                })
             return c, False
         self.cur_id[cur_id] = True
         self.server.tasker.client_tasks[cur_id] = dict()
