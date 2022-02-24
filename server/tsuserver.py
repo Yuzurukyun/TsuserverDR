@@ -41,10 +41,10 @@ from server.area_manager import AreaManager
 from server.ban_manager import BanManager
 from server.constants import Constants
 from server.client_manager import ClientManager
-from server.districtclient import DistrictClient
+from server.network.districtclient import DistrictClient
 from server.exceptions import ServerError
 from server.game_manager import GameManager
-from server.masterserverclient import MasterServerClient
+from server.network.masterserverclient import MasterServerClient
 from server.party_manager import PartyManager
 from server.tasker import Tasker
 from server.timer_manager import TimerManager
