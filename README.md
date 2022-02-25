@@ -3,7 +3,7 @@
 
 A Python-based server for Danganronpa Online. It is a fork from [tsuserver3](https://github.com/AttorneyOnline/tsuserver3) which is targeted towards Attorney Online.
 
-Requires Python 3.7-3.10 and PyYAML (follow instructions below to install).
+Requires Python 3.7-3.10, PyYAML and aiohttp (follow instructions below to install).
 
 ## How to use
 
@@ -21,7 +21,7 @@ It is highly recommended you read through all the installation steps first befor
   - On Windows 10, go up one folder above the TsuserverDR folder, Shift + right click the TsuserverDR folder, and click `Open PowerShell window here`. This is the easiest method. Alternatively...
   - On most operating systems, copy the path of the TsuserverDR folder, open the terminal, and type in `cd "[paste here]"`, excluding the brackets, but including the quotation marks if the path contains spaces.
 
-* Install PyYAML and dependencies by typing in the following two commands in the terminal you just opened:
+* Install all dependencies by typing in the following two commands in the terminal you just opened:
   ```
   python -m pip install --upgrade pip
   python -m pip install --user -r requirements.txt
