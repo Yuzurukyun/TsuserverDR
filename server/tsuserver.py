@@ -36,7 +36,7 @@ import urllib.request, urllib.error
 # import warnings
 
 from server import logger
-from server.network.aoprotocol import AOProtocol
+from server.network.ao_protocol import AOProtocol
 from server.area_manager import AreaManager
 from server.ban_manager import BanManager
 from server.constants import Constants

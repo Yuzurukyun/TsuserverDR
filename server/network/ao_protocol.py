@@ -17,7 +17,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 """
-The class that manages incoming connections.
+The class that manages incoming connections from AO-like clients.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ from collections import namedtuple
 from typing import List
 
 from server import logger, clients
-from server.network import client_commands
+from server.network import ao_commands
 from server.constants import ArgType, Constants
 from server.exceptions import AOProtocolError
 
@@ -45,6 +45,15 @@ class AOProtocol(asyncio.Protocol):
     _command = namedtuple('ClientCommand', ['function', 'needs_auth'])
 
     def __init__(self, server: TsuserverDR):
+        """
+        Create a new AO Protocol worker.
+
+        Parameters
+        ----------
+        server : TsuserverDR
+            Instance of the server that this worker is supposed to work with.
+        """
+
         super().__init__()
         self.server = server
         self.client = None
@@ -129,12 +138,12 @@ class AOProtocol(asyncio.Protocol):
             self.server.log_packet(self.client, msg, True)
             # Decode AO clients' encoding
             cmd, *args = Constants.decode_ao_packet(msg.split('#'))
-            if cmd not in self.net_cmd_dispatcher:
+            if cmd not in self._net_cmd_dispatcher:
                 logger.log_pserver(f'Client {self.client.id} sent abnormal packet {msg} '
                                    f'(client version: {self.client.version}).')
                 return False
 
-            dispatched = self.net_cmd_dispatcher[cmd]
+            dispatched = self._net_cmd_dispatcher[cmd]
             pargs = self._process_arguments(cmd, args, needs_auth=dispatched.needs_auth,
                                             fallback_protocols=[clients.ClientDROLegacy])
             self.client.publish_inbound_command(cmd, pargs)
@@ -237,6 +246,17 @@ class AOProtocol(asyncio.Protocol):
         raise AOProtocolError.InvalidInboundPacketArguments
 
     def data_send(self, command: str, *args: List):
+        """
+        Send packet to client with a command and arguments.
+
+        Parameters
+        ----------
+        command : str
+            Identifier of command.
+        *args : List
+            Arguments of the command.
+        """
+
         if args:
             if command == 'MS':
                 for evi_num, evi_value in enumerate(self.client.evi_list):
@@ -265,51 +285,51 @@ class AOProtocol(asyncio.Protocol):
             if self.server.print_packets:
                 print(f'< {self.client.id}: {message} || FAILED: Socket closed')
 
-    net_cmd_dispatcher = {
-        'HI': _command(function=client_commands.net_cmd_hi,
+    _net_cmd_dispatcher = {
+        'HI': _command(function=ao_commands.net_cmd_hi,
                        needs_auth=False),  # handshake
-        'ID': _command(function=client_commands.net_cmd_id,
+        'ID': _command(function=ao_commands.net_cmd_id,
                        needs_auth=False),  # client version
-        'CH': _command(function=client_commands.net_cmd_ch,
+        'CH': _command(function=ao_commands.net_cmd_ch,
                        needs_auth=False),  # keepalive
-        'askchaa': _command(function=client_commands.net_cmd_askchaa,
+        'askchaa': _command(function=ao_commands.net_cmd_askchaa,
                             needs_auth=False),  # ask for list lengths
-        'AE': _command(function=client_commands.net_cmd_ae,
+        'AE': _command(function=ao_commands.net_cmd_ae,
                        needs_auth=False),  # evidence list
-        'RC': _command(function=client_commands.net_cmd_rc,
+        'RC': _command(function=ao_commands.net_cmd_rc,
                        needs_auth=False),  # character list
-        'RM': _command(function=client_commands.net_cmd_rm,
+        'RM': _command(function=ao_commands.net_cmd_rm,
                        needs_auth=False),  # music list
-        'RD': _command(function=client_commands.net_cmd_rd,
+        'RD': _command(function=ao_commands.net_cmd_rd,
                        needs_auth=False),  # done request, charscheck etc.
-        'CC': _command(function=client_commands.net_cmd_cc,
+        'CC': _command(function=ao_commands.net_cmd_cc,
                        needs_auth=False),  # select character
-        'MS': _command(function=client_commands.net_cmd_ms,
+        'MS': _command(function=ao_commands.net_cmd_ms,
                        needs_auth=True),  # IC message
-        'CT': _command(function=client_commands.net_cmd_ct,
+        'CT': _command(function=ao_commands.net_cmd_ct,
                        needs_auth=True),  # OOC message
-        'MC': _command(function=client_commands.net_cmd_mc,
+        'MC': _command(function=ao_commands.net_cmd_mc,
                        needs_auth=True),  # play song
-        'RT': _command(function=client_commands.net_cmd_rt,
+        'RT': _command(function=ao_commands.net_cmd_rt,
                        needs_auth=True),  # WT/CE buttons
-        'HP': _command(function=client_commands.net_cmd_hp,
+        'HP': _command(function=ao_commands.net_cmd_hp,
                        needs_auth=True),  # penalties
-        'PE': _command(function=client_commands.net_cmd_pe,
+        'PE': _command(function=ao_commands.net_cmd_pe,
                        needs_auth=True),  # add evidence
-        'DE': _command(function=client_commands.net_cmd_de,
+        'DE': _command(function=ao_commands.net_cmd_de,
                        needs_auth=True),  # delete evidence
-        'EE': _command(function=client_commands.net_cmd_ee,
+        'EE': _command(function=ao_commands.net_cmd_ee,
                        needs_auth=True),  # edit evidence
-        'ZZ': _command(function=client_commands.net_cmd_zz,
+        'ZZ': _command(function=ao_commands.net_cmd_zz,
                        needs_auth=True),  # call mod button
-        'PW': _command(function=client_commands.net_cmd_pw,
+        'PW': _command(function=ao_commands.net_cmd_pw,
                        needs_auth=True),  # character password (only on CC/KFO clients), deprecated
-        'SP': _command(function=client_commands.net_cmd_sp,
+        'SP': _command(function=ao_commands.net_cmd_sp,
                        needs_auth=True),  # set position
-        'SN': _command(function=client_commands.net_cmd_sn,
+        'SN': _command(function=ao_commands.net_cmd_sn,
                        needs_auth=True),  # set showname
-        'chrini': _command(function=client_commands.net_cmd_chrini,
+        'chrini': _command(function=ao_commands.net_cmd_chrini,
                            needs_auth=True),  # char.ini information
-        'CharsCheck': _command(function=client_commands.net_cmd_charscheck,
+        'CharsCheck': _command(function=ao_commands.net_cmd_charscheck,
                                needs_auth=True),  # character availability request
     }
