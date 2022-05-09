@@ -397,7 +397,7 @@ class AOProtocol(asyncio.Protocol):
             'dro_version_ao2_list': version_to_send
         })
 
-    def net_cmd_ch(self, args: List[str]):
+    def _net_cmd_ch(self, args: List[str]):
         """ Periodically checks the connection.
 
         CHECK#<char_id:int>%
