@@ -226,7 +226,7 @@ Additional notes are listed at the end of the command list. Unless otherwise spe
     - Successful peeks have a 75% chance to notify of the peek having taken place for each player in the target area.
 * **ping**
     - Returns "Pong", used to check for server connection.
-* **play** "song.mp3"
+* **play** "song.extension"
     - Plays a song, provided the area you are in allows non-staff members to run this command.
 * **pm** "ID/char name/edited-to character/showname/char showname/OOC name" "message"
     - PMs the target.
@@ -496,7 +496,7 @@ GMs can:
     - Clears passage locks that start in the areas in the given area range, or just the ones in the current area if not given a range.
 * **passage_restore** "area range start", "area range end"
     - Restores passage locks that start in the areas in the given area range to their original status, or just the ones in the current area if not given a range.
-* **play** "song.mp3"
+* **play** "song.extension"
     - Plays a song, even if not in the server music list.
 * **poison** "ID" "initials of effects" "length"
     - Applies a poison to the target that will inflict them in the given length of time in seconds the given effects.
@@ -506,7 +506,7 @@ GMs can:
     - Reveals a target if they were previously sneaking.
     - Also restores their formerly assigned handicap if they had one that was shorter than the server's automatic sneaking handicap.
     - If no ID is given, target is yourself.
-* **rplay** "song.mp3"
+* **rplay** "song.extension"
     - Plays a song in all areas reachable from the current one.
 * **rpmode** "on/off"
     - Toggles RP mode.

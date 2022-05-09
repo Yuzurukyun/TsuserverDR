@@ -709,12 +709,12 @@ class AreaManager:
             Raises
             ------
             ServerError.FileInvalidNameError:
-                If `name` references parent or current directories (e.g. "../hi.mp3")
+                If `name` references parent or current directories (e.g. "../hi.opus")
             ServerError.MusicNotFoundError:
                 If `name` is not a music track in the server or client's music list and
                 `raise_if_not_found` is True.
             ServerError (with code 'FileInvalidName')
-                If `name` references parent or current directories (e.g. "../hi.mp3")
+                If `name` references parent or current directories (e.g. "../hi.opus")
             """
 
             if not pargs:

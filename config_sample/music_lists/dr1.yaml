@@ -1,20 +1,20 @@
 - category: --Deadly Life--
-  songs: 
-    - name: "BOX 15.mp3"
+  songs:
+    - name: "BOX 15.opus"
       length: 244
-    - name: "BOX 16.mp3"
+    - name: "BOX 16.opus"
       length: 331
 - category: --Class Trial--
-  songs: 
-    - name: "Trial Underground.mp3"
+  songs:
+    - name: "Trial Underground.opus"
       length: 108
-    - name: "Class Trial (Dawn Edition).mp3"
+    - name: "Class Trial (Dawn Edition).opus"
       length: 373
 - category: --Discussion--
-  songs: 
-    - name: "Discussion -BREAK-.mp3"
+  songs:
+    - name: "Discussion -BREAK-.opus"
       length: 235
-    - name: "Discussion -HEAT UP-.mp3"
+    - name: "Discussion -HEAT UP-.opus"
       length: 253
-    - name: "Discussion -HOPE VS DESPAIR-.mp3"
+    - name: "Discussion -HOPE VS DESPAIR-.opus"
       length: 269

@@ -6389,10 +6389,10 @@ def ooc_cmd_play(client: ClientManager.Client, arg: str):
     <track_name>: Track to play
 
     EXAMPLES
-    >>> /play Trial(AJ).mp3
-    Plays Trial(AJ).mp3.
-    >>> /play CustomTrack.mp3
-    Plays CustomTrack.mp3, which will only be audible to users with CustomTrack.mp3.
+    >>> /play Trial(AJ).opus
+    Plays Trial(AJ).opus.
+    >>> /play CustomTrack.opus
+    Plays CustomTrack.opus, which will only be audible to users with CustomTrack.opus.
     """
 
     try:
@@ -6693,7 +6693,7 @@ def ooc_cmd_randommusic(client: ClientManager.Client, arg: str):
 
     EXAMPLES:
     >>> /randommusic
-    May play 'Ikoroshia.mp3', 'Despair Searching.mp3', etc.
+    May play 'Ikoroshia.opus', 'Despair Searching.opus', etc.
     """
 
     Constants.assert_command(client, arg, parameters='=0')
@@ -7023,10 +7023,10 @@ def ooc_cmd_rplay(client: ClientManager.Client, arg: str):
     <track_name>: Track to play
 
     EXAMPLES
-    >>> /rplay Trial(AJ).mp3
-    Plays Trial(AJ).mp3.
-    >>> /rplay CustomTrack.mp3
-    Plays CustomTrack.mp3, which will only be audible to users with CustomTrack.mp3.
+    >>> /rplay Trial(AJ).opus
+    Plays Trial(AJ).opus.
+    >>> /rplay CustomTrack.opus
+    Plays CustomTrack.opus, which will only be audible to users with CustomTrack.opus.
     """
 
     try:
@@ -10655,10 +10655,10 @@ def ooc_cmd_zone_play(client: ClientManager.Client, arg: str):
 
     EXAMPLES
     Assuming you are watching zone z0...
-    >>> /zone_play Trial(AJ).mp3
-    Plays Trial(AJ).mp3 for all areas in zone z0.
-    >>> /zone_play CustomTrack.mp3
-    Plays CustomTrack.mp3, which will only be audible to users with CustomTrack.mp3) for all areas
+    >>> /zone_play Trial(AJ).opus
+    Plays Trial(AJ).opus for all areas in zone z0.
+    >>> /zone_play CustomTrack.opus
+    Plays CustomTrack.opus, which will only be audible to users with CustomTrack.opus) for all areas
     in zone z0.
     """
 
