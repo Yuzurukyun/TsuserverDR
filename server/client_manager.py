@@ -23,7 +23,7 @@ from typing import Any, Callable, List, Optional, Set, Tuple, Dict
 if typing.TYPE_CHECKING:
     # Avoid circular referencing
     from server.area_manager import AreaManager
-    from server.network.aoprotocol import AOProtocol
+    from server.network.ao_protocol import AOProtocol
     from server.tsuserver import TsuserverDR
     from server.zone_manager import ZoneManager
 

@@ -102,10 +102,6 @@ music_change_floodguard:
 # Currently unused
 # Changing them will do nothing
 
-use_district: false
-district_ip: 127.0.0.1
-district_port: 11037
-district_password: enter_password
 debug: false
 guardpass: Guard
 help_msg: TODO

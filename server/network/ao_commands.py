@@ -323,8 +323,12 @@ def net_cmd_cc(client: ClientManager.Client, pargs: Dict[str, Any]):
     client.last_active = Constants.get_time()
 
     if not ever_chose_character_before:
-        client.send_command_dict('GM', {'name': ''})
-        client.send_command_dict('TOD', {'name': ''})
+        client.send_command_dict('GM', {
+            'name': ''
+            })
+        client.send_command_dict('TOD', {
+            'name': ''
+            })
         try:
             client.area.play_current_track(only_for={client}, force_same_restart=1)
         except AreaError:
@@ -457,9 +461,9 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
             gag_replaced = True
             msg = Constants.gagged_message()
         if msg != raw_msg:
-            client.send_ooc_others(f'(X) {client.displayname} [{client.id}] '
-                                        f'tried to say `{raw_msg}` but is currently gagged.',
-                                        is_zstaff_flex=True, in_area=True)
+            client.send_ooc_others(f'(X) {client.displayname} [{client.id}] tried to say '
+                                   f'`{raw_msg}` but is currently gagged.',
+                                   is_zstaff_flex=True, in_area=True)
 
     # Censor passwords if login command accidentally typed in IC
     for password in client.server.all_passwords:
@@ -490,10 +494,9 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
         truncated_msg = msg.replace(client.multi_ic_pre, '', 1)
         if start != end-1:
             client.send_ooc(f'Sent global IC message "{truncated_msg}" to areas '
-                                    f'{start_area.name} through {end_area.name}.')
+                            f'{start_area.name} through {end_area.name}.')
         else:
-            client.send_ooc(f'Sent global IC message "{truncated_msg}" to area '
-                                    f'{start_area.name}.')
+            client.send_ooc(f'Sent global IC message "{truncated_msg}" to area {start_area.name}.')
 
     pargs['msg'] = msg
     # Try to change our showname if showname packet exists, and doesn't match our current showname
@@ -577,20 +580,17 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
             target_area.add_to_shoutlog(client, info)
 
     client.area.set_next_msg_delay(len(msg))
-    logger.log_server(f'[IC][{client.area.id}][{client.get_char_name()}]{msg}',
-                        client)
+    logger.log_server(f'[IC][{client.area.id}][{client.get_char_name()}]{msg}', client)
 
     # Sending IC messages reveals sneaked players
     if not client.is_staff() and not client.is_visible:
         client.change_visibility(True)
-        client.send_ooc_others(f'(X) {client.displayname} [{client.id}] '
-                                    f'revealed themselves by talking ({client.area.id}).',
-                                    is_zstaff=True)
+        client.send_ooc_others(f'(X) {client.displayname} [{client.id}] revealed themselves by '
+                               f'talking ({client.area.id}).', is_zstaff=True)
 
     # Restart AFK kick timer and lurk callout timers, if needed
     client.server.tasker.create_task(client,
-                                    ['as_afk_kick', client.area.afk_delay,
-                                    client.area.afk_sendto])
+                                    ['as_afk_kick', client.area.afk_delay, client.area.afk_sendto])
     client.check_lurk()
 
     client.last_ic_message = msg
@@ -724,12 +724,12 @@ def net_cmd_mc(client: ClientManager.Client, pargs: Dict[str, Any]):
         delay = client.change_music_cd()
         if delay:
             client.send_ooc(f'You changed song too many times recently. Please try again '
-                                    f'after {Constants.time_format(delay)}.')
+                            f'after {Constants.time_format(delay)}.')
             return
 
         try:
             client.area.play_track(pargs['name'], client, raise_if_not_found=True,
-                                        reveal_sneaked=True, pargs=pargs)
+                                   reveal_sneaked=True, pargs=pargs)
         except ServerError.MusicNotFoundError:
             client.send_ooc(f'Unrecognized area or music `{pargs["name"]}`.')
         except ServerError:
@@ -760,7 +760,7 @@ def net_cmd_rt(client: ClientManager.Client, pargs: Dict[str, Any]):
         target.send_splash(name=name)
     client.area.add_to_judgelog(client, f'used judge button {name}.')
     logger.log_server(f'[{client.area.id}][{client.get_char_name()}] used judge '
-                        f'button {name}.', client)
+                      f'button {name}.', client)
     client.last_active = Constants.get_time()
 
 
@@ -781,7 +781,7 @@ def net_cmd_hp(client: ClientManager.Client, pargs: Dict[str, Any]):
         info = f'changed penalty bar {side} to {health}.'
         client.area.add_to_judgelog(client, info)
         logger.log_server(f'[{client.area.id}]{client.get_char_name()} changed HP '
-                            f'({side}) to {health}.', client)
+                          f'({side}) to {health}.', client)
     except AreaError:
         pass
     client.last_active = Constants.get_time()
@@ -795,10 +795,8 @@ def net_cmd_pe(client: ClientManager.Client, pargs: Dict[str, Any]):
     """
 
     # evi = Evidence(args[0], args[1], args[2], client.pos)
-    client.area.evi_list.add_evidence(client,
-                                            pargs['name'],
-                                            pargs['description'],
-                                            pargs['image'], 'all')
+    client.area.evi_list.add_evidence(client, pargs['name'], pargs['description'], pargs['image'],
+                                      'all')
     client.area.broadcast_evidence_list()
     client.last_active = Constants.get_time()
 
@@ -810,8 +808,7 @@ def net_cmd_de(client: ClientManager.Client, pargs: Dict[str, Any]):
 
     """
 
-    client.area.evi_list.del_evidence(client,
-                                            client.evi_list[int(pargs['evi_id'])])
+    client.area.evi_list.del_evidence(client, client.evi_list[int(pargs['evi_id'])])
     client.area.broadcast_evidence_list()
     client.last_active = Constants.get_time()
 
@@ -825,8 +822,7 @@ def net_cmd_ee(client: ClientManager.Client, pargs: Dict[str, Any]):
 
     evi = (pargs['name'], pargs['description'], pargs['image'], 'all')
 
-    client.area.evi_list.edit_evidence(client,
-                                            client.evi_list[int(pargs['evi_id'])], evi)
+    client.area.evi_list.edit_evidence(client, client.evi_list[int(pargs['evi_id'])], evi)
     client.area.broadcast_evidence_list()
     client.last_active = Constants.get_time()
 
@@ -846,7 +842,7 @@ def net_cmd_zz(client: ClientManager.Client, pargs: Dict[str, Any]):
     client.send_ooc('You have called for a moderator.')
     current_time = time.strftime("%H:%M", time.localtime())
     message = (f'[{current_time}] {client.get_char_name()} ({client.get_ip()}) '
-                f'called for a moderator in {client.area.name} ({client.area.id}).')
+               f'called for a moderator in {client.area.name} ({client.area.id}).')
 
     for target in client.server.get_clients():
         if target.is_officer():
@@ -886,10 +882,8 @@ def net_cmd_chrini(client: ClientManager.Client, pargs: Dict[str, Any]):
     Char.ini information
     """
 
-    client.change_character_ini_details(
-        pargs['actual_folder_name'],
-        pargs['actual_character_showname'],
-    )
+    client.change_character_ini_details(pargs['actual_folder_name'],
+                                        pargs['actual_character_showname'])
 
 
 def net_cmd_re(self, _):
