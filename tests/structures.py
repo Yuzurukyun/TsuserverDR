@@ -24,7 +24,7 @@ from typing import List, Set
 
 from unittest.mock import Mock
 
-from server.aoprotocol import AOProtocol
+from server.network.aoprotocol import AOProtocol
 from server.area_manager import AreaManager
 from server.client_manager import ClientManager
 from server.constants import Constants
@@ -226,14 +226,12 @@ class _TestSituation6Mc1Gc25(_TestSituation6):
 
 class _TestClientManager(ClientManager):
     class _TestClient(ClientManager.Client):
-        def __init__(self, *args, my_protocol=None):
+        def __init__(self, *args, protocol=None):
             """ Overwrites client_manager.ClientManager.Client.__init__ """
 
             super().__init__(*args)
 
-            if my_protocol is None:
-                my_protocol = self.server.ao_protocol()
-            self.my_protocol = my_protocol
+            self.protocol = protocol
             self.received_packets = list()
             self.received_ooc = list()
             self.received_ic = list()
@@ -242,7 +240,7 @@ class _TestClientManager(ClientManager):
             """ Overwrites client_manager.ClientManager.Client.disconnect """
 
             self.disconnected = True
-            self.my_protocol.connection_lost(None, client=self)
+            self.protocol.connection_lost(None)
 
             if assert_no_outstanding:
                 self.assert_no_packets()
@@ -268,8 +266,7 @@ class _TestClientManager(ClientManager):
             self.receive_command_stc(command_type, *args)
 
         def send_command_cts(self, buffer):
-            if not self.disconnected:
-                self.my_protocol.data_received(buffer.encode('utf-8'))
+            self.protocol.data_received(buffer.encode('utf-8'))
 
         def ooc(self, message, username=None):
             if username is None:
@@ -870,28 +867,6 @@ class _TestClientManager(ClientManager):
 
         super().__init__(server, client_obj=self._TestClient)
 
-    def new_client(self, transport, my_protocol=None):
-        """ Overwrites client_manager.ClientManager.new_client """
-
-        c = super().new_client(transport, client_obj=self._TestClient, my_protocol=my_protocol)
-        return c
-
-
-class _TestAOProtocol(AOProtocol):
-    def connection_lost(self, exc, client=None):
-        """ Overwrites AOProtocol.connection_lost
-
-        Is needed in the off chance the client is disconnected before the handshake is over.
-        In particular, if the client is disconnected because they attempt to join a full server.
-        """
-
-        if not self.client:
-            self.client = client
-        if not self.ping_timeout:
-            self.ping_timeout = Mock()
-
-        super().connection_lost(exc)
-
 
 class _TestTsuserverDR(TsuserverDR):
     def __init__(self):
@@ -899,14 +874,14 @@ class _TestTsuserverDR(TsuserverDR):
         self.loop = asyncio.get_event_loop()
 
         super().__init__(client_manager=_TestClientManager, in_test=True)
-        self.ao_protocol = _TestAOProtocol
+        self.ao_protocol = AOProtocol
         self.client_list = [None] * self.config['playerlimit']
 
         self.tasker = Tasker(self)
 
     def create_client(self):
         new_ao_protocol = self.ao_protocol(self)
-        new_ao_protocol.connection_made(None, my_protocol=new_ao_protocol)
+        new_ao_protocol.connection_made(None)
         return new_ao_protocol.client
 
     def make_client(self, char_id, hdid='FAKEHDID'):

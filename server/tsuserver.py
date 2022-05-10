@@ -36,7 +36,7 @@ import urllib.request, urllib.error
 # import warnings
 
 from server import logger
-from server.aoprotocol import AOProtocol
+from server.network.aoprotocol import AOProtocol
 from server.area_manager import AreaManager
 from server.ban_manager import BanManager
 from server.constants import Constants
@@ -69,8 +69,8 @@ class TsuserverDR:
         self.release = 4
         self.major_version = 3
         self.minor_version = 2
-        self.segment_version = 'a2'
-        self.internal_version = 'm220509b'
+        self.segment_version = 'a3'
+        self.internal_version = 'm220510a'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
@@ -304,14 +304,14 @@ class TsuserverDR:
         entry = ('R:' if incoming else 'S:', Constants.get_time_iso(), str(client.id), packet)
         self.logged_packets.append(entry)
 
-    def new_client(self, transport, ip=None, my_protocol=None) -> ClientManager.Client:
-        c = self.client_manager.new_client(transport, my_protocol=my_protocol)
+    def new_client(self, transport, protocol=None) -> Tuple[ClientManager.Client, bool]:
+        c, valid = self.client_manager.new_client(transport, protocol=protocol)
         if self.rp_mode:
             c.in_rp = True
         c.server = self
         c.area = self.area_manager.default_area()
         c.area.new_client(c)
-        return c
+        return c, valid
 
     def remove_client(self, client: ClientManager.Client):
         client.area.remove_client(client)
@@ -735,12 +735,6 @@ class TsuserverDR:
                     source = song['source'] if 'source' in song else ''
                     return name, length, source
         raise ServerError.MusicNotFoundError('Music not found.')
-
-    def send_all_cmd_pred(self, cmd: str, *args: List[str],
-                          pred: Callable[[ClientManager.Client], bool] = lambda x: True):
-        for client in self.get_clients():
-            if pred(client):
-                client.send_command(cmd, *args)
 
     def make_all_clients_do(self, function: str, *args: List[str],
                             pred: Callable[[ClientManager.Client], bool] = lambda x: True,

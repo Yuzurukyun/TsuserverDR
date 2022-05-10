@@ -741,3 +741,4 @@
 
 ### (4.3.2)
 * Migrated continuous integration from Travis to Github Actions
+* Removed Fantacrypt and several AO1 leftovers
