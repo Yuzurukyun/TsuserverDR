@@ -164,7 +164,8 @@ def ooc_cmd_area_kick(client: ClientManager.Client, arg: str):
         old_area = c.area
 
         try:
-            c.change_area(area, override_passages=True, override_effects=True, ignore_bleeding=True)
+            c.change_area(area, override_passages=True, override_effects=True, ignore_bleeding=True,
+                          ignore_autopass=True)
         except ClientError as error:
             error_mes = ", ".join([str(s) for s in error.args])
             client.send_ooc('Unable to kick client {} ({}) to area {}: {}'

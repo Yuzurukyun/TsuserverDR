@@ -894,10 +894,11 @@ class ClientManager:
             return results
 
         def notify_change_area(self, area: AreaManager.Area, old_char: str,
-                               ignore_bleeding: bool = False,
+                               ignore_bleeding: bool = False, ignore_autopass: bool = False,
                                just_me: bool = False) -> bool:
             return self.area_changer.notify_change_area(
-                area, old_char, ignore_bleeding=ignore_bleeding, just_me=just_me)
+                area, old_char, ignore_bleeding=ignore_bleeding, ignore_autopass=ignore_autopass,
+                just_me=just_me)
 
         def check_lurk(self):
             if self.area.lurk_length > 0 and not self.is_staff() and self.char_id >= 0:
@@ -911,12 +912,14 @@ class ClientManager:
         def change_area(self, area: AreaManager.Area, override_all: bool = False,
                         override_passages: bool = False, override_effects: bool = False,
                         ignore_bleeding: bool = False, ignore_followers: bool = False,
+                        ignore_autopass: bool = False,
                         ignore_checks: bool = False, ignore_notifications: bool = False,
                         more_unavail_chars: Set[int] = None,
                         change_to: int = None, from_party: bool = False):
             self.area_changer.change_area(
                 area, override_all=override_all, override_passages=override_passages,
                 override_effects=override_effects, ignore_bleeding=ignore_bleeding,
+                ignore_autopass=ignore_autopass,
                 ignore_followers=ignore_followers, ignore_checks=ignore_checks,
                 ignore_notifications=ignore_notifications, change_to=change_to,
                 more_unavail_chars=more_unavail_chars, from_party=from_party)

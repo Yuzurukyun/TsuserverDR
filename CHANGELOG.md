@@ -741,5 +741,6 @@
 
 ### (4.3.2)
 * Servers now advertise using the AO MS3 protocol standard (WARNING: this requires server owners install a new library before launching)
+* Made /area_kick no longer trigger autopass notifications on the kicked player
 * Migrated continuous integration from Travis to Github Actions
 * Removed Fantacrypt, DistrictClient, and several other ts3 and AO1 leftovers

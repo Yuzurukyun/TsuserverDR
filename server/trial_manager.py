@@ -1026,7 +1026,7 @@ class _Trial(GameWithAreas):
             user.send_splash(name='testimony2')
 
     def _on_area_client_left_final(self, area, client=None, old_displayname=None,
-                                   ignore_bleeding=False):
+                                   ignore_bleeding=False, ignore_autopass=False):
         """
         If a player left to an area not part of the trial, remove the player and warn them and
         the leaders of the trial.
@@ -1045,6 +1045,8 @@ class _Trial(GameWithAreas):
             change only if the client's character or showname are taken. The default is None.
         ignore_bleeding : bool, optional
             If the code should ignore actions regarding bleeding. The default is False.
+        ignore_autopass : bool, optional
+            If the code should ignore actions regarding autopass. The default is False.
 
         Returns
         -------
@@ -1087,7 +1089,7 @@ class _Trial(GameWithAreas):
         self._check_structure()
 
     def _on_area_client_entered_final(self, area, client=None, old_area=None, old_displayname=None,
-                                      ignore_bleeding=False):
+                                      ignore_bleeding=False, ignore_autopass=False):
         """
         If a non-player entered, warn them and the leaders of the trial.
 
@@ -1104,6 +1106,8 @@ class _Trial(GameWithAreas):
             change only if the client's character or showname are taken. The default is None.
         ignore_bleeding : bool, optional
             If the code should ignore actions regarding bleeding. The default is False.
+        ignore_autopass : bool, optional
+            If the code should ignore actions regarding autopass. The default is False.
 
         Returns
         -------

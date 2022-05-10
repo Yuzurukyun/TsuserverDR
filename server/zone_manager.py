@@ -644,7 +644,7 @@ class ZoneManager:
             return self._is_deleted
 
         def _on_area_client_left_final(self, area, client=None, old_displayname=None,
-                                    ignore_bleeding=False):
+                                    ignore_bleeding=False, ignore_autopass=False):
             """
             Default callback for zone signaling a client left. This is executed after all other
             actions related to moving the player to a new area have been executed: in particular,
@@ -666,6 +666,8 @@ class ZoneManager:
                 change only if the client's character or showname are taken. The default is None.
             ignore_bleeding : bool, optional
                 If the code should ignore actions regarding bleeding. The default is False.
+            ignore_autopass : bool, optional
+                If the code should ignore actions regarding autopass. The default is False.
 
             """
 
@@ -675,7 +677,8 @@ class ZoneManager:
             self._check_structure()
 
         def _on_area_client_entered_final(self, area, client=None, old_area=None,
-                                          old_displayname=None, ignore_bleeding=False):
+                                          old_displayname=None, ignore_bleeding=False,
+                                          ignore_autopass=False):
             """
             Default callback for zone signaling a client entered.
 
@@ -694,6 +697,8 @@ class ZoneManager:
                 change only if the client's character or showname are taken. The default is None.
             ignore_bleeding : bool, optional
                 If the code should ignore actions regarding bleeding. The default is False.
+            ignore_autopass : bool, optional
+                If the code should ignore actions regarding autopass. The default is False.
 
             Returns
             -------
