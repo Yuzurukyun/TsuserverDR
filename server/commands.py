@@ -183,7 +183,7 @@ def ooc_cmd_area_kick(client: ClientManager.Client, arg: str):
                 try:  # Try and remove the IPID from the area's invite list
                     old_area.invite_list.pop(c.ipid)
                 except KeyError:
-                    # only happens if target joined the locked area through mod powers or follow
+                    # only happens if target joined the locked area through mod powers
                     pass
 
             if client.party:

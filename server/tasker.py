@@ -242,7 +242,7 @@ class Tasker:
                     try:  # Try and remove the IPID from the area's invite list
                         client.area.invite_list.pop(client.ipid)
                     except KeyError:
-                        # only happens if target had joined the locked area through mod powers or follow
+                        # only happens if target had joined the locked area through mod powers
                         pass
 
                 if client.party:

@@ -37,7 +37,6 @@ class ClientChangeArea:
 
     def check_change_area(self, area: AreaManager.Area,
                           override_passages: bool = False,
-                          override_locks: bool = False,
                           override_effects: bool = False,
                           more_unavail_chars: Set[int] = None) -> Tuple[int, List[str]]:
         """
@@ -83,7 +82,7 @@ class ClientChangeArea:
                               code='ChArSneakPrivate')
 
         # Check if area has some sort of lock
-        if not (client.ipid in area.invite_list or override_locks):
+        if not (client.ipid in area.invite_list):
             if area.is_locked and not client.is_staff():
                 raise ClientError('That area is locked.', code='ChArLocked')
             if area.is_gmlocked and not client.is_mod and not client.is_gm:
