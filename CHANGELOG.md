@@ -738,3 +738,7 @@
 * Increased the numbers of messages that must occur during a nonstop debate intermission before reminding the leaders to advance stage if necessary from 5 to 20
 * Sending a whisper while sneaked to a nonsneaked player that is not a member of the same party now displays the player's showname to the sneaked player (but still only question marks to the recipient)
 * Fixed some compatibility issues with AO 2.9
+
+### 220516a (4.3.1-post1)
+* Added list of tracks for which server should strive to send ".mp3" versions of for DRO 1.0.2 players
+* Restored old behavior of music in a new area that makes it only start playing for a newcomer player in DRO 1.1.0 once a "loop" of it is done
