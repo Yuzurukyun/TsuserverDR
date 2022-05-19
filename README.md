@@ -143,9 +143,9 @@ Additional notes are listed at the end of the command list. Unless otherwise spe
 * **g** "message"
     - Sends a serverwide message. Fails if the current area disallows sending global messages.
 * **getarea**
-    - Shows the current characters in your area.
+    - Shows the current characters in your area, including their showname if they have set it.
 * **getareas**
-    - Shows all characters in all areas reachable from your own.
+    - Shows all characters in all areas reachable from your own, including their showname if they have set it.
 * **ignore** "ID/char name/edited-to character/showname/char showname/OOC name"
     - Marks a target as ignored, so you will no longer receive any IC messages from them.
     - The target is not notified of you marking them as ignored.
@@ -248,10 +248,6 @@ Additional notes are listed at the end of the command list. Unless otherwise spe
     - Messages are limited to 256 characters.
 * **showname** "showname"
     - Sets your showname to be the given one, or clears it if not given one.
-* **showname_area**
-    - Similar to /getarea, but lists shownames along with character names.
-* **showname_areas**
-    - Similar to /getareas, but lists shownames along with character names.
 * **status** "ID/char name/edited-to character/showname/char showname/OOC name"
     - Check the custom status of a player
 * **status_set** "status"
@@ -684,10 +680,6 @@ GMs can:
 * **reveal** "ID/IPID"
     - Reveals a target if they were previously sneaking.
     - Also restores their formerly assigned handicap if they had one that was shorter than the server's automatic sneaking handicap.
-* **showname_area**
-    - Similar to /getarea, but lists shownames along with character names as well as their IPIDs.
-* **showname_areas**
-    - Similar to /getareas, but lists shownames along with character names as well as their IPIDs.
 * **showname_history** "ID/IPID"
     - Lists all shownames a target has gone through since connecting, including the time they were changed.
 * **showname_set** "ID/IPID" "showname"
@@ -776,10 +768,10 @@ Commands without (D) are aliases to commands and can be freely used (subject to 
 
 * **huddle**: Same as /party_whisper.
 * **pw**: Same as /party_whisper.
-* **sa**: Same as /showname_area.
-* **sas**: Same as /showname_areas.
+* **sa**: Same as /getarea.
+* **sas**: Same as /getareas.
 * **shout**: Same as /scream.
-* **showname_list**: Same as /showname_areas.
+* **showname_list**: Same as /getareas.
 * **unsneak**: Same as /reveal.
 * **yell**: Same as /scream.
 * **zg**: Same as /zone_global.
@@ -788,6 +780,10 @@ Commands without (D) are aliases to commands and can be freely used (subject to 
 * **fa**: Same as /files_area.
 * **l**: Same as /look.
 * **forcepos**: Same as /pos_force.
+* **showname_area**: Same as /getarea.
+* **showname_areas**: Same as /getareas.
+* **ga**: Same as /getarea.
+* **gas**: Same as /getareas.
 
 #### GM+
 

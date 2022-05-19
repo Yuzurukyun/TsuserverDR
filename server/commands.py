@@ -2641,11 +2641,14 @@ def ooc_cmd_getarea(client: ClientManager.Client, arg: str):
     EXAMPLE
     If Phantom is a staff member in area 0
     >>> /getarea
-    Lists characters in area 0
+    | $H: == Area 0: Basement ==
+    | [0] Phantom_HD
+    | [1] Spam_HD (Spam, Spam, Spam...)
     >>> /getarea 1
-    Lists characters in area 1.
-    >>> /getarea Basement
-    Lists characters in area Basement.
+    May return something like this:
+    | $H: == Area 1: Courtroom ==
+    | [2] Eggs_HD (Eggy Egg)
+    | [3] Judge_HD (Gavel Guy)
     """
 
     if arg:
@@ -2659,7 +2662,7 @@ def ooc_cmd_getarea(client: ClientManager.Client, arg: str):
     if not client.is_staff() and client.is_blind:
         raise ClientError('You are blind, so you cannot see anything.')
 
-    client.send_area_info(client.area, area_id, False)
+    client.send_area_info(client.area, area_id, False, include_shownames=True)
 
 
 def ooc_cmd_getareas(client: ClientManager.Client, arg: str):
@@ -2676,6 +2679,13 @@ def ooc_cmd_getareas(client: ClientManager.Client, arg: str):
 
     EXAMPLE
     >>> /getareas
+    May return something like this:
+    | $H: == Area List ==
+    | == Area 0: Basement ==
+    | [0] Phantom_HD
+    | [1] Spam_HD (Spam, Spam, Spam...)
+    | == Area 1: Class Trial Room 1 ==
+    | [2] Eggs_HD (Not Spam?)
     """
 
     Constants.assert_command(client, arg, parameters='=0')
@@ -2683,7 +2693,7 @@ def ooc_cmd_getareas(client: ClientManager.Client, arg: str):
     if not client.is_staff() and client.is_blind:
         raise ClientError('You are blind, so you cannot see anything.')
 
-    client.send_area_info(client.area, -1, False)
+    client.send_area_info(client.area, -1, False, include_shownames=True)
 
 
 def ooc_cmd_gimp(client: ClientManager.Client, arg: str):
@@ -7422,84 +7432,6 @@ def ooc_cmd_showname(client: ClientManager.Client, arg: str):
     """
 
     client.command_change_showname(arg, True)
-
-
-def ooc_cmd_showname_area(client: ClientManager.Client, arg: str):
-    """
-    List the characters (and associated client IDs) in the current area, as well as their custom
-    shownames if they have one in parentheses.
-    OR (STAFF ONLY) lists the character (and associated client IDs) in the given area by area ID or
-    name as well as their custom shownames if they have one in parentheses.
-    Returns an error if you are subject to RP mode and are in an area that disables /getarea, if
-    you are blind and not staff, or if the given identifier does not correspond to an area.
-
-    SYNTAX
-    /showname_area
-    /showname_area <target_area>
-
-    PARAMETERS
-    None
-
-    OPTIONAL PARAMETERS
-    {target_area}: The area whose characters will be listed.
-
-    EXAMPLES
-    Assuming Phantom is in area 0...
-    >>> /showname_area
-    May return something like this:
-    | $H: == Area 0: Basement ==
-    | [0] Phantom_HD
-    | [1] Spam_HD (Spam, Spam, Spam...)
-    >>> /showname_area Courtroom
-    May return something like this:
-    | $H: == Area 8: Courtroom ==
-    | [2] Eggs_HD (Eggy Egg)
-    | [3] Judge_HD (Gavel Guy)
-    """
-
-    if arg:
-        if not client.is_staff():
-            raise ClientError.UnauthorizedError('You must be authorized to use the one-parameter '
-                                                'version of this command.')
-        area_id = Constants.parse_area_names(client, [arg])[0].id
-    else:
-        area_id = client.area.id
-
-    if not client.is_staff() and client.is_blind:
-        raise ClientError('You are blind, so you cannot see anything.')
-
-    client.send_area_info(client.area, area_id, False, include_shownames=True)
-
-
-def ooc_cmd_showname_areas(client: ClientManager.Client, arg: str):
-    """
-    List the characters (and associated client IDs) in each area, as well as their custom shownames
-    if they have one in parentheses.
-    Returns an error if you are subject to RP mode and is in an area that disables /getareas
-    or if you are blind.
-
-    SYNTAX
-    /showname_areas
-
-    PARAMETERS
-    None
-
-    EXAMPLE
-    >>> /showname_areas
-    May return something like this:
-    | $H: == Area List ==
-    | == Area 0: Basement ==
-    | [0] Phantom_HD
-    | [1] Spam_HD (Spam, Spam, Spam...)
-    | == Area 1: Class Trial Room 1 ==
-    | [2] Eggs_HD (Not Spam?)
-    """
-
-    Constants.assert_command(client, arg, parameters='=0')
-    if not client.is_staff() and client.is_blind:
-        raise ClientError('You are blind, so you cannot see anything.')
-
-    client.send_area_info(client.area, -1, False, include_shownames=True)
 
 
 def ooc_cmd_showname_freeze(client: ClientManager.Client, arg: str):
