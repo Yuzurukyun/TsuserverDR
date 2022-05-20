@@ -165,7 +165,7 @@ Additional notes are listed at the end of the command list. Unless otherwise spe
     - Makes you a Moderator.
 * **logincm** "password"
     - Makes you a Community Manager.
-* **loginrp** "password"
+* **logingm** "password"
     - Makes you a GM.
 * **logout**
     - Logs you out of the rank you have, if any.
@@ -787,7 +787,7 @@ Commands without (D) are aliases to commands and can be freely used (subject to 
 
 #### GM+
 
-* **logingm**: Same as /loginrp.
+* **loginrp**: Same as /logingm.
 * **slit**: Same as /bloodtrail.
 * **unsneak**: Same as /reveal.
 * **clock_cancel**: Same as /clock_end. (D) (Deprecated July 5, 2021)

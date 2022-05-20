@@ -44,7 +44,7 @@ command_aliases = {
     'slit': 'bloodtrail',
     'pw': 'party_whisper',
     'huddle': 'party_whisper',
-    'logingm': 'loginrp',
+    'loginrp': 'logingm',
     'sa': 'getarea',
     'sas': 'getareas',
     'shout': 'scream',

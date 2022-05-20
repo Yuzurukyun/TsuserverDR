@@ -3786,18 +3786,18 @@ def ooc_cmd_logincm(client: ClientManager.Client, arg: str):
     client.login(arg, client.auth_cm, 'community manager')
 
 
-def ooc_cmd_loginrp(client: ClientManager.Client, arg: str):
+def ooc_cmd_logingm(client: ClientManager.Client, arg: str):
     """
     Logs you in as a game master, provided you input the correct password.
 
     SYNTAX
-    /loginrp <gm_password>
+    /logingm <gm_password>
 
     PARAMETERS
     <gm_password>: Game master password, found in config/config.yaml
 
     EXAMPLES
-    >>> /loginrp GM
+    >>> /logingm GM
     Attempt to log in as game master with "GM" as password.
     """
 

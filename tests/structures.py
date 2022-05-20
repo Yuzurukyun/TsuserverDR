@@ -320,7 +320,7 @@ class _TestClientManager(ClientManager):
         def make_gm(self, over=True):
             if self.is_gm:
                 return
-            self.ooc('/loginrp {}'.format(self.server.config['gmpass']))
+            self.ooc('/logingm {}'.format(self.server.config['gmpass']))
             self.assert_packet('FA', None)
             self.assert_packet('FM', None)
             self.assert_ooc('Logged in as a game master.', over=over)

@@ -742,7 +742,8 @@
 ### (4.3.2)
 * Servers now advertise using the AO MS3 protocol standard (WARNING: this requires server owners install a new library before launching)
 * Made /area_kick no longer trigger autopass notifications on the kicked player
-* Made /getarea and /getareas show the shownames of the players listed if they have set it.
-* Made /showname_area, /ga, /sa aliases of /getarea; and /showname_areas, /gas, /sas aliases of /getareas.
+* Made /getarea and /getareas show the shownames of the players listed if they have set it
+* Made /showname_area, /ga, /sa aliases of /getarea; and /showname_areas, /gas, /sas aliases of /getareas
+* Made /logingm the primary command to log in as GM and /loginrp an alias of it, rather than the other way around
 * Migrated continuous integration from Travis to Github Actions
 * Removed Fantacrypt, DistrictClient, and several other ts3 and AO1 leftovers

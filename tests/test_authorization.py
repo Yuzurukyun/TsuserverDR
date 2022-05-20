@@ -286,7 +286,7 @@ class TestAuthorization_01_GMBasic(_TestAuthorizationSingleRank):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.ooc_command = "loginrp"
+        cls.ooc_command = "logingm"
         cls.ooc_successful_login = 'Logged in as a game master.'
         cls.correct_pass1 = cls.gmpass
         cls.correct_pass2 = cls.daily_gmpass
@@ -335,7 +335,7 @@ class TestAuthorization_04_Integration(_TestAuthorization):
         self.c0.assert_ooc('Invalid password.', over=True)
         self.assertFalse(self.c0.is_cm)
 
-        self.c1.ooc('/loginrp {}'.format(self.wrong))
+        self.c1.ooc('/logingm {}'.format(self.wrong))
         self.c1.assert_ooc('Invalid password.', over=True)
         self.assertFalse(self.c1.is_gm)
 
@@ -347,7 +347,7 @@ class TestAuthorization_04_Integration(_TestAuthorization):
         self.c1.assert_ooc('Invalid password.', over=True)
         self.assertFalse(self.c1.is_mod)
 
-        self.c2.ooc('/loginrp {}'.format(self.wrong))
+        self.c2.ooc('/logingm {}'.format(self.wrong))
         self.c2.assert_ooc('Invalid password.', over=True)
         self.assertFalse(self.c2.is_gm)
 
@@ -359,7 +359,7 @@ class TestAuthorization_04_Integration(_TestAuthorization):
         self.c0.assert_ooc('Invalid password.', over=True)
         self.assertFalse(self.c0.is_gm)
 
-        self.c2.ooc('/loginrp {}'.format(self.wrong))
+        self.c2.ooc('/logingm {}'.format(self.wrong))
         self.c2.assert_ooc('Invalid password.', over=True)
         self.assertFalse(self.c2.is_gm)
 
@@ -384,7 +384,7 @@ class TestAuthorization_04_Integration(_TestAuthorization):
         self.c1.assert_ooc('Logged in as a community manager.', over=True)
         self.assertTrue(self.c1.is_cm)
 
-        self.c0.ooc('/loginrp {}'.format(self.gmpass))
+        self.c0.ooc('/logingm {}'.format(self.gmpass))
         self.c0.assert_packet('FA', None)
         self.c0.assert_packet('FM', None)
         self.c0.assert_ooc('Logged in as a game master.', over=True)
@@ -392,7 +392,7 @@ class TestAuthorization_04_Integration(_TestAuthorization):
                            .format(self.c0.name, self.c0.id), over=True)
         self.assertTrue(self.c0.is_gm)
 
-        self.c0.ooc('/loginrp {}'.format(self.gmpass))
+        self.c0.ooc('/logingm {}'.format(self.gmpass))
         self.c0.assert_ooc('Already logged in.', over=True)
         self.assertTrue(self.c0.is_gm)
 
@@ -507,7 +507,7 @@ class TestAuthorization_04_Integration(_TestAuthorization):
             self.assertFalse(rank2(c2))
 
         x0, x1, x2 = self.c0, self.c1, self.c2
-        oocmod, ooccm, oocgm = "login", "logincm", "loginrp"
+        oocmod, ooccm, oocgm = "login", "logincm", "logingm"
         pmod, pcm, pgm1, pgm2 = self.modpass, self.cmpass, self.gmpass, self.daily_gmpass
         rankmod, rankcm, rankgm = lambda c: c.is_mod, lambda c: c.is_cm, lambda c: c.is_gm
         smod, scm, sgm = ('Logged in as a moderator.',
@@ -535,7 +535,7 @@ class TestAuthorization_04_Integration(_TestAuthorization):
         Situation: A player attempts to log in to multiple ranks simultaneously.
         """
 
-        self.c0.ooc('/loginrp {}'.format(self.gmpass))
+        self.c0.ooc('/logingm {}'.format(self.gmpass))
         self.c0.assert_packet('FA', None)
         self.c0.assert_packet('FM', None)
         self.c0.assert_ooc('Logged in as a game master.', over=True)
@@ -559,7 +559,7 @@ class TestAuthorization_04_Integration(_TestAuthorization):
         self.assertFalse(self.c0.is_cm)
         self.assertFalse(self.c0.is_gm)
 
-        self.c0.ooc('/loginrp {}'.format(self.daily_gmpass))
+        self.c0.ooc('/logingm {}'.format(self.daily_gmpass))
         self.c0.assert_packet('FA', None)
         self.c0.assert_packet('FM', None)
         self.c0.assert_ooc('Logged in as a game master.', over=True)
