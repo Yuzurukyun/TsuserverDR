@@ -3654,16 +3654,29 @@ def ooc_cmd_lasterror(client: ClientManager.Client, arg: str):
 
 
 def ooc_cmd_lights(client: ClientManager.Client, arg: str):
-    """
-    Toggles lights on or off in the background. If area is background locked, it requires mod
-    privileges. If turned off, the background will change to the server's blackout background.
-    If turned on, the background will revert to the background before the blackout one.
+    """ (VARYING PRIVILEGES)
+    Toggles lights "on" or "off" in the current area, or (STAFF ONLY) tries to toggle in each of
+    the areas given, if given.
+    If you are blind and attempt to change the lights, it will only switch the light status rather
+    than follow the "on" or "off" argument.
+    If one of the target's area has its background locked, it requires mod privileges for that
+    area's lights to be turned off.
+    If turned off, the background of the target area will change to the server's blackout
+    background.
+    If turned on, the background of the target area will revert to its non-blackout background.
+    Returns an error if no areas are given and either you are nonmod and the background's area is
+    locked, you are nonstaff and the area has no lights to change, or the new lights status
+    corresponds to the current lights status.
 
     SYNTAX
     /lights <new_status>
+    /lights <new_status> {area_1} {area_2} ...
 
     PARAMETERS
     <new_status>: 'on' or 'off'
+
+    OPTIONAL PARAMETERS
+    {area_n}: Area ID
 
     EXAMPLES
     Assuming lights were initially turned on...
@@ -3671,24 +3684,69 @@ def ooc_cmd_lights(client: ClientManager.Client, arg: str):
     Turns off lights
     >>> /lights on
     Turns on lights
+    >>> /lights on 1 2
+    Tries to turns on lights in areas 1 and 2.
+    >>> /lights off 2 3
+    Tries to turns off lights in areas 2 and 3.
     """
 
     try:
         Constants.assert_command(client, arg, parameters='>0')
     except ArgumentError:
         raise ArgumentError('You must specify either on or off.')
-    if arg not in ['off', 'on']:
+
+    args = arg.split()
+    if len(args) > 1 and not client.is_staff():
+        raise ClientError.UnauthorizedError('You must be authorized to use the more-than-one-'
+                                            'parameter version of this command.')
+
+    if args[0] not in ['off', 'on']:
         raise ClientError('Expected on or off.')
-    if not client.is_staff() and not client.area.has_lights:
-        raise AreaError('This area has no lights to turn off or on.')
-    if not client.is_mod and client.area.bg_lock:
-        raise AreaError('The background of this area is locked.')
 
     if not client.is_staff() and client.is_blind:
         new_lights = not client.area.lights
     else:
-        new_lights = (arg == 'on')
-    client.area.change_lights(new_lights, initiator=client)
+        new_lights = (args[0] == 'on')
+
+    if len(args) == 1:
+        if not client.is_staff() and not client.area.has_lights:
+            raise AreaError('This area has no lights to turn off or on.')
+        if not client.is_mod and client.area.bg_lock:
+            raise AreaError('The background of this area is locked.')
+
+        client.area.change_lights(new_lights, initiator=client)
+    else:
+        # Must be staff to be here.
+        areas = args[1: ]
+        target_areas = Constants.parse_area_names(client, areas)
+
+        cannot_change = list()
+        failed_change = list()
+        success_change = list()
+
+        for area in target_areas:
+            if (not client.is_mod and area.bg_lock) or not area.has_lights:
+                cannot_change.append(area)
+                continue
+            try:
+                area.change_lights(new_lights, initiator=client, area=area)
+                success_change.append(area)
+            except AreaError:
+                failed_change.append(area)
+
+        if cannot_change:
+            client.send_ooc(f'It is not possible to change the lights in these areas: '
+                            f'{Constants.cjoin([area.name for area in cannot_change])}.')
+        if failed_change:
+            client.send_ooc(f'The lights in these areas were already {args[0]}: '
+                            f'{Constants.cjoin([area.name for area in failed_change])}.')
+        if success_change:
+            client.send_ooc(f'You have turned {args[0]} the lights in these areas: '
+                            f'{Constants.cjoin([area.name for area in success_change])}.')
+            client.send_ooc_others(f'(X) {client.displayname} [{client.id}] has turned {args[0]} '
+                                   f'the lights in these areas: '
+                                   f'{Constants.cjoin([area.name for area in success_change])}'
+                                   f'({client.area.id}).', is_zstaff_flex=True)
 
 
 def ooc_cmd_lm(client: ClientManager.Client, arg: str):

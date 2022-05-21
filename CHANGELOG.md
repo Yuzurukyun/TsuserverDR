@@ -745,6 +745,7 @@
 * Made /getarea and /getareas show the shownames of the players listed if they have set it
 * Made /showname_area, /ga, /sa aliases of /getarea; and /showname_areas, /gas, /sas aliases of /getareas
 * Made /logingm the primary command to log in as GM and /loginrp an alias of it, rather than the other way around
+* Made /lights accept optionally for GMs+ area IDs after the "on" or "off" indication to change the lights status in a specific set of areas rather than just the current area
 * Deprecated /rpmode (pending removal in 4.4). All servers will now start with the effects of RP mode on, and in 4.4 will continuously assume the effects of RP mode on
 * Migrated continuous integration from Travis to Github Actions
 * Removed Fantacrypt, DistrictClient, and several other ts3 and AO1 leftovers

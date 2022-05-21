@@ -418,6 +418,9 @@ GMs can:
 * **judgelog** "area"
     - Lists the last 20 judge actions performed in the given area (or current area if not given).
     - Each entry includes the time of execution, client ID, character name, client IPID and the judge action performed.
+* **lights** "on/off" "area 1" "area 2" ...
+    - Changes the light status in the given areas to on or off, or in the current area if not given any.
+    - Areas with lights off will have a dark background, and they disable /getarea(s) and alter /autopass, bleeding, /look and sneaking notifications.
 * **look_clean** "area 1", "area 2", ...
     - Restores the default area descriptions of the given areas by ID or name, or the current area if not given any.
 * **look_list**
@@ -727,6 +730,9 @@ GMs can:
     - Gimps a target so that all their IC messages are replaced with a selection of preset messages.
 * **gm** "message"
     - Sends a serverwide message with mod tag.
+* **lights** "on/off" "area 1" "area 2" ...
+    - Changes the light status in the given areas to on or off, or in the current area if not given any; even if the background of the area is locked.
+    - Areas with lights off will have a dark background, and they disable /getarea(s) and alter /autopass, bleeding, /look and sneaking notifications.
 * **lm** "message"
     - Sends an area OOC message with mod tag.
 * **modlock**
