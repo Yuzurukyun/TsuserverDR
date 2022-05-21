@@ -68,8 +68,8 @@ class TsuserverDR:
         self.release = 4
         self.major_version = 3
         self.minor_version = 2
-        self.segment_version = 'a7'
-        self.internal_version = 'm220519b'
+        self.segment_version = 'a8'
+        self.internal_version = 'm220521a'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
@@ -124,7 +124,7 @@ class TsuserverDR:
         self.load_gimp()
 
         self.ms_client = None
-        self.rp_mode = False
+        self.rp_mode = True
         self.user_auth_req = False
         self.showname_freeze = False
         self.commands = importlib.import_module('server.commands')

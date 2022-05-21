@@ -7075,6 +7075,8 @@ def ooc_cmd_rpmode(client: ClientManager.Client, arg: str):
     Toggles RP mode on/off in the server. If turned on, all non-logged in users will be subject to
     RP rules. Some effects include: unable to use /getarea and /getareas in areas that disable it.
 
+    This command is deprecated and pending removal in 4.4.
+
     SYNTAX
     /rpmode <new_status>
 
@@ -7087,6 +7089,8 @@ def ooc_cmd_rpmode(client: ClientManager.Client, arg: str):
     >>> /rpmode off
     Turns off RP mode.
     """
+
+    client.send_ooc('This command is deprecated and pending removal in 4.4.')
 
     try:
         Constants.assert_command(client, arg, is_staff=True, parameters='=1')
