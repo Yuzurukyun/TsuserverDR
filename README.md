@@ -18,7 +18,7 @@ It is highly recommended you read through all the installation steps first befor
   - If you have Python 3.6 or lower, you will be prompted on server launch to update to a newer version of Python. That is because the server requires Python 3.7 or higher. Follow instructions under Updating to update your Python version.
 
 * Open Command Prompt, PowerShell or your preferred terminal, and change to the directory where you downloaded TsuserverDR to. You can do this in two ways:
-  - On Windows 10, go up one folder above the TsuserverDR folder, Shift + right click the TsuserverDR folder, and click `Open PowerShell window here`. This is the easiest method. Alternatively...
+  - On Windows 10 or higher, go up one folder above the TsuserverDR folder, Shift + right click the TsuserverDR folder, and click `Open PowerShell window here` or `Open in Terminal`. This is the easiest method. Alternatively...
   - On most operating systems, copy the path of the TsuserverDR folder, open the terminal, and type in `cd "[paste here]"`, excluding the brackets, but including the quotation marks if the path contains spaces.
 
 * Install all dependencies by typing in the following two commands in the terminal you just opened:
@@ -34,7 +34,14 @@ It is highly recommended you read through all the installation steps first befor
   ```
 
   This operation should not require administrator privileges, unless you decide to remove the `--user` option.
+
 * Rename the folder `config_sample` to `config` and edit the values in the provided YAML files to your liking. Be sure to check the YAML files for syntax errors after you are done. *Use spaces only; do not use tabs.*
+
+* Open or forward the port that you would like players to connect to. The port number is available in `config/config.yaml` next to `port`, and you may change it to something else if you want to. The port that you choose must be made to accept TCP connections. This whole process may involve you doing some (or all) of the following:
+    - If you are hosting your server in your own device: go to your router settings, and proceed to open/forward/allow inbound connections into the port. You can typically find instructions for this by finding the brand and model name of your router, and searching "brand + model + port forwarding".
+    - If you are hosting your server in an external device (such as a VPS): find its networking settings, and proceed to open/forward/allow inbound connections into the port. You can typically find instructions for this by searching something like this "your VPS + open/forward/allow inbound connections into the port".
+    - Go to your operating system firewall settings, and proceed to create a rule to allow inbound connections into the port. You can typically find instructions for this by searching "your operating system + create inbound port rule".
+    - Go to your third-party antivirus/firewall software settings (if you have it), and proceed to create a rule to allow inbound connections into the port (if applicable). You can typically find instructions for this by searching "your antivirus + open/forward/allow inbound connections into the port".
 
 ### Running
 
@@ -57,7 +64,7 @@ It is highly recommended you read through all the installation steps first befor
 * If you are listing your server in the Attorney Online master server, make sure its details are set up correctly. In particular, make sure that your server name and description are correct, as that is how players will find your server. If everything was set up correctly, you will see something like this appear:
 
 ```
-[2022-05-05T10:20:21]: Attempting to connect to the master server at master.aceattorneyonline.com:27016 with the following details:
+[2022-05-05T10:20:21]: Attempting to connect to the master server at https://servers.aceattorneyonline.com/servers with the following details:
 [2022-05-05T10:20:21]: *Server name: My First DR Server
 [2022-05-05T10:20:21]: *Server description: This is my flashy new DR server
 [2022-05-05T10:20:22]: Connected to the master server.
@@ -86,7 +93,7 @@ It is highly recommended you read through all the installation steps first befor
 
   - This process will not overwrite your server configurations inside the `config` folder, your existing logs inside the `logs` folder, or the user information inside the `storage` folder. However, it will overwrite other files including the Python files inside the `server` folder. Therefore, make sure to save backups of those files before overwriting in case you have modified them and wish to keep an archive of your changes.
 
-* If you want to update **Python** itself, you can get the latest Python download [from their website here](https://www.python.org/downloads/) and then follow the instructions under the Installing section in this readme. To check your current version of Python, you can run ``python`` on its own and look at the first line. The latest stable major Python release is *Python 3.9* as of October 5, 2020.
+* If you want to update **Python** itself, you can get the latest Python download [from their website here](https://www.python.org/downloads/) and then follow the instructions under the Installing section in this readme. To check your current version of Python, you can run ``python`` on its own and look at the first line. The latest stable major Python release is *Python 3.10* as of October 4, 2021.
 
   - Please follow the installation instructions again even if you had successfully ran a server before, because your new Python installation may be missing libraries that TsuserverDR expects there to exist. You should not need to change any server configuration files though.
   - In general, updating to a Python version beyond what is specified as supported may lead to unstable behavior, so for active servers try to keep your Python version among the ones specifically labeled as supported.
