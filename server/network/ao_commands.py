@@ -73,8 +73,7 @@ def net_cmd_hi(client: ClientManager.Client, pargs: Dict[str, Any]):
             client.disconnect()
             return
 
-    if client.hdid != 'ms2-prober' or client.server.config['show_ms2-prober']:
-        logger.log_server(f'Connected. HDID: {client.hdid}.', client)
+    logger.log_server(f'Connected. HDID: {client.hdid}.', client)
     client.send_command_dict('ID', {
         'client_id': client.id,
         'server_software': client.server.software,

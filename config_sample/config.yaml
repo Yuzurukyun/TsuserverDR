@@ -7,26 +7,22 @@
 # port: port that the players connect through (it must be open/forwarded for them to be able to connect)
 # timeout: timeout for automatic client disconnection in seconds (keep above 60)
 # local: if only people in the host machine should be able to connect (i.e. you), ideal if testing setup
-# show_ms2-prober: log ms2-prober connections in the server log, which will happen regularly if your server is public
 
 playerlimit: 100
 port: 50000
 timeout: 250
 local: false
-show_ms2-prober: true
 
 # Master server advertisement configuration
 # use_masterserver: if server should be listed on the master server list
 # masterserver_name: the name of the server, and what will be shown on the master sever list
 # masterserver_description: the description of the server, listed on the server select screen
 # masterserver_ip: the AO master server IP (do not modify)
-# masterserver_port: the AO master server port (do not modify)
 
 use_masterserver: true
 masterserver_name: My First DR Server
 masterserver_description: This is my flashy new DR server
-masterserver_ip: master.aceattorneyonline.com # Keep
-masterserver_port: 27016 # Keep
+masterserver_ip: https://servers.aceattorneyonline.com/servers # Keep
 
 # Passwords for different roles
 # modpass: password for moderators

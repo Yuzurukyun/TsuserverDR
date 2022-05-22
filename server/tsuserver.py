@@ -68,8 +68,8 @@ class TsuserverDR:
         self.release = 4
         self.major_version = 3
         self.minor_version = 2
-        self.segment_version = 'a9'
-        self.internal_version = 'm220521b'
+        self.segment_version = 'a10'
+        self.internal_version = 'm220522a'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
@@ -362,8 +362,6 @@ class TsuserverDR:
 
         # Default values to fill in config.yaml if not present
         defaults_for_tags = {
-            'show_ms2-prober': True,
-
             'discord_link': None,
             'utc_offset': 'local',
 
