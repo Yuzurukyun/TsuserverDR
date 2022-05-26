@@ -628,7 +628,8 @@ class AOProtocol(asyncio.Protocol):
 
         # At this point, the message is guaranteed to be sent
         self.client.publish_inbound_command('MS', pargs)
-        self.client.send_command_dict('ackMS', dict())
+        if self.client.packet_handler.HAS_ACKMS:
+            self.client.send_command_dict('ackMS', dict())
         self.client.pos = pargs['pos']
 
         # First, update last raw message sent *before* any transformations. That is so that the

@@ -647,7 +647,7 @@ class _TestClientManager(ClientManager):
         def sic(self, message, msg_type=0, pre='-', folder=None, anim=None, pos=None, sfx=0,
                 anim_type=0, char_id=None, sfx_delay=0, button=0, evi=None, flip=0, ding=0, color=0,
                 showname=None, video="0", hide_character=0, ignore_timelimit=True,
-                check_ackMS_packet=True):
+                check_ackMS_packet=False):
             if folder is None:
                 folder = self.get_char_name()
             if anim is None:
