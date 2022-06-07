@@ -332,4 +332,6 @@ class AOProtocol(asyncio.Protocol):
                            needs_auth=True),  # char.ini information
         'CharsCheck': _command(function=ao_commands.net_cmd_charscheck,
                                needs_auth=True),  # character availability request
+        'FS': _command(function=ao_commands.net_cmd_fs,
+                       needs_auth=True),  # set files
     }

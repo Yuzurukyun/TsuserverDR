@@ -2494,18 +2494,7 @@ def ooc_cmd_files_set(client: ClientManager.Client, arg: str):
     Sets the download link to Spam_HD to https://example.com
     """
 
-    if arg:
-        client.files = [client.char_folder, arg]
-        client.send_ooc('You have set the download link for the files of `{}` to {}'
-                        .format(client.char_folder, arg))
-        client.send_ooc('Let others access them with /files {}'.format(client.id))
-    else:
-        if client.files:
-            client.send_ooc('You have removed the download link for the files of `{}`.'
-                            .format(client.files[0]))
-            client.files = None
-        else:
-            raise ClientError('You have not provided a download link for your files.')
+    client.change_files(arg)
 
 
 def ooc_cmd_follow(client: ClientManager.Client, arg: str):

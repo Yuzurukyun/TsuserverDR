@@ -317,6 +317,10 @@ class DefaultDROProtocol(_Singleton):
     CHARSCHECK_INBOUND = [
         ]
 
+    FS_INBOUND = [
+        ('url', ArgType.STR_OR_EMPTY),  # 0
+    ]
+
 class ClientDRO1d1d0(DefaultDROProtocol):
     pass
 

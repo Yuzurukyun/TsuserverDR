@@ -751,6 +751,7 @@
 * Made /showname_area, /ga, /sa aliases of /getarea; and /showname_areas, /gas, /sas aliases of /getareas
 * Made /logingm the primary command to log in as GM and /loginrp an alias of it, rather than the other way around
 * Made /lights accept optionally for GMs+ area IDs after the "on" or "off" indication to change the lights status in a specific set of areas rather than just the current area
+* Server now recognizes the "FS" inbound packet from players to set their files.
 * Migrated continuous integration from Travis to Github Actions
 * Deprecated /rpmode (pending removal in 4.4). All servers will now start with the effects of RP mode on, and in 4.4 will continuously assume the effects of RP mode on
 * Deprecated the following fields in `config.yaml` (changing or keeping them will no longer have any effect):

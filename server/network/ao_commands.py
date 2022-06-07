@@ -899,6 +899,13 @@ def net_cmd_charscheck(client: ClientManager.Client, pargs: Dict[str, Any]):
 
     client.refresh_visible_char_list()
 
+def net_cmd_fs(client: ClientManager.Client, pargs: Dict[str, Any]):
+    """
+    Files set.
+    """
+
+    client.change_files(pargs['url'])
+
 
 def net_cmd_pw(self, _):
     # Ignore packet

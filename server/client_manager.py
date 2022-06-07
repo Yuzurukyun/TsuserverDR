@@ -1891,6 +1891,20 @@ class ClientManager:
                     info += '\r\n*{}'.format(log)
             return info
 
+        def change_files(self, url):
+            if url:
+                self.files = [self.char_folder, url]
+                self.send_ooc(f'You have set the download link for the files of '
+                              f'`{self.char_folder}` to {url}')
+                self.send_ooc(f'Let others access them with /files {self.id}.')
+            else:
+                if self.files:
+                    self.send_ooc(f'You have removed the download link for the files of '
+                                  f'`{self.files[0]}`.')
+                    self.files = None
+                else:
+                    raise ClientError('You have not provided a download link for your files.')
+
         def get_info(self, as_mod: bool = False, as_cm: bool = False, identifier=None):
             if identifier is None:
                 identifier = self.id
