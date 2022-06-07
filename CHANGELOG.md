@@ -739,6 +739,10 @@
 * Sending a whisper while sneaked to a nonsneaked player that is not a member of the same party now displays the player's showname to the sneaked player (but still only question marks to the recipient)
 * Fixed some compatibility issues with AO 2.9
 
+### 220516a (4.3.1-post1)
+* Added list of tracks for which server should strive to send ".mp3" versions of for DRO 1.0.2 players
+* Restored old behavior of music in a new area that makes it only start playing for a newcomer player in DRO 1.1.0 once a "loop" of it is done
+
 ### (4.3.2)
 * Servers now advertise using the AO MS3 protocol standard
   - WARNING: this requires server owners, before launching, install a new library, as well as updating the master server IP (available in `config_sample/config.yaml`)

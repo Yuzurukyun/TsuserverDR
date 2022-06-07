@@ -28,7 +28,7 @@ class DefaultDROProtocol(_Singleton):
     def __eq__(self, other):
         return type(self).__name__ == type(other).__name__
 
-    HAS_CLIENTSIDE_MUSIC_LOOPING = True
+    HAS_CLIENTSIDE_MUSIC_LOOPING = False
     HAS_DISTINCT_AREA_AND_MUSIC_LIST_OUTGOING_PACKETS = True
 
     DECRYPTOR_OUTBOUND = [
@@ -764,6 +764,19 @@ class ClientAO2d9d0(DefaultDROProtocol):
         ('name', ''),  # 0
         ('pos', ''),  # 1
         ]
+
+
+class ClientAO2d10(ClientAO2d9d0):
+    ASKCHAA_INBOUND = []
+
+    RC_INBOUND = []
+
+    RM_INBOUND = []
+
+    RD_INBOUND = []
+
+    ZZ_INBOUND = []
+
 
 class ClientKFO2d8(ClientAO2d7):
     pass

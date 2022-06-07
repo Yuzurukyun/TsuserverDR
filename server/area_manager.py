@@ -757,6 +757,7 @@ class AreaManager:
 
                 # Overwrite in case char_id changed (e.g., server looping)
                 loop_pargs['char_id'] = -1
+                loop_pargs['force_same_restart'] = 0
                 self.music_looper_pargs = loop_pargs
 
             loop(True)

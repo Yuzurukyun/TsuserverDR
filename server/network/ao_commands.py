@@ -143,7 +143,9 @@ def net_cmd_id(client: ClientManager.Client, pargs: Dict[str, Any]):
                 client.packet_handler = clients.ClientDRO1d0d0()
         else:  # AO2 protocol
             if release == 2:
-                if major >= 9:
+                if major >= 10:
+                    client.packet_handler = clients.ClientAO2d10()
+                elif major >= 9:
                     client.packet_handler = clients.ClientAO2d9d0()
                 elif major >= 8 and minor >= 4:
                     client.packet_handler = clients.ClientAO2d8d4()

@@ -610,10 +610,9 @@ class ClientManager:
 
         def send_music(self, name=None, char_id=None, showname=None, force_same_restart=None,
                        loop=None, channel=None, effects=None):
-            if not self.packet_handler.HAS_CLIENTSIDE_MUSIC_LOOPING:
-                file_extension_location = name.rfind('.')
-                if file_extension_location >= 0:
-                    name = name[:file_extension_location]
+            if not self.packet_handler.HAS_CLIENTSIDE_MUSIC_LOOPING and self.packet_handler != clients.ClientDRO1d1d0():
+                if name in self.server.new_110_music:
+                    name = name.replace('.opus', '.mp3')
 
             self.send_command_dict('MC', {
                 'name': name,
