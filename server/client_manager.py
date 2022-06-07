@@ -1896,7 +1896,7 @@ class ClientManager:
                 self.files = [self.char_folder, url]
                 self.send_ooc(f'You have set the download link for the files of '
                               f'`{self.char_folder}` to {url}')
-                self.send_ooc(f'Let others access them with /files {self.id}.')
+                self.send_ooc(f'Let others access them with /files {self.id}')
             else:
                 if self.files:
                     self.send_ooc(f'You have removed the download link for the files of '
