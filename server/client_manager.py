@@ -1300,7 +1300,8 @@ class ClientManager:
                 self.send_ooc('Followed user was at {}'.format(area.name))
 
             try:
-                self.change_area(area, ignore_followers=True)
+                self.change_area(area, override_passages=True, override_effects=True,
+                                 ignore_bleeding=True, ignore_autopass=True, ignore_followers=True)
             except ClientError as error:
                 self.send_ooc('Unable to follow to {}: {}'.format(area.name, error))
 

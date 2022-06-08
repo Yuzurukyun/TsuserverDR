@@ -747,6 +747,7 @@
 * Servers now advertise using the AO MS3 protocol standard
   - WARNING: this requires server owners, before launching, install a new library, as well as updating the master server IP (available in `config_sample/config.yaml`)
 * Made /area_kick no longer trigger autopass notifications on the kicked player
+* Made players using /follow to follow another player who is /area_kick'd move to new area of the followee, even if there was no passage from the original area
 * Made /getarea and /getareas show the shownames of the players listed if they have set it
 * Made /showname_area, /ga, /sa aliases of /getarea; and /showname_areas, /gas, /sas aliases of /getareas
 * Made /logingm the primary command to log in as GM and /loginrp an alias of it, rather than the other way around

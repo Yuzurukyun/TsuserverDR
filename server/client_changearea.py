@@ -82,7 +82,7 @@ class ClientChangeArea:
                               code='ChArSneakPrivate')
 
         # Check if area has some sort of lock
-        if client.ipid not in area.invite_list:
+        if not (client.ipid in area.invite_list):
             if area.is_locked and not client.is_staff():
                 raise ClientError('That area is locked.', code='ChArLocked')
             if area.is_gmlocked and not client.is_mod and not client.is_gm:
