@@ -610,10 +610,10 @@ class ClientManager:
 
         def send_music(self, name=None, char_id=None, showname=None, force_same_restart=None,
                        loop=None, channel=None, effects=None):
-            if not self.packet_handler.HAS_CLIENTSIDE_MUSIC_LOOPING:
-                file_extension_location = name.rfind('.')
-                if file_extension_location >= 0:
-                    name = name[:file_extension_location]
+            if not self.packet_handler.HAS_CLIENTSIDE_MUSIC_LOOPING and self.packet_handler != clients.ClientDRO1d1d0():
+                if name in self.server.new_110_music:
+                    name = name.replace('.opus', '.mp3')
+                    name = '/'.join(name.split('/')[1:])
 
             self.send_command_dict('MC', {
                 'name': name,
@@ -1891,6 +1891,20 @@ class ClientManager:
                 for log in self.char_log:
                     info += '\r\n*{}'.format(log)
             return info
+
+        def change_files(self, url):
+            if url:
+                self.files = [self.char_folder, url]
+                self.send_ooc(f'You have set the download link for the files of '
+                              f'`{self.char_folder}` to {url}')
+                self.send_ooc(f'Let others access them with /files {self.id}')
+            else:
+                if self.files:
+                    self.send_ooc(f'You have removed the download link for the files of '
+                                  f'`{self.files[0]}`.')
+                    self.files = None
+                else:
+                    raise ClientError('You have not provided a download link for your files.')
 
         def get_info(self, as_mod: bool = False, as_cm: bool = False, identifier=None):
             if identifier is None:

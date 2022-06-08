@@ -278,12 +278,12 @@ class TestZoneEffect_02_Play(_TestZone):
         self.c4.discard_all()
         self.c5.discard_all()
 
-        self.c1.ooc('/zone_play BOX 15.opus')
-        self.c0.assert_packet('MC', ('BOX 15.opus', 1, '', 1), over=True)
-        self.c1.assert_packet('MC', ('BOX 15.opus', 1, '', 1))
-        self.c1.assert_ooc('You have played track `BOX 15.opus` in your zone.', over=True)
-        self.c2.assert_packet('MC', ('BOX 15.opus', 1, '', 1), over=True)
-        self.c3.assert_packet('MC', ('BOX 15.opus', 1, '', 1), over=True)
+        self.c1.ooc('/zone_play dro_dr1/BOX 15.opus')
+        self.c0.assert_packet('MC', ('dro_dr1/BOX 15.opus', 1, '', 1), over=True)
+        self.c1.assert_packet('MC', ('dro_dr1/BOX 15.opus', 1, '', 1))
+        self.c1.assert_ooc('You have played track `dro_dr1/BOX 15.opus` in your zone.', over=True)
+        self.c2.assert_packet('MC', ('dro_dr1/BOX 15.opus', 1, '', 1), over=True)
+        self.c3.assert_packet('MC', ('dro_dr1/BOX 15.opus', 1, '', 1), over=True)
         self.c4.assert_no_packets()
         self.c5.assert_no_packets()
 

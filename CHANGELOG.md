@@ -739,9 +739,23 @@
 * Sending a whisper while sneaked to a nonsneaked player that is not a member of the same party now displays the player's showname to the sneaked player (but still only question marks to the recipient)
 * Fixed some compatibility issues with AO 2.9
 
-### (4.3.2)
-* Servers now advertise using the AO MS3 protocol standard (WARNING: this requires server owners install a new library before launching)
+### 220516a (4.3.1-post1)
+* Added list of tracks for which server should strive to send ".mp3" versions of for DRO 1.0.2 players
+* Restored old behavior of music in a new area that makes it only start playing for a newcomer player in DRO 1.1.0 once a "loop" of it is done
+
+### 220608a (4.3.2)
+* Servers now advertise using the AO MS3 protocol standard
+  - WARNING: this requires server owners, before launching, install a new library, as well as updating the master server IP (available in `config_sample/config.yaml`)
 * Made /area_kick no longer trigger autopass notifications on the kicked player
 * Made players using /follow to follow another player who is /area_kick'd move to new area of the followee, even if there was no passage from the original area
+* Made /getarea and /getareas show the shownames of the players listed if they have set it
+* Made /showname_area, /ga, /sa aliases of /getarea; and /showname_areas, /gas, /sas aliases of /getareas
+* Made /logingm the primary command to log in as GM and /loginrp an alias of it, rather than the other way around
+* Made /lights accept optionally for GMs+ area IDs after the "on" or "off" indication to change the lights status in a specific set of areas rather than just the current area
+* Server now recognizes the "FS" inbound packet from players to set their files.
 * Migrated continuous integration from Travis to Github Actions
+* Deprecated /rpmode (pending removal in 4.4). All servers will now start with the effects of RP mode on, and in 4.4 will continuously assume the effects of RP mode on
+* Deprecated the following fields in `config.yaml` (changing or keeping them will no longer have any effect):
+  - `masterserver_port`
+  - `show-ms2_prober`
 * Removed Fantacrypt, DistrictClient, and several other ts3 and AO1 leftovers

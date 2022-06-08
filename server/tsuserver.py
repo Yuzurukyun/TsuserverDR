@@ -33,7 +33,8 @@ import ssl
 import sys
 import traceback
 import urllib.request, urllib.error
-# import warnings
+import warnings
+import yaml
 
 from server import logger
 from server.network.ao_protocol import AOProtocol
@@ -68,8 +69,8 @@ class TsuserverDR:
         self.release = 4
         self.major_version = 3
         self.minor_version = 2
-        self.segment_version = 'a6'
-        self.internal_version = 'm220511a'
+        self.segment_version = 'RC2'
+        self.internal_version = 'm220608a'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
@@ -124,7 +125,7 @@ class TsuserverDR:
         self.load_gimp()
 
         self.ms_client = None
-        self.rp_mode = False
+        self.rp_mode = True
         self.user_auth_req = False
         self.showname_freeze = False
         self.commands = importlib.import_module('server.commands')
@@ -134,6 +135,9 @@ class TsuserverDR:
         logger.log_print('Server configurations loaded successfully!')
 
         self.error_queue = None
+        with open('config/110_new_music.yaml') as f:
+            self.new_110_music = set(yaml.load(f, yaml.SafeLoader))
+
         self._server = None
 
     async def start(self):
@@ -362,8 +366,6 @@ class TsuserverDR:
 
         # Default values to fill in config.yaml if not present
         defaults_for_tags = {
-            'show_ms2-prober': True,
-
             'discord_link': None,
             'utc_offset': 'local',
 

@@ -31,13 +31,6 @@ class TestLights_01_Basic(_TestLights):
         self.c3.assert_no_packets()
         self.assert_lights(1, 0)
 
-        self.c0.ooc('/lights on off')
-        self.c0.assert_ooc('Expected on or off.', over=True)
-        self.c1.assert_no_packets()
-        self.c2.assert_no_packets()
-        self.c3.assert_no_packets()
-        self.assert_lights(1, 0)
-
         self.c0.ooc('/lights off')
         self.c0.assert_ooc('The background of this area is locked.', over=True)
         self.c1.assert_no_packets()

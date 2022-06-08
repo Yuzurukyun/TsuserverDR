@@ -73,8 +73,7 @@ def net_cmd_hi(client: ClientManager.Client, pargs: Dict[str, Any]):
             client.disconnect()
             return
 
-    if client.hdid != 'ms2-prober' or client.server.config['show_ms2-prober']:
-        logger.log_server(f'Connected. HDID: {client.hdid}.', client)
+    logger.log_server(f'Connected. HDID: {client.hdid}.', client)
     client.send_command_dict('ID', {
         'client_id': client.id,
         'server_software': client.server.software,
@@ -144,7 +143,9 @@ def net_cmd_id(client: ClientManager.Client, pargs: Dict[str, Any]):
                 client.packet_handler = clients.ClientDRO1d0d0()
         else:  # AO2 protocol
             if release == 2:
-                if major >= 9:
+                if major >= 10:
+                    client.packet_handler = clients.ClientAO2d10()
+                elif major >= 9:
                     client.packet_handler = clients.ClientAO2d9d0()
                 elif major >= 8 and minor >= 4:
                     client.packet_handler = clients.ClientAO2d8d4()
@@ -897,6 +898,13 @@ def net_cmd_charscheck(client: ClientManager.Client, pargs: Dict[str, Any]):
     """
 
     client.refresh_visible_char_list()
+
+def net_cmd_fs(client: ClientManager.Client, pargs: Dict[str, Any]):
+    """
+    Files set.
+    """
+
+    client.change_files(pargs['url'])
 
 
 def net_cmd_pw(self, _):

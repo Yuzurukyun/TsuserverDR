@@ -843,7 +843,7 @@ class Constants():
 
     @staticmethod
     def parse_area_names(client: ClientManager.Client,
-                         areas: AreaManager.Area) -> List[AreaManager.Area]:
+                         areas: List[str]) -> List[AreaManager.Area]:
         """
         Convert a list of area names or IDs into area objects.
         """

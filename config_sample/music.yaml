@@ -1,38 +1,32 @@
-# A sample music list document
-# Each item in a music list is a music category, under which you may list songs.
-# Each song has (and requires) a name field, and optional fields: length in seconds, and source. If given length, the track will automatically loop after length seconds. If given source, source information will be included with /currentmusic
-# To make a track not loop, do not include the length field.
-# Start each music category with a -
-
 - category: --Deadly Life--
   songs:
-    - name: "BOX 15.opus"
-      length: 244
-      source: Danganronpa 1
-    - name: "BOX 16.opus"
-      length: 331
-    - name: "Ikoroshia.opus"
-      length: 282
-    - name: "Ekoroshia.opus"
-      length: 424
-    - name: "Despair Searching.opus"
-      length: 263
-    - name: "Hope Searching.opus"
-      length: 501
-      source: Danganronpa V3
+  - name: dro_dr1/BOX 15.opus
+    length: 244
+  - name: dro_dr1/BOX 16.opus
+    length: 331
+  - name: dro_dr2/Ikoroshia.opus
+    length: 282
+  - name: dro_dr2/Ekoroshia.opus
+    length: 424
+  - name: dro_drv3/Despair Searching.opus
+    length: 263
+  - name: dro_drv3/Hope Searching.opus
+    length: 501
 - category: --Class Trial--
   songs:
-    - name: "Trial Underground.opus"
-      length: 108
-    - name: "Class Trial (Dawn Edition).opus"
-      length: 373
-    - name: "Class Trial (Odd Edition).opus"
-      length: 279
+  - name: dro_dr1/Trial Underground.opus
+    length: 108
+  - name: dro_dr1/Trial Underground.opus
+    length: 108
+  - name: dro_dr1/Class Trial (Dawn Edition).opus
+    length: 373
+  - name: dro_dr2/Class Trial (Odd Edition).opus
+    length: 279
 - category: --Discussion--
   songs:
-    - name: "Discussion -BREAK-.opus"
-      length: 235
-    - name: "Discussion -HEAT UP-.opus"
-      length: 253
-    - name: "Discussion -HOPE VS DESPAIR-.opus"
-      length: 269
+  - name: dro_dr1/Discussion -BREAK-.opus
+    length: 235
+  - name: dro_dr1/Discussion -HEAT UP-.opus
+    length: 253
+  - name: dro_dr1/Discussion -HOPE VS DESPAIR-.opus
+    length: 269
