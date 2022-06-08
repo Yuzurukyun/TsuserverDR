@@ -743,7 +743,7 @@
 * Added list of tracks for which server should strive to send ".mp3" versions of for DRO 1.0.2 players
 * Restored old behavior of music in a new area that makes it only start playing for a newcomer player in DRO 1.1.0 once a "loop" of it is done
 
-### 220608a (4.3.2)
+### 220609a (4.3.2)
 * Servers now advertise using the AO MS3 protocol standard
   - WARNING: this requires server owners, before launching, install a new library, as well as updating the master server IP (available in `config_sample/config.yaml`)
 * Made /area_kick no longer trigger autopass notifications on the kicked player
