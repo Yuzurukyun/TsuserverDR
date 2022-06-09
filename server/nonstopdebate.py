@@ -901,7 +901,8 @@ class NonStopDebate(TrialMinigame):
 
     def _on_area_client_left_final(self, area: AreaManager.Area,
                                    client: ClientManager.Client = None,
-                                   old_displayname: str = None, ignore_bleeding: bool = False):
+                                   old_displayname: str = None, ignore_bleeding: bool = False,
+                                   ignore_autopass: bool = False):
         """
         If a player left to an area not part of the NSD, remove the player and warn them and
         the leaders of the NSD.
@@ -920,6 +921,8 @@ class NonStopDebate(TrialMinigame):
             change only if the client's character or showname are taken. The default is None.
         ignore_bleeding : bool, optional
             If the code should ignore actions regarding bleeding. The default is False.
+        ignore_autopass : bool, optional
+            If the code should ignore actions regarding autopass. The default is False.
 
         Returns
         -------
@@ -967,7 +970,9 @@ class NonStopDebate(TrialMinigame):
     def _on_area_client_entered_final(self, area: AreaManager.Area,
                                       client: ClientManager.Client = None,
                                       old_area: AreaManager.Area = None,
-                                      old_displayname: str = None, ignore_bleeding: bool = False):
+                                      old_displayname: str = None,
+                                      ignore_bleeding: bool = False,
+                                      ignore_autopass: bool = False):
         """
         If a non-player entered, warn them and the leaders of the NSD.
 
@@ -984,6 +989,8 @@ class NonStopDebate(TrialMinigame):
             change only if the client's character or showname are taken. The default is None.
         ignore_bleeding : bool, optional
             If the code should ignore actions regarding bleeding. The default is False.
+        ignore_autopass : bool, optional
+            If the code should ignore actions regarding autopass. The default is False.
 
         Returns
         -------

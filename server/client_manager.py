@@ -23,6 +23,7 @@ from typing import Any, Callable, List, Optional, Set, Tuple, Dict
 if typing.TYPE_CHECKING:
     # Avoid circular referencing
     from server.area_manager import AreaManager
+    from server.network.ao_protocol import AOProtocol
     from server.tsuserver import TsuserverDR
     from server.zone_manager import ZoneManager
 
@@ -32,20 +33,20 @@ import time
 
 from server import clients
 from server import client_changearea
-from server import fantacrypt
 from server import logger
 from server.exceptions import AreaError, ClientError, GameError, PartyError, TrialError
 from server.constants import TargetType, Constants
 from server.subscriber import Publisher
-from server.timer_manager import TimerManager
 
 
 class ClientManager:
     class Client:
         def __init__(self, server: TsuserverDR, transport, user_id: int, ipid: int,
-                     my_protocol=None, ip=None):
+                     protocol: AOProtocol = None):
             self.server = server
             self.transport = transport
+            self.protocol = protocol
+            self.ip = transport.get_extra_info('peername')[0] if transport else "127.0.0.1"
             self.area_changer = client_changearea.ClientChangeArea(self)
             self.required_packets_received = set()  # Needs to have length 2 to actually connect
             self.can_askchaa = True  # Needs to be true to process an askchaa packet
@@ -148,35 +149,8 @@ class ClientManager:
             self.mflood_mutelength = self.server.config['music_change_floodguard']['mute_length']
             self.mflood_log = list()
 
-        def send_raw_message(self, msg: str):
-            # Only send messages to players that are.. players who are still connected
-            # This should only be relevant in the case there is a function that requests packets
-            # be sent to multiple clients, but the function does not check if all targets are
-            # still clients.
-            if self.server.is_client(self):
-                if self.server.print_packets:
-                    print(f'< {self.id}: {msg}')
-                self.server.log_packet(self, msg, False)
-                self.transport.write(msg.encode('utf-8'))
-            else:
-                if self.server.print_packets:
-                    print(f'< {self.id}: {msg} || FAILED: Socket closed')
-
         def send_command(self, command: str, *args: List):
-            if args:
-                if command == 'MS':
-                    for evi_num in range(len(self.evi_list)):
-                        if self.evi_list[evi_num] == args[11]:
-                            lst = list(args)
-                            lst[11] = evi_num
-                            args = tuple(lst)
-                            break
-
-            command, *args = Constants.encode_ao_packet([command] + list(args))
-            message = f'{command}#'
-            for arg in args:
-                message += f'{arg}#'
-            self.send_raw_message(message + '%')
+            self.protocol.data_send(command, *args)
 
         def send_command_dict(self, command, dargs):
             _, to_send = self.prepare_command(command, dargs)
@@ -639,6 +613,7 @@ class ClientManager:
             if not self.packet_handler.HAS_CLIENTSIDE_MUSIC_LOOPING and self.packet_handler != clients.ClientDRO1d1d0():
                 if name in self.server.new_110_music:
                     name = name.replace('.opus', '.mp3')
+                    name = '/'.join(name.split('/')[1:])
 
             self.send_command_dict('MC', {
                 'name': name,
@@ -919,10 +894,11 @@ class ClientManager:
             return results
 
         def notify_change_area(self, area: AreaManager.Area, old_char: str,
-                               ignore_bleeding: bool = False,
+                               ignore_bleeding: bool = False, ignore_autopass: bool = False,
                                just_me: bool = False) -> bool:
             return self.area_changer.notify_change_area(
-                area, old_char, ignore_bleeding=ignore_bleeding, just_me=just_me)
+                area, old_char, ignore_bleeding=ignore_bleeding, ignore_autopass=ignore_autopass,
+                just_me=just_me)
 
         def check_lurk(self):
             if self.area.lurk_length > 0 and not self.is_staff() and self.char_id >= 0:
@@ -936,12 +912,14 @@ class ClientManager:
         def change_area(self, area: AreaManager.Area, override_all: bool = False,
                         override_passages: bool = False, override_effects: bool = False,
                         ignore_bleeding: bool = False, ignore_followers: bool = False,
+                        ignore_autopass: bool = False,
                         ignore_checks: bool = False, ignore_notifications: bool = False,
                         more_unavail_chars: Set[int] = None,
                         change_to: int = None, from_party: bool = False):
             self.area_changer.change_area(
                 area, override_all=override_all, override_passages=override_passages,
                 override_effects=override_effects, ignore_bleeding=ignore_bleeding,
+                ignore_autopass=ignore_autopass,
                 ignore_followers=ignore_followers, ignore_checks=ignore_checks,
                 ignore_notifications=ignore_notifications, change_to=change_to,
                 more_unavail_chars=more_unavail_chars, from_party=from_party)
@@ -1322,7 +1300,8 @@ class ClientManager:
                 self.send_ooc('Followed user was at {}'.format(area.name))
 
             try:
-                self.change_area(area, ignore_followers=True)
+                self.change_area(area, override_passages=True, override_effects=True,
+                                 ignore_bleeding=True, ignore_autopass=True, ignore_followers=True)
             except ClientError as error:
                 self.send_ooc('Unable to follow to {}: {}'.format(area.name, error))
 
@@ -1584,7 +1563,7 @@ class ClientManager:
                 'unknown': 1,
                 })
             self.send_command_dict('OPPASS', {
-                'guard_pass': fantacrypt.fanta_encrypt(self.server.config['guardpass']),
+                'guard_pass': '',
                 })
 
             if self.char_id is None:
@@ -1913,6 +1892,20 @@ class ClientManager:
                     info += '\r\n*{}'.format(log)
             return info
 
+        def change_files(self, url):
+            if url:
+                self.files = [self.char_folder, url]
+                self.send_ooc(f'You have set the download link for the files of '
+                              f'`{self.char_folder}` to {url}')
+                self.send_ooc(f'Let others access them with /files {self.id}')
+            else:
+                if self.files:
+                    self.send_ooc(f'You have removed the download link for the files of '
+                                  f'`{self.files[0]}`.')
+                    self.files = None
+                else:
+                    raise ClientError('You have not provided a download link for your files.')
+
         def get_info(self, as_mod: bool = False, as_cm: bool = False, identifier=None):
             if identifier is None:
                 identifier = self.id
@@ -2022,7 +2015,7 @@ class ClientManager:
 
     def __init__(self, server: TsuserverDR, client_obj: typing.Type[ClientManager.Client] = None):
         if client_obj is None:
-            self.client_obj = self.Client
+            client_obj = self.Client
 
         self.clients: Set[client_obj] = set()
         self.server = server
@@ -2061,18 +2054,19 @@ class ClientManager:
         self.phantom_peek_timer.start()
 
     def new_client(self, transport, client_obj: typing.Type[ClientManager.Client] = None,
-                   my_protocol=None):
-        ipid = None
+                   protocol=None):
+        ip = transport.get_extra_info('peername')[0] if transport else "127.0.0.1"
+        ipid = self.server.get_ipid(ip)
 
         if client_obj is None:
-            client_obj = self.Client
+            client_obj = self.client_obj
 
         cur_id = -1
         for i in range(self.server.config['playerlimit']):
             if not self.cur_id[i]:
                 cur_id = i
                 break
-        c = client_obj(self.server, transport, cur_id, ipid, my_protocol=my_protocol)
+        c = client_obj(self.server, transport, cur_id, ipid, protocol=protocol)
         self.clients.add(c)
 
         # Check if server is full, and if so, send number of players and disconnect
@@ -2081,11 +2075,10 @@ class ClientManager:
                 'player_count': self.server.get_player_count(),
                 'player_limit': self.server.config['playerlimit']
                 })
-            c.disconnect()
-            return c
+            return c, False
         self.cur_id[cur_id] = True
         self.server.tasker.client_tasks[cur_id] = dict()
-        return c
+        return c, True
 
     def remove_client(self, client: ClientManager.Client):
         # Clients who are following the now leaving client should no longer follow them

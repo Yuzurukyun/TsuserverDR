@@ -37,15 +37,14 @@ import warnings
 import yaml
 
 from server import logger
-from server.aoprotocol import AOProtocol
+from server.network.ao_protocol import AOProtocol
 from server.area_manager import AreaManager
 from server.ban_manager import BanManager
 from server.constants import Constants
 from server.client_manager import ClientManager
-from server.districtclient import DistrictClient
 from server.exceptions import ServerError
 from server.game_manager import GameManager
-from server.masterserverclient import MasterServerClient
+from server.network.ms3_protocol import MasterServerClient
 from server.party_manager import PartyManager
 from server.tasker import Tasker
 from server.timer_manager import TimerManager
@@ -69,9 +68,9 @@ class TsuserverDR:
 
         self.release = 4
         self.major_version = 3
-        self.minor_version = 1
-        self.segment_version = 'post1'
-        self.internal_version = '220516a'
+        self.minor_version = 2
+        self.segment_version = ''
+        self.internal_version = '220609a'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
@@ -88,7 +87,6 @@ class TsuserverDR:
 
         self.config = None
         self.local_connection = None
-        self.district_connection = None
         self.masterserver_connection = None
         self.shutting_down = False
         self.loop = None
@@ -126,9 +124,8 @@ class TsuserverDR:
         self.load_ids()
         self.load_gimp()
 
-        self.district_client = None
         self.ms_client = None
-        self.rp_mode = False
+        self.rp_mode = True
         self.user_auth_req = False
         self.showname_freeze = False
         self.commands = importlib.import_module('server.commands')
@@ -207,20 +204,12 @@ class TsuserverDR:
         if self.config['local']:
             self.local_connection = asyncio.create_task(self.tasker.do_nothing())
 
-        if self.config['use_district']:
-            self.district_client = DistrictClient(self)
-            self.district_connection = asyncio.create_task(self.district_client.connect())
-            print(' ')
-            logger.log_print('Attempting to connect to district at {}:{}.'
-                             .format(self.config['district_ip'], self.config['district_port']))
-
         if self.config['use_masterserver']:
             self.ms_client = MasterServerClient(self)
             self.masterserver_connection = asyncio.create_task(self.ms_client.connect())
             print(' ')
-            logger.log_print('Attempting to connect to the master server at {}:{} with the '
-                             'following details:'.format(self.config['masterserver_ip'],
-                                                         self.config['masterserver_port']))
+            logger.log_print('Attempting to connect to the master server at {} with the '
+                             'following details:'.format(self.config['masterserver_ip']))
             logger.log_print('*Server name: {}'.format(self.config['masterserver_name']))
             logger.log_print('*Server description: {}'
                              .format(self.config['masterserver_description']))
@@ -232,14 +221,10 @@ class TsuserverDR:
         # Cleanup operations
         self.shutting_down = True
 
-        # Cancel further polling for district/master server
+        # Cancel further polling for master server
         if self.local_connection:
             self.local_connection.cancel()
             await self.tasker.await_cancellation(self.local_connection)
-
-        if self.district_connection:
-            self.district_connection.cancel()
-            await self.tasker.await_cancellation(self.district_connection)
 
         if self.masterserver_connection:
             self.masterserver_connection.cancel()
@@ -308,14 +293,14 @@ class TsuserverDR:
         entry = ('R:' if incoming else 'S:', Constants.get_time_iso(), str(client.id), packet)
         self.logged_packets.append(entry)
 
-    def new_client(self, transport, ip=None, my_protocol=None) -> ClientManager.Client:
-        c = self.client_manager.new_client(transport, my_protocol=my_protocol)
+    def new_client(self, transport, protocol=None) -> Tuple[ClientManager.Client, bool]:
+        c, valid = self.client_manager.new_client(transport, protocol=protocol)
         if self.rp_mode:
             c.in_rp = True
         c.server = self
         c.area = self.area_manager.default_area()
         c.area.new_client(c)
-        return c
+        return c, valid
 
     def remove_client(self, client: ClientManager.Client):
         client.area.remove_client(client)
@@ -381,8 +366,6 @@ class TsuserverDR:
 
         # Default values to fill in config.yaml if not present
         defaults_for_tags = {
-            'show_ms2-prober': True,
-
             'discord_link': None,
             'utc_offset': 'local',
 
@@ -740,12 +723,6 @@ class TsuserverDR:
                     return name, length, source
         raise ServerError.MusicNotFoundError('Music not found.')
 
-    def send_all_cmd_pred(self, cmd: str, *args: List[str],
-                          pred: Callable[[ClientManager.Client], bool] = lambda x: True):
-        for client in self.get_clients():
-            if pred(client):
-                client.send_command(cmd, *args)
-
     def make_all_clients_do(self, function: str, *args: List[str],
                             pred: Callable[[ClientManager.Client], bool] = lambda x: True,
                             **kwargs):
@@ -817,10 +794,6 @@ class TsuserverDR:
             else:
                 c.send_ooc(msg, username=ooc_name)
 
-        if self.config['use_district']:
-            msg = 'GLOBAL#{}#{}#{}#{}'.format(int(as_mod), client.area.id, username, msg)
-            self.district_client.send_raw_message(msg)
-
     def broadcast_need(self, client: ClientManager.Client, msg: str):
         char_name = client.displayname
         area_name = client.area.name
@@ -831,7 +804,3 @@ class TsuserverDR:
                .format(char_name, area_name, area_id, msg))
         for c in targets:
             c.send_ooc(msg)
-
-        if self.config['use_district']:
-            msg = 'NEED#{}#{}#{}#{}'.format(char_name, area_name, area_id, msg)
-            self.district_client.send_raw_message(msg)

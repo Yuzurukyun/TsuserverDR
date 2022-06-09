@@ -164,7 +164,8 @@ def ooc_cmd_area_kick(client: ClientManager.Client, arg: str):
         old_area = c.area
 
         try:
-            c.change_area(area, override_passages=True, override_effects=True, ignore_bleeding=True)
+            c.change_area(area, override_passages=True, override_effects=True, ignore_bleeding=True,
+                          ignore_autopass=True)
         except ClientError as error:
             error_mes = ", ".join([str(s) for s in error.args])
             client.send_ooc('Unable to kick client {} ({}) to area {}: {}'
@@ -182,7 +183,8 @@ def ooc_cmd_area_kick(client: ClientManager.Client, arg: str):
                 try:  # Try and remove the IPID from the area's invite list
                     old_area.invite_list.pop(c.ipid)
                 except KeyError:
-                    pass  # only happens if target had joined the locked area through mod powers
+                    # only happens if target joined the locked area through mod powers
+                    pass
 
             if client.party:
                 party = client.party
@@ -2493,18 +2495,7 @@ def ooc_cmd_files_set(client: ClientManager.Client, arg: str):
     Sets the download link to Spam_HD to https://example.com
     """
 
-    if arg:
-        client.files = [client.char_folder, arg]
-        client.send_ooc('You have set the download link for the files of `{}` to {}'
-                        .format(client.char_folder, arg))
-        client.send_ooc('Let others access them with /files {}'.format(client.id))
-    else:
-        if client.files:
-            client.send_ooc('You have removed the download link for the files of `{}`.'
-                            .format(client.files[0]))
-            client.files = None
-        else:
-            raise ClientError('You have not provided a download link for your files.')
+    client.change_files(arg)
 
 
 def ooc_cmd_follow(client: ClientManager.Client, arg: str):
@@ -2640,11 +2631,14 @@ def ooc_cmd_getarea(client: ClientManager.Client, arg: str):
     EXAMPLE
     If Phantom is a staff member in area 0
     >>> /getarea
-    Lists characters in area 0
+    | $H: == Area 0: Basement ==
+    | [0] Phantom_HD
+    | [1] Spam_HD (Spam, Spam, Spam...)
     >>> /getarea 1
-    Lists characters in area 1.
-    >>> /getarea Basement
-    Lists characters in area Basement.
+    May return something like this:
+    | $H: == Area 1: Courtroom ==
+    | [2] Eggs_HD (Eggy Egg)
+    | [3] Judge_HD (Gavel Guy)
     """
 
     if arg:
@@ -2658,7 +2652,7 @@ def ooc_cmd_getarea(client: ClientManager.Client, arg: str):
     if not client.is_staff() and client.is_blind:
         raise ClientError('You are blind, so you cannot see anything.')
 
-    client.send_area_info(client.area, area_id, False)
+    client.send_area_info(client.area, area_id, False, include_shownames=True)
 
 
 def ooc_cmd_getareas(client: ClientManager.Client, arg: str):
@@ -2675,6 +2669,13 @@ def ooc_cmd_getareas(client: ClientManager.Client, arg: str):
 
     EXAMPLE
     >>> /getareas
+    May return something like this:
+    | $H: == Area List ==
+    | == Area 0: Basement ==
+    | [0] Phantom_HD
+    | [1] Spam_HD (Spam, Spam, Spam...)
+    | == Area 1: Class Trial Room 1 ==
+    | [2] Eggs_HD (Not Spam?)
     """
 
     Constants.assert_command(client, arg, parameters='=0')
@@ -2682,7 +2683,7 @@ def ooc_cmd_getareas(client: ClientManager.Client, arg: str):
     if not client.is_staff() and client.is_blind:
         raise ClientError('You are blind, so you cannot see anything.')
 
-    client.send_area_info(client.area, -1, False)
+    client.send_area_info(client.area, -1, False, include_shownames=True)
 
 
 def ooc_cmd_gimp(client: ClientManager.Client, arg: str):
@@ -3643,16 +3644,29 @@ def ooc_cmd_lasterror(client: ClientManager.Client, arg: str):
 
 
 def ooc_cmd_lights(client: ClientManager.Client, arg: str):
-    """
-    Toggles lights on or off in the background. If area is background locked, it requires mod
-    privileges. If turned off, the background will change to the server's blackout background.
-    If turned on, the background will revert to the background before the blackout one.
+    """ (VARYING PRIVILEGES)
+    Toggles lights "on" or "off" in the current area, or (STAFF ONLY) tries to toggle in each of
+    the areas given, if given.
+    If you are blind and attempt to change the lights, it will only switch the light status rather
+    than follow the "on" or "off" argument.
+    If one of the target's area has its background locked, it requires mod privileges for that
+    area's lights to be turned off.
+    If turned off, the background of the target area will change to the server's blackout
+    background.
+    If turned on, the background of the target area will revert to its non-blackout background.
+    Returns an error if no areas are given and either you are nonmod and the background's area is
+    locked, you are nonstaff and the area has no lights to change, or the new lights status
+    corresponds to the current lights status.
 
     SYNTAX
     /lights <new_status>
+    /lights <new_status> {area_1} {area_2} ...
 
     PARAMETERS
     <new_status>: 'on' or 'off'
+
+    OPTIONAL PARAMETERS
+    {area_n}: Area ID
 
     EXAMPLES
     Assuming lights were initially turned on...
@@ -3660,24 +3674,69 @@ def ooc_cmd_lights(client: ClientManager.Client, arg: str):
     Turns off lights
     >>> /lights on
     Turns on lights
+    >>> /lights on 1 2
+    Tries to turns on lights in areas 1 and 2.
+    >>> /lights off 2 3
+    Tries to turns off lights in areas 2 and 3.
     """
 
     try:
         Constants.assert_command(client, arg, parameters='>0')
     except ArgumentError:
         raise ArgumentError('You must specify either on or off.')
-    if arg not in ['off', 'on']:
+
+    args = arg.split()
+    if len(args) > 1 and not client.is_staff():
+        raise ClientError.UnauthorizedError('You must be authorized to use the more-than-one-'
+                                            'parameter version of this command.')
+
+    if args[0] not in ['off', 'on']:
         raise ClientError('Expected on or off.')
-    if not client.is_staff() and not client.area.has_lights:
-        raise AreaError('This area has no lights to turn off or on.')
-    if not client.is_mod and client.area.bg_lock:
-        raise AreaError('The background of this area is locked.')
 
     if not client.is_staff() and client.is_blind:
         new_lights = not client.area.lights
     else:
-        new_lights = (arg == 'on')
-    client.area.change_lights(new_lights, initiator=client)
+        new_lights = (args[0] == 'on')
+
+    if len(args) == 1:
+        if not client.is_staff() and not client.area.has_lights:
+            raise AreaError('This area has no lights to turn off or on.')
+        if not client.is_mod and client.area.bg_lock:
+            raise AreaError('The background of this area is locked.')
+
+        client.area.change_lights(new_lights, initiator=client)
+    else:
+        # Must be staff to be here.
+        areas = args[1: ]
+        target_areas = Constants.parse_area_names(client, areas)
+
+        cannot_change = list()
+        failed_change = list()
+        success_change = list()
+
+        for area in target_areas:
+            if (not client.is_mod and area.bg_lock) or not area.has_lights:
+                cannot_change.append(area)
+                continue
+            try:
+                area.change_lights(new_lights, initiator=client, area=area)
+                success_change.append(area)
+            except AreaError:
+                failed_change.append(area)
+
+        if cannot_change:
+            client.send_ooc(f'It is not possible to change the lights in these areas: '
+                            f'{Constants.cjoin([area.name for area in cannot_change])}.')
+        if failed_change:
+            client.send_ooc(f'The lights in these areas were already {args[0]}: '
+                            f'{Constants.cjoin([area.name for area in failed_change])}.')
+        if success_change:
+            client.send_ooc(f'You have turned {args[0]} the lights in these areas: '
+                            f'{Constants.cjoin([area.name for area in success_change])}.')
+            client.send_ooc_others(f'(X) {client.displayname} [{client.id}] has turned {args[0]} '
+                                   f'the lights in these areas: '
+                                   f'{Constants.cjoin([area.name for area in success_change])}'
+                                   f'({client.area.id}).', is_zstaff_flex=True)
 
 
 def ooc_cmd_lm(client: ClientManager.Client, arg: str):
@@ -3775,18 +3834,18 @@ def ooc_cmd_logincm(client: ClientManager.Client, arg: str):
     client.login(arg, client.auth_cm, 'community manager')
 
 
-def ooc_cmd_loginrp(client: ClientManager.Client, arg: str):
+def ooc_cmd_logingm(client: ClientManager.Client, arg: str):
     """
     Logs you in as a game master, provided you input the correct password.
 
     SYNTAX
-    /loginrp <gm_password>
+    /logingm <gm_password>
 
     PARAMETERS
     <gm_password>: Game master password, found in config/config.yaml
 
     EXAMPLES
-    >>> /loginrp GM
+    >>> /logingm GM
     Attempt to log in as game master with "GM" as password.
     """
 
@@ -6389,10 +6448,10 @@ def ooc_cmd_play(client: ClientManager.Client, arg: str):
     <track_name>: Track to play
 
     EXAMPLES
-    >>> /play Trial(AJ).mp3
-    Plays Trial(AJ).mp3.
-    >>> /play CustomTrack.mp3
-    Plays CustomTrack.mp3, which will only be audible to users with CustomTrack.mp3.
+    >>> /play Trial(AJ).opus
+    Plays Trial(AJ).opus.
+    >>> /play CustomTrack.opus
+    Plays CustomTrack.opus, which will only be audible to users with CustomTrack.opus.
     """
 
     try:
@@ -6693,7 +6752,7 @@ def ooc_cmd_randommusic(client: ClientManager.Client, arg: str):
 
     EXAMPLES:
     >>> /randommusic
-    May play 'Ikoroshia.mp3', 'Despair Searching.mp3', etc.
+    May play 'Ikoroshia.opus', 'Despair Searching.opus', etc.
     """
 
     Constants.assert_command(client, arg, parameters='=0')
@@ -7023,10 +7082,10 @@ def ooc_cmd_rplay(client: ClientManager.Client, arg: str):
     <track_name>: Track to play
 
     EXAMPLES
-    >>> /rplay Trial(AJ).mp3
-    Plays Trial(AJ).mp3.
-    >>> /rplay CustomTrack.mp3
-    Plays CustomTrack.mp3, which will only be audible to users with CustomTrack.mp3.
+    >>> /rplay Trial(AJ).opus
+    Plays Trial(AJ).opus.
+    >>> /rplay CustomTrack.opus
+    Plays CustomTrack.opus, which will only be audible to users with CustomTrack.opus.
     """
 
     try:
@@ -7064,6 +7123,8 @@ def ooc_cmd_rpmode(client: ClientManager.Client, arg: str):
     Toggles RP mode on/off in the server. If turned on, all non-logged in users will be subject to
     RP rules. Some effects include: unable to use /getarea and /getareas in areas that disable it.
 
+    This command is deprecated and pending removal in 4.4.
+
     SYNTAX
     /rpmode <new_status>
 
@@ -7076,6 +7137,8 @@ def ooc_cmd_rpmode(client: ClientManager.Client, arg: str):
     >>> /rpmode off
     Turns off RP mode.
     """
+
+    client.send_ooc('This command is deprecated and pending removal in 4.4.')
 
     try:
         Constants.assert_command(client, arg, is_staff=True, parameters='=1')
@@ -7421,84 +7484,6 @@ def ooc_cmd_showname(client: ClientManager.Client, arg: str):
     """
 
     client.command_change_showname(arg, True)
-
-
-def ooc_cmd_showname_area(client: ClientManager.Client, arg: str):
-    """
-    List the characters (and associated client IDs) in the current area, as well as their custom
-    shownames if they have one in parentheses.
-    OR (STAFF ONLY) lists the character (and associated client IDs) in the given area by area ID or
-    name as well as their custom shownames if they have one in parentheses.
-    Returns an error if you are subject to RP mode and are in an area that disables /getarea, if
-    you are blind and not staff, or if the given identifier does not correspond to an area.
-
-    SYNTAX
-    /showname_area
-    /showname_area <target_area>
-
-    PARAMETERS
-    None
-
-    OPTIONAL PARAMETERS
-    {target_area}: The area whose characters will be listed.
-
-    EXAMPLES
-    Assuming Phantom is in area 0...
-    >>> /showname_area
-    May return something like this:
-    | $H: == Area 0: Basement ==
-    | [0] Phantom_HD
-    | [1] Spam_HD (Spam, Spam, Spam...)
-    >>> /showname_area Courtroom
-    May return something like this:
-    | $H: == Area 8: Courtroom ==
-    | [2] Eggs_HD (Eggy Egg)
-    | [3] Judge_HD (Gavel Guy)
-    """
-
-    if arg:
-        if not client.is_staff():
-            raise ClientError.UnauthorizedError('You must be authorized to use the one-parameter '
-                                                'version of this command.')
-        area_id = Constants.parse_area_names(client, [arg])[0].id
-    else:
-        area_id = client.area.id
-
-    if not client.is_staff() and client.is_blind:
-        raise ClientError('You are blind, so you cannot see anything.')
-
-    client.send_area_info(client.area, area_id, False, include_shownames=True)
-
-
-def ooc_cmd_showname_areas(client: ClientManager.Client, arg: str):
-    """
-    List the characters (and associated client IDs) in each area, as well as their custom shownames
-    if they have one in parentheses.
-    Returns an error if you are subject to RP mode and is in an area that disables /getareas
-    or if you are blind.
-
-    SYNTAX
-    /showname_areas
-
-    PARAMETERS
-    None
-
-    EXAMPLE
-    >>> /showname_areas
-    May return something like this:
-    | $H: == Area List ==
-    | == Area 0: Basement ==
-    | [0] Phantom_HD
-    | [1] Spam_HD (Spam, Spam, Spam...)
-    | == Area 1: Class Trial Room 1 ==
-    | [2] Eggs_HD (Not Spam?)
-    """
-
-    Constants.assert_command(client, arg, parameters='=0')
-    if not client.is_staff() and client.is_blind:
-        raise ClientError('You are blind, so you cannot see anything.')
-
-    client.send_area_info(client.area, -1, False, include_shownames=True)
 
 
 def ooc_cmd_showname_freeze(client: ClientManager.Client, arg: str):
@@ -10655,10 +10640,10 @@ def ooc_cmd_zone_play(client: ClientManager.Client, arg: str):
 
     EXAMPLES
     Assuming you are watching zone z0...
-    >>> /zone_play Trial(AJ).mp3
-    Plays Trial(AJ).mp3 for all areas in zone z0.
-    >>> /zone_play CustomTrack.mp3
-    Plays CustomTrack.mp3, which will only be audible to users with CustomTrack.mp3) for all areas
+    >>> /zone_play Trial(AJ).opus
+    Plays Trial(AJ).opus for all areas in zone z0.
+    >>> /zone_play CustomTrack.opus
+    Plays CustomTrack.opus, which will only be audible to users with CustomTrack.opus) for all areas
     in zone z0.
     """
 
