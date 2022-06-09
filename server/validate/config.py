@@ -45,7 +45,6 @@ class ValidateConfig(Validate):
             'masterserver_name',
             'masterserver_description',
             'masterserver_ip',
-            'masterserver_port',
 
             'announce_areas',
             'motd',
@@ -112,13 +111,11 @@ class ValidateConfig(Validate):
             'port': int,
             'timeout': (float, int),
             'local': bool,
-            'show_ms2-prober': bool,
 
             'use_masterserver': bool,
             'masterserver_name': str,
             'masterserver_description': str,
             'masterserver_ip': str,
-            'masterserver_port': int,
 
             'announce_areas': bool,
             'motd': str,
@@ -171,8 +168,6 @@ class ValidateConfig(Validate):
             'playerlimit',
             'port',
             'timeout',
-
-            'masterserver_port',
 
             'max_numdice',
             'max_numfaces',

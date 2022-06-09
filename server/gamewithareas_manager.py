@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import functools
 import typing
-from typing import Dict, Set
+from typing import Dict, Set, Any
 
 from server.exceptions import GameWithAreasError, GameError
 from server.game_manager import _Game, GameManager
@@ -508,7 +508,7 @@ class GameWithAreas(_Game):
                 f'teams={self.get_teams()}')
 
     def _on_area_client_left_final(self, area, client=None, old_displayname=None,
-                                   ignore_bleeding=False):
+                                   ignore_bleeding=False, ignore_autopass=False):
         """
         Default callback for game area signaling a client left. This is executed after all other
         actions related to moving the player to a new area have been executed: in particular,
@@ -529,6 +529,8 @@ class GameWithAreas(_Game):
             change only if the client's character or showname are taken. The default is None.
         ignore_bleeding : bool, optional
             If the code should ignore actions regarding bleeding. The default is False.
+        ignore_autopass : bool, optional
+            If the code should ignore actions regarding autopass. The default is False.
 
         Returns
         -------
@@ -546,7 +548,8 @@ class GameWithAreas(_Game):
                                       client: ClientManager.Client = None,
                                       old_area: AreaManager.Area = None,
                                       old_displayname: str = None,
-                                      ignore_bleeding: bool = False):
+                                      ignore_bleeding: bool = False,
+                                      ignore_autopass: bool = False):
         """
         Default callback for game area signaling a client entered.
 
@@ -566,6 +569,8 @@ class GameWithAreas(_Game):
             change only if the client's character or showname are taken. The default is None.
         ignore_bleeding : bool, optional
             If the code should ignore actions regarding bleeding. The default is False.
+        ignore_autopass : bool, optional
+            If the code should ignore actions regarding autopass. The default is False.
 
         Returns
         -------

@@ -1,14 +1,14 @@
 - category: --Deadly Life--
-  songs: 
-    - name: "BOX 15.mp3"
+  songs:
+    - name: "BOX 15.opus"
       length: 244
-    - name: "BOX 16.mp3"
+    - name: "BOX 16.opus"
       length: 331
-    - name: "Ikoroshia.mp3"
+    - name: "Ikoroshia.opus"
       length: 282
-    - name: "Ekoroshia.mp3"
+    - name: "Ekoroshia.opus"
       length: 424
-    - name: "Despair Searching.mp3"
+    - name: "Despair Searching.opus"
       length: 263
-    - name: "Hope Searching.mp3"
+    - name: "Hope Searching.opus"
       length: 501

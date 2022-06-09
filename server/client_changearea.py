@@ -110,7 +110,8 @@ class ClientChangeArea:
         return new_char_id, captured_messages
 
     def notify_change_area(self, area: AreaManager.Area, old_dname: str,
-                           ignore_bleeding: bool = False, just_me: bool = False) -> bool:
+                           ignore_bleeding: bool = False, ignore_autopass: bool = False,
+                           just_me: bool = False) -> bool:
         """
         Send all OOC notifications that come from switching areas.
         Right now there is
@@ -139,7 +140,8 @@ class ClientChangeArea:
 
         found_something = self.notify_me(area, old_dname, ignore_bleeding=ignore_bleeding)
         if not just_me:
-            self.notify_others(area, old_dname, ignore_bleeding=ignore_bleeding)
+            self.notify_others(area, old_dname, ignore_bleeding=ignore_bleeding,
+                               ignore_autopass=ignore_autopass)
 
         return found_something
 
@@ -424,7 +426,7 @@ class ClientChangeArea:
         return True
 
     def notify_others(self, area: AreaManager.Area, old_dname: str,
-                      ignore_bleeding: bool = False):
+                      ignore_bleeding: bool = False, ignore_autopass: bool = False):
         client = self.client
 
         # Code here assumes successful area change, so it will be sending client notifications
@@ -456,7 +458,7 @@ class ClientChangeArea:
         # Assuming this is not a spectator...
         # If autopassing, send OOC messages
 
-        if not client.char_id < 0:
+        if not ignore_autopass and not client.char_id < 0:
             self.notify_others_moving(client, old_area,
                                       '{} has left to the {}.'.format(old_dname, area.name),
                                       'You hear footsteps going out of the room.')
@@ -675,6 +677,7 @@ class ClientChangeArea:
     def change_area(self, area: AreaManager.Area, override_all: bool = False,
                     override_passages: bool = False, override_effects: bool = False,
                     ignore_bleeding: bool = False, ignore_followers: bool = False,
+                    ignore_autopass: bool = False,
                     ignore_checks: bool = False, ignore_notifications: bool = False,
                     more_unavail_chars: Set[int] = None, change_to: int = None,
                     from_party: bool = False):
@@ -685,6 +688,7 @@ class ClientChangeArea:
         *ignore_bleeding: not add blood to the area if the character is moving,
          such as from /area_kick or AFK kicks
         *ignore_followers: avoid sending the follow command to followers (e.g. using /follow)
+        *ignore_autopass: avoid sending autopass notifications
         *restrict_characters: additional characters to mark as restricted, others than the one
          used in the area or area restricted.
         *override_all: perform the area change regarldess of area restrictions and send no
@@ -774,18 +778,21 @@ class ClientChangeArea:
                 #                      old_area.name, old_area.id), client)
 
                 found_something = client.notify_change_area(area, old_dname,
-                                                            ignore_bleeding=ignore_bleeding)
+                                                            ignore_bleeding=ignore_bleeding,
+                                                            ignore_autopass=ignore_autopass)
 
                 old_area.publisher.publish('area_client_left', {
                     'client': client,
                     'new_area': area,
                     'old_displayname': old_dname,
                     'ignore_bleeding': ignore_bleeding,
+                    'ignore_autopass': ignore_autopass,
                     })
                 area.publisher.publish('area_client_entered', {
                     'client': client,
                     'old_displayname': old_dname,
                     'ignore_bleeding': ignore_bleeding,
+                    'ignore_autopass': ignore_autopass,
                     })
 
         old_area.remove_client(client)
@@ -847,12 +854,14 @@ class ClientChangeArea:
         old_area.publisher.publish('area_client_left_final', {
             'client': client,
             'old_displayname': old_dname,
+            'ignore_autopass': ignore_autopass,
             'ignore_bleeding': ignore_bleeding,
             })
         area.publisher.publish('area_client_entered_final', {
             'client': client,
             'old_area': old_area,
             'old_displayname': old_dname,
+            'ignore_autopass': ignore_autopass,
             'ignore_bleeding': ignore_bleeding,
             })
 

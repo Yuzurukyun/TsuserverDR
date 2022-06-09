@@ -3,7 +3,7 @@
 
 A Python-based server for Danganronpa Online. It is a fork from [tsuserver3](https://github.com/AttorneyOnline/tsuserver3) which is targeted towards Attorney Online.
 
-Requires Python 3.7-3.10 and PyYAML (follow instructions below to install).
+Requires Python 3.7-3.10, PyYAML and aiohttp (follow instructions below to install).
 
 ## How to use
 
@@ -18,10 +18,10 @@ It is highly recommended you read through all the installation steps first befor
   - If you have Python 3.6 or lower, you will be prompted on server launch to update to a newer version of Python. That is because the server requires Python 3.7 or higher. Follow instructions under Updating to update your Python version.
 
 * Open Command Prompt, PowerShell or your preferred terminal, and change to the directory where you downloaded TsuserverDR to. You can do this in two ways:
-  - On Windows 10, go up one folder above the TsuserverDR folder, Shift + right click the TsuserverDR folder, and click `Open PowerShell window here`. This is the easiest method. Alternatively...
+  - On Windows 10 or higher, go up one folder above the TsuserverDR folder, Shift + right click the TsuserverDR folder, and click `Open PowerShell window here` or `Open in Terminal`. This is the easiest method. Alternatively...
   - On most operating systems, copy the path of the TsuserverDR folder, open the terminal, and type in `cd "[paste here]"`, excluding the brackets, but including the quotation marks if the path contains spaces.
 
-* Install PyYAML and dependencies by typing in the following two commands in the terminal you just opened:
+* Install all dependencies by typing in the following two commands in the terminal you just opened:
   ```
   python -m pip install --upgrade pip
   python -m pip install --user -r requirements.txt
@@ -34,7 +34,14 @@ It is highly recommended you read through all the installation steps first befor
   ```
 
   This operation should not require administrator privileges, unless you decide to remove the `--user` option.
+
 * Rename the folder `config_sample` to `config` and edit the values in the provided YAML files to your liking. Be sure to check the YAML files for syntax errors after you are done. *Use spaces only; do not use tabs.*
+
+* Open or forward the port that you would like players to connect to. The port number is available in `config/config.yaml` next to `port`, and you may change it to something else if you want to. The port that you choose must be made to accept TCP connections. This whole process may involve you doing some (or all) of the following:
+    - If you are hosting your server in your own device: go to your router settings, and proceed to open/forward/allow inbound connections into the port. You can typically find instructions for this by finding the brand and model name of your router, and searching "brand + model + port forwarding".
+    - If you are hosting your server in an external device (such as a VPS): find its networking settings, and proceed to open/forward/allow inbound connections into the port. You can typically find instructions for this by searching something like this "your VPS + open/forward/allow inbound connections into the port".
+    - Go to your operating system firewall settings, and proceed to create a rule to allow inbound connections into the port. You can typically find instructions for this by searching "your operating system + create inbound port rule".
+    - Go to your third-party antivirus/firewall software settings (if you have it), and proceed to create a rule to allow inbound connections into the port (if applicable). You can typically find instructions for this by searching "your antivirus + open/forward/allow inbound connections into the port".
 
 ### Running
 
@@ -45,22 +52,22 @@ It is highly recommended you read through all the installation steps first befor
 * If everything was set up correctly, you will see something like this appear:
 
 ```
-[2022-05-05T10:20:20]: Starting...
-[2022-05-05T10:20:20]: Launching TsuserverDR 4.3.1 (220505a)...
-[2022-05-05T10:20:20]: Loading server configurations...
-[2022-05-05T10:20:20]: Server configurations loaded successfully!
-[2022-05-05T10:20:20]: Starting a nonlocal server...
-[2022-05-05T10:20:20]: Server started successfully!
-[2022-05-05T10:20:21]: Server should be now accessible from 192.0.2.0:50000:My First DR Server
+[2022-06-08T10:20:20]: Starting...
+[2022-06-08T10:20:20]: Launching TsuserverDR 4.3.2 (220609a)...
+[2022-06-08T10:20:20]: Loading server configurations...
+[2022-06-08T10:20:20]: Server configurations loaded successfully!
+[2022-06-08T10:20:20]: Starting a nonlocal server...
+[2022-06-08T10:20:20]: Server started successfully!
+[2022-06-08T10:20:21]: Server should be now accessible from 192.0.2.0:50000:My First DR Server
 ```
 
 * If you are listing your server in the Attorney Online master server, make sure its details are set up correctly. In particular, make sure that your server name and description are correct, as that is how players will find your server. If everything was set up correctly, you will see something like this appear:
 
 ```
-[2022-05-05T10:20:21]: Attempting to connect to the master server at master.aceattorneyonline.com:27016 with the following details:
-[2022-05-05T10:20:21]: *Server name: My First DR Server
-[2022-05-05T10:20:21]: *Server description: This is my flashy new DR server
-[2022-05-05T10:20:22]: Connected to the master server.
+[2022-06-08T10:20:21]: Attempting to connect to the master server at https://servers.aceattorneyonline.com/servers with the following details:
+[2022-06-08T10:20:21]: *Server name: My First DR Server
+[2022-06-08T10:20:21]: *Server description: This is my flashy new DR server
+[2022-06-08T10:20:22]: Connected to the master server.
 ```
 
   - The server will make a single ping to [ipify](https://api.ipify.org) in order to obtain its public IP address. If it fails to do that, it will let you know that, as it means there is probably something wrong with your internet connection and that other players may not be able to connect to your server.
@@ -69,9 +76,9 @@ It is highly recommended you read through all the installation steps first befor
 * To stop the server, press Ctrl+C once from your terminal. This will initiate a shutdown sequence and notify you when it is done. If the shutdown finished successfully, you will see something like this appear:
 
 ```
-[2022-05-05T22:23:04]: You have initiated a server shut down.
-[2022-05-05T22:23:04]: Kicking 12 remaining clients.
-[2022-05-05T22:23:04]: Server has successfully shut down.
+[2022-06-08T22:23:04]: You have initiated a server shut down.
+[2022-06-08T22:23:04]: Kicking 12 remaining clients.
+[2022-06-08T22:23:04]: Server has successfully shut down.
 ```
 
 * If you do not see anything after a few seconds of starting a shutdown, you can try spamming Ctrl+C to try and force a shutdown or directly close out your terminal. This is not recommended due to the cleanup process not finishing correctly but it is doable.
@@ -86,7 +93,7 @@ It is highly recommended you read through all the installation steps first befor
 
   - This process will not overwrite your server configurations inside the `config` folder, your existing logs inside the `logs` folder, or the user information inside the `storage` folder. However, it will overwrite other files including the Python files inside the `server` folder. Therefore, make sure to save backups of those files before overwriting in case you have modified them and wish to keep an archive of your changes.
 
-* If you want to update **Python** itself, you can get the latest Python download [from their website here](https://www.python.org/downloads/) and then follow the instructions under the Installing section in this readme. To check your current version of Python, you can run ``python`` on its own and look at the first line. The latest stable major Python release is *Python 3.9* as of October 5, 2020.
+* If you want to update **Python** itself, you can get the latest Python download [from their website here](https://www.python.org/downloads/) and then follow the instructions under the Installing section in this readme. To check your current version of Python, you can run ``python`` on its own and look at the first line. The latest stable major Python release is *Python 3.10* as of October 4, 2021.
 
   - Please follow the installation instructions again even if you had successfully ran a server before, because your new Python installation may be missing libraries that TsuserverDR expects there to exist. You should not need to change any server configuration files though.
   - In general, updating to a Python version beyond what is specified as supported may lead to unstable behavior, so for active servers try to keep your Python version among the ones specifically labeled as supported.
@@ -143,9 +150,9 @@ Additional notes are listed at the end of the command list. Unless otherwise spe
 * **g** "message"
     - Sends a serverwide message. Fails if the current area disallows sending global messages.
 * **getarea**
-    - Shows the current characters in your area.
+    - Shows the current characters in your area, including their showname if they have set it.
 * **getareas**
-    - Shows all characters in all areas reachable from your own.
+    - Shows all characters in all areas reachable from your own, including their showname if they have set it.
 * **ignore** "ID/char name/edited-to character/showname/char showname/OOC name"
     - Marks a target as ignored, so you will no longer receive any IC messages from them.
     - The target is not notified of you marking them as ignored.
@@ -165,7 +172,7 @@ Additional notes are listed at the end of the command list. Unless otherwise spe
     - Makes you a Moderator.
 * **logincm** "password"
     - Makes you a Community Manager.
-* **loginrp** "password"
+* **logingm** "password"
     - Makes you a GM.
 * **logout**
     - Logs you out of the rank you have, if any.
@@ -226,7 +233,7 @@ Additional notes are listed at the end of the command list. Unless otherwise spe
     - Successful peeks have a 75% chance to notify of the peek having taken place for each player in the target area.
 * **ping**
     - Returns "Pong", used to check for server connection.
-* **play** "song.mp3"
+* **play** "song.extension"
     - Plays a song, provided the area you are in allows non-staff members to run this command.
 * **pm** "ID/char name/edited-to character/showname/char showname/OOC name" "message"
     - PMs the target.
@@ -248,10 +255,6 @@ Additional notes are listed at the end of the command list. Unless otherwise spe
     - Messages are limited to 256 characters.
 * **showname** "showname"
     - Sets your showname to be the given one, or clears it if not given one.
-* **showname_area**
-    - Similar to /getarea, but lists shownames along with character names.
-* **showname_areas**
-    - Similar to /getareas, but lists shownames along with character names.
 * **status** "ID/char name/edited-to character/showname/char showname/OOC name"
     - Check the custom status of a player
 * **status_set** "status"
@@ -422,6 +425,9 @@ GMs can:
 * **judgelog** "area"
     - Lists the last 20 judge actions performed in the given area (or current area if not given).
     - Each entry includes the time of execution, client ID, character name, client IPID and the judge action performed.
+* **lights** "on/off" "area 1" "area 2" ...
+    - Changes the light status in the given areas to on or off, or in the current area if not given any.
+    - Areas with lights off will have a dark background, and they disable /getarea(s) and alter /autopass, bleeding, /look and sneaking notifications.
 * **look_clean** "area 1", "area 2", ...
     - Restores the default area descriptions of the given areas by ID or name, or the current area if not given any.
 * **look_list**
@@ -496,7 +502,7 @@ GMs can:
     - Clears passage locks that start in the areas in the given area range, or just the ones in the current area if not given a range.
 * **passage_restore** "area range start", "area range end"
     - Restores passage locks that start in the areas in the given area range to their original status, or just the ones in the current area if not given a range.
-* **play** "song.mp3"
+* **play** "song.extension"
     - Plays a song, even if not in the server music list.
 * **poison** "ID" "initials of effects" "length"
     - Applies a poison to the target that will inflict them in the given length of time in seconds the given effects.
@@ -506,7 +512,7 @@ GMs can:
     - Reveals a target if they were previously sneaking.
     - Also restores their formerly assigned handicap if they had one that was shorter than the server's automatic sneaking handicap.
     - If no ID is given, target is yourself.
-* **rplay** "song.mp3"
+* **rplay** "song.extension"
     - Plays a song in all areas reachable from the current one.
 * **rpmode** "on/off"
     - Toggles RP mode.
@@ -684,10 +690,6 @@ GMs can:
 * **reveal** "ID/IPID"
     - Reveals a target if they were previously sneaking.
     - Also restores their formerly assigned handicap if they had one that was shorter than the server's automatic sneaking handicap.
-* **showname_area**
-    - Similar to /getarea, but lists shownames along with character names as well as their IPIDs.
-* **showname_areas**
-    - Similar to /getareas, but lists shownames along with character names as well as their IPIDs.
 * **showname_history** "ID/IPID"
     - Lists all shownames a target has gone through since connecting, including the time they were changed.
 * **showname_set** "ID/IPID" "showname"
@@ -735,6 +737,9 @@ GMs can:
     - Gimps a target so that all their IC messages are replaced with a selection of preset messages.
 * **gm** "message"
     - Sends a serverwide message with mod tag.
+* **lights** "on/off" "area 1" "area 2" ...
+    - Changes the light status in the given areas to on or off, or in the current area if not given any; even if the background of the area is locked.
+    - Areas with lights off will have a dark background, and they disable /getarea(s) and alter /autopass, bleeding, /look and sneaking notifications.
 * **lm** "message"
     - Sends an area OOC message with mod tag.
 * **modlock**
@@ -776,10 +781,10 @@ Commands without (D) are aliases to commands and can be freely used (subject to 
 
 * **huddle**: Same as /party_whisper.
 * **pw**: Same as /party_whisper.
-* **sa**: Same as /showname_area.
-* **sas**: Same as /showname_areas.
+* **sa**: Same as /getarea.
+* **sas**: Same as /getareas.
 * **shout**: Same as /scream.
-* **showname_list**: Same as /showname_areas.
+* **showname_list**: Same as /getareas.
 * **unsneak**: Same as /reveal.
 * **yell**: Same as /scream.
 * **zg**: Same as /zone_global.
@@ -788,15 +793,20 @@ Commands without (D) are aliases to commands and can be freely used (subject to 
 * **fa**: Same as /files_area.
 * **l**: Same as /look.
 * **forcepos**: Same as /pos_force.
+* **showname_area**: Same as /getarea.
+* **showname_areas**: Same as /getareas.
+* **ga**: Same as /getarea.
+* **gas**: Same as /getareas.
 
 #### GM+
 
-* **logingm**: Same as /loginrp.
+* **loginrp**: Same as /logingm.
 * **slit**: Same as /bloodtrail.
 * **unsneak**: Same as /reveal.
 * **clock_cancel**: Same as /clock_end. (D) (Deprecated July 5, 2021)
 * **lurk_cancel**: Same as /lurk_end. (D) (Deprecated July 5, 2021)
 * **zone_delete**: Same as /zone_end. (D) (Deprecated July 5, 2021)
+* **rpmode**: (D) (Deprecated May 20, 2022)
 
 ### Notes
 
