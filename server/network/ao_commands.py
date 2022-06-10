@@ -435,7 +435,8 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
         return
 
     # At this point, the message is guaranteed to be sent
-    client.send_command_dict('ackMS', dict())
+    if client.packet_handler.HAS_ACKMS:
+        client.send_command_dict('ackMS', dict())
     client.pos = pargs['pos']
 
     # First, update last raw message sent *before* any transformations. That is so that the
