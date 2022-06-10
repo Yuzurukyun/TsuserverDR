@@ -10177,14 +10177,16 @@ def ooc_cmd_zone_global(client: ClientManager.Client, arg: str):
         targets.update({c for c in area.clients if c.zone_watched in [None, target_zone]})
 
     for target in targets:
+        if target.muted_global:
+            continue
+
         if target.is_mod or target.is_cm:
-            target.send_ooc(arg, username='<dollar>ZG[{}][{}][{}]'
-                            .format(client.area.id, client.displayname, client.ipid),
-                            pred=lambda c: not c.muted_global)
+            target.send_ooc(arg, username=(f'<dollar>ZG[{client.area.id}][{client.displayname}]'
+                                           f'[{client.ipid}]'))
+        elif target.is_gm:
+            target.send_ooc(arg, username=f'<dollar>ZG[{client.area.id}][{client.displayname}]')
         else:
-            target.send_ooc(arg, username='<dollar>ZG[{}][{}]'
-                            .format(client.area.id, client.displayname),
-                            pred=lambda c: not c.muted_global)
+            target.send_ooc(arg, username=f'<dollar>ZG[{client.displayname}]')
 
 
 def ooc_cmd_zone_handicap(client: ClientManager.Client, arg: str):

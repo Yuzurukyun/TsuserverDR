@@ -30,6 +30,7 @@ class DefaultDROProtocol(_Singleton):
 
     HAS_CLIENTSIDE_MUSIC_LOOPING = False
     HAS_DISTINCT_AREA_AND_MUSIC_LIST_OUTGOING_PACKETS = True
+    HAS_ACKMS = False
 
     DECRYPTOR_OUTBOUND = [
         ('key', 34),  # 0
@@ -327,6 +328,7 @@ class ClientDRO1d1d0(DefaultDROProtocol):
 class ClientDRO1d0d0(DefaultDROProtocol):
     HAS_CLIENTSIDE_MUSIC_LOOPING = False
     HAS_DISTINCT_AREA_AND_MUSIC_LIST_OUTGOING_PACKETS = False
+    HAS_ACKMS = True
 
     MS_INBOUND = [
         ('msg_type', ArgType.STR),  # 0
