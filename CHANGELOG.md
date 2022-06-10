@@ -761,4 +761,5 @@
 * Removed Fantacrypt, DistrictClient, and several other ts3 and AO1 leftovers
 
 ### 220610a (4.3.2-post1)
-* Fixed /zone_global displaying area numbers to nonGMs.
+* Fixed /zone_global displaying area numbers to nonGMs
+* Fixed sending "ackMS" packets to clients that didn't need it, delaying the rendering of self-sent messages for such clients
