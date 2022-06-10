@@ -759,3 +759,6 @@
   - `masterserver_port`
   - `show-ms2_prober`
 * Removed Fantacrypt, DistrictClient, and several other ts3 and AO1 leftovers
+
+### 220610a (4.3.2-post1)
+* Fixed /zone_global displaying area numbers
