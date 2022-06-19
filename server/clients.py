@@ -771,6 +771,10 @@ class ClientAO2d9d0(DefaultDROProtocol):
         ('pos', ''),  # 1
         ]
 
+    PW_INBOUND = [
+        ('password', ArgType.STR_OR_EMPTY),  # 0
+    ]
+
 
 class ClientAO2d10(ClientAO2d9d0):
     ASKCHAA_INBOUND = []
