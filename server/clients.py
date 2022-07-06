@@ -322,6 +322,10 @@ class DefaultDROProtocol(_Singleton):
         ('url', ArgType.STR_OR_EMPTY),  # 0
     ]
 
+    AREA_AMBIENT_OUTBOUND = [
+        ('name', ArgType.STR_OR_EMPTY),  # 0
+    ]
+
 class ClientDRO1d1d0(DefaultDROProtocol):
     pass
 

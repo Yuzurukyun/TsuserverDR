@@ -11050,10 +11050,52 @@ def ooc_cmd_mod_narrate(client: ClientManager.Client, arg: str):
     """
 
     arg = arg[:256]  # Cap
-    Constants.assert_command(client, arg, is_staff=True)
+    Constants.assert_command(client, arg, is_officer=True)
 
     for c in client.area.clients:
         c.send_ic(msg=arg, color=5, hide_character=1, bypass_text_replace=True)
+
+
+def ooc_cmd_ambient(client: ClientManager.Client, arg: str):
+    Constants.assert_command(client, arg, is_staff=True, parameters='>0')
+
+    client.area.ambient = arg
+
+    for target in client.area.clients:
+        target.send_area_ambient(name=arg)
+
+    client.send_ooc(f'You have set the ambient sound effect of your area to `{arg}`.')
+    client.send_ooc_others(f'The ambient sound effect of your area was set to `{arg}`.',
+                           in_area=True, is_zstaff_flex=False)
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] set the ambient sound effect '
+                           f'of their area to `{arg}` ({client.area.id}).', is_zstaff_flex=True)
+
+
+def ooc_cmd_ambient_end(client: ClientManager.Client, arg: str):
+    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
+
+    if not client.area.ambient:
+        raise ClientError('There already is no ambient sound effect in your area.')
+
+    client.area.ambient = ''
+
+    for target in client.area.clients:
+        target.send_area_ambient(name='')
+
+    client.send_ooc('You have cleared the ambient sound effect of your area.')
+    client.send_ooc_others('The ambient sound effect of your area was cleared.', in_area=True,
+                           is_zstaff_flex=False)
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] cleared the ambient sound '
+                           f'effect of their area ({client.area.id}).', is_zstaff_flex=True)
+
+
+def ooc_cmd_ambient_info(client: ClientManager.Client, arg: str):
+    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
+
+    if not client.area.ambient:
+        raise ClientError('There already is no ambient sound effect in your area.')
+
+    client.send_ooc(f'The current ambient sound effect of your area is `{client.area.ambient}`.')
 
 
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):

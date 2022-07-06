@@ -375,6 +375,7 @@ class _TestClientManager(ClientManager):
                                     ['FA', None],
                                     ['FM', None],
                                     ['BN', None],
+                                    ['area_ambient', None],
                                     )
                 for packet in packets_to_discard:
                     self.discard_packet(packet, somewhere=True)
@@ -852,6 +853,8 @@ class _TestClientManager(ClientManager):
             elif command_type == 'ackMS':  # Acknowledge MS packet
                 pass
             elif command_type == 'SN':  # Showname change
+                pass
+            elif command_type == 'area_ambient':  # Area ambient sound effect
                 pass
             else:
                 raise KeyError(f'Unrecognized STC argument `{command_type}` {args}')

@@ -684,6 +684,11 @@ class ClientManager:
                 'chat_tick_rate': chat_tick_rate,
                 })
 
+        def send_area_ambient(self, name: str = ''):
+            self.send_command_dict('area_ambient', {
+                'name': name,
+            })
+
         def disconnect(self):
             self.disconnected = True
             self.transport.close()

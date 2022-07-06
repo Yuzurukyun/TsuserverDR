@@ -851,6 +851,8 @@ class ClientChangeArea:
         if area.id not in client.remembered_locked_passages:
             client.remembered_locked_passages[area.id] = set()
 
+        client.send_area_ambient(area.ambient)
+
         old_area.publisher.publish('area_client_left_final', {
             'client': client,
             'old_displayname': old_dname,
