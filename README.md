@@ -107,6 +107,8 @@ Additional notes are listed at the end of the command list. Unless otherwise spe
     - Displays help for a command, or links to the server repository if not given an argument.
 * **help_more** "command name"
     - Displays extended help for a command, usually significantly longer than what /help does.
+* **ambient_info**
+    - Displays the current area ambient sound effect.
 * **area** "area number"
     - Moves you to an area by its numerical ID if it is reachable from your own, or displays all areas if not given a number.
 * **autopass**
@@ -323,6 +325,10 @@ GMs can:
   - Bypass area passages and locks.
   - Receive special RP notifications.
   - Use GM commands.
+* **ambient** "name"
+    - Changes the ambient sound effect of your current area.
+* **ambient_end**
+    - Clears the ambient sound effect of your current area.
 * **area_kick** "ID" "area number"
     - Kicks target from your area to the intended area and remove them from its invite-list.
     - If not given a target area, it will use the server's default area (usually area 0).
@@ -599,6 +605,10 @@ GMs can:
     - You are automatically set to watch the zones you create like this.
 * **zone_add** "area"
     - Adds an area by name or ID to the zone you are watching.
+* **zone_ambient** "name"
+    - Changes the ambient sound effect of all areas of the zone you are watching.
+* **zone_ambient_end**
+    - Clears the ambient sound effect of all areas of the zone you are watching.
 * **zone_autopass**
     - Changes the autopass status of the zone you are watching. If turned on, turns autopass on for players in an area part of a zone and players that later join; otherwise, it turns it off for players in an area part of the zone
 * **zone_end**

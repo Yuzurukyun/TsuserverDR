@@ -11050,10 +11050,180 @@ def ooc_cmd_mod_narrate(client: ClientManager.Client, arg: str):
     """
 
     arg = arg[:256]  # Cap
-    Constants.assert_command(client, arg, is_staff=True)
+    Constants.assert_command(client, arg, is_officer=True)
 
     for c in client.area.clients:
         c.send_ic(msg=arg, color=5, hide_character=1, bypass_text_replace=True)
+
+
+def ooc_cmd_ambient(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Sets up the ambient sound effect of the current area. Players in the current area, and players
+    that later join the area, will be ordered to play the area ambient sound effect.
+
+    SYNTAX
+    /ambient <ambient_name>
+
+    PARAMETERS
+    <ambient_name>: Name of the ambient sound effect
+
+    EXAMPLES
+    >>> /ambient wind.wav
+    Sets the ambient sound effect of the area to `wind.wav`.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='>0')
+
+    client.area.ambient = arg
+
+    for target in client.area.clients:
+        target.send_area_ambient(name=arg)
+
+    client.send_ooc(f'You have set the ambient sound effect of your area to `{arg}`.')
+    client.send_ooc_others(f'The ambient sound effect of your area was set to `{arg}`.',
+                           in_area=True, is_zstaff_flex=False)
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] set the ambient sound effect '
+                           f'of their area to `{arg}` ({client.area.id}).', is_zstaff_flex=True)
+
+
+def ooc_cmd_ambient_end(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Clears the ambient sound effect of the current area. Players in the current area will be ordered
+    to stop playing the former area ambient sound effect, and players that later join the area will
+    not play the former area ambient sound effect.
+    Returns an error if no ambient sound effect is playing in the area.
+
+    SYNTAX
+    /ambient
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    >>> /ambient_end
+    Clears the ambient sound effect of the area.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
+
+    if not client.area.ambient:
+        raise ClientError('There already is no ambient sound effect in your area.')
+
+    client.area.ambient = ''
+
+    for target in client.area.clients:
+        target.send_area_ambient(name='')
+
+    client.send_ooc('You have cleared the ambient sound effect of your area.')
+    client.send_ooc_others('The ambient sound effect of your area was cleared.', in_area=True,
+                           is_zstaff_flex=False)
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] cleared the ambient sound '
+                           f'effect of their area ({client.area.id}).', is_zstaff_flex=True)
+
+
+def ooc_cmd_ambient_info(client: ClientManager.Client, arg: str):
+    """
+    Displays the current area ambient sound effect.
+    Returns an error if no area ambient sound effect is playing.
+
+    SYNTAX
+    /ambient_info
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    Assuming the ambient sound effect of the current area is `wind.wav`...
+    >>> /ambient_info
+    Returns 'The current ambient sound effect of your area is `wind.wav`'.
+    """
+    Constants.assert_command(client, arg, parameters='=0')
+
+    if not client.area.ambient:
+        raise ClientError('There already is no ambient sound effect in your area.')
+
+    client.send_ooc(f'The current ambient sound effect of your area is `{client.area.ambient}`.')
+
+
+def ooc_cmd_zone_ambient(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Sets up the ambient sound effect of all areas in the zone you are watching. Players in areas
+    part of the zone, and players that later join an area of the zone, will be ordered to play the
+    area ambient sound effect.
+    This command is equivalent to calling /ambient in every area of the zone you are watching.
+    GMs may still individually change or clear ambient sound effects for areas of the zone after
+    running the command, and such actions will override the "zone ambient".
+
+    SYNTAX
+    /zone_ambient <ambient_name>
+
+    PARAMETERS
+    <ambient_name>: Name of the ambient sound effect
+
+    EXAMPLES
+    >>> /zone_ambient wind.wav
+    Sets the ambient sound effect of all areas of the current zone to `wind.wav`.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='=1')
+
+    if not client.zone_watched:
+        raise ZoneError('You are not watching a zone.')
+
+    zone = client.zone_watched
+
+    targets = zone.get_players()
+    client.send_ooc(f'You have set the ambient sound effect of all areas of your zone to `{arg}`.')
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] have set the ambient sound '
+                           f'effect of all areas of your zone to `{arg}` ({client.area.id}).',
+                           is_zstaff=True)
+
+    for c in targets:
+        c.send_area_ambient(name=arg)
+    for a in zone.get_areas():
+        a.ambient = arg
+
+
+def ooc_cmd_zone_ambient_end(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Clears the ambient sound effect of all areas of the zone you are watching. Players in an area
+    part of the zone will be ordered to stop playing the former area ambient sound effect, and
+    players that later join some area of the zone will not play the former area ambient sound
+    effect.
+    This command is equivalent to calling /ambient_end in every area of the zone you are watching,
+    without displaying error messages if it happened to be the case no ambient sound effect was set
+    for some (or all) of the areas of the zone.
+    GMs may still individually change or clear ambient sound effects for areas of the zone after
+    running the command, and such actions will override the "zone ambient".
+    Returns an error if you are not watching a zone.
+
+    SYNTAX
+    /zone_ambient
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    >>> /zone_ambient_end
+    Clears the ambient sound effect of all areas of the zone you are watching.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
+
+    if not client.zone_watched:
+        raise ZoneError('You are not watching a zone.')
+
+    zone = client.zone_watched
+
+    targets = zone.get_players()
+    client.send_ooc('You have removed the area ambient sound effect of all areas of your zone.')
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] removed the area ambient sound '
+                           f'effect of all areas of your zone ({client.area.id}).', is_zstaff=True)
+
+    for c in targets:
+        c.send_area_ambient(name='')
+    for a in zone.get_areas():
+        a.ambient = ''
 
 
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):

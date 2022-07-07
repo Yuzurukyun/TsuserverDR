@@ -763,3 +763,11 @@
 ### 220610a (4.3.2-post1)
 * Fixed /zone_global displaying area numbers to nonGMs
 * Fixed sending "ackMS" packets to clients that didn't need it, delaying the rendering of self-sent messages for such clients
+
+### (4.3.3)
+* Added ambient sound effects for areas. Players entering areas with such sound effects set up (and with Danganronpa Online 1.1 or higher) will start listening to the sound effect. These are the commands (all GM+ only except ambient_info, which is available for all)
+  - /ambient
+  - /ambient_end
+  - /ambient_info
+  - /zone_ambient
+  - /zone_ambient_end
