@@ -772,3 +772,4 @@
   - /zone_ambient
   - /zone_ambient_end
 * Added support for Danganronpa Online 1.1.1 incoming packet `joined_area`, by sending such packet when a player joins an area rather than manually sending a blankpost
+* Fixed /zone_tick_remove expecting 1 argument, when it should have expected no arguments

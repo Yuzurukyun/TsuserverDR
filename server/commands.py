@@ -10801,7 +10801,7 @@ def ooc_cmd_zone_tick_remove(client: ClientManager.Client, arg: str):
     Removes the zone chat tick rate.
     """
 
-    Constants.assert_command(client, arg, is_staff=True, parameters='=1')
+    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
     if not client.zone_watched:
         raise ZoneError('You are not watching a zone.')
