@@ -31,6 +31,11 @@ class DefaultDROProtocol(_Singleton):
     HAS_CLIENTSIDE_MUSIC_LOOPING = False
     HAS_DISTINCT_AREA_AND_MUSIC_LIST_OUTGOING_PACKETS = True
     HAS_ACKMS = False
+    HAS_JOINED_AREA = True
+    ALLOWS_REPEATED_MESSAGES_FROM_SAME_CHAR = True
+    ALLOWS_CLEARING_MODIFIED_MESSAGE_FROM_SELF = True
+    ALLOWS_INVISIBLE_BLANKPOSTS = True
+    REPLACES_BASE_OPUS_FOR_MP3 = False
 
     DECRYPTOR_OUTBOUND = [
         ('key', 34),  # 0
@@ -326,13 +331,21 @@ class DefaultDROProtocol(_Singleton):
         ('name', ArgType.STR_OR_EMPTY),  # 0
     ]
 
-class ClientDRO1d1d0(DefaultDROProtocol):
+    JOINED_AREA_OUTBOUND = [
+    ]
+
+class ClientDRO1d1d1(DefaultDROProtocol):
     pass
+
+class ClientDRO1d1d0(DefaultDROProtocol):
+    HAS_JOINED_AREA = False
 
 class ClientDRO1d0d0(DefaultDROProtocol):
     HAS_CLIENTSIDE_MUSIC_LOOPING = False
     HAS_DISTINCT_AREA_AND_MUSIC_LIST_OUTGOING_PACKETS = False
     HAS_ACKMS = True
+    HAS_JOINED_AREA = False
+    REPLACES_BASE_OPUS_FOR_MP3 = True
 
     MS_INBOUND = [
         ('msg_type', ArgType.STR),  # 0
@@ -381,6 +394,11 @@ class ClientDRO1d0d0(DefaultDROProtocol):
 class ClientDROLegacy(DefaultDROProtocol):
     HAS_CLIENTSIDE_MUSIC_LOOPING = False
     HAS_DISTINCT_AREA_AND_MUSIC_LIST_OUTGOING_PACKETS = False
+    HAS_JOINED_AREA = False
+    ALLOWS_REPEATED_MESSAGES_FROM_SAME_CHAR = False
+    ALLOWS_CLEARING_MODIFIED_MESSAGE_FROM_SELF = False
+    ALLOWS_INVISIBLE_BLANKPOSTS = False
+    REPLACES_BASE_OPUS_FOR_MP3 = True
 
     MS_INBOUND = [
         ('msg_type', ArgType.STR),  # 0
@@ -437,6 +455,11 @@ class ClientDROLegacy(DefaultDROProtocol):
 class ClientAO2d6(DefaultDROProtocol):
     HAS_CLIENTSIDE_MUSIC_LOOPING = False
     HAS_DISTINCT_AREA_AND_MUSIC_LIST_OUTGOING_PACKETS = False
+    HAS_JOINED_AREA = False
+    ALLOWS_REPEATED_MESSAGES_FROM_SAME_CHAR = False
+    ALLOWS_CLEARING_MODIFIED_MESSAGE_FROM_SELF = False
+    ALLOWS_INVISIBLE_BLANKPOSTS = False
+    REPLACES_BASE_OPUS_FOR_MP3 = True
 
     MS_INBOUND = [
         ('msg_type', ArgType.STR),  # 0
@@ -506,6 +529,11 @@ class ClientAO2d6(DefaultDROProtocol):
 class ClientAO2d7(DefaultDROProtocol):
     HAS_CLIENTSIDE_MUSIC_LOOPING = False
     HAS_DISTINCT_AREA_AND_MUSIC_LIST_OUTGOING_PACKETS = False
+    HAS_JOINED_AREA = False
+    ALLOWS_REPEATED_MESSAGES_FROM_SAME_CHAR = False
+    ALLOWS_CLEARING_MODIFIED_MESSAGE_FROM_SELF = False
+    ALLOWS_INVISIBLE_BLANKPOSTS = False
+    REPLACES_BASE_OPUS_FOR_MP3 = True
 
     MS_INBOUND = [
         ('msg_type', ArgType.STR),  # 0
@@ -587,6 +615,12 @@ class ClientAO2d7(DefaultDROProtocol):
 
 
 class ClientAO2d8d4(DefaultDROProtocol):
+    HAS_JOINED_AREA = False
+    ALLOWS_REPEATED_MESSAGES_FROM_SAME_CHAR = False
+    ALLOWS_CLEARING_MODIFIED_MESSAGE_FROM_SELF = False
+    ALLOWS_INVISIBLE_BLANKPOSTS = False
+    REPLACES_BASE_OPUS_FOR_MP3 = True
+
     MS_INBOUND = [
         ('msg_type', ArgType.STR),  # 0
         ('pre', ArgType.STR_OR_EMPTY),  # 1
@@ -672,6 +706,12 @@ class ClientAO2d8d4(DefaultDROProtocol):
 
 
 class ClientAO2d9d0(DefaultDROProtocol):
+    HAS_JOINED_AREA = False
+    ALLOWS_REPEATED_MESSAGES_FROM_SAME_CHAR = False
+    ALLOWS_CLEARING_MODIFIED_MESSAGE_FROM_SELF = False
+    ALLOWS_INVISIBLE_BLANKPOSTS = False
+    REPLACES_BASE_OPUS_FOR_MP3 = True
+
     ASKCHAA_INBOUND = [
         ('ao290doesnotsupportpacketswithnoarguments', ArgType.STR_OR_EMPTY),  # 0
         ]
@@ -781,6 +821,12 @@ class ClientAO2d9d0(DefaultDROProtocol):
 
 
 class ClientAO2d10(ClientAO2d9d0):
+    HAS_JOINED_AREA = False
+    ALLOWS_REPEATED_MESSAGES_FROM_SAME_CHAR = False
+    ALLOWS_CLEARING_MODIFIED_MESSAGE_FROM_SELF = False
+    ALLOWS_INVISIBLE_BLANKPOSTS = False
+    REPLACES_BASE_OPUS_FOR_MP3 = True
+
     ASKCHAA_INBOUND = []
 
     RC_INBOUND = []

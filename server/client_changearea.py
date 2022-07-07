@@ -819,7 +819,10 @@ class ClientChangeArea:
             client.send_background(name=client.area.background,
                                    tod_backgrounds=client.area.get_background_tod())
         client.send_evidence_list()
-        client.send_ic_blankpost()
+        if client.packet_handler.HAS_JOINED_AREA:
+            client.send_joined_area()
+        else:
+            client.send_ic_blankpost()
 
         if found_something:
             client.send_ic_attention()

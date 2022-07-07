@@ -138,7 +138,10 @@ def net_cmd_id(client: ClientManager.Client, pargs: Dict[str, Any]):
 
         if software == 'DRO':
             if major >= 1:
-                client.packet_handler = clients.ClientDRO1d1d0()
+                if minor >= 1:
+                    client.packet_handler = clients.ClientDRO1d1d1()
+                else:
+                    client.packet_handler = clients.ClientDRO1d1d0()
             else:
                 client.packet_handler = clients.ClientDRO1d0d0()
         else:  # AO2 protocol
@@ -185,7 +188,10 @@ def net_cmd_id(client: ClientManager.Client, pargs: Dict[str, Any]):
         })
 
     version_to_send = [1, 0, 0]
-    if client.packet_handler == clients.ClientDRO1d1d0():
+    if client.packet_handler in [
+        clients.ClientDRO1d1d0(),
+        clients.ClientDRO1d1d1(),
+    ]:
         version_to_send = [1, 1, 0]
 
     client.send_command_dict('client_version', {

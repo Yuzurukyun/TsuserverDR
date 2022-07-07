@@ -51,7 +51,7 @@ class ClientManager:
             self.required_packets_received = set()  # Needs to have length 2 to actually connect
             self.can_askchaa = True  # Needs to be true to process an askchaa packet
             self.version = ('Undefined', 'Undefined')  # AO version used established through ID pack
-            self.packet_handler = clients.ClientDRO1d1d0()
+            self.packet_handler = clients.ClientDRO1d1d1()
             self.bad_version = False
             self.publisher = Publisher(self)
 
@@ -459,19 +459,18 @@ class ClientManager:
                          not pargs['msg'] in allowed_messages) or
                         (sender and sender.is_gagged and gag_replaced)):
                         pargs['msg'] = '(Your ears are ringing)'
-                        if (self.send_deaf_space
-                            and self.packet_handler not in
-                            [clients.ClientDRO1d0d0(), clients.ClientDRO1d1d0()]):
+                        if (not self.packet_handler.ALLOWS_REPEATED_MESSAGES_FROM_SAME_CHAR
+                            and self.send_deaf_space):
                             pargs['msg'] = pargs['msg'] + ' '
                         self.send_deaf_space = not self.send_deaf_space
 
                 # TEMPORARY: REMOVE FOR 4.3+CLIENT UPDATE
-                # Remove globalIC prefix to everyone but sender, but only if in DRO 1.0.0, to work
+                # Remove globalIC prefix to everyone but sender, but only if in DRO 1.0.0+, to work
                 # around old client bug
                 if sender and sender.multi_ic and sender.multi_ic_pre:
                     if pargs['msg'].startswith(sender.multi_ic_pre):
-                        if (self != sender or self.packet_handler in
-                            [clients.ClientDRO1d0d0(), clients.ClientDRO1d1d0()]):
+                        if (self.packet_handler.ALLOWS_CLEARING_MODIFIED_MESSAGE_FROM_SELF
+                            or self != sender):
                             pargs['msg'] = pargs['msg'].replace(sender.multi_ic_pre, '', 1)
 
                 # Modify shownames as needed
@@ -556,7 +555,7 @@ class ClientManager:
             self.send_ic(msg='(Something catches your attention)', ding=1, hide_character=1)
 
         def send_ic_blankpost(self):
-            if self.packet_handler in [clients.ClientDRO1d0d0(), clients.ClientDRO1d1d0()]:
+            if self.packet_handler.ALLOWS_INVISIBLE_BLANKPOSTS:
                 self.send_ic(msg='', hide_character=1, bypass_text_replace=True)
 
         def send_background(self, name: str = None, pos: str = None,
@@ -610,7 +609,8 @@ class ClientManager:
 
         def send_music(self, name=None, char_id=None, showname=None, force_same_restart=None,
                        loop=None, channel=None, effects=None):
-            if not self.packet_handler.HAS_CLIENTSIDE_MUSIC_LOOPING and self.packet_handler != clients.ClientDRO1d1d0():
+            if (not self.packet_handler.HAS_CLIENTSIDE_MUSIC_LOOPING
+                and self.packet_handler.REPLACES_BASE_OPUS_FOR_MP3):
                 if name in self.server.new_110_music:
                     name = name.replace('.opus', '.mp3')
                     name = '/'.join(name.split('/')[1:])
@@ -687,6 +687,10 @@ class ClientManager:
         def send_area_ambient(self, name: str = ''):
             self.send_command_dict('area_ambient', {
                 'name': name,
+            })
+
+        def send_joined_area(self):
+            self.send_command_dict('joined_area', {
             })
 
         def disconnect(self):
