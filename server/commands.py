@@ -11098,6 +11098,52 @@ def ooc_cmd_ambient_info(client: ClientManager.Client, arg: str):
     client.send_ooc(f'The current ambient sound effect of your area is `{client.area.ambient}`.')
 
 
+def ooc_cmd_zone_ambient(client: ClientManager.Client, arg: str):
+    Constants.assert_command(client, arg, is_staff=True, parameters='=1')
+
+    if not client.zone_watched:
+        raise ZoneError('You are not watching a zone.')
+
+    zone = client.zone_watched
+
+    targets = zone.get_players()
+    client.send_ooc(f'You have set the ambient sound effect of all areas of your zone to `{arg}`.')
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] have set the ambient sound '
+                           f'effect of all areas of your zone to `{arg}` ({client.area.id}).',
+                           is_zstaff=True)
+
+    zone.set_property('Ambient', arg)
+
+    for c in targets:
+        c.send_area_ambient(name=arg)
+    for a in zone.get_areas():
+        a.ambient = arg
+
+
+def ooc_cmd_zone_ambient_end(client: ClientManager.Client, arg: str):
+    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
+
+    if not client.zone_watched:
+        raise ZoneError('You are not watching a zone.')
+
+    zone = client.zone_watched
+
+    if not zone.is_property('Ambient'):
+        raise ClientError('Your zone already has no area ambient sound effect defined.')
+
+    zone.remove_property('Ambient')
+
+    targets = zone.get_players()
+    client.send_ooc('You have removed the area ambient sound effect of your zone.')
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] removed the area ambient sound '
+                           f'effect of your zone ({client.area.id}).', is_zstaff=True)
+
+    for c in targets:
+        c.send_area_ambient(name='')
+    for a in zone.get_areas():
+        a.ambient = ''
+
+
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):
     """
     VERY DANGEROUS. SHOULD ONLY BE ENABLED FOR DEBUGGING.
