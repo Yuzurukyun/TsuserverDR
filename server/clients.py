@@ -28,6 +28,8 @@ class DefaultDROProtocol(_Singleton):
     def __eq__(self, other):
         return type(self).__name__ == type(other).__name__
 
+    VERSION_TO_SEND = [1, 2, 0]
+
     HAS_CLIENTSIDE_MUSIC_LOOPING = False
     HAS_DISTINCT_AREA_AND_MUSIC_LIST_OUTGOING_PACKETS = True
     HAS_ACKMS = False
@@ -334,13 +336,15 @@ class DefaultDROProtocol(_Singleton):
     JOINED_AREA_OUTBOUND = [
     ]
 
-class ClientDRO1d1d1(DefaultDROProtocol):
-    pass
+class ClientDRO1d2d0(DefaultDROProtocol):
+    VERSION_TO_SEND = [1, 2, 0]
 
 class ClientDRO1d1d0(DefaultDROProtocol):
+    VERSION_TO_SEND = [1, 1, 0]
     HAS_JOINED_AREA = False
 
 class ClientDRO1d0d0(DefaultDROProtocol):
+    VERSION_TO_SEND = [1, 0, 0]
     HAS_CLIENTSIDE_MUSIC_LOOPING = False
     HAS_DISTINCT_AREA_AND_MUSIC_LIST_OUTGOING_PACKETS = False
     HAS_ACKMS = True

@@ -782,7 +782,7 @@ class _TestClientManager(ClientManager):
             if command_type == 'decryptor':  # Hi
                 buffer = 'HI#FAKEHDID#%'
             elif command_type == 'ID':  # Server ID
-                buffer = "ID#DRO#1.1.1#%"
+                buffer = "ID#DRO#1.2.0#%"
                 err = ('Wrong client ID for {}.\nExpected {}\nGot {}'
                        .format(self, args[0], self.id))
                 assert args[0] == str(self.id), err

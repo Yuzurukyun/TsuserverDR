@@ -51,7 +51,7 @@ class ClientManager:
             self.required_packets_received = set()  # Needs to have length 2 to actually connect
             self.can_askchaa = True  # Needs to be true to process an askchaa packet
             self.version = ('Undefined', 'Undefined')  # AO version used established through ID pack
-            self.packet_handler = clients.ClientDRO1d1d1()
+            self.packet_handler = clients.ClientDRO1d2d0()
             self.bad_version = False
             self.publisher = Publisher(self)
 
@@ -303,20 +303,6 @@ class ClientManager:
             if sender and sender in self.ignored_players:
                 return
 
-            # FIXME: Workaround because lazy. Proper fix is change all send_ic that specify
-            # char_id to also specify sender. However, there are potentially ugly issues lurking
-            # with first person/forward sprites mode here which I don't have the heart to figure
-            # out right now. Once fixed, remove the upcoming lines.
-            # Right now, this feature makes it emulate the old client behavior of ignoring based
-            # on character match.
-            if char_id:
-                for ignored_player in self.ignored_players:
-                    if char_id == ignored_player.char_id:
-                        return
-
-            # If self is ignoring sender, now is the moment to discard
-            if sender and sender in self.ignored_players:
-                return
             # FIXME: Workaround because lazy. Proper fix is change all send_ic that specify
             # char_id to also specify sender. However, there are potentially ugly issues lurking
             # with first person/forward sprites mode here which I don't have the heart to figure
