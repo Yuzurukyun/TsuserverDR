@@ -919,6 +919,29 @@ class ClientManager:
                 ignore_notifications=ignore_notifications, change_to=change_to,
                 more_unavail_chars=more_unavail_chars, from_party=from_party)
 
+        def post_area_changed(self, old_area: Union[None, AreaManager.Area], area: AreaManager.Area,
+                            found_something: bool = False, old_dname: str = '',
+                            override_all: bool = False,
+                            override_passages: bool = False, override_effects: bool = False,
+                            ignore_bleeding: bool = False, ignore_followers: bool = False,
+                            ignore_autopass: bool = False,
+                            ignore_checks: bool = False, ignore_notifications: bool = False,
+                            more_unavail_chars: Set[int] = None, change_to: int = None,
+                            from_party: bool = False):
+            self.area_changer.post_area_changed(
+                old_area, area, found_something=found_something,
+                old_dname=old_dname, override_all=override_all,
+                override_passages=override_passages,
+                override_effects=override_effects,
+                ignore_bleeding=ignore_bleeding,
+                ignore_followers=ignore_followers,
+                ignore_autopass=ignore_autopass,
+                ignore_checks=ignore_checks,
+                ignore_notifications=ignore_notifications,
+                more_unavail_chars=more_unavail_chars,
+                change_to=change_to,
+                from_party=from_party)
+
         def change_blindness(self, blind: bool):
             changed = (self.is_blind != blind)
             self.is_blind = blind
@@ -1538,6 +1561,8 @@ class ClientManager:
 
         def send_done(self):
             self.refresh_visible_char_list()
+            self.post_area_changed(None, self.area)
+            """
             self.send_command_dict('HP', {
                 'side': 1,
                 'health': self.area.hp_def
@@ -1560,7 +1585,7 @@ class ClientManager:
             self.send_command_dict('OPPASS', {
                 'guard_pass': '',
                 })
-
+            """
             if self.char_id is None:
                 self.char_id = -1  # Set to a valid ID if still needed
             self.send_command_dict('DONE', dict())

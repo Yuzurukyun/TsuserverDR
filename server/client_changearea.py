@@ -18,7 +18,7 @@
 
 from __future__ import annotations
 import typing
-from typing import List, Set, Tuple
+from typing import List, Set, Tuple, Union
 if typing.TYPE_CHECKING:
     # Avoid circular referencing
     from server.area_manager import AreaManager
@@ -799,6 +799,32 @@ class ClientChangeArea:
         client.area = area
         client.new_area = area  # Update again, as the above if may not have run
         area.new_client(client)
+        self.post_area_changed(old_area, area, found_something=found_something,
+                               old_dname=old_dname, override_all=override_all,
+                               override_passages=override_passages,
+                               override_effects=override_effects,
+                               ignore_bleeding=ignore_bleeding,
+                               ignore_followers=ignore_followers,
+                               ignore_autopass=ignore_autopass,
+                               ignore_checks=ignore_checks,
+                               ignore_notifications=ignore_notifications,
+                               more_unavail_chars=more_unavail_chars,
+                               change_to=change_to,
+                               from_party=from_party)
+
+    def post_area_changed(self, old_area: Union[None, AreaManager.Area], area: AreaManager.Area,
+                          found_something: bool = False, old_dname: str = '',
+                          override_all: bool = False,
+                          override_passages: bool = False, override_effects: bool = False,
+                          ignore_bleeding: bool = False, ignore_followers: bool = False,
+                          ignore_autopass: bool = False,
+                          ignore_checks: bool = False, ignore_notifications: bool = False,
+                          more_unavail_chars: Set[int] = None, change_to: int = None,
+                          from_party: bool = False):
+        client = self.client
+        if not old_dname:
+            old_dname = client.displayname
+
         try:
             area.play_current_track(only_for={client}, force_same_restart=0)
         except AreaError:
@@ -808,10 +834,11 @@ class ClientChangeArea:
         client.send_health(side=1, health=client.area.hp_def)
         client.send_health(side=2, health=client.area.hp_pro)
 
-        old_area_clock_period = old_area.get_clock_period()
-        new_area_clock_period = area.get_clock_period()
-        if old_area_clock_period != new_area_clock_period:
-            client.send_time_of_day(name=new_area_clock_period)
+        if old_area:
+            old_area_clock_period = old_area.get_clock_period()
+            new_area_clock_period = area.get_clock_period()
+            if old_area_clock_period != new_area_clock_period:
+                client.send_time_of_day(name=new_area_clock_period)
 
         if client.is_blind:
             client.send_background(name=client.server.config['blackout_background'])
@@ -844,7 +871,7 @@ class ClientChangeArea:
 
         # For old area, check if there are no remaining clients, and if so, end any existing
         # lurk callout timer that may have been imposed on the area
-        if not old_area.clients and old_area.lurk_length > 0:
+        if old_area and not old_area.clients and old_area.lurk_length > 0:
             old_area.lurk_length = 0
             mes = ('(X) The lurk callout timer in area {} has been ended as there is no one '
                    'left there.'.format(old_area.name))
@@ -856,12 +883,13 @@ class ClientChangeArea:
 
         client.send_area_ambient(area.ambient)
 
-        old_area.publisher.publish('area_client_left_final', {
-            'client': client,
-            'old_displayname': old_dname,
-            'ignore_autopass': ignore_autopass,
-            'ignore_bleeding': ignore_bleeding,
-            })
+        if old_area:
+            old_area.publisher.publish('area_client_left_final', {
+                'client': client,
+                'old_displayname': old_dname,
+                'ignore_autopass': ignore_autopass,
+                'ignore_bleeding': ignore_bleeding,
+                })
         area.publisher.publish('area_client_entered_final', {
             'client': client,
             'old_area': old_area,

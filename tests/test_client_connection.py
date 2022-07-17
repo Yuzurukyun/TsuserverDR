@@ -94,13 +94,13 @@ class TestClientConnection(_Unittest):
         c.assert_packet('HP', (2, 10))
         c.assert_packet('BN', None)
         c.assert_packet('LE', tuple())
-        c.assert_packet('MM', 1)  # ?????
-        c.assert_packet('OPPASS', None)
+        c.assert_packet('joined_area', None)
+        c.assert_packet('FA', None)  # Area list
+        c.assert_packet('FM', None)  # Music list
+        c.assert_packet('area_ambient', ('', ))
         c.assert_packet('DONE', tuple())
         c.assert_packet('CT', (None, None))  # Area list
-        c.assert_packet('CT', (None, None))  # MOTD
-        c.assert_packet('FA', None)  # Area list
-        c.assert_packet('FM', None, over=True)  # Music list, again
+        c.assert_packet('CT', (None, None), over=True)  # MOTD
 
         c.assert_ooc(None, check_CT_packet=False)
         c.assert_ooc(None, check_CT_packet=False, over=True)
@@ -143,13 +143,13 @@ class TestClientConnection(_Unittest):
         c.assert_packet('HP', (2, 10))
         c.assert_packet('BN', None)
         c.assert_packet('LE', tuple())
-        c.assert_packet('MM', 1)  # ?????
-        c.assert_packet('OPPASS', None)
+        c.assert_packet('joined_area', None)
+        c.assert_packet('FA', None)  # Area list
+        c.assert_packet('FM', None)  # Music list
+        c.assert_packet('area_ambient', ('', ))
         c.assert_packet('DONE', tuple())
         c.assert_packet('CT', (None, None))  # Area list
-        c.assert_packet('CT', (None, None))  # MOTD
-        c.assert_packet('FA', None)  # Area list
-        c.assert_packet('FM', None, over=True)  # Music list, again
+        c.assert_packet('CT', (None, None), over=True)  # MOTD
 
         c.assert_ooc(None, check_CT_packet=False)
         c.assert_ooc(None, check_CT_packet=False, over=True)
@@ -200,13 +200,13 @@ class TestClientConnection(_Unittest):
         c.assert_packet('HP', (2, 10))
         c.assert_packet('BN', None)
         c.assert_packet('LE', tuple())
-        c.assert_packet('MM', 1)  # ?????
-        c.assert_packet('OPPASS', None)
+        c.assert_packet('joined_area', None)
+        c.assert_packet('FA', None)  # Area list
+        c.assert_packet('FM', None)  # Music list
+        c.assert_packet('area_ambient', ('', ))
         c.assert_packet('DONE', tuple())
         c.assert_packet('CT', (None, None))  # Area list
-        c.assert_packet('CT', (None, None))  # MOTD
-        c.assert_packet('FA', None)  # Area list
-        c.assert_packet('FM', None, over=True)  # Music list, again
+        c.assert_packet('CT', (None, None), over=True)  # MOTD
 
         c.assert_ooc(None, check_CT_packet=False)
         c.assert_ooc(None, check_CT_packet=False, over=True)

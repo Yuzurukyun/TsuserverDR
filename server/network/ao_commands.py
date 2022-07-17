@@ -296,8 +296,6 @@ def net_cmd_rd(client: ClientManager.Client, pargs: Dict[str, Any]):
         else:
             client.send_area_list()
     client.send_motd()
-    client.reload_music_list()  # Reload the default area's music list
-    # so that it only includes areas reachable from that default area.
     client.can_askchaa = True  # Allow rejoining if left to lobby but did not dc.
 
 
