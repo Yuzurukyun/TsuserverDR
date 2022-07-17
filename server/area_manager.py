@@ -102,6 +102,7 @@ class AreaManager:
             self.lurk_length = 0
             self._in_zone = None
             self.noteworthy = False
+            self.ambient = ''
 
             self.name = parameters['area']
             self.background = parameters['background']

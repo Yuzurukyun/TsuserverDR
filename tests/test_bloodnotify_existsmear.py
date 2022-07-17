@@ -96,16 +96,13 @@ class TestBloodNotifyExistSmear_01_Lights(_TestBloodTrailSmeared):
 
         self.c4.move_area(6, discard_trivial=True)
         self.c4.assert_ooc('You hear faint drops of blood.', ooc_over=True)
-        self.c4.assert_packet('BN', self.blackout_background)
         self.c4.assert_ic('(Something catches your attention)', over=True)
         self.c4.move_area(7, discard_trivial=True)
         self.c4.assert_ooc('You hear faint drops of blood.', ooc_over=True)
-        self.c4.assert_packet('BN', self.blackout_background)
         self.c4.assert_ic('(Something catches your attention)', over=True)
 
         self.c4.move_area(4, discard_trivial=True)
         self.c4.assert_ooc('You smell blood.', ooc_over=True)
-        self.c4.assert_packet('BN', self.blackout_background)
         self.c4.assert_ic('(Something catches your attention)', over=True)
 
         self.c4.move_area(1, discard_trivial=True)
@@ -113,7 +110,6 @@ class TestBloodNotifyExistSmear_01_Lights(_TestBloodTrailSmeared):
 
         self.c4.move_area(2, discard_trivial=True)
         self.c4.assert_ooc('You smell blood.', ooc_over=True)
-        self.c4.assert_packet('BN', self.blackout_background)
         self.c4.assert_ic('(Something catches your attention)', over=True)
 
     def test_03_blinddeafarrival(self):
@@ -130,17 +126,14 @@ class TestBloodNotifyExistSmear_01_Lights(_TestBloodTrailSmeared):
 
         self.c4.move_area(6, discard_trivial=True)
         self.c4.assert_ooc('You smell blood.', ooc_over=True)
-        self.c4.assert_packet('BN', self.blackout_background)
         self.c4.assert_ic('(Something catches your attention)', over=True)
 
         self.c4.move_area(7, discard_trivial=True)
         self.c4.assert_ooc('You smell blood.', ooc_over=True)
-        self.c4.assert_packet('BN', self.blackout_background)
         self.c4.assert_ic('(Something catches your attention)', over=True)
 
         self.c4.move_area(4, discard_trivial=True)
         self.c4.assert_ooc('You smell blood.', ooc_over=True)
-        self.c4.assert_packet('BN', self.blackout_background)
         self.c4.assert_ic('(Something catches your attention)', over=True)
 
         self.c4.move_area(1, discard_trivial=True)
@@ -148,7 +141,6 @@ class TestBloodNotifyExistSmear_01_Lights(_TestBloodTrailSmeared):
 
         self.c4.move_area(2, discard_trivial=True)
         self.c4.assert_ooc('You smell blood.', ooc_over=True)
-        self.c4.assert_packet('BN', self.blackout_background)
         self.c4.assert_ic('(Something catches your attention)', over=True)
 
     def test_04_deafarrival(self):
@@ -246,17 +238,14 @@ class TestBloodNotifyExistSmear_02_NoLights(_TestBloodTrailSmeared):
 
         self.c4.move_area(6, discard_trivial=True)
         self.c4.assert_ooc('You hear faint drops of blood.', ooc_over=True)
-        self.c4.assert_packet('BN', self.blackout_background)
         self.c4.assert_ic('(Something catches your attention)', over=True)
 
         self.c4.move_area(7, discard_trivial=True)
         self.c4.assert_ooc('You hear faint drops of blood.', ooc_over=True)
-        self.c4.assert_packet('BN', self.blackout_background)
         self.c4.assert_ic('(Something catches your attention)', over=True)
 
         self.c4.move_area(4, discard_trivial=True)
         self.c4.assert_ooc('You smell blood.', ooc_over=True)
-        self.c4.assert_packet('BN', self.blackout_background)
         self.c4.assert_ic('(Something catches your attention)', over=True)
 
         self.c4.move_area(1, discard_trivial=True)
@@ -264,7 +253,6 @@ class TestBloodNotifyExistSmear_02_NoLights(_TestBloodTrailSmeared):
 
         self.c4.move_area(2, discard_trivial=True)
         self.c4.assert_ooc('You smell blood.', ooc_over=True)
-        self.c4.assert_packet('BN', self.blackout_background)
         self.c4.assert_ic('(Something catches your attention)', over=True)
 
     def test_03_blinddeafarrival(self):
@@ -281,17 +269,14 @@ class TestBloodNotifyExistSmear_02_NoLights(_TestBloodTrailSmeared):
 
         self.c4.move_area(6, discard_trivial=True)
         self.c4.assert_ooc('You smell blood.', ooc_over=True)
-        self.c4.assert_packet('BN', self.blackout_background)
         self.c4.assert_ic('(Something catches your attention)', over=True)
 
         self.c4.move_area(7, discard_trivial=True)
         self.c4.assert_ooc('You smell blood.', ooc_over=True)
-        self.c4.assert_packet('BN', self.blackout_background)
         self.c4.assert_ic('(Something catches your attention)', over=True)
 
         self.c4.move_area(4, discard_trivial=True)
         self.c4.assert_ooc('You smell blood.', ooc_over=True)
-        self.c4.assert_packet('BN', self.blackout_background)
         self.c4.assert_ic('(Something catches your attention)', over=True)
 
         self.c4.move_area(1, discard_trivial=True)
@@ -299,7 +284,6 @@ class TestBloodNotifyExistSmear_02_NoLights(_TestBloodTrailSmeared):
 
         self.c4.move_area(2, discard_trivial=True)
         self.c4.assert_ooc('You smell blood.', ooc_over=True)
-        self.c4.assert_packet('BN', self.blackout_background)
         self.c4.assert_ic('(Something catches your attention)', over=True)
 
     def test_04_deafarrival(self):
@@ -468,7 +452,6 @@ class TestBloodNotifyExistSmear_03_SwitchLights(TestBloodNotifyExistSmear_02_NoL
 
         self.c4.move_area(6, discard_trivial=True)
         self.c4.assert_ooc('You hear faint drops of blood.', ooc_over=True)
-        self.c4.assert_packet('BN', self.blackout_background)
         self.c4.assert_ic('(Something catches your attention)', over=True)
 
         self.c3.ooc('/lights on')
@@ -490,7 +473,6 @@ class TestBloodNotifyExistSmear_03_SwitchLights(TestBloodNotifyExistSmear_02_NoL
         ###
         self.c4.move_area(7, discard_trivial=True)
         self.c4.assert_ooc('You hear faint drops of blood.', ooc_over=True)
-        self.c4.assert_packet('BN', self.blackout_background)
         self.c4.assert_ic('(Something catches your attention)', over=True)
 
         self.c2.ooc('/lights on')
@@ -525,7 +507,6 @@ class TestBloodNotifyExistSmear_03_SwitchLights(TestBloodNotifyExistSmear_02_NoL
         ###
         self.c4.move_area(4, discard_trivial=True)
         self.c4.assert_ooc('You smell blood.', ooc_over=True)
-        self.c4.assert_packet('BN', self.blackout_background)
         self.c4.assert_ic('(Something catches your attention)', over=True)
 
         self.c4.ooc('/lights on')
@@ -554,7 +535,6 @@ class TestBloodNotifyExistSmear_03_SwitchLights(TestBloodNotifyExistSmear_02_NoL
         ###
         self.c4.move_area(2, discard_trivial=True)
         self.c4.assert_ooc('You smell blood.', ooc_over=True)
-        self.c4.assert_packet('BN', self.blackout_background)
         self.c4.assert_ic('(Something catches your attention)', over=True)
 
         self.c4.ooc('/lights on')
@@ -581,7 +561,6 @@ class TestBloodNotifyExistSmear_03_SwitchLights(TestBloodNotifyExistSmear_02_NoL
 
         self.c4.move_area(6, discard_trivial=True)
         self.c4.assert_ooc('You smell blood.', ooc_over=True)
-        self.c4.assert_packet('BN', self.blackout_background)
         self.c4.assert_ic('(Something catches your attention)', over=True)
 
         self.c3.ooc('/lights on')
@@ -600,7 +579,6 @@ class TestBloodNotifyExistSmear_03_SwitchLights(TestBloodNotifyExistSmear_02_NoL
         ###
         self.c4.move_area(7, discard_trivial=True)
         self.c4.assert_ooc('You smell blood.', ooc_over=True)
-        self.c4.assert_packet('BN', self.blackout_background)
         self.c4.assert_ic('(Something catches your attention)', over=True)
 
         self.c2.ooc('/lights on')
@@ -632,7 +610,6 @@ class TestBloodNotifyExistSmear_03_SwitchLights(TestBloodNotifyExistSmear_02_NoL
         ###
         self.c4.move_area(4, discard_trivial=True)
         self.c4.assert_ooc('You smell blood.', ooc_over=True)
-        self.c4.assert_packet('BN', self.blackout_background)
         self.c4.assert_ic('(Something catches your attention)', over=True)
 
         self.c4.ooc('/lights on')
@@ -661,7 +638,6 @@ class TestBloodNotifyExistSmear_03_SwitchLights(TestBloodNotifyExistSmear_02_NoL
         ###
         self.c4.move_area(2, discard_trivial=True)
         self.c4.assert_ooc('You smell blood.', ooc_over=True)
-        self.c4.assert_packet('BN', self.blackout_background)
         self.c4.assert_ic('(Something catches your attention)', over=True)
 
         self.c4.ooc('/lights on')

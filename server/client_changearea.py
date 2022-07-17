@@ -819,7 +819,10 @@ class ClientChangeArea:
             client.send_background(name=client.area.background,
                                    tod_backgrounds=client.area.get_background_tod())
         client.send_evidence_list()
-        client.send_ic_blankpost()
+        if client.packet_handler.HAS_JOINED_AREA:
+            client.send_joined_area()
+        else:
+            client.send_ic_blankpost()
 
         if found_something:
             client.send_ic_attention()
@@ -850,6 +853,8 @@ class ClientChangeArea:
 
         if area.id not in client.remembered_locked_passages:
             client.remembered_locked_passages[area.id] = set()
+
+        client.send_area_ambient(area.ambient)
 
         old_area.publisher.publish('area_client_left_final', {
             'client': client,

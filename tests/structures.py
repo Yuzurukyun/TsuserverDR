@@ -375,15 +375,19 @@ class _TestClientManager(ClientManager):
                                     ['FA', None],
                                     ['FM', None],
                                     ['BN', None],
+                                    ['area_ambient', None],
+                                    ['joined_area', None],
                                     )
                 for packet in packets_to_discard:
                     self.discard_packet(packet, somewhere=True)
 
+                """
                 # Discard IC blankpost and OOC standard notification
                 _, x = self.search_match(['MS', None],
                                          self.received_packets, somewhere=True, remove_match=True,
                                          allow_partial_match=True)
                 self.discard_ic(x[1])
+                """
 
                 host = self.convert_word_to_symbol(self.server.config['hostname'])
                 _, x = self.search_match(['CT', (host, 'Changed area to')],
@@ -778,7 +782,7 @@ class _TestClientManager(ClientManager):
             if command_type == 'decryptor':  # Hi
                 buffer = 'HI#FAKEHDID#%'
             elif command_type == 'ID':  # Server ID
-                buffer = "ID#DRO#1.1.0#%"
+                buffer = "ID#DRO#1.2.0#%"
                 err = ('Wrong client ID for {}.\nExpected {}\nGot {}'
                        .format(self, args[0], self.id))
                 assert args[0] == str(self.id), err
@@ -852,6 +856,10 @@ class _TestClientManager(ClientManager):
             elif command_type == 'ackMS':  # Acknowledge MS packet
                 pass
             elif command_type == 'SN':  # Showname change
+                pass
+            elif command_type == 'area_ambient':  # Area ambient sound effect
+                pass
+            elif command_type == 'joined_area':  # Joined area
                 pass
             else:
                 raise KeyError(f'Unrecognized STC argument `{command_type}` {args}')

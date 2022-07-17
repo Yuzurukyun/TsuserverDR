@@ -52,22 +52,22 @@ It is highly recommended you read through all the installation steps first befor
 * If everything was set up correctly, you will see something like this appear:
 
 ```
-[2022-06-08T10:20:20]: Starting...
-[2022-06-08T10:20:20]: Launching TsuserverDR 4.3.2 (220609a)...
-[2022-06-08T10:20:20]: Loading server configurations...
-[2022-06-08T10:20:20]: Server configurations loaded successfully!
-[2022-06-08T10:20:20]: Starting a nonlocal server...
-[2022-06-08T10:20:20]: Server started successfully!
-[2022-06-08T10:20:21]: Server should be now accessible from 192.0.2.0:50000:My First DR Server
+[2022-07-17T10:20:20]: Starting...
+[2022-07-17T10:20:20]: Launching TsuserverDR 4.3.3 (220717a)...
+[2022-07-17T10:20:20]: Loading server configurations...
+[2022-07-17T10:20:20]: Server configurations loaded successfully!
+[2022-07-17T10:20:20]: Starting a nonlocal server...
+[2022-07-17T10:20:20]: Server started successfully!
+[2022-07-17T10:20:21]: Server should be now accessible from 192.0.2.0:50000:My First DR Server
 ```
 
 * If you are listing your server in the Attorney Online master server, make sure its details are set up correctly. In particular, make sure that your server name and description are correct, as that is how players will find your server. If everything was set up correctly, you will see something like this appear:
 
 ```
-[2022-06-08T10:20:21]: Attempting to connect to the master server at https://servers.aceattorneyonline.com/servers with the following details:
-[2022-06-08T10:20:21]: *Server name: My First DR Server
-[2022-06-08T10:20:21]: *Server description: This is my flashy new DR server
-[2022-06-08T10:20:22]: Connected to the master server.
+[2022-07-17T10:20:21]: Attempting to connect to the master server at https://servers.aceattorneyonline.com/servers with the following details:
+[2022-07-17T10:20:21]: *Server name: My First DR Server
+[2022-07-17T10:20:21]: *Server description: This is my flashy new DR server
+[2022-07-17T10:20:22]: Connected to the master server.
 ```
 
   - The server will make a single ping to [ipify](https://api.ipify.org) in order to obtain its public IP address. If it fails to do that, it will let you know that, as it means there is probably something wrong with your internet connection and that other players may not be able to connect to your server.
@@ -76,9 +76,9 @@ It is highly recommended you read through all the installation steps first befor
 * To stop the server, press Ctrl+C once from your terminal. This will initiate a shutdown sequence and notify you when it is done. If the shutdown finished successfully, you will see something like this appear:
 
 ```
-[2022-06-08T22:23:04]: You have initiated a server shut down.
-[2022-06-08T22:23:04]: Kicking 12 remaining clients.
-[2022-06-08T22:23:04]: Server has successfully shut down.
+[2022-07-17T22:23:04]: You have initiated a server shut down.
+[2022-07-17T22:23:04]: Kicking 12 remaining clients.
+[2022-07-17T22:23:04]: Server has successfully shut down.
 ```
 
 * If you do not see anything after a few seconds of starting a shutdown, you can try spamming Ctrl+C to try and force a shutdown or directly close out your terminal. This is not recommended due to the cleanup process not finishing correctly but it is doable.
@@ -107,6 +107,8 @@ Additional notes are listed at the end of the command list. Unless otherwise spe
     - Displays help for a command, or links to the server repository if not given an argument.
 * **help_more** "command name"
     - Displays extended help for a command, usually significantly longer than what /help does.
+* **ambient_info**
+    - Displays the current area ambient sound effect.
 * **area** "area number"
     - Moves you to an area by its numerical ID if it is reachable from your own, or displays all areas if not given a number.
 * **autopass**
@@ -323,6 +325,10 @@ GMs can:
   - Bypass area passages and locks.
   - Receive special RP notifications.
   - Use GM commands.
+* **ambient** "name"
+    - Changes the ambient sound effect of your current area.
+* **ambient_end**
+    - Clears the ambient sound effect of your current area.
 * **area_kick** "ID" "area number"
     - Kicks target from your area to the intended area and remove them from its invite-list.
     - If not given a target area, it will use the server's default area (usually area 0).
@@ -599,6 +605,10 @@ GMs can:
     - You are automatically set to watch the zones you create like this.
 * **zone_add** "area"
     - Adds an area by name or ID to the zone you are watching.
+* **zone_ambient** "name"
+    - Changes the ambient sound effect of all areas of the zone you are watching.
+* **zone_ambient_end**
+    - Clears the ambient sound effect of all areas of the zone you are watching.
 * **zone_autopass**
     - Changes the autopass status of the zone you are watching. If turned on, turns autopass on for players in an area part of a zone and players that later join; otherwise, it turns it off for players in an area part of the zone
 * **zone_end**

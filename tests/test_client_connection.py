@@ -3,7 +3,7 @@ from .structures import _Unittest
 _standard_FL = ('yellowtext', 'customobjections', 'flipping', 'fastloading', 'noencryption',
                 'deskmod', 'evidence', 'cccc_ic_support', 'looping_sfx', 'additive', 'effects',
                 'y_offset', 'ackMS', 'showname', 'chrini', 'charscheck', 'v110')
-_standard_client_version = ('1', '1', '0')
+_standard_client_version = ('1', '2', '0')
 
 
 class TestClientConnection(_Unittest):
