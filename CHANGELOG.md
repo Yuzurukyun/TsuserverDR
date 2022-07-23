@@ -776,3 +776,6 @@
 
 ### 220717b (4.3.3-post1)
 * Fixed some information about the default area (e.g. ambient sound effects) not being sent for players joining a server
+
+### 220723a (4.3.3-post2)
+* Fixed /zone_ambient not allowing tracks with spaces

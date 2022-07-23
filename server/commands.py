@@ -11165,7 +11165,7 @@ def ooc_cmd_zone_ambient(client: ClientManager.Client, arg: str):
     Sets the ambient sound effect of all areas of the current zone to `wind.wav`.
     """
 
-    Constants.assert_command(client, arg, is_staff=True, parameters='=1')
+    Constants.assert_command(client, arg, is_staff=True, parameters='>0')
 
     if not client.zone_watched:
         raise ZoneError('You are not watching a zone.')
