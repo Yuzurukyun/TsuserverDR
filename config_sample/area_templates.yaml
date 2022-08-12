@@ -17,7 +17,7 @@
   locking_allowed: true
   iniswap_allowed: true
   rp_getarea_allowed: false
-- template_name: AO_Courtroom 
+- template_name: AO_Courtroom
   area: Courtroom No. <AN>
   background: gs4
   bglock: true
@@ -28,5 +28,5 @@
 - template_name: OOC_Stuff
   area: OOC
   background: Principal's Room_HD
-  eivdence_mod: HiddenCM
+  evidence_mod: HiddenCM
   iniswap_allowed: true
