@@ -69,10 +69,10 @@ class ValidateAreas(Validate):
         # Create the areas
         for item in contents:
             # Check required parameters
-            if 'area' not in item:
+            if 'area' not in item or not item['area']:
                 info = 'Area {} has no name.'.format(current_area_id)
                 raise AreaError(info)
-            if 'background' not in item:
+            if 'background' not in item or not item['background']:
                 info = 'Area {} has no background.'.format(item['area'])
                 raise AreaError(info)
 
