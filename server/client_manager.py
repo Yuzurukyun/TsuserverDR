@@ -519,6 +519,7 @@ class ClientManager:
         def send_ic_others(self, params: List = None, sender: ClientManager.Client=None,
                            bypass_text_replace: bool = False,
                            bypass_deafened_starters: bool = False,
+                           use_last_received_sprites: bool = False,
                            pred: Callable[[ClientManager.Client], bool] = None, not_to=None,
                            gag_replaced=False, is_staff=None, in_area=None, to_blind=None,
                            to_deaf=None, msg=None, folder=None, pos=None, char_id=None, ding=None,
@@ -532,6 +533,7 @@ class ClientManager:
             for c in self.server.get_clients():
                 c.send_ic(params=None, sender=sender, bypass_text_replace=bypass_text_replace,
                           bypass_deafened_starters=bypass_deafened_starters,
+                          use_last_received_sprites=use_last_received_sprites,
                           pred=pred, not_to=not_to, gag_replaced=gag_replaced, is_staff=is_staff,
                           in_area=in_area, to_blind=to_blind, to_deaf=to_deaf,
                           msg=msg, folder=folder, pos=pos, char_id=char_id, ding=ding, color=color,
