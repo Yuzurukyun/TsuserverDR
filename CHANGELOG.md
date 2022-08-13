@@ -781,5 +781,6 @@
 * Fixed /zone_ambient not allowing tracks with spaces
 
 ### (4.3.4)
+* Added /sneakself, which sneaks all of your active multiclients that are not currently sneaked but can be sneaked
 * Fixed area validator not properly handling areas with empty names or backgrounds
 * Fixed typo in area_templates.yaml field

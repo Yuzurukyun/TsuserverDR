@@ -2894,8 +2894,9 @@ def ooc_cmd_gmlock(client: ClientManager.Client, arg: str):
 
 
 def ooc_cmd_gmself(client: ClientManager.Client, arg: str):
-    """ (STAFF ONLY):
+    """ (STAFF ONLY)
     Makes all opened multiclients login as game master without them needing to put in a GM password.
+    Opened multiclients that are already logged in as game master are unaffected.
     Returns an error if all opened multiclients are already game masters.
 
     SYNTAX
@@ -11224,6 +11225,47 @@ def ooc_cmd_zone_ambient_end(client: ClientManager.Client, arg: str):
         c.send_area_ambient(name='')
     for a in zone.get_areas():
         a.ambient = ''
+
+
+def ooc_cmd_sneakself(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY+VARYING REQUIREMENTS)
+    Makes all opened multiclients be sneaked without having to manually sneak them.
+    Opened multiclients that are already sneaked are unaffected.
+    If a multiclient is in a private area, or in a lobby area and you are not an officer, or is
+    already sneaked, the sneak will fail for that multiclient.
+    Returns an error if no opened multiclients can successfully be sneaked.
+
+    SYNTAX
+    /sneakself
+
+    EXAMPLES
+    If user with client ID 0 is GM has multiclients with ID 1 and 3, neither sneaked, and runs...
+    >>> /sneakself
+    Sneaks clients 0, 1 and 3.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True)
+
+    targets = [c for c in client.get_multiclients() if c.is_visible]
+    targets = [c for c in targets if not c.area.private_area]
+    if not client.is_officer():
+        targets = [c for c in targets if c.area.lobby_area]
+    if not targets:
+        raise ClientError('No opened clients can be sneaked.')
+
+    # Sneak matching targets
+    for c in targets:
+        c.change_visibility(False)
+
+    client.send_ooc("You sneaked all of your valid multiclients.")
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] sneaked all their valid '
+                           f'multiclients [{client.id}] ({client.area.id}).',
+                           not_to=set(targets), is_zstaff=True)
+
+    non_targets = [c for c in client.get_multiclients() if c not in targets]
+    if non_targets:
+        s_non_targets = Constants.cjoin([f'{c.displayname} [{c.id}]' for c in non_targets])
+        client.send_ooc(f'The following clients could not be sneaked: {s_non_targets}')
 
 
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):

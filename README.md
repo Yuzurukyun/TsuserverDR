@@ -541,6 +541,8 @@ GMs can:
     - Sets a target to be sneaking if they were visible.
     - If the target was subject to a handicap shorter than the server's automatic sneak handicap length, they will be imposed this handicap.
     - If no ID is given, target is yourself.
+* **sneakself**
+    - Sneaks all opened multiclients that can be sneaked.
 * **st** "message"
     - Sends a message to all active staff members.
 * **status_set_other** "ID/char name/edited-to character/showname/char showname/OOC name" "status"
