@@ -987,14 +987,15 @@ class ClientManager:
                 raise ClientError("Showname `{}` exceeds the server's character limit of {}."
                                   .format(showname, self.server.config['showname_max_length']))
 
-            # Check if showname is already used within area
-            for c in target_area.clients:
-                if c == self:
-                    continue
-                if c.showname == showname or c.char_showname == showname:
-                    raise ValueError("Showname `{}` is already in use in this area."
-                                        .format(showname))
-                    # This ValueError must be recaught, otherwise the client will crash.
+            # Check if showname is already used within area, and not GM
+            if not self.is_staff():
+                for c in target_area.clients:
+                    if c == self:
+                        continue
+                    if c.showname == showname or c.char_showname == showname:
+                        raise ValueError("Showname `{}` is already in use in this area."
+                                            .format(showname))
+                        # This ValueError must be recaught, otherwise the client will crash.
 
         def change_character_ini_details(self, char_folder: str, char_showname: str):
             self.char_folder = char_folder
