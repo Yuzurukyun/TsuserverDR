@@ -1729,7 +1729,7 @@ def ooc_cmd_clock_period(client: ClientManager.Client, arg: str):
     seconds. Day period now goes from 8 AM to 10 PM.
     """
 
-    Constants.assert_command(client, arg, is_staff=True, parameters='&1-3')
+    Constants.assert_command(client, arg, is_staff=True, parameters='&2-3')
 
     try:
         task = client.server.tasker.get_task(client, ['as_day_cycle'])
@@ -1737,18 +1737,16 @@ def ooc_cmd_clock_period(client: ClientManager.Client, arg: str):
         raise ClientError('You have not initiated any day cycles.')
 
     args = arg.split()
-    hour_length = client.server.tasker.get_task_attr(client, ['as_day_cycle'],
-                                                     'main_hour_length')
-    hours_in_day = client.server.tasker.get_task_attr(client, ['as_day_cycle'],
-                                                     'hours_in_day')
+    hour_length = client.server.tasker.get_task_attr(client, ['as_day_cycle'], 'main_hour_length')
+    hours_in_day = client.server.tasker.get_task_attr(client, ['as_day_cycle'], 'hours_in_day')
 
     name = args[0].lower()
-    pre_hour_start = args[2] if len(args) == 3 else (args[1] if len(args) == 2 else "-1")
-    pre_hour_length = args[1] if len(args) == 3 else (str(hour_length) if len(args) == 2 else "1")
+    pre_hour_start = args[2] if len(args) == 3 else args[1]
+    pre_hour_length = args[1] if len(args) == 3 else str(hour_length)
 
     try:
         hour_start = int(pre_hour_start)
-        if not -1 <= hour_start < hours_in_day:
+        if not 0 <= hour_start < hours_in_day:
             raise ValueError
     except ValueError:
         raise ArgumentError(f'Invalid period start hour {hour_start}.')
@@ -1762,6 +1760,39 @@ def ooc_cmd_clock_period(client: ClientManager.Client, arg: str):
 
     client.server.tasker.set_task_attr(client, ['as_day_cycle'], 'new_period_start',
                                        (hour_start, name, hour_length))
+    client.server.tasker.set_task_attr(client, ['as_day_cycle'], 'refresh_reason', 'period')
+    client.server.tasker.cancel_task(task)
+
+
+def ooc_cmd_clock_period_end(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Removes a previously created period to the day cycle you established.
+    If the removed period is the one currently active, the period becomes whatever the new period
+    should be using the remaining periods if there are any, or fully deactivated if there are no
+    other periods left.
+    Returns an error if you have not started a day cycle, or if the period does not exist.
+
+    SYNTAX
+    /clock_period_end <name>
+
+    PARAMETERS
+    <name>: Name of the period.
+
+    EXAMPLE
+    Assuming the commands are run in order...
+    >>> /clock_period_end day
+    Removes the period called day.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='=1')
+
+    try:
+        task = client.server.tasker.get_task(client, ['as_day_cycle'])
+    except KeyError:
+        raise ClientError('You have not initiated any day cycles.')
+
+    client.server.tasker.set_task_attr(client, ['as_day_cycle'], 'new_period_start',
+                                       (-1, arg, 0))
     client.server.tasker.set_task_attr(client, ['as_day_cycle'], 'refresh_reason', 'period')
     client.server.tasker.cancel_task(task)
 

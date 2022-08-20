@@ -786,7 +786,8 @@
 * Added /mindreader, which allows GMs to let mind readers to see players using /think just like GMs now do
 * GMs are no longer subject to the duplicate showname checks
 * Players using Danganronpa Online 1.2.2 now properly adjust to new character lists if the server is refreshed and the character list is changed
-* Added an extra parameter to /clock_period, allowing GMs to set the hour length of all hours within a period.
+* Added an extra parameter to /clock_period, allowing GMs to set the hour length of all hours within a period
+* Added an explicit /clock_period_end to delete a clock period, rather than relying on an undocumented 1-parameter call to /clock_period
 * Fixed area validator not properly handling areas with empty names or backgrounds
 * Fixed typo in area_templates.yaml field
 * Fixed /think messages not showing the last sent sprite

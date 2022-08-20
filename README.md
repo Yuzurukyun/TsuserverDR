@@ -380,6 +380,8 @@ GMs can:
     - Whenever the clock ticks into the period, players in the clock range will be ordered to switch to that time of day's version of their theme.
     - If only two arguments are given, the second argument is assumed to be hour start, and hour length is the main hour length.
     - Clock period names are automatically made all lowercase.
+* **clock_period_end** "name"
+    - Deletes a clock period for your day cycle.
 * **clock_set** "hour length" "hour"
     - Modifies the hour length and current hour of your day cycle without restarting it. This is the way to move the day cycle out of unknown time if needed as well.
     - Acts just like doing /clock again, but does not erase already set periods.
