@@ -138,7 +138,10 @@ def net_cmd_id(client: ClientManager.Client, pargs: Dict[str, Any]):
 
         if software == 'DRO':
             if major >= 2:
-                client.packet_handler = clients.ClientDRO1d2d0()
+                if minor >= 2:
+                    client.packet_handler = clients.ClientDRO1d2d2()
+                else:
+                    client.packet_handler = clients.ClientDRO1d2d0()
             elif major >= 1:
                 client.packet_handler = clients.ClientDRO1d1d0()
             else:

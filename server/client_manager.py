@@ -51,7 +51,7 @@ class ClientManager:
             self.required_packets_received = set()  # Needs to have length 2 to actually connect
             self.can_askchaa = True  # Needs to be true to process an askchaa packet
             self.version = ('Undefined', 'Undefined')  # AO version used established through ID pack
-            self.packet_handler = clients.ClientDRO1d2d0()
+            self.packet_handler = clients.ClientDRO1d2d2()
             self.bad_version = False
             self.publisher = Publisher(self)
 

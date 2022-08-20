@@ -785,6 +785,7 @@
 * GMs and zone watchers now see thoughts in IC if the thinker is in the same area
 * Added /mindreader, which allows GMs to let mind readers to see players using /think just like GMs now do
 * GMs are no longer subject to the duplicate showname checks
+* Players using Danganronpa Online 1.2.2 now properly adjust to new character lists if the server is refreshed and the character list is changed
 * Fixed area validator not properly handling areas with empty names or backgrounds
 * Fixed typo in area_templates.yaml field
 * Fixed /think messages not showing the last sent sprite
