@@ -63,7 +63,7 @@ class ClientManager:
             self.name = ''
             self.char_folder = ''
             self.char_showname = ''
-            self.pos = ''
+            self.pos = 'wit'
             self.showname = ''
             self.ever_chose_character = False
             self.joined = time.time()
@@ -833,7 +833,7 @@ class ClientManager:
             # Assumes players are not iniswapped initially, waiting for chrini packet
             self.char_folder = self.get_char_name()
             self.char_showname = ''
-            self.pos = ''
+            self.pos = 'wit'
 
             if announce_zwatch:
                 self.send_ooc_others('(X) Client {} has changed from character `{}` to `{}` in '

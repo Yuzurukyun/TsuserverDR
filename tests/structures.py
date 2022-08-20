@@ -654,7 +654,7 @@ class _TestClientManager(ClientManager):
             if anim is None:
                 anim = 'happy'
             if pos is None:
-                pos = self.pos if self.pos else 'def'
+                pos = self.pos if self.pos else 'wit'
             if char_id is None:
                 char_id = self.char_id
             if evi is None:

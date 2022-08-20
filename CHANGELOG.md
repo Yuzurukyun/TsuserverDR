@@ -788,3 +788,4 @@
 * Fixed area validator not properly handling areas with empty names or backgrounds
 * Fixed typo in area_templates.yaml field
 * Fixed /think messages not showing the last sent sprite
+* Fixed IC-via-OOC commands sending an empty position if the sender never spoke IC before sending the command
