@@ -1537,15 +1537,15 @@ def ooc_cmd_clock(client: ClientManager.Client, arg: str):
     Requires /clock_end to undo.
     Returns an error if the given hour start is not a nonnegative number or beyond the indicated
     number of hours in a day, if the number of hours in a day is not a positive integer, or if the
-    hour length is not a positive number.
+    hour length is not a positive integer.
 
     SYNTAX
-    /clock <area_range_start> <area_range_end> <hour_length> <hour_start> {hours_in_day}
+    /clock <area_range_start> <area_range_end> <main_hour_length> <hour_start> {hours_in_day}
 
     PARAMETERS
     <area_range_start>: Send notifications from this area onwards up to...
     <area_range_end>: Send notifications up to (and including) this area.
-    <hour_length>: Length of each ingame hour (in seconds)
+    <main_hour_length>: Main length of each ingame hour (in seconds)
     <hour_start>: Starting hour (integer from 0 to 23)
 
     OPTIONAL PARAMETERS
@@ -1699,61 +1699,80 @@ def ooc_cmd_clock_pause(client: ClientManager.Client, arg: str):
 def ooc_cmd_clock_period(client: ClientManager.Client, arg: str):
     """ (STAFF ONLY)
     Adds a period to the day cycle you established. Whenever the day cycle clock ticks
-    into a time part of the period, all clients in the affected areas will be ordered to change
-    to that time of day's version of their theme. Time of day periods go from their given hour
-    start all the way until the next period.
+    into a time part of the period after a given hour length of seconds, all clients in the
+    affected areas will be ordered to change to that time of day's version of their theme.
+    Time of day periods go from their given hour start all the way until the next period.
     If the period name already exists, its hour start will be overwritten.
+    If the hour length is not given, it will use the main hour length of the day cycle.
     If some period already starts at the given hour start, its name will be overwritten.
     Returns an error if you have not started a day cycle, or if the hour start is not an integer
-    from 0 inclusive to the number of hours in a day set up for the day cycle exclusive.
+    from 0 inclusive to the number of hours in a day set up for the day cycle exclusive, or if given
+    an hour length and it is not a positive integer.
 
     SYNTAX
     /clock_period <name> <hour_start>
+    /clock_period <name> {hour_length} <hour_start>
 
     PARAMETERS
     <name>: Name of the period.
     <hour_start>: Start time of the period.
 
+    OPTIONAL PARAMETERS
+    {hour_length}: Length of each ingame hour (in seconds). Defaults to the main hour length.
+
     EXAMPLE
     Assuming the commands are run in order...
     >>> /clock_period day 8
     Sets up a period that goes from 8 AM to 8 AM.
-    >>> /clock_period night 22
-    Sets up a night period that goes from 10 PM to 8 AM. Day period now goes from 8 AM to 10 PM.
+    >>> /clock_period night 150 22
+    Sets up a night period that goes from 10 PM to 8 AM, each hour in the period ticking every 150
+    seconds. Day period now goes from 8 AM to 10 PM.
     """
 
-    Constants.assert_command(client, arg, is_staff=True, parameters='&1-2')
+    Constants.assert_command(client, arg, is_staff=True, parameters='&1-3')
 
     try:
         task = client.server.tasker.get_task(client, ['as_day_cycle'])
     except KeyError:
         raise ClientError('You have not initiated any day cycles.')
 
-    try:
-        args = arg.split()
-        if len(args) == 1:
-            name, pre_start, start = args[0].lower(), "-1", -1
-        else:
-            name, pre_start = args[0].lower(), args[1]
-            start = int(pre_start)  # Do it separately so ValueError exception may read args[1]
-            hours_in_day = client.server.tasker.get_task_attr(client, ['as_day_cycle'],
-                                                              'hours_in_day')
-            if not 0 <= start < hours_in_day:
-                start = args[1]
-                raise ValueError
-    except ValueError:
-        raise ArgumentError('Invalid period start hour {}.'.format(pre_start))
+    args = arg.split()
+    hour_length = client.server.tasker.get_task_attr(client, ['as_day_cycle'],
+                                                     'main_hour_length')
+    hours_in_day = client.server.tasker.get_task_attr(client, ['as_day_cycle'],
+                                                     'hours_in_day')
 
-    client.server.tasker.set_task_attr(client, ['as_day_cycle'], 'new_period_start', (start, name))
+    name = args[0].lower()
+    pre_hour_start = args[2] if len(args) == 3 else (args[1] if len(args) == 2 else "-1")
+    pre_hour_length = args[1] if len(args) == 3 else (str(hour_length) if len(args) == 2 else "1")
+
+    try:
+        hour_start = int(pre_hour_start)
+        if not -1 <= hour_start < hours_in_day:
+            raise ValueError
+    except ValueError:
+        raise ArgumentError(f'Invalid period start hour {hour_start}.')
+
+    try:
+        hour_length = int(pre_hour_length)
+        if hour_length <= 0:
+            raise ValueError
+    except ValueError:
+        raise ArgumentError(f'Invalid period hour length {hour_length}.')
+
+    client.server.tasker.set_task_attr(client, ['as_day_cycle'], 'new_period_start',
+                                       (hour_start, name, hour_length))
     client.server.tasker.set_task_attr(client, ['as_day_cycle'], 'refresh_reason', 'period')
     client.server.tasker.cancel_task(task)
 
 
 def ooc_cmd_clock_set(client: ClientManager.Client, arg: str):
     """ (STAFF ONLY)
-    Updates the hour length and current hour of the client's day cycle without restarting it,
+    Updates the main hour length and current hour of the client's day cycle without restarting it,
     changing its area range or notifying normal players. If the day cycle time was unknown, the
     time is updated in the same manner (effectively taking it out of unknown mode).
+    The hour length of any active periods are not modified and have priority over the main hour
+    length.
     Returns an error if you have not started a day cycle, or if the hour is not an
     integer from 0 inclusive to the number of hours in a day set up for the day cycle exclusive.
 

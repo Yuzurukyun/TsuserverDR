@@ -369,15 +369,16 @@ GMs can:
 * **charlog** "ID"
     - Lists all character changes (including iniswaps and character name changes) a target has gone through since connecting, including the time they were changed.
 * **clock** "area range start" "area range end" "hour length" "hour start" "hours in a day"
-    - Sets up a day cycle that, starting from the given hour, will tick one hour every given number of seconds and provide a time announcement to a given range of areas.
+    - Sets up a day cycle that, starting from the given hour, will tick one hour every given number of seconds (main hour length) and provide a time announcement to a given range of areas.
     - Hours go from 0 inclusive to the number of hours in a day given exclusive, or 0 to 23 inclusive if not given a number of hours in a day.
 * **clock_end** "ID"
     - Ends the day cycle initiated by the target or yourself if not given a target.
 * **clock_pause** "ID"
     - Pauses the day cycle initiated by the target or yourself if not given a target.
-* **clock_period** "name" "hour start"
+* **clock_period** "name" "hour length" "hour start"
     - Initializes a clock period that starts at the given hour for your day cycle.
     - Whenever the clock ticks into the period, players in the clock range will be ordered to switch to that time of day's version of their theme.
+    - If only two arguments are given, the second argument is assumed to be hour start, and hour length is the main hour length.
     - Clock period names are automatically made all lowercase.
 * **clock_set** "hour length" "hour"
     - Modifies the hour length and current hour of your day cycle without restarting it. This is the way to move the day cycle out of unknown time if needed as well.
