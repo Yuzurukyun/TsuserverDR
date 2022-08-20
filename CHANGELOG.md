@@ -782,6 +782,9 @@
 
 ### (4.3.4)
 * Added /sneakself, which sneaks all of your active multiclients that are not currently sneaked but can be sneaked
+* GMs and zone watchers now see thoughts in IC if the thinker is in the same area
+* Added /mindreader, which allows GMs to let mind readers to see players using /think just like GMs now do
 * GMs are no longer subject to the duplicate showname checks
 * Fixed area validator not properly handling areas with empty names or backgrounds
 * Fixed typo in area_templates.yaml field
+* Fixed /think messages not showing the last sent sprite

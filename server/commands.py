@@ -7986,8 +7986,11 @@ def ooc_cmd_switch(client: ClientManager.Client, arg: str):
 
 def ooc_cmd_think(client: ClientManager.Client, arg: str):
     """
-    Sends an IC message that only you (and zone watchers or GMs+ in OOC) can see.
-    You get to see the IC message with the last sprite you saw.
+    Sends an IC message that only you can see in IC (a thought), as well as any other players in
+    your area that are either zone watchers, GMs+ or mind readers.
+    Zone watchers, GMs+ or mind readers receive a copy of the thought in OOC, regardless of them
+    having seen the thought because they were in the area or not.
+    Players who see the thought in IC get to see it with the last sprite they saw.
 
     SYNTAX
     /think <message>
@@ -8005,11 +8008,26 @@ def ooc_cmd_think(client: ClientManager.Client, arg: str):
     msg = arg[:256]
 
     client.send_ic(msg=msg, pos=client.pos, folder=client.char_folder, char_id=client.char_id,
-                   showname='[T] ' + client.showname_else_char_showname, hide_character=1,
+                   showname='[T] ' + client.showname_else_char_showname,
                    bypass_text_replace=True, use_last_received_sprites=True)
     client.send_ooc(f'You thought `{arg}`.')
-    client.send_ooc_others(f'{client.displayname} [{client.id}] thought `{arg}` '
+
+    client.send_ic_others(msg=msg, pos=client.pos, folder=client.char_folder,
+                          char_id=client.char_id,
+                          showname='[T] ' + client.showname_else_char_showname,
+                          bypass_text_replace=True, use_last_received_sprites=True,
+                          is_zstaff_flex=True, in_area=True)
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] thought `{arg}` '
                            f'({client.area.id}).', is_zstaff_flex=True)
+
+    client.send_ic_others(msg=msg, pos=client.pos, folder=client.char_folder,
+                          char_id=client.char_id,
+                          showname='[T] ' + client.showname_else_char_showname,
+                          bypass_text_replace=True, use_last_received_sprites=True,
+                          is_zstaff_flex=False, in_area=True, pred=lambda c: c.is_mindreader)
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] thought `{arg}` '
+                           f'({client.area.id}).',
+                          is_zstaff_flex=False, pred=lambda c: c.is_mindreader)
 
 
 def ooc_cmd_time(client: ClientManager.Client, arg: str):
@@ -11266,6 +11284,52 @@ def ooc_cmd_sneakself(client: ClientManager.Client, arg: str):
     if non_targets:
         s_non_targets = Constants.cjoin([f'{c.displayname} [{c.id}]' for c in non_targets])
         client.send_ooc(f'The following clients could not be sneaked: {s_non_targets}')
+
+
+def ooc_cmd_mindreader(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Toggles a client by ID being a mind reader or not (i.e. can read all thoughts caused by /think,
+    not just those initiated by the player), or yourself if not given an argument.
+    Returns an error if the given identifier does not correspond to a user.
+
+    SYNTAX
+    /mindreader
+    /mindreader <client_id>
+
+    OPTIONAL PARAMETERS
+    {client_id}: Client identifier (number in brackets in /getarea)
+
+    EXAMPLE
+    Assuming a user with client ID 0 starts as not being a mind reader...
+    >>> /mindreader 0
+    This user can now read all thoughts.
+    >>> /mindreader 0
+    This user can no longer read thoughts not initiated by the user.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='<2')
+
+    # Invert current mindreader status of matching targets
+    if not arg:
+        target = client
+    else:
+        target = Constants.parse_id(client, arg)
+    target.is_mindreader = not target.is_mindreader
+
+    status = {False: 'no longer', True: 'now'}
+    status2 = {False: 'no longer a', True: 'a'}
+    if client != target:
+        client.send_ooc(f'{target.displayname} ({target.id}) is {status[target.is_mindreader]} a '
+                        f'mind reader.')
+        client.send_ooc_others(f'(X) {client.displayname} ({client.id}) made {target.displayname} '
+                               f'({target.id}) be {status2[target.is_mindreader]} mind reader '
+                               f'({client.area.id}).', is_zstaff_flex=True)
+        target.send_ooc(f'You are {status[target.is_transient]} a mind reader.')
+    else:
+        client.send_ooc(f'You made yourself be {status2[target.is_mindreader]} mind reader.')
+        client.send_ooc_others(f'(X) {client.displayname} ({client.id}) made themselves be '
+                               f'{status2[target.is_mindreader]} mind reader '
+                               f'({client.area.id}).', is_zstaff_flex=True)
 
 
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):

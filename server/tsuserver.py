@@ -69,8 +69,8 @@ class TsuserverDR:
         self.release = 4
         self.major_version = 3
         self.minor_version = 4
-        self.segment_version = 'a5'
-        self.internal_version = 'm220813b'
+        self.segment_version = 'a6'
+        self.internal_version = 'm220819a'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
@@ -398,14 +398,16 @@ class TsuserverDR:
     def load_characters(self) -> List[str]:
         characters = ValidateCharacters().validate('config/characters.yaml')
 
-        if self.char_list != characters:
-            # Inconsistent character list, so change everyone to spectator
-            for client in self.get_clients():
-                if client.char_id != -1:
-                    # Except those that are already spectators
-                    client.change_character(-1)
-                client.send_ooc('The server character list was changed and no longer reflects your '
-                                'client character list. Please rejoin the server.')
+        if self.char_list == characters:
+            return characters.copy()
+
+        # Inconsistent character list, so change everyone to spectator
+        for client in self.get_clients():
+            if client.char_id != -1:
+                # Except those that are already spectators
+                client.change_character(-1)
+            client.send_ooc('The server character list was changed and no longer reflects your '
+                            'client character list. Please rejoin the server.')
 
         self.char_list = characters
         return characters.copy()

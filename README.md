@@ -446,6 +446,8 @@ GMs can:
     - Ends the area's lurk callout timer if there is one active.
 * **make_gm** "ID"
     - Makes the target a GM, provided the target is a multiclient of the player.
+* **mindreader** "ID"
+    - Changes a player's ability to see thoughts of other players made with /think. By default it is off.
 * **multiclients** "ID"
     - Lists all the clients opened by a target and the areas they are in.
 * **notecard_check**

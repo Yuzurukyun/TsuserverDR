@@ -128,6 +128,7 @@ class ClientManager:
             self.ignored_players = set()
             self.paranoia = 2
             self.notecard = ''
+            self.is_mindreader = False
 
             # Pairing stuff
             self.charid_pair = -1
@@ -252,14 +253,31 @@ class ClientManager:
             self.server.make_all_clients_do("send_ooc", msg, pred=cond, allow_empty=allow_empty,
                                             username=username)
 
-        def send_ic(self, params: List = None, sender: ClientManager.Client = None,
+        def send_ic(self,
+                    params: List = None,
+                    sender: ClientManager.Client = None,
+                    bypass_text_replace: bool = False,
+                    bypass_deafened_starters: bool = False,
+                    use_last_received_sprites: bool = False,
+                    gag_replaced: bool = False,
                     pred: Callable[[ClientManager.Client], bool] = None,
-                    not_to: ClientManager.Client = None, gag_replaced=False,
-                    is_staff=None, in_area=None, to_blind=None, to_deaf=None,
-                    bypass_text_replace=False, bypass_deafened_starters=False,
-                    use_last_received_sprites=False,
-                    msg=None, folder=None, pos=None, char_id=None, ding=None, color=None,
-                    showname=None, hide_character=0):
+                    not_to: Set[ClientManager.Client] = None,
+                    part_of: Set[ClientManager.Client] = None,
+                    is_staff: bool = None,
+                    is_officer: bool = None,
+                    is_zstaff: bool = None,
+                    is_zstaff_flex: bool = None,
+                    in_area: bool = None,
+                    to_blind: bool = None,
+                    to_deaf: bool = None,
+                    msg=None,
+                    folder=None,
+                    pos=None,
+                    char_id=None,
+                    ding=None,
+                    color=None,
+                    showname=None,
+                    hide_character=0):
 
             # sender is the client who sent the IC message
             # self is who is receiving the IC message at this particular moment
@@ -267,6 +285,9 @@ class ClientManager:
             # Assert correct call to the function
             if params is None and msg is None:
                 raise ValueError('Expected message.')
+
+            if not_to is None:
+                not_to = set()
 
             # Fill in defaults
             # Expected behavior is as follows:
@@ -295,8 +316,11 @@ class ClientManager:
             # Check if receiver is actually meant to receive the message. Bail out early if not.
             # FIXME: First argument should be sender, not self. Using in_area=True fails otherwise
 
-            cond = Constants.build_cond(self, is_staff=is_staff, in_area=in_area, not_to=not_to,
-                                        to_blind=to_blind, to_deaf=to_deaf, pred=pred)
+            cond = Constants.build_cond(self, is_staff=is_staff, is_officer=is_officer,
+                                        in_area=in_area, not_to=not_to,
+                                        part_of=part_of, to_blind=to_blind, to_deaf=to_deaf,
+                                        is_zstaff=is_zstaff, is_zstaff_flex=is_zstaff_flex,
+                                        pred=pred)
             if not cond(self):
                 return
             # If self is ignoring sender, now is the moment to discard
@@ -400,6 +424,7 @@ class ClientManager:
                     pargs['pos'] = last_args['pos']
                     pargs['anim_type'] = last_args['anim_type']
                     pargs['flip'] = last_args['flip']
+                    pargs['hide_character'] = last_args['hide_character']
 
                 # Regardless of anything, pairing is visually canceled while in first person
                 # so set them to default values
@@ -516,28 +541,57 @@ class ClientManager:
 
             self.send_command_dict('MS', final_pargs)
 
-        def send_ic_others(self, params: List = None, sender: ClientManager.Client=None,
+        def send_ic_others(self,
+                           params: List = None,
+                           sender: ClientManager.Client = None,
                            bypass_text_replace: bool = False,
                            bypass_deafened_starters: bool = False,
                            use_last_received_sprites: bool = False,
-                           pred: Callable[[ClientManager.Client], bool] = None, not_to=None,
-                           gag_replaced=False, is_staff=None, in_area=None, to_blind=None,
-                           to_deaf=None, msg=None, folder=None, pos=None, char_id=None, ding=None,
-                           color=None, showname=None, hide_character=0):
+                           gag_replaced: bool = False,
+                           pred: Callable[[ClientManager.Client], bool] = None,
+                           not_to: Set[ClientManager.Client] = None,
+                           part_of: Set[ClientManager.Client] = None,
+                           is_staff: bool = None,
+                           is_officer: bool = None,
+                           is_zstaff: bool = None,
+                           is_zstaff_flex: bool = None,
+                           in_area: bool = None,
+                           to_blind: bool = None,
+                           to_deaf: bool = None,
+                           msg=None,
+                           folder=None,
+                           pos=None,
+                           char_id=None,
+                           ding=None,
+                           color=None,
+                           showname=None,
+                           hide_character=0):
 
             if not_to is None:
                 not_to = {self}
             else:
                 not_to = not_to.union({self})
 
-            for c in self.server.get_clients():
-                c.send_ic(params=None, sender=sender, bypass_text_replace=bypass_text_replace,
-                          bypass_deafened_starters=bypass_deafened_starters,
-                          use_last_received_sprites=use_last_received_sprites,
-                          pred=pred, not_to=not_to, gag_replaced=gag_replaced, is_staff=is_staff,
-                          in_area=in_area, to_blind=to_blind, to_deaf=to_deaf,
-                          msg=msg, folder=folder, pos=pos, char_id=char_id, ding=ding, color=color,
-                          showname=showname, hide_character=hide_character)
+            cond = Constants.build_cond(self, is_staff=is_staff, is_officer=is_officer,
+                                        in_area=in_area, not_to=not_to.union({self}),
+                                        part_of=part_of, to_blind=to_blind, to_deaf=to_deaf,
+                                        is_zstaff=is_zstaff, is_zstaff_flex=is_zstaff_flex,
+                                        pred=pred)
+            self.server.make_all_clients_do("send_ic", pred=cond,
+                                            params=params,
+                                            sender=sender,
+                                            bypass_text_replace=bypass_text_replace,
+                                            bypass_deafened_starters=bypass_deafened_starters,
+                                            use_last_received_sprites=use_last_received_sprites,
+                                            gag_replaced=gag_replaced,
+                                            msg=msg,
+                                            folder=folder,
+                                            pos=pos,
+                                            char_id=char_id,
+                                            ding=ding,
+                                            color=color,
+                                            showname=showname,
+                                            hide_character=hide_character)
 
         def send_ic_attention(self):
             self.send_ic(msg='(Something catches your attention)', ding=1, hide_character=1)
