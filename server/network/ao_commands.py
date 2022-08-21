@@ -323,12 +323,14 @@ def net_cmd_cc(client: ClientManager.Client, pargs: Dict[str, Any]):
     client.last_active = Constants.get_time()
 
     if not ever_chose_character_before:
-        client.send_command_dict('GM', {
-            'name': ''
-            })
-        client.send_command_dict('TOD', {
-            'name': ''
-            })
+        if not client.ever_outbounded_gamemode:
+            client.send_command_dict('GM', {
+                'name': ''
+                })
+        if not client.ever_outbounded_time_of_day:
+            client.send_command_dict('TOD', {
+                'name': ''
+                })
         try:
             client.area.play_current_track(only_for={client}, force_same_restart=1)
         except AreaError:

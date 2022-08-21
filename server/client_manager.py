@@ -65,9 +65,12 @@ class ClientManager:
             self.char_showname = ''
             self.pos = 'wit'
             self.showname = ''
-            self.ever_chose_character = False
             self.joined = time.time()
             self.last_active = Constants.get_time()
+
+            self.ever_chose_character = False
+            self.ever_outbounded_gamemode = False
+            self.ever_outbounded_time_of_day = False
 
             self.area = server.area_manager.default_area()
             self.new_area = self.area  # It is different from self.area in transition to a new area
@@ -679,11 +682,13 @@ class ClientManager:
                 })
 
         def send_gamemode(self, name=None):
+            self.ever_outbounded_gamemode = True
             self.send_command_dict('GM', {
                 'name': name,
                 })
 
         def send_time_of_day(self, name=None):
+            self.ever_outbounded_time_of_day = True
             self.send_command_dict('TOD', {
                 'name': name,
                 })
@@ -1619,37 +1624,10 @@ class ClientManager:
         def send_done(self):
             self.refresh_visible_char_list()
             self.post_area_changed(None, self.area)
-            """
-            self.send_command_dict('HP', {
-                'side': 1,
-                'health': self.area.hp_def
-                })
-            self.send_command_dict('HP', {
-                'side': 2,
-                'health': self.area.hp_pro
-                })
-            if self.is_blind:
-                self.send_background(name=self.server.config['blackout_background'])
-            else:
-                self.send_background(name=self.area.background,
-                                     tod_backgrounds=self.area.get_background_tod())
-            self.send_command_dict('LE', {
-                'evidence_ao2_list': self.area.get_evidence_list(self),
-                })
-            self.send_command_dict('MM', {
-                'unknown': 1,
-                })
-            self.send_command_dict('OPPASS', {
-                'guard_pass': '',
-                })
-            """
+
             if self.char_id is None:
                 self.char_id = -1  # Set to a valid ID if still needed
             self.send_command_dict('DONE', dict())
-
-            if self.bad_version:
-                self.send_ooc(f'Unknown client detected {self.version}. '
-                              f'Assuming standard DRO client protocol.')
 
             if self.bad_version:
                 self.send_ooc(f'Unknown client detected {self.version}. '
