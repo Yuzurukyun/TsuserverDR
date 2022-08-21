@@ -19,7 +19,7 @@
 from __future__ import annotations
 
 import typing
-from typing import Any, Callable, List, Optional, Set, Tuple, Dict
+from typing import Any, Callable, List, Optional, Set, Tuple, Dict, Union
 if typing.TYPE_CHECKING:
     # Avoid circular referencing
     from server.area_manager import AreaManager
@@ -596,8 +596,9 @@ class ClientManager:
                                             showname=showname,
                                             hide_character=hide_character)
 
-        def send_ic_attention(self):
-            self.send_ic(msg='(Something catches your attention)', ding=1, hide_character=1)
+        def send_ic_attention(self, ding: bool = True):
+            int_ding = 1 if ding else 0
+            self.send_ic(msg='(Something catches your attention)', ding=int_ding, hide_character=1)
 
         def send_ic_blankpost(self):
             if self.packet_handler.ALLOWS_INVISIBLE_BLANKPOSTS:
@@ -951,7 +952,7 @@ class ClientManager:
 
         def notify_change_area(self, area: AreaManager.Area, old_char: str,
                                ignore_bleeding: bool = False, ignore_autopass: bool = False,
-                               just_me: bool = False) -> bool:
+                               just_me: bool = False) -> Tuple[bool, bool]:
             return self.area_changer.notify_change_area(
                 area, old_char, ignore_bleeding=ignore_bleeding, ignore_autopass=ignore_autopass,
                 just_me=just_me)
@@ -981,16 +982,20 @@ class ClientManager:
                 more_unavail_chars=more_unavail_chars, from_party=from_party)
 
         def post_area_changed(self, old_area: Union[None, AreaManager.Area], area: AreaManager.Area,
-                            found_something: bool = False, old_dname: str = '',
-                            override_all: bool = False,
-                            override_passages: bool = False, override_effects: bool = False,
-                            ignore_bleeding: bool = False, ignore_followers: bool = False,
-                            ignore_autopass: bool = False,
-                            ignore_checks: bool = False, ignore_notifications: bool = False,
-                            more_unavail_chars: Set[int] = None, change_to: int = None,
-                            from_party: bool = False):
+                              found_something: bool = False,
+                              ding_something: bool = False,
+                              old_dname: str = '',
+                              override_all: bool = False,
+                              override_passages: bool = False, override_effects: bool = False,
+                              ignore_bleeding: bool = False, ignore_followers: bool = False,
+                              ignore_autopass: bool = False,
+                              ignore_checks: bool = False, ignore_notifications: bool = False,
+                              more_unavail_chars: Set[int] = None, change_to: int = None,
+                              from_party: bool = False):
             self.area_changer.post_area_changed(
-                old_area, area, found_something=found_something,
+                old_area, area,
+                found_something=found_something,
+                ding_something=ding_something,
                 old_dname=old_dname, override_all=override_all,
                 override_passages=override_passages,
                 override_effects=override_effects,
@@ -1013,22 +1018,21 @@ class ClientManager:
                 self.send_background(name=self.area.background,
                                      tod_backgrounds=self.area.get_background_tod())
 
-            found_something = self.area_changer.notify_me_rp(self.area, changed_visibility=changed,
-                                                             changed_hearing=False)
+            found_something, ding_something = self.area_changer.notify_me_rp(
+                self.area, changed_visibility=changed, changed_hearing=False)
             if found_something and not blind:
-                self.send_ic_attention()
+                self.send_ic_attention(ding=ding_something)
 
         def change_deafened(self, deaf: bool):
             changed = (self.is_deaf != deaf)
             self.is_deaf = deaf
 
-            found_something = self.area_changer.notify_me_rp(self.area, changed_visibility=False,
-                                                             changed_hearing=changed)
+            found_something, ding_something = self.area_changer.notify_me_rp(
+                self.area, changed_visibility=False, changed_hearing=changed)
             if found_something and not deaf:
-                self.send_ic_attention()
+                self.send_ic_attention(ding=ding_something)
 
-        def change_gagged(self, gagged: bool ):
-            # changed = (self.is_gagged != gagged)
+        def change_gagged(self, gagged: bool):
             self.is_gagged = gagged
 
         def check_change_showname(self, showname: str, target_area: AreaManager.Area = None):

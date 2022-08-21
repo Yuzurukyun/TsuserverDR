@@ -4811,7 +4811,7 @@ def ooc_cmd_noteworthy(client: ClientManager.Client, arg: str):
     if client.area.noteworthy:
         client.send_ooc_others('Something catches your attention.', is_zstaff_flex=False,
                                in_area=True, pred=lambda c: not (c.is_deaf and c.is_blind))
-        client.area.broadcast_ic_attention()
+        client.area.broadcast_ic_attention(ding=True)
 
     logger.log_server('[{}][{}]Set noteworthy status to {}'
                       .format(client.area.id, client.get_char_name(), client.area.noteworthy),
@@ -7927,7 +7927,7 @@ def ooc_cmd_status_set(client: ClientManager.Client, arg: str):
             c.send_ooc(f'You note something different about {client.displayname}.',
                        is_zstaff_flex=False)
 
-        client.area.broadcast_ic_attention(cond=lambda c: c in refreshed_clients)
+        client.area.broadcast_ic_attention(cond=lambda c: c in refreshed_clients, ding=False)
 
     else:
         client.status = ''
@@ -7990,7 +7990,7 @@ def ooc_cmd_status_set_other(client: ClientManager.Client, arg: str):
 
             c.send_ooc(f'You now note something about {target.displayname}.',
                        is_zstaff_flex=False)
-        target.area.broadcast_ic_attention()
+        target.area.broadcast_ic_attention(ding=False)
 
     else:
         # By previous if, player must have had a status before

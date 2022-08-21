@@ -111,7 +111,7 @@ class ClientChangeArea:
 
     def notify_change_area(self, area: AreaManager.Area, old_dname: str,
                            ignore_bleeding: bool = False, ignore_autopass: bool = False,
-                           just_me: bool = False) -> bool:
+                           just_me: bool = False) -> Tuple[bool, bool]:
         """
         Send all OOC notifications that come from switching areas.
         Right now there is
@@ -133,20 +133,23 @@ class ClientChangeArea:
 
         If just_me is True, no notifications are sent to other players in the area.
 
-        Returns True if any RP related notifications are sent to the player who changed areas,
-        False otherwise.
-
+        Returns a tuple of two bool arguments:
+        0. True if any RP related notifications are sent to the player who changed areas, False
+        otherwise.
+        1. True if such RP related notifications to be sent should include a "ding" effect, False
+        otherwise.
         """
 
-        found_something = self.notify_me(area, old_dname, ignore_bleeding=ignore_bleeding)
+        found_something, ding_something = self.notify_me(area, old_dname,
+                                                         ignore_bleeding=ignore_bleeding)
         if not just_me:
             self.notify_others(area, old_dname, ignore_bleeding=ignore_bleeding,
                                ignore_autopass=ignore_autopass)
 
-        return found_something
+        return found_something, ding_something
 
     def notify_me(self, area: AreaManager.Area, old_dname: str,
-                  ignore_bleeding: bool = False) -> bool:
+                  ignore_bleeding: bool = False) -> Tuple[bool, bool]:
         client = self.client
 
         # Code here assumes successful area change, so it will be sending client notifications
@@ -217,11 +220,11 @@ class ClientChangeArea:
             area.bleeds_to.add(old_area.name)
             client.send_ooc('You are bleeding.')
 
-        found_something = self.notify_me_rp(area)
-        return found_something
+        found_something, ding_something = self.notify_me_rp(area)
+        return found_something, ding_something
 
     def notify_me_rp(self, area: AreaManager.Area, changed_visibility: bool = True,
-                     changed_hearing: bool = True) -> bool:
+                     changed_hearing: bool = True) -> Tuple[bool, bool]:
         ###########
         # Check bleeding status
         blood = self.notify_me_blood(area, changed_visibility=changed_visibility,
@@ -238,7 +241,7 @@ class ClientChangeArea:
                                                          changed_visibility=changed_visibility,
                                                          changed_hearing=changed_hearing)
 
-        return blood or statuses or area_noteworthy
+        return blood or statuses or area_noteworthy, area_noteworthy
 
     def notify_me_blood(self, area: AreaManager.Area, changed_visibility: bool = True,
                         changed_hearing: bool = True) -> bool:
@@ -485,7 +488,7 @@ class ClientChangeArea:
             status_refreshed_clients = list() # Do not IC ping if client has no status
 
         area.broadcast_ic_attention(cond=lambda c: (ic_attention_others or
-                                                    c in status_refreshed_clients))
+                                                    c in status_refreshed_clients), ding=False)
 
     def notify_others_moving(self, client: ClientManager.Client, area: AreaManager.Area,
                              autopass_mes: str, blind_mes: str):
@@ -777,9 +780,9 @@ class ClientChangeArea:
                 #              .format(client.get_char_name(), old_area.name, old_area.id,
                 #                      old_area.name, old_area.id), client)
 
-                found_something = client.notify_change_area(area, old_dname,
-                                                            ignore_bleeding=ignore_bleeding,
-                                                            ignore_autopass=ignore_autopass)
+                found_something, ding_something = client.notify_change_area(
+                    area, old_dname, ignore_bleeding=ignore_bleeding,
+                    ignore_autopass=ignore_autopass)
 
                 old_area.publisher.publish('area_client_left', {
                     'client': client,
@@ -799,7 +802,9 @@ class ClientChangeArea:
         client.area = area
         client.new_area = area  # Update again, as the above if may not have run
         area.new_client(client)
-        self.post_area_changed(old_area, area, found_something=found_something,
+        self.post_area_changed(old_area, area,
+                               found_something=found_something,
+                               ding_something=ding_something,
                                old_dname=old_dname, override_all=override_all,
                                override_passages=override_passages,
                                override_effects=override_effects,
@@ -813,7 +818,9 @@ class ClientChangeArea:
                                from_party=from_party)
 
     def post_area_changed(self, old_area: Union[None, AreaManager.Area], area: AreaManager.Area,
-                          found_something: bool = False, old_dname: str = '',
+                          found_something: bool = False,
+                          ding_something: bool = False,
+                          old_dname: str = '',
                           override_all: bool = False,
                           override_passages: bool = False, override_effects: bool = False,
                           ignore_bleeding: bool = False, ignore_followers: bool = False,
@@ -854,7 +861,7 @@ class ClientChangeArea:
             client.send_ic_blankpost()
 
         if found_something:
-            client.send_ic_attention()
+            client.send_ic_attention(ding=ding_something)
 
         client.reload_music_list() # Update music list to include new area's reachable areas
         # If new area has lurk callout timer, reset it to that, provided it makes sense

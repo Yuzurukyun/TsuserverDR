@@ -780,7 +780,7 @@
 ### 220723a (4.3.3-post2)
 * Fixed /zone_ambient not allowing tracks with spaces
 
-### (4.3.4)
+### 220821a (4.3.4)
 * Added /sneakself, which sneaks all of your active multiclients that are not currently sneaked but can be sneaked
 * GMs and zone watchers now see thoughts in IC if the thinker is in the same area
 * Added /mindreader, which allows GMs to let mind readers to see players using /think just like GMs now do
@@ -788,6 +788,7 @@
 * Players using Danganronpa Online 1.2.2 now properly adjust to new character lists if the server is refreshed and the character list is changed
 * Added an extra parameter to /clock_period, allowing GMs to set the hour length of all hours within a period
 * Added an explicit /clock_period_end to delete a clock period, rather than relying on an undocumented 1-parameter call to /clock_period
+* Ding sound effects are no longer included with "Something catches your attention" IC messages, except those that are triggered because an area was marked as noteworthy
 * Fixed area validator not properly handling areas with empty names or backgrounds
 * Fixed typo in area_templates.yaml field
 * Fixed /think messages not showing the last sent sprite
