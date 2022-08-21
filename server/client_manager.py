@@ -19,7 +19,7 @@
 from __future__ import annotations
 
 import typing
-from typing import Any, Callable, List, Optional, Set, Tuple, Dict
+from typing import Any, Callable, List, Optional, Set, Tuple, Dict, Union
 if typing.TYPE_CHECKING:
     # Avoid circular referencing
     from server.area_manager import AreaManager
@@ -51,7 +51,7 @@ class ClientManager:
             self.required_packets_received = set()  # Needs to have length 2 to actually connect
             self.can_askchaa = True  # Needs to be true to process an askchaa packet
             self.version = ('Undefined', 'Undefined')  # AO version used established through ID pack
-            self.packet_handler = clients.ClientDRO1d2d0()
+            self.packet_handler = clients.ClientDRO1d2d2()
             self.bad_version = False
             self.publisher = Publisher(self)
 
@@ -63,11 +63,14 @@ class ClientManager:
             self.name = ''
             self.char_folder = ''
             self.char_showname = ''
-            self.pos = ''
+            self.pos = 'wit'
             self.showname = ''
-            self.ever_chose_character = False
             self.joined = time.time()
             self.last_active = Constants.get_time()
+
+            self.ever_chose_character = False
+            self.ever_outbounded_gamemode = False
+            self.ever_outbounded_time_of_day = False
 
             self.area = server.area_manager.default_area()
             self.new_area = self.area  # It is different from self.area in transition to a new area
@@ -128,6 +131,7 @@ class ClientManager:
             self.ignored_players = set()
             self.paranoia = 2
             self.notecard = ''
+            self.is_mindreader = False
 
             # Pairing stuff
             self.charid_pair = -1
@@ -252,14 +256,31 @@ class ClientManager:
             self.server.make_all_clients_do("send_ooc", msg, pred=cond, allow_empty=allow_empty,
                                             username=username)
 
-        def send_ic(self, params: List = None, sender: ClientManager.Client = None,
+        def send_ic(self,
+                    params: List = None,
+                    sender: ClientManager.Client = None,
+                    bypass_text_replace: bool = False,
+                    bypass_deafened_starters: bool = False,
+                    use_last_received_sprites: bool = False,
+                    gag_replaced: bool = False,
                     pred: Callable[[ClientManager.Client], bool] = None,
-                    not_to: ClientManager.Client = None, gag_replaced=False,
-                    is_staff=None, in_area=None, to_blind=None, to_deaf=None,
-                    bypass_text_replace=False, bypass_deafened_starters=False,
-                    use_last_received_sprites=False,
-                    msg=None, folder=None, pos=None, char_id=None, ding=None, color=None,
-                    showname=None, hide_character=0):
+                    not_to: Set[ClientManager.Client] = None,
+                    part_of: Set[ClientManager.Client] = None,
+                    is_staff: bool = None,
+                    is_officer: bool = None,
+                    is_zstaff: bool = None,
+                    is_zstaff_flex: bool = None,
+                    in_area: bool = None,
+                    to_blind: bool = None,
+                    to_deaf: bool = None,
+                    msg=None,
+                    folder=None,
+                    pos=None,
+                    char_id=None,
+                    ding=None,
+                    color=None,
+                    showname=None,
+                    hide_character=0):
 
             # sender is the client who sent the IC message
             # self is who is receiving the IC message at this particular moment
@@ -267,6 +288,9 @@ class ClientManager:
             # Assert correct call to the function
             if params is None and msg is None:
                 raise ValueError('Expected message.')
+
+            if not_to is None:
+                not_to = set()
 
             # Fill in defaults
             # Expected behavior is as follows:
@@ -295,8 +319,11 @@ class ClientManager:
             # Check if receiver is actually meant to receive the message. Bail out early if not.
             # FIXME: First argument should be sender, not self. Using in_area=True fails otherwise
 
-            cond = Constants.build_cond(self, is_staff=is_staff, in_area=in_area, not_to=not_to,
-                                        to_blind=to_blind, to_deaf=to_deaf, pred=pred)
+            cond = Constants.build_cond(self, is_staff=is_staff, is_officer=is_officer,
+                                        in_area=in_area, not_to=not_to,
+                                        part_of=part_of, to_blind=to_blind, to_deaf=to_deaf,
+                                        is_zstaff=is_zstaff, is_zstaff_flex=is_zstaff_flex,
+                                        pred=pred)
             if not cond(self):
                 return
             # If self is ignoring sender, now is the moment to discard
@@ -400,6 +427,7 @@ class ClientManager:
                     pargs['pos'] = last_args['pos']
                     pargs['anim_type'] = last_args['anim_type']
                     pargs['flip'] = last_args['flip']
+                    pargs['hide_character'] = last_args['hide_character']
 
                 # Regardless of anything, pairing is visually canceled while in first person
                 # so set them to default values
@@ -516,29 +544,61 @@ class ClientManager:
 
             self.send_command_dict('MS', final_pargs)
 
-        def send_ic_others(self, params: List = None, sender: ClientManager.Client=None,
+        def send_ic_others(self,
+                           params: List = None,
+                           sender: ClientManager.Client = None,
                            bypass_text_replace: bool = False,
                            bypass_deafened_starters: bool = False,
-                           pred: Callable[[ClientManager.Client], bool] = None, not_to=None,
-                           gag_replaced=False, is_staff=None, in_area=None, to_blind=None,
-                           to_deaf=None, msg=None, folder=None, pos=None, char_id=None, ding=None,
-                           color=None, showname=None, hide_character=0):
+                           use_last_received_sprites: bool = False,
+                           gag_replaced: bool = False,
+                           pred: Callable[[ClientManager.Client], bool] = None,
+                           not_to: Set[ClientManager.Client] = None,
+                           part_of: Set[ClientManager.Client] = None,
+                           is_staff: bool = None,
+                           is_officer: bool = None,
+                           is_zstaff: bool = None,
+                           is_zstaff_flex: bool = None,
+                           in_area: bool = None,
+                           to_blind: bool = None,
+                           to_deaf: bool = None,
+                           msg=None,
+                           folder=None,
+                           pos=None,
+                           char_id=None,
+                           ding=None,
+                           color=None,
+                           showname=None,
+                           hide_character=0):
 
             if not_to is None:
                 not_to = {self}
             else:
                 not_to = not_to.union({self})
 
-            for c in self.server.get_clients():
-                c.send_ic(params=None, sender=sender, bypass_text_replace=bypass_text_replace,
-                          bypass_deafened_starters=bypass_deafened_starters,
-                          pred=pred, not_to=not_to, gag_replaced=gag_replaced, is_staff=is_staff,
-                          in_area=in_area, to_blind=to_blind, to_deaf=to_deaf,
-                          msg=msg, folder=folder, pos=pos, char_id=char_id, ding=ding, color=color,
-                          showname=showname, hide_character=hide_character)
+            cond = Constants.build_cond(self, is_staff=is_staff, is_officer=is_officer,
+                                        in_area=in_area, not_to=not_to.union({self}),
+                                        part_of=part_of, to_blind=to_blind, to_deaf=to_deaf,
+                                        is_zstaff=is_zstaff, is_zstaff_flex=is_zstaff_flex,
+                                        pred=pred)
+            self.server.make_all_clients_do("send_ic", pred=cond,
+                                            params=params,
+                                            sender=sender,
+                                            bypass_text_replace=bypass_text_replace,
+                                            bypass_deafened_starters=bypass_deafened_starters,
+                                            use_last_received_sprites=use_last_received_sprites,
+                                            gag_replaced=gag_replaced,
+                                            msg=msg,
+                                            folder=folder,
+                                            pos=pos,
+                                            char_id=char_id,
+                                            ding=ding,
+                                            color=color,
+                                            showname=showname,
+                                            hide_character=hide_character)
 
-        def send_ic_attention(self):
-            self.send_ic(msg='(Something catches your attention)', ding=1, hide_character=1)
+        def send_ic_attention(self, ding: bool = True):
+            int_ding = 1 if ding else 0
+            self.send_ic(msg='(Something catches your attention)', ding=int_ding, hide_character=1)
 
         def send_ic_blankpost(self):
             if self.packet_handler.ALLOWS_INVISIBLE_BLANKPOSTS:
@@ -623,11 +683,13 @@ class ClientManager:
                 })
 
         def send_gamemode(self, name=None):
+            self.ever_outbounded_gamemode = True
             self.send_command_dict('GM', {
                 'name': name,
                 })
 
         def send_time_of_day(self, name=None):
+            self.ever_outbounded_time_of_day = True
             self.send_command_dict('TOD', {
                 'name': name,
                 })
@@ -777,7 +839,7 @@ class ClientManager:
             # Assumes players are not iniswapped initially, waiting for chrini packet
             self.char_folder = self.get_char_name()
             self.char_showname = ''
-            self.pos = ''
+            self.pos = 'wit'
 
             if announce_zwatch:
                 self.send_ooc_others('(X) Client {} has changed from character `{}` to `{}` in '
@@ -890,7 +952,7 @@ class ClientManager:
 
         def notify_change_area(self, area: AreaManager.Area, old_char: str,
                                ignore_bleeding: bool = False, ignore_autopass: bool = False,
-                               just_me: bool = False) -> bool:
+                               just_me: bool = False) -> Tuple[bool, bool]:
             return self.area_changer.notify_change_area(
                 area, old_char, ignore_bleeding=ignore_bleeding, ignore_autopass=ignore_autopass,
                 just_me=just_me)
@@ -920,16 +982,20 @@ class ClientManager:
                 more_unavail_chars=more_unavail_chars, from_party=from_party)
 
         def post_area_changed(self, old_area: Union[None, AreaManager.Area], area: AreaManager.Area,
-                            found_something: bool = False, old_dname: str = '',
-                            override_all: bool = False,
-                            override_passages: bool = False, override_effects: bool = False,
-                            ignore_bleeding: bool = False, ignore_followers: bool = False,
-                            ignore_autopass: bool = False,
-                            ignore_checks: bool = False, ignore_notifications: bool = False,
-                            more_unavail_chars: Set[int] = None, change_to: int = None,
-                            from_party: bool = False):
+                              found_something: bool = False,
+                              ding_something: bool = False,
+                              old_dname: str = '',
+                              override_all: bool = False,
+                              override_passages: bool = False, override_effects: bool = False,
+                              ignore_bleeding: bool = False, ignore_followers: bool = False,
+                              ignore_autopass: bool = False,
+                              ignore_checks: bool = False, ignore_notifications: bool = False,
+                              more_unavail_chars: Set[int] = None, change_to: int = None,
+                              from_party: bool = False):
             self.area_changer.post_area_changed(
-                old_area, area, found_something=found_something,
+                old_area, area,
+                found_something=found_something,
+                ding_something=ding_something,
                 old_dname=old_dname, override_all=override_all,
                 override_passages=override_passages,
                 override_effects=override_effects,
@@ -952,22 +1018,21 @@ class ClientManager:
                 self.send_background(name=self.area.background,
                                      tod_backgrounds=self.area.get_background_tod())
 
-            found_something = self.area_changer.notify_me_rp(self.area, changed_visibility=changed,
-                                                             changed_hearing=False)
+            found_something, ding_something = self.area_changer.notify_me_rp(
+                self.area, changed_visibility=changed, changed_hearing=False)
             if found_something and not blind:
-                self.send_ic_attention()
+                self.send_ic_attention(ding=ding_something)
 
         def change_deafened(self, deaf: bool):
             changed = (self.is_deaf != deaf)
             self.is_deaf = deaf
 
-            found_something = self.area_changer.notify_me_rp(self.area, changed_visibility=False,
-                                                             changed_hearing=changed)
+            found_something, ding_something = self.area_changer.notify_me_rp(
+                self.area, changed_visibility=False, changed_hearing=changed)
             if found_something and not deaf:
-                self.send_ic_attention()
+                self.send_ic_attention(ding=ding_something)
 
-        def change_gagged(self, gagged: bool ):
-            # changed = (self.is_gagged != gagged)
+        def change_gagged(self, gagged: bool):
             self.is_gagged = gagged
 
         def check_change_showname(self, showname: str, target_area: AreaManager.Area = None):
@@ -985,14 +1050,15 @@ class ClientManager:
                 raise ClientError("Showname `{}` exceeds the server's character limit of {}."
                                   .format(showname, self.server.config['showname_max_length']))
 
-            # Check if showname is already used within area
-            for c in target_area.clients:
-                if c == self:
-                    continue
-                if c.showname == showname or c.char_showname == showname:
-                    raise ValueError("Showname `{}` is already in use in this area."
-                                        .format(showname))
-                    # This ValueError must be recaught, otherwise the client will crash.
+            # Check if showname is already used within area, and not GM
+            if not self.is_staff():
+                for c in target_area.clients:
+                    if c == self:
+                        continue
+                    if c.showname == showname or c.char_showname == showname:
+                        raise ValueError("Showname `{}` is already in use in this area."
+                                            .format(showname))
+                        # This ValueError must be recaught, otherwise the client will crash.
 
         def change_character_ini_details(self, char_folder: str, char_showname: str):
             self.char_folder = char_folder
@@ -1562,37 +1628,10 @@ class ClientManager:
         def send_done(self):
             self.refresh_visible_char_list()
             self.post_area_changed(None, self.area)
-            """
-            self.send_command_dict('HP', {
-                'side': 1,
-                'health': self.area.hp_def
-                })
-            self.send_command_dict('HP', {
-                'side': 2,
-                'health': self.area.hp_pro
-                })
-            if self.is_blind:
-                self.send_background(name=self.server.config['blackout_background'])
-            else:
-                self.send_background(name=self.area.background,
-                                     tod_backgrounds=self.area.get_background_tod())
-            self.send_command_dict('LE', {
-                'evidence_ao2_list': self.area.get_evidence_list(self),
-                })
-            self.send_command_dict('MM', {
-                'unknown': 1,
-                })
-            self.send_command_dict('OPPASS', {
-                'guard_pass': '',
-                })
-            """
+
             if self.char_id is None:
                 self.char_id = -1  # Set to a valid ID if still needed
             self.send_command_dict('DONE', dict())
-
-            if self.bad_version:
-                self.send_ooc(f'Unknown client detected {self.version}. '
-                              f'Assuming standard DRO client protocol.')
 
             if self.bad_version:
                 self.send_ooc(f'Unknown client detected {self.version}. '

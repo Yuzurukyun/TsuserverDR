@@ -654,7 +654,7 @@ class _TestClientManager(ClientManager):
             if anim is None:
                 anim = 'happy'
             if pos is None:
-                pos = self.pos if self.pos else 'def'
+                pos = self.pos if self.pos else 'wit'
             if char_id is None:
                 char_id = self.char_id
             if evi is None:
@@ -782,7 +782,7 @@ class _TestClientManager(ClientManager):
             if command_type == 'decryptor':  # Hi
                 buffer = 'HI#FAKEHDID#%'
             elif command_type == 'ID':  # Server ID
-                buffer = "ID#DRO#1.2.0#%"
+                buffer = "ID#DRO#1.2.2#%"
                 err = ('Wrong client ID for {}.\nExpected {}\nGot {}'
                        .format(self, args[0], self.id))
                 assert args[0] == str(self.id), err

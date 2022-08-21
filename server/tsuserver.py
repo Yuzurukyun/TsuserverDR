@@ -68,9 +68,9 @@ class TsuserverDR:
 
         self.release = 4
         self.major_version = 3
-        self.minor_version = 3
-        self.segment_version = 'post2'
-        self.internal_version = '220723a'
+        self.minor_version = 4
+        self.segment_version = ''
+        self.internal_version = '220821a'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
@@ -398,12 +398,32 @@ class TsuserverDR:
     def load_characters(self) -> List[str]:
         characters = ValidateCharacters().validate('config/characters.yaml')
 
-        if self.char_list != characters:
-            # Inconsistent character list, so change everyone to spectator
-            for client in self.get_clients():
-                if client.char_id != -1:
-                    # Except those that are already spectators
-                    client.change_character(-1)
+        if self.char_list == characters:
+            return characters.copy()
+
+        # Inconsistent character list, so change everyone to spectator
+        new_chars = {char: num for (num, char) in enumerate(characters)}
+
+        for client in self.get_clients():
+            target_char_id = -1
+            old_char_name = client.get_char_name()
+
+            if client.char_id < 0:
+                # Do nothing for spectators
+                pass
+            elif old_char_name not in new_chars:
+                # Character no longer exists, so switch to spectator
+                client.send_ooc('Your character is no longer available. Switching to spectator.')
+                pass
+            else:
+                target_char_id = new_chars[old_char_name]
+
+            if client.packet_handler.ALLOWS_CHAR_LIST_RELOAD:
+                client.send_command_dict('SC', {
+                    'chars_ao2_list': characters,
+                    })
+                client.change_character(target_char_id, force=True)
+            else:
                 client.send_ooc('The server character list was changed and no longer reflects your '
                                 'client character list. Please rejoin the server.')
 

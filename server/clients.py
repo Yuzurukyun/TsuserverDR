@@ -38,6 +38,7 @@ class DefaultDROProtocol(_Singleton):
     ALLOWS_CLEARING_MODIFIED_MESSAGE_FROM_SELF = True
     ALLOWS_INVISIBLE_BLANKPOSTS = True
     REPLACES_BASE_OPUS_FOR_MP3 = False
+    ALLOWS_CHAR_LIST_RELOAD = True
 
     DECRYPTOR_OUTBOUND = [
         ('key', 34),  # 0
@@ -336,12 +337,18 @@ class DefaultDROProtocol(_Singleton):
     JOINED_AREA_OUTBOUND = [
     ]
 
+
+class ClientDRO1d2d2(DefaultDROProtocol):
+    VERSION_TO_SEND = [1, 2, 2]
+
 class ClientDRO1d2d0(DefaultDROProtocol):
     VERSION_TO_SEND = [1, 2, 0]
+    ALLOWS_CHAR_LIST_RELOAD = False
 
 class ClientDRO1d1d0(DefaultDROProtocol):
     VERSION_TO_SEND = [1, 1, 0]
     HAS_JOINED_AREA = False
+    ALLOWS_CHAR_LIST_RELOAD = False
 
 class ClientDRO1d0d0(DefaultDROProtocol):
     VERSION_TO_SEND = [1, 0, 0]
@@ -350,6 +357,7 @@ class ClientDRO1d0d0(DefaultDROProtocol):
     HAS_ACKMS = True
     HAS_JOINED_AREA = False
     REPLACES_BASE_OPUS_FOR_MP3 = True
+    ALLOWS_CHAR_LIST_RELOAD = False
 
     MS_INBOUND = [
         ('msg_type', ArgType.STR),  # 0
@@ -403,6 +411,7 @@ class ClientDROLegacy(DefaultDROProtocol):
     ALLOWS_CLEARING_MODIFIED_MESSAGE_FROM_SELF = False
     ALLOWS_INVISIBLE_BLANKPOSTS = False
     REPLACES_BASE_OPUS_FOR_MP3 = True
+    ALLOWS_CHAR_LIST_RELOAD = False
 
     MS_INBOUND = [
         ('msg_type', ArgType.STR),  # 0
@@ -464,6 +473,7 @@ class ClientAO2d6(DefaultDROProtocol):
     ALLOWS_CLEARING_MODIFIED_MESSAGE_FROM_SELF = False
     ALLOWS_INVISIBLE_BLANKPOSTS = False
     REPLACES_BASE_OPUS_FOR_MP3 = True
+    ALLOWS_CHAR_LIST_RELOAD = False
 
     MS_INBOUND = [
         ('msg_type', ArgType.STR),  # 0
@@ -538,6 +548,7 @@ class ClientAO2d7(DefaultDROProtocol):
     ALLOWS_CLEARING_MODIFIED_MESSAGE_FROM_SELF = False
     ALLOWS_INVISIBLE_BLANKPOSTS = False
     REPLACES_BASE_OPUS_FOR_MP3 = True
+    ALLOWS_CHAR_LIST_RELOAD = False
 
     MS_INBOUND = [
         ('msg_type', ArgType.STR),  # 0
@@ -624,6 +635,7 @@ class ClientAO2d8d4(DefaultDROProtocol):
     ALLOWS_CLEARING_MODIFIED_MESSAGE_FROM_SELF = False
     ALLOWS_INVISIBLE_BLANKPOSTS = False
     REPLACES_BASE_OPUS_FOR_MP3 = True
+    ALLOWS_CHAR_LIST_RELOAD = False
 
     MS_INBOUND = [
         ('msg_type', ArgType.STR),  # 0
@@ -715,6 +727,7 @@ class ClientAO2d9d0(DefaultDROProtocol):
     ALLOWS_CLEARING_MODIFIED_MESSAGE_FROM_SELF = False
     ALLOWS_INVISIBLE_BLANKPOSTS = False
     REPLACES_BASE_OPUS_FOR_MP3 = True
+    ALLOWS_CHAR_LIST_RELOAD = False
 
     ASKCHAA_INBOUND = [
         ('ao290doesnotsupportpacketswithnoarguments', ArgType.STR_OR_EMPTY),  # 0
@@ -830,6 +843,7 @@ class ClientAO2d10(ClientAO2d9d0):
     ALLOWS_CLEARING_MODIFIED_MESSAGE_FROM_SELF = False
     ALLOWS_INVISIBLE_BLANKPOSTS = False
     REPLACES_BASE_OPUS_FOR_MP3 = True
+    ALLOWS_CHAR_LIST_RELOAD = False
 
     ASKCHAA_INBOUND = []
 

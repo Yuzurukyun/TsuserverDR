@@ -1537,15 +1537,15 @@ def ooc_cmd_clock(client: ClientManager.Client, arg: str):
     Requires /clock_end to undo.
     Returns an error if the given hour start is not a nonnegative number or beyond the indicated
     number of hours in a day, if the number of hours in a day is not a positive integer, or if the
-    hour length is not a positive number.
+    hour length is not a positive integer.
 
     SYNTAX
-    /clock <area_range_start> <area_range_end> <hour_length> <hour_start> {hours_in_day}
+    /clock <area_range_start> <area_range_end> <main_hour_length> <hour_start> {hours_in_day}
 
     PARAMETERS
     <area_range_start>: Send notifications from this area onwards up to...
     <area_range_end>: Send notifications up to (and including) this area.
-    <hour_length>: Length of each ingame hour (in seconds)
+    <main_hour_length>: Main length of each ingame hour (in seconds)
     <hour_start>: Starting hour (integer from 0 to 23)
 
     OPTIONAL PARAMETERS
@@ -1699,61 +1699,111 @@ def ooc_cmd_clock_pause(client: ClientManager.Client, arg: str):
 def ooc_cmd_clock_period(client: ClientManager.Client, arg: str):
     """ (STAFF ONLY)
     Adds a period to the day cycle you established. Whenever the day cycle clock ticks
-    into a time part of the period, all clients in the affected areas will be ordered to change
-    to that time of day's version of their theme. Time of day periods go from their given hour
-    start all the way until the next period.
+    into a time part of the period after a given hour length of seconds, all clients in the
+    affected areas will be ordered to change to that time of day's version of their theme.
+    Time of day periods go from their given hour start all the way until the next period.
     If the period name already exists, its hour start will be overwritten.
+    If the hour length is not given, it will use the main hour length of the day cycle.
     If some period already starts at the given hour start, its name will be overwritten.
     Returns an error if you have not started a day cycle, or if the hour start is not an integer
-    from 0 inclusive to the number of hours in a day set up for the day cycle exclusive.
+    from 0 inclusive to the number of hours in a day set up for the day cycle exclusive, or if given
+    an hour length and it is not a positive integer.
 
     SYNTAX
     /clock_period <name> <hour_start>
+    /clock_period <name> {hour_length} <hour_start>
 
     PARAMETERS
     <name>: Name of the period.
     <hour_start>: Start time of the period.
 
+    OPTIONAL PARAMETERS
+    {hour_length}: Length of each ingame hour (in seconds). Defaults to the main hour length.
+
     EXAMPLE
     Assuming the commands are run in order...
     >>> /clock_period day 8
     Sets up a period that goes from 8 AM to 8 AM.
-    >>> /clock_period night 22
-    Sets up a night period that goes from 10 PM to 8 AM. Day period now goes from 8 AM to 10 PM.
+    >>> /clock_period night 150 22
+    Sets up a night period that goes from 10 PM to 8 AM, each hour in the period ticking every 150
+    seconds. Day period now goes from 8 AM to 10 PM.
     """
 
-    Constants.assert_command(client, arg, is_staff=True, parameters='&1-2')
+    Constants.assert_command(client, arg, is_staff=True, parameters='&2-3')
 
     try:
         task = client.server.tasker.get_task(client, ['as_day_cycle'])
     except KeyError:
         raise ClientError('You have not initiated any day cycles.')
 
-    try:
-        args = arg.split()
-        if len(args) == 1:
-            name, pre_start, start = args[0].lower(), "-1", -1
-        else:
-            name, pre_start = args[0].lower(), args[1]
-            start = int(pre_start)  # Do it separately so ValueError exception may read args[1]
-            hours_in_day = client.server.tasker.get_task_attr(client, ['as_day_cycle'],
-                                                              'hours_in_day')
-            if not 0 <= start < hours_in_day:
-                start = args[1]
-                raise ValueError
-    except ValueError:
-        raise ArgumentError('Invalid period start hour {}.'.format(pre_start))
+    args = arg.split()
+    hour_length = client.server.tasker.get_task_attr(client, ['as_day_cycle'], 'main_hour_length')
+    hours_in_day = client.server.tasker.get_task_attr(client, ['as_day_cycle'], 'hours_in_day')
 
-    client.server.tasker.set_task_attr(client, ['as_day_cycle'], 'new_period_start', (start, name))
+    name = args[0].lower()
+    pre_hour_start = args[2] if len(args) == 3 else args[1]
+    pre_hour_length = args[1] if len(args) == 3 else str(hour_length)
+
+    try:
+        hour_start = int(pre_hour_start)
+        if not 0 <= hour_start < hours_in_day:
+            raise ValueError
+    except ValueError:
+        raise ArgumentError(f'Invalid period start hour {hour_start}.')
+
+    try:
+        hour_length = int(pre_hour_length)
+        if hour_length <= 0:
+            raise ValueError
+    except ValueError:
+        raise ArgumentError(f'Invalid period hour length {hour_length}.')
+
+    client.server.tasker.set_task_attr(client, ['as_day_cycle'], 'new_period_start',
+                                       (hour_start, name, hour_length))
+    client.server.tasker.set_task_attr(client, ['as_day_cycle'], 'refresh_reason', 'period')
+    client.server.tasker.cancel_task(task)
+
+
+def ooc_cmd_clock_period_end(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Removes a previously created period to the day cycle you established.
+    If the removed period is the one currently active, the period becomes whatever the new period
+    should be using the remaining periods if there are any, or fully deactivated if there are no
+    other periods left.
+    Returns an error if you have not started a day cycle, or if the period does not exist.
+
+    SYNTAX
+    /clock_period_end <name>
+
+    PARAMETERS
+    <name>: Name of the period.
+
+    EXAMPLE
+    Assuming the commands are run in order...
+    >>> /clock_period_end day
+    Removes the period called day.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='=1')
+
+    try:
+        task = client.server.tasker.get_task(client, ['as_day_cycle'])
+    except KeyError:
+        raise ClientError('You have not initiated any day cycles.')
+
+    client.server.tasker.set_task_attr(client, ['as_day_cycle'], 'new_period_start',
+                                       (-1, arg, 0))
     client.server.tasker.set_task_attr(client, ['as_day_cycle'], 'refresh_reason', 'period')
     client.server.tasker.cancel_task(task)
 
 
 def ooc_cmd_clock_set(client: ClientManager.Client, arg: str):
     """ (STAFF ONLY)
-    Updates the hour length and current hour of the client's day cycle without restarting it,
+    Updates the main hour length and current hour of the client's day cycle without restarting it,
     changing its area range or notifying normal players. If the day cycle time was unknown, the
     time is updated in the same manner (effectively taking it out of unknown mode).
+    The hour length of any active periods are not modified and have priority over the main hour
+    length.
     Returns an error if you have not started a day cycle, or if the hour is not an
     integer from 0 inclusive to the number of hours in a day set up for the day cycle exclusive.
 
@@ -2894,8 +2944,9 @@ def ooc_cmd_gmlock(client: ClientManager.Client, arg: str):
 
 
 def ooc_cmd_gmself(client: ClientManager.Client, arg: str):
-    """ (STAFF ONLY):
+    """ (STAFF ONLY)
     Makes all opened multiclients login as game master without them needing to put in a GM password.
+    Opened multiclients that are already logged in as game master are unaffected.
     Returns an error if all opened multiclients are already game masters.
 
     SYNTAX
@@ -4760,7 +4811,7 @@ def ooc_cmd_noteworthy(client: ClientManager.Client, arg: str):
     if client.area.noteworthy:
         client.send_ooc_others('Something catches your attention.', is_zstaff_flex=False,
                                in_area=True, pred=lambda c: not (c.is_deaf and c.is_blind))
-        client.area.broadcast_ic_attention()
+        client.area.broadcast_ic_attention(ding=True)
 
     logger.log_server('[{}][{}]Set noteworthy status to {}'
                       .format(client.area.id, client.get_char_name(), client.area.noteworthy),
@@ -7876,7 +7927,7 @@ def ooc_cmd_status_set(client: ClientManager.Client, arg: str):
             c.send_ooc(f'You note something different about {client.displayname}.',
                        is_zstaff_flex=False)
 
-        client.area.broadcast_ic_attention(cond=lambda c: c in refreshed_clients)
+        client.area.broadcast_ic_attention(cond=lambda c: c in refreshed_clients, ding=False)
 
     else:
         client.status = ''
@@ -7939,7 +7990,7 @@ def ooc_cmd_status_set_other(client: ClientManager.Client, arg: str):
 
             c.send_ooc(f'You now note something about {target.displayname}.',
                        is_zstaff_flex=False)
-        target.area.broadcast_ic_attention()
+        target.area.broadcast_ic_attention(ding=False)
 
     else:
         # By previous if, player must have had a status before
@@ -7985,8 +8036,11 @@ def ooc_cmd_switch(client: ClientManager.Client, arg: str):
 
 def ooc_cmd_think(client: ClientManager.Client, arg: str):
     """
-    Sends an IC message that only you (and zone watchers or GMs+ in OOC) can see.
-    You get to see the IC message with the last sprite you saw.
+    Sends an IC message that only you can see in IC (a thought), as well as any other players in
+    your area that are either zone watchers, GMs+ or mind readers.
+    Zone watchers, GMs+ or mind readers receive a copy of the thought in OOC, regardless of them
+    having seen the thought because they were in the area or not.
+    Players who see the thought in IC get to see it with the last sprite they saw.
 
     SYNTAX
     /think <message>
@@ -8004,11 +8058,26 @@ def ooc_cmd_think(client: ClientManager.Client, arg: str):
     msg = arg[:256]
 
     client.send_ic(msg=msg, pos=client.pos, folder=client.char_folder, char_id=client.char_id,
-                   showname='[T] ' + client.showname_else_char_showname, hide_character=1,
+                   showname='[T] ' + client.showname_else_char_showname,
                    bypass_text_replace=True, use_last_received_sprites=True)
     client.send_ooc(f'You thought `{arg}`.')
-    client.send_ooc_others(f'{client.displayname} [{client.id}] thought `{arg}` '
+
+    client.send_ic_others(msg=msg, pos=client.pos, folder=client.char_folder,
+                          char_id=client.char_id,
+                          showname='[T] ' + client.showname_else_char_showname,
+                          bypass_text_replace=True, use_last_received_sprites=True,
+                          is_zstaff_flex=True, in_area=True)
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] thought `{arg}` '
                            f'({client.area.id}).', is_zstaff_flex=True)
+
+    client.send_ic_others(msg=msg, pos=client.pos, folder=client.char_folder,
+                          char_id=client.char_id,
+                          showname='[T] ' + client.showname_else_char_showname,
+                          bypass_text_replace=True, use_last_received_sprites=True,
+                          is_zstaff_flex=False, in_area=True, pred=lambda c: c.is_mindreader)
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] thought `{arg}` '
+                           f'({client.area.id}).',
+                          is_zstaff_flex=False, pred=lambda c: c.is_mindreader)
 
 
 def ooc_cmd_time(client: ClientManager.Client, arg: str):
@@ -11224,6 +11293,93 @@ def ooc_cmd_zone_ambient_end(client: ClientManager.Client, arg: str):
         c.send_area_ambient(name='')
     for a in zone.get_areas():
         a.ambient = ''
+
+
+def ooc_cmd_sneakself(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY+VARYING REQUIREMENTS)
+    Makes all opened multiclients be sneaked without having to manually sneak them.
+    Opened multiclients that are already sneaked are unaffected.
+    If a multiclient is in a private area, or in a lobby area and you are not an officer, or is
+    already sneaked, the sneak will fail for that multiclient.
+    Returns an error if no opened multiclients can successfully be sneaked.
+
+    SYNTAX
+    /sneakself
+
+    EXAMPLES
+    If user with client ID 0 is GM has multiclients with ID 1 and 3, neither sneaked, and runs...
+    >>> /sneakself
+    Sneaks clients 0, 1 and 3.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True)
+
+    targets = [c for c in client.get_multiclients() if c.is_visible]
+    targets = [c for c in targets if not c.area.private_area]
+    if not client.is_officer():
+        targets = [c for c in targets if c.area.lobby_area]
+    if not targets:
+        raise ClientError('No opened clients can be sneaked.')
+
+    # Sneak matching targets
+    for c in targets:
+        c.change_visibility(False)
+
+    client.send_ooc("You sneaked all of your valid multiclients.")
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] sneaked all their valid '
+                           f'multiclients [{client.id}] ({client.area.id}).',
+                           not_to=set(targets), is_zstaff=True)
+
+    non_targets = [c for c in client.get_multiclients() if c not in targets]
+    if non_targets:
+        s_non_targets = Constants.cjoin([f'{c.displayname} [{c.id}]' for c in non_targets])
+        client.send_ooc(f'The following clients could not be sneaked: {s_non_targets}')
+
+
+def ooc_cmd_mindreader(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Toggles a client by ID being a mind reader or not (i.e. can read all thoughts caused by /think,
+    not just those initiated by the player), or yourself if not given an argument.
+    Returns an error if the given identifier does not correspond to a user.
+
+    SYNTAX
+    /mindreader
+    /mindreader <client_id>
+
+    OPTIONAL PARAMETERS
+    {client_id}: Client identifier (number in brackets in /getarea)
+
+    EXAMPLE
+    Assuming a user with client ID 0 starts as not being a mind reader...
+    >>> /mindreader 0
+    This user can now read all thoughts.
+    >>> /mindreader 0
+    This user can no longer read thoughts not initiated by the user.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='<2')
+
+    # Invert current mindreader status of matching targets
+    if not arg:
+        target = client
+    else:
+        target = Constants.parse_id(client, arg)
+    target.is_mindreader = not target.is_mindreader
+
+    status = {False: 'no longer', True: 'now'}
+    status2 = {False: 'no longer a', True: 'a'}
+    if client != target:
+        client.send_ooc(f'{target.displayname} ({target.id}) is {status[target.is_mindreader]} a '
+                        f'mind reader.')
+        client.send_ooc_others(f'(X) {client.displayname} ({client.id}) made {target.displayname} '
+                               f'({target.id}) be {status2[target.is_mindreader]} mind reader '
+                               f'({client.area.id}).', is_zstaff_flex=True)
+        target.send_ooc(f'You are {status[target.is_transient]} a mind reader.')
+    else:
+        client.send_ooc(f'You made yourself be {status2[target.is_mindreader]} mind reader.')
+        client.send_ooc_others(f'(X) {client.displayname} ({client.id}) made themselves be '
+                               f'{status2[target.is_mindreader]} mind reader '
+                               f'({client.area.id}).', is_zstaff_flex=True)
 
 
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):

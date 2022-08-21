@@ -52,22 +52,22 @@ It is highly recommended you read through all the installation steps first befor
 * If everything was set up correctly, you will see something like this appear:
 
 ```
-[2022-07-17T10:20:20]: Starting...
-[2022-07-17T10:20:20]: Launching TsuserverDR 4.3.3 (220717a)...
-[2022-07-17T10:20:20]: Loading server configurations...
-[2022-07-17T10:20:20]: Server configurations loaded successfully!
-[2022-07-17T10:20:20]: Starting a nonlocal server...
-[2022-07-17T10:20:20]: Server started successfully!
-[2022-07-17T10:20:21]: Server should be now accessible from 192.0.2.0:50000:My First DR Server
+[2022-08-21T10:20:20]: Starting...
+[2022-08-21T10:20:20]: Launching TsuserverDR 4.3.4 (220821a)...
+[2022-08-21T10:20:20]: Loading server configurations...
+[2022-08-21T10:20:20]: Server configurations loaded successfully!
+[2022-08-21T10:20:20]: Starting a nonlocal server...
+[2022-08-21T10:20:20]: Server started successfully!
+[2022-08-21T10:20:21]: Server should be now accessible from 192.0.2.0:50000:My First DR Server
 ```
 
 * If you are listing your server in the Attorney Online master server, make sure its details are set up correctly. In particular, make sure that your server name and description are correct, as that is how players will find your server. If everything was set up correctly, you will see something like this appear:
 
 ```
-[2022-07-17T10:20:21]: Attempting to connect to the master server at https://servers.aceattorneyonline.com/servers with the following details:
-[2022-07-17T10:20:21]: *Server name: My First DR Server
-[2022-07-17T10:20:21]: *Server description: This is my flashy new DR server
-[2022-07-17T10:20:22]: Connected to the master server.
+[2022-08-21T10:20:21]: Attempting to connect to the master server at https://servers.aceattorneyonline.com/servers with the following details:
+[2022-08-21T10:20:21]: *Server name: My First DR Server
+[2022-08-21T10:20:21]: *Server description: This is my flashy new DR server
+[2022-08-21T10:20:22]: Connected to the master server.
 ```
 
   - The server will make a single ping to [ipify](https://api.ipify.org) in order to obtain its public IP address. If it fails to do that, it will let you know that, as it means there is probably something wrong with your internet connection and that other players may not be able to connect to your server.
@@ -76,9 +76,9 @@ It is highly recommended you read through all the installation steps first befor
 * To stop the server, press Ctrl+C once from your terminal. This will initiate a shutdown sequence and notify you when it is done. If the shutdown finished successfully, you will see something like this appear:
 
 ```
-[2022-07-17T22:23:04]: You have initiated a server shut down.
-[2022-07-17T22:23:04]: Kicking 12 remaining clients.
-[2022-07-17T22:23:04]: Server has successfully shut down.
+[2022-08-21T22:23:04]: You have initiated a server shut down.
+[2022-08-21T22:23:04]: Kicking 12 remaining clients.
+[2022-08-21T22:23:04]: Server has successfully shut down.
 ```
 
 * If you do not see anything after a few seconds of starting a shutdown, you can try spamming Ctrl+C to try and force a shutdown or directly close out your terminal. This is not recommended due to the cleanup process not finishing correctly but it is doable.
@@ -369,16 +369,19 @@ GMs can:
 * **charlog** "ID"
     - Lists all character changes (including iniswaps and character name changes) a target has gone through since connecting, including the time they were changed.
 * **clock** "area range start" "area range end" "hour length" "hour start" "hours in a day"
-    - Sets up a day cycle that, starting from the given hour, will tick one hour every given number of seconds and provide a time announcement to a given range of areas.
+    - Sets up a day cycle that, starting from the given hour, will tick one hour every given number of seconds (main hour length) and provide a time announcement to a given range of areas.
     - Hours go from 0 inclusive to the number of hours in a day given exclusive, or 0 to 23 inclusive if not given a number of hours in a day.
 * **clock_end** "ID"
     - Ends the day cycle initiated by the target or yourself if not given a target.
 * **clock_pause** "ID"
     - Pauses the day cycle initiated by the target or yourself if not given a target.
-* **clock_period** "name" "hour start"
+* **clock_period** "name" "hour length" "hour start"
     - Initializes a clock period that starts at the given hour for your day cycle.
     - Whenever the clock ticks into the period, players in the clock range will be ordered to switch to that time of day's version of their theme.
+    - If only two arguments are given, the second argument is assumed to be hour start, and hour length is the main hour length.
     - Clock period names are automatically made all lowercase.
+* **clock_period_end** "name"
+    - Deletes a clock period for your day cycle.
 * **clock_set** "hour length" "hour"
     - Modifies the hour length and current hour of your day cycle without restarting it. This is the way to move the day cycle out of unknown time if needed as well.
     - Acts just like doing /clock again, but does not erase already set periods.
@@ -446,6 +449,8 @@ GMs can:
     - Ends the area's lurk callout timer if there is one active.
 * **make_gm** "ID"
     - Makes the target a GM, provided the target is a multiclient of the player.
+* **mindreader** "ID"
+    - Changes a player's ability to see thoughts of other players made with /think. By default it is off.
 * **multiclients** "ID"
     - Lists all the clients opened by a target and the areas they are in.
 * **notecard_check**
@@ -541,6 +546,8 @@ GMs can:
     - Sets a target to be sneaking if they were visible.
     - If the target was subject to a handicap shorter than the server's automatic sneak handicap length, they will be imposed this handicap.
     - If no ID is given, target is yourself.
+* **sneakself**
+    - Sneaks all opened multiclients that can be sneaked.
 * **st** "message"
     - Sends a message to all active staff members.
 * **status_set_other** "ID/char name/edited-to character/showname/char showname/OOC name" "status"

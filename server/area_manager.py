@@ -242,7 +242,8 @@ class AreaManager:
             for client in self.clients:
                 client.send_ooc(msg)
 
-        def broadcast_ic_attention(self, cond: Callable[[ClientManager.Client], bool] = None):
+        def broadcast_ic_attention(self, cond: Callable[[ClientManager.Client], bool] = None,
+                                   ding: bool = True):
             """
             Send an IC message with a ding to everyone in the area indicating something catches
             their attention, *except* if the player is blind or deaf, or if the area is a lobby
@@ -253,6 +254,8 @@ class AreaManager:
             cond : types.LambdaType: ClientManager.Client -> bool, optional
                 Custom condition each player in the area must also satisfy to receive the
                 attention message.
+            ding : bool, optional
+                If the accompanying IC message should also include the "ding" effect.
 
             Returns
             -------
@@ -264,13 +267,13 @@ class AreaManager:
                 return
 
             if cond is None:
-                cond = lambda client: True
+                cond = lambda _: True
             for player in self.clients:
                 if player.is_deaf and player.is_blind:
                     continue
 
                 if cond(player):
-                    player.send_ic_attention()
+                    player.send_ic_attention(ding=ding)
 
         def get_background_tod(self) -> Dict[str, str]:
             if not self.lights:
@@ -643,10 +646,10 @@ class AreaManager:
                 party.check_lights()
 
             for c in self.clients:
-                found_something = c.area_changer.notify_me_rp(self, changed_visibility=True,
-                                                              changed_hearing=False)
+                found_something, ding_something = c.area_changer.notify_me_rp(
+                    self, changed_visibility=True, changed_hearing=False)
                 if found_something and new_lights:
-                    c.send_ic_attention()
+                    c.send_ic_attention(ding=ding_something)
 
         def set_next_msg_delay(self, msg_length: int):
             """
