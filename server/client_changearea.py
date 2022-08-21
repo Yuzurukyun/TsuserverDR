@@ -708,7 +708,7 @@ class ClientChangeArea:
 
         client = self.client
         old_area = client.area
-        found_something = False
+        found_something, ding_something = False, False
 
         if not override_all:
             # All the code that could raise errors goes here

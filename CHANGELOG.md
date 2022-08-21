@@ -793,3 +793,6 @@
 * Fixed typo in area_templates.yaml field
 * Fixed /think messages not showing the last sent sprite
 * Fixed IC-via-OOC commands sending an empty position if the sender never spoke IC before sending the command
+
+### 220821b (4.3.4-post1)
+* Fixed area list reloads crashing
