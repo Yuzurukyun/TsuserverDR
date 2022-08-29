@@ -105,7 +105,7 @@ class AOProtocol(asyncio.Protocol):
         self.server.remove_client(self.client)
         self.ping_timeout.cancel()
 
-    def _get_messages(self):
+    def _get_messages(self) -> str:
         """ Parses out full messages from the buffer.
 
         :return: yields messages
@@ -115,13 +115,20 @@ class AOProtocol(asyncio.Protocol):
             self.buffer = spl[1]
             yield spl[0]
 
+    def _shortened_buffer(self) -> str:
+        short_buffer = self.buffer
+        if len(short_buffer) >= 512:
+            short_buffer = short_buffer[:500] + '...' + short_buffer[-12:]
+
+        return f'{short_buffer} ({len(self.buffer)} bytes)'
+
     def _process_message(self, msg):
         if len(msg) < 2:
             # This immediatelly kills any client that does not even try to follow the proper
             # client protocol
             msg = self.buffer if len(self.buffer) < 512 else self.buffer[:512] + '...'
             logger.log_server(f'Terminated {self.client.get_ipreal()} (packet too short): '
-                              f'sent {msg} ({len(self.buffer)} bytes)')
+                              f'sent {self._shortened_buffer()}.')
             self.client.disconnect()
             return False
 
@@ -175,9 +182,8 @@ class AOProtocol(asyncio.Protocol):
         self.buffer = self.buffer.translate({ord(c): None for c in '\0'})
 
         if len(self.buffer) > 8192:
-            msg = self.buffer if len(self.buffer) < 512 else self.buffer[:512] + '...'
             logger.log_server(f'Terminated {self.client.get_ipreal()} (packet too long): '
-                              f'sent {msg} ({len(self.buffer)} bytes)')
+                              f'sent {self._shortened_buffer()}.')
             self.client.disconnect()
             return
 
@@ -187,13 +193,18 @@ class AOProtocol(asyncio.Protocol):
             if not self._process_message(msg):
                 return
 
-        if not found_message:
+        if found_message:
+            return
+
+        # Check if valid packet split by evil router on client side
+        buffer_command = self.buffer.split('#')[0]
+        if buffer_command not in self._net_cmd_dispatcher:
             # This immediatelly kills any client that does not even try to follow the proper
             # client protocol
-            msg = self.buffer if len(self.buffer) < 512 else self.buffer[:512] + '...'
             logger.log_server(f'Terminated {self.client.get_ipreal()} (packet syntax '
-                              f'unrecognized): sent {msg} ({len(self.buffer)} bytes)')
+                              f'unrecognized): sent {self._shortened_buffer()}.')
             self.client.disconnect()
+
 
     def _validate_net_cmd(self, args, *types, needs_auth=True):
         """ Makes sure the net command's arguments match expectations.
