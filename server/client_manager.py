@@ -776,6 +776,12 @@ class ClientManager:
                 return self.showname
             return self.char_showname
 
+        def has_character(self, char_id: int = None) -> bool:
+            if char_id is None:
+                char_id = self.char_id
+
+            return char_id is not None and char_id >= 0
+
         def change_character(self, char_id: int, force: bool = False,
                              target_area: AreaManager.Area = None,
                              announce_zwatch: bool = True):
@@ -812,7 +818,8 @@ class ClientManager:
             # Code after this comment assumes the character change will be successful
             self.ever_chose_character = True
 
-            if old_char_id < 0 and char_id >= 0:  # No longer spectator?
+            if not self.has_character() and self.has_character(char_id=char_id):
+                # No longer spectator?
                 # Now bound by AFK rules
                 self.server.tasker.create_task(self, ['as_afk_kick', self.area.afk_delay,
                                                       self.area.afk_sendto])
@@ -826,7 +833,8 @@ class ClientManager:
                                   f'and you are not logged in.')
                     self.unfollow_user()
 
-            elif old_char_id >= 0 and char_id < 0:  # Now a spectator?
+            elif self.has_character() and not self.has_character(char_id=char_id):
+                # Now a spectator?
                 # No longer bound to AFK rules
                 try:
                     self.server.tasker.remove_task(self, ['as_afk_kick'])
@@ -958,7 +966,7 @@ class ClientManager:
                 just_me=just_me)
 
         def check_lurk(self):
-            if self.area.lurk_length > 0 and not self.is_staff() and self.char_id >= 0:
+            if self.area.lurk_length > 0 and not self.is_staff() and self.has_character():
                 self.server.tasker.create_task(self, ['as_lurk', self.area.lurk_length])
             else:  # Otherwise, end any existing lurk, if there is one
                 try:
@@ -1600,8 +1608,7 @@ class ClientManager:
             for x in unusable_ids:
                 char_list[x] = -1
 
-            # If not spectator
-            if self.char_id is not None and self.char_id >= 0:
+            if self.has_character():
                 char_list[self.char_id] = 0  # Self is always available
             self.send_command_dict('CharsCheck', {
                 'chars_status_ao2_list': char_list,
@@ -1610,7 +1617,7 @@ class ClientManager:
         def refresh_visible_char_list(self):
             char_list = [0] * len(self.server.char_list)
             unusable_ids = {c.char_id for c in self.get_visible_clients(self.area)
-                            if c.char_id >= 0}
+                            if c.has_character()}
             if not self.is_staff():
                 unusable_ids |= {self.server.char_list.index(name)
                                 for name in self.area.restricted_chars}
@@ -1619,7 +1626,7 @@ class ClientManager:
                 char_list[x] = -1
 
             # Self is always available
-            if self.char_id is not None and self.char_id >= 0:
+            if self.has_character():
                 char_list[self.char_id] = 0
             self.send_command_dict('CharsCheck', {
                 'chars_status_ao2_list': char_list,
@@ -1888,9 +1895,6 @@ class ClientManager:
             if char_id is None:
                 return self.server.server_select_name
             return self.server.char_list[char_id]
-
-        def has_character(self) -> bool:
-            return self.char_id not in [-1, None]
 
         def get_showname_history(self) -> str:
             info = '== Showname history of client {} =='.format(self.id)

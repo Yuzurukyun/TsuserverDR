@@ -69,8 +69,8 @@ class TsuserverDR:
         self.release = 4
         self.major_version = 3
         self.minor_version = 4
-        self.segment_version = 'post1'
-        self.internal_version = '220821b'
+        self.segment_version = 'post2'
+        self.internal_version = '220830a'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
@@ -408,7 +408,7 @@ class TsuserverDR:
             target_char_id = -1
             old_char_name = client.get_char_name()
 
-            if client.char_id < 0:
+            if not client.has_character():
                 # Do nothing for spectators
                 pass
             elif old_char_name not in new_chars:

@@ -340,8 +340,7 @@ class AreaManager:
             if more_unavail_chars is None:
                 more_unavail_chars = set()
 
-            unavailable = {x.char_id for x in self.clients if x.char_id is not None
-                           and x.char_id >= 0}
+            unavailable = {x.char_id for x in self.clients if x.has_character()}
             unavailable |= more_unavail_chars
             restricted = {self.server.char_list.index(name) for name in self.restricted_chars}
 
@@ -406,9 +405,12 @@ class AreaManager:
                 is not found to be among the area's unusable characters.
             """
 
+            if char_id < 0:
+                return True
+
             unused = char_id in self.get_chars_unusable(allow_restricted=allow_restricted,
                                                         more_unavail_chars=more_unavail_chars)
-            return char_id == -1 or not unused
+            return not unused
 
         def add_to_dicelog(self, client: ClientManager.Client, msg: str):
             """

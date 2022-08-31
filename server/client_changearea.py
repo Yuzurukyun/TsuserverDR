@@ -461,7 +461,7 @@ class ClientChangeArea:
         # Assuming this is not a spectator...
         # If autopassing, send OOC messages
 
-        if not ignore_autopass and not client.char_id < 0:
+        if not ignore_autopass and client.has_character():
             self.notify_others_moving(client, old_area,
                                       '{} has left to the {}.'.format(old_dname, area.name),
                                       'You hear footsteps going out of the room.')
