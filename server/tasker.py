@@ -223,7 +223,7 @@ class Tasker:
                 raise ServerError(info)
             if client.area.id == afk_sendto:  # Don't try and kick back to same area
                 return
-            if client.char_id < 0:  # Assumes spectators are exempted from AFK kicks
+            if not client.has_character():  # Assumes spectators are exempted from AFK kicks
                 return
             if client.is_staff():  # Assumes staff are exempted from AFK kicks
                 return
@@ -728,6 +728,6 @@ class Tasker:
                 return
             if client.is_staff():
                 return
-            if client.char_id is None or client.char_id < 0:
+            if not client.has_character():
                 return
             client.send_ooc('You feel as though you are being peeked on.')

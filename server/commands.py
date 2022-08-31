@@ -2570,8 +2570,8 @@ def ooc_cmd_follow(client: ClientManager.Client, arg: str):
         Constants.assert_command(client, arg, is_staff=True, parameters='=1')
     except ClientError.UnauthorizedError:
         Constants.assert_command(client, arg, parameters='=1')
-        if not client.char_id < 0:
-            raise ClientError('You must be authorized to follow without being in spectator mode.')
+        if client.has_character():
+            raise ClientError('You must be authorized to follow while having a character.')
 
     if client.party:
         raise PartyError('You cannot follow someone while in a party.')
@@ -9297,8 +9297,8 @@ def ooc_cmd_unfollow(client: ClientManager.Client, arg: str):
         Constants.assert_command(client, arg, is_staff=True, parameters='=0')
     except ClientError.UnauthorizedError:
         Constants.assert_command(client, arg, parameters='=0')
-        if not client.char_id < 0:
-            raise ClientError('You must be authorized to unfollow without being in spectator mode.')
+        if client.has_character():
+            raise ClientError('You must be authorized to unfollow while having a character.')
 
     client.unfollow_user()
 
