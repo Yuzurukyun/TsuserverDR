@@ -797,6 +797,6 @@
 ### 220821b (4.3.4-post1)
 * Fixed area list reloads crashing
 
-### 220830a (4.3.4-post2)
+### 220831a (4.3.4-post2)
 * Fixed clients sending legitimate split packets being abnormally disconnected
 * Fixed character list reloads crashing when someone is in server select
