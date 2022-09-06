@@ -68,9 +68,9 @@ class TsuserverDR:
 
         self.release = 4
         self.major_version = 3
-        self.minor_version = 4
-        self.segment_version = 'post2'
-        self.internal_version = '220831a'
+        self.minor_version = 5
+        self.segment_version = 'a1'
+        self.internal_version = 'm220906a'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
@@ -769,6 +769,7 @@ class TsuserverDR:
         info += '\r\n*Server version: {}'.format(version)
         info += '\r\n*Server time: {}'.format(current_time)
         info += '\r\n*Packet details: {} {}'.format(cmd, args)
+        info += '\r\n*Client version: {}'.format(client.version)
         info += '\r\n*Client status: {}'.format(client)
         info += '\r\n*Area status: {}'.format(client.area)
         info += '\r\n*File: {}'.format(file)
@@ -785,8 +786,10 @@ class TsuserverDR:
 
         # Print complete traceback to console
         info = 'TSUSERVERDR HAS ENCOUNTERED AN ERROR HANDLING A CLIENT PACKET'
+        info += '\r\n*Server version: {}'.format(version)
         info += '\r\n*Server time: {}'.format(current_time)
         info += '\r\n*Packet details: {} {}'.format(cmd, args)
+        info += '\r\n*Client version: {}'.format(client.version)
         info += '\r\n*Client status: {}'.format(client)
         info += '\r\n*Area status: {}'.format(client.area)
         info += '\r\n\r\n{}'.format("".join(traceback.format_exception(etype, evalue, etraceback)))

@@ -3654,7 +3654,7 @@ def ooc_cmd_lasterror(client: ClientManager.Client, arg: str):
     error which is what is usually sent to the offending client).
     Note that ClientErrors, ServerErrors, AreaErrors and ArgumentErrors are usually caught by the
     server itself, and would not normally cause issues.
-    Returns a ClientError if no errors had been raised and not been caught since server bootup.
+    Returns an error if no errors had been raised and not been caught since server bootup.
 
     SYNTAX
     /lasterror
@@ -3666,19 +3666,22 @@ def ooc_cmd_lasterror(client: ClientManager.Client, arg: str):
     >>> /lasterror
     May return something like this:
     | $H: The last uncaught error message was the following:
-    | TSUSERVER HAS ENCOUNTERED AN ERROR HANDLING A CLIENT PACKET
-    | *Server time: Mon Jul 1 14:10:26 2019
-    | *Packet details: CT ['Iuvee', '/lasterror']
-    | *Client status: C::0:1639795399:Iuvee:Kaede Akamatsu_HD:True:0
+    | TSUSERVERDR HAS ENCOUNTERED AN ERROR HANDLING A CLIENT PACKET
+    | *Server version: TsuserverDR 4.3.5-a1 (m220906a)
+    | *Server time: Tue Sep  6 10:25:55 2022
+    | *Packet details: CT ['Iuvee', '/exec 1']
+    | *Client version: ('DRO', '1.2.3')
+    | *Client status: C::0:2202575700:Iuvee:Kaede Akamatsu_HD:Iuvee:True:0
     | *Area status: A::0:Basement:1
+    |
     | Traceback (most recent call last):
-    | File ".../server/aoprotocol.py", line 88, in data_received
-    | self.net_cmd_dispatcher[cmd](self, args)
-    | File ".../server/aoprotocol.py", line 500, in net_cmd_ct
-    | function(self.client, arg)
-    | File ".../server/commands.py", line 4210, in ooc_cmd_lasterror
-    | final_trace = "".join(traceback.format_exc(etype, evalue, etraceback))
-    | TypeError: format_exc() takes from 0 to 2 positional arguments but 3 were given
+    | File "D:\\AO\\TsuserverDR\\server\\network\\ao_protocol.py", line 158, in _process_message
+    |     dispatched.function(self.client, pargs)
+    | File "D:\\AO\\TsuserverDR\\server\\network\\ao_commands.py", line 672, in net_cmd_ct
+    |     function(client, arg)
+    | File "D:\\AO\\TsuserverDR\\server\\commands.py", line 11420, in ooc_cmd_exec
+    |     debuge
+    | NameError: name 'debuge' is not defined
     """
 
     Constants.assert_command(client, arg, is_mod=True, parameters='=0')

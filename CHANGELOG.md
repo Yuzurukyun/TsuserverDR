@@ -800,3 +800,6 @@
 ### 220831a (4.3.4-post2)
 * Fixed clients sending legitimate split packets being abnormally disconnected
 * Fixed character list reloads crashing when someone is in server select
+
+### (4.3.5)
+* Added client version and server version consistently to printed server error messages
