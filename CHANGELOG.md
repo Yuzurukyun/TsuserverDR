@@ -803,3 +803,4 @@
 
 ### (4.3.5)
 * Added client version and server version consistently to printed server error messages
+* Fixed /lasterror providing duplicate error information

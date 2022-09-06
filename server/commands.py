@@ -3690,11 +3690,8 @@ def ooc_cmd_lasterror(client: ClientManager.Client, arg: str):
         raise ClientError('No error messages have been raised and not been caught since server '
                           'bootup.')
 
-    pre_info, etype, evalue, etraceback = client.server.last_error
-    final_trace = "".join(traceback.format_exception(etype, evalue, etraceback))
-    info = ('The last uncaught error message was the following:\n{}\n{}'
-            .format(pre_info, final_trace))
-    client.send_ooc(info)
+    pre_info, _, _, _ = client.server.last_error
+    client.send_ooc(f'The last uncaught error message was the following:\n{pre_info}')
 
 
 def ooc_cmd_lights(client: ClientManager.Client, arg: str):
