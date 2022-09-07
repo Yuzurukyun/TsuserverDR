@@ -20,7 +20,6 @@
 # This class will suffer major reworkings for 4.3
 
 from __future__ import annotations
-from multiprocessing.connection import Client
 from typing import Any, Callable, Dict, List, Tuple
 
 import asyncio
@@ -37,13 +36,14 @@ import warnings
 import yaml
 
 from server import logger
-from server.network.ao_protocol import AOProtocol
 from server.area_manager import AreaManager
+from server.background_manager import BackgroundManager
 from server.ban_manager import BanManager
 from server.constants import Constants
 from server.client_manager import ClientManager
 from server.exceptions import ServerError
 from server.game_manager import GameManager
+from server.network.ao_protocol import AOProtocol
 from server.network.ms3_protocol import MasterServerClient
 from server.party_manager import PartyManager
 from server.tasker import Tasker
@@ -51,7 +51,6 @@ from server.timer_manager import TimerManager
 from server.trial_manager import TrialManager
 from server.zone_manager import ZoneManager
 
-from server.validate.backgrounds import ValidateBackgrounds
 from server.validate.characters import ValidateCharacters
 from server.validate.config import ValidateConfig
 from server.validate.gimp import ValidateGimp
@@ -110,13 +109,13 @@ class TsuserverDR:
         self.trial_manager = TrialManager(self)
         self.zone_manager = ZoneManager(self)
         self.area_manager = AreaManager(self)
+        self.background_manager = BackgroundManager(self)
         self.ban_manager = BanManager(self)
         self.party_manager = PartyManager(self)
 
         self.ipid_list = {}
         self.hdid_list = {}
         self.music_list = None
-        self.backgrounds = None
         self.gimp_list = list()
         self.load_commandhelp()
         self.load_music()
@@ -139,6 +138,14 @@ class TsuserverDR:
             self.new_110_music = set(yaml.load(f, yaml.SafeLoader))
 
         self._server = None
+
+    @property
+    def backgrounds(self):
+        message = ('Code is using old backgrounds syntax. Please change it (or ask your '
+                   'server developer) so that it uses background_manager.get_backgrounds() instead.'
+                   'This old syntax will be removed in 4.4.')
+        warnings.warn(message, category=UserWarning, stacklevel=2)
+        return self.background_manager.get_backgrounds()
 
     async def start(self):
         self.loop = asyncio.get_event_loop()
@@ -251,7 +258,7 @@ class TsuserverDR:
 
     def reload(self):
         # Keep backups in case of failure
-        backup = [self.char_list.copy(), self.music_list.copy(), self.backgrounds.copy()]
+        backup = [self.char_list.copy(), self.music_list.copy()]
 
         # Do a dummy YAML load to see if the files can be loaded and parsed at all first.
         reloaded_assets = [self.load_characters, self.load_backgrounds, self.load_music]
@@ -274,7 +281,8 @@ class TsuserverDR:
         try:
             self.load_music()
         except ServerError as exc:
-            self.char_list, self.music_list, self.backgrounds = backup
+            self.char_list, self.music_list = backup
+            self.background_manager.restore_backgrounds()
             msg = ('The new music list returned the following error when loading: `{}`. Fix the '
                    'error and try again. Reload was undone.'
                    .format(exc))
@@ -322,24 +330,29 @@ class TsuserverDR:
 
         """
         return sorted(self.client_manager.clients)
-
     def get_player_count(self) -> int:
         # Ignore players in the server selection screen.
         return len([client for client in self.get_clients() if client.char_id is not None])
 
-    def load_backgrounds(self) -> List[str]:
-        backgrounds = ValidateBackgrounds().validate('config/backgrounds.yaml')
+    def _check_areas_bg(self):
+        default_background = self.background_manager.get_default_background()
+        if default_background is None:
+            return
 
-        self.backgrounds = backgrounds
-        default_background = self.backgrounds[0]
         # Make sure each area still has a valid background
         for area in self.area_manager.areas:
-            if area.background not in self.backgrounds and not area.cbg_allowed:
+            if not self.background_manager.is_background(area.background) and not area.cbg_allowed:
                 # The area no longer has a valid background, so change it to some valid background
                 # like the first one
                 area.change_background(default_background)
                 area.broadcast_ooc(f'After a server refresh, your area no longer had a valid '
                                    f'background. Switching to {default_background}.')
+
+    def load_backgrounds(self, check_areas_bg: bool = True) -> List[str]:
+        backgrounds = self.background_manager.load_backgrounds_from_file('backgrounds.yaml')
+
+        if check_areas_bg:
+            self._check_areas_bg()
 
         return backgrounds.copy()
 
