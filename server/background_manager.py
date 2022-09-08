@@ -13,13 +13,9 @@ if typing.TYPE_CHECKING:
 class BackgroundManager:
     def __init__(self, server: TsuserverDR):
         self._server = server
-        self._backgrounds = []
+        self._backgrounds = ['default']
         self._source_file = 'backgrounds.yaml'
-        self._default_background = None
-
-        self._prev_backgrounds = []
-        self._prev_source_file = 'backgrounds.yaml'
-        self._prev_default_background = None
+        self._default_background = self._backgrounds[0]
 
     def get_backgrounds(self) -> List[str]:
         return self._backgrounds.copy()
@@ -27,48 +23,40 @@ class BackgroundManager:
     def get_source_file(self) -> str:
         return self._source_file
 
-    def get_default_background(self) -> Union[str, None]:
+    def get_default_background(self) -> str:
         return self._default_background
 
-    def set_default_background(self, background: Union[str, None]):
+    def set_default_background(self, background: str):
         if not self.is_background(background):
             raise BackgroundError.BackgroundNotFoundError
 
         self._default_background = background
         self._check_structure()
 
+    def validate_file(self, source_file: Union[str, None] = None) -> List[str]:
+        if source_file is None:
+            source_file = self._source_file
+
+        backgrounds = ValidateBackgrounds().validate(source_file)
+        return backgrounds
+
     def load_backgrounds_from_file(self, source_file: str) -> List[str]:
-        backgrounds = ValidateBackgrounds().validate(f'config/{source_file}')
-        output = self._load_backgrounds(backgrounds, f'config/{source_file}')
+        backgrounds = self.validate_file(source_file)
+        output = self._load_backgrounds(backgrounds, source_file)
         self._check_structure()
         return output
 
     def _load_backgrounds(self, new_list: List[str], source_file: str) -> List[str]:
-        self._prev_backgrounds = self._backgrounds.copy()
-        self._prev_source_file = self._source_file
-        self._prev_default_background = self._default_background
-
         lower = [name.lower() for name in new_list]
         self._backgrounds = lower
         self._source_file = source_file
         if not self.is_background(self._default_background):
-            self._default_background = None
+            self._default_background = lower[0]
 
         return lower.copy()
 
-    def is_background(self, background: Union[str, None]) -> bool:
-        return background is None or background in self._backgrounds
-
-    def restore_backgrounds(self):
-        self._backgrounds = self._prev_backgrounds.copy()
-        self._source_file = self._prev_source_file
-        self._default_background = self._prev_default_background
-        self._check_structure()
+    def is_background(self, background: str) -> bool:
+        return background.lower() in self._backgrounds
 
     def _check_structure(self):
         assert self.is_background(self._default_background)
-
-        assert (
-            self._prev_default_background is None
-            or self._prev_default_background in self._prev_backgrounds
-        )

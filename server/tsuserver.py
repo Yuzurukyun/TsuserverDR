@@ -49,6 +49,7 @@ from server.party_manager import PartyManager
 from server.tasker import Tasker
 from server.timer_manager import TimerManager
 from server.trial_manager import TrialManager
+from server.validate.backgrounds import ValidateBackgrounds
 from server.zone_manager import ZoneManager
 
 from server.validate.characters import ValidateCharacters
@@ -224,7 +225,6 @@ class TsuserverDR:
         raise await self.error_queue.get()
 
     async def normal_shutdown(self):
-
         # Cleanup operations
         self.shutting_down = True
 
@@ -257,36 +257,23 @@ class TsuserverDR:
         return mes
 
     def reload(self):
-        # Keep backups in case of failure
-        backup = [self.char_list.copy(), self.music_list.copy()]
-
-        # Do a dummy YAML load to see if the files can be loaded and parsed at all first.
-        reloaded_assets = [self.load_characters, self.load_backgrounds, self.load_music]
-        for reloaded_asset in reloaded_assets:
-            try:
-                reloaded_asset()
-            except ServerError.YAMLInvalidError as exc:
-                # The YAML exception already provides a full description. Just add the fact the
-                # reload was undone to ease the person who ran the command's nerves.
-                msg = (f'{exc} Reload was undone.')
-                raise ServerError.YAMLInvalidError(msg)
-            except ServerError.FileSyntaxError as exc:
-                msg = f'{exc} Reload was undone.'
-                raise ServerError(msg)
+        try:
+            ValidateBackgrounds().validate(f'config/backgrounds.yaml')
+            ValidateCharacters().validate('config/characters.yaml')
+            ValidateMusic().validate('config/music.yaml')
+        except ServerError.YAMLInvalidError as exc:
+            # The YAML exception already provides a full description. Just add the fact the
+            # reload was undone to ease the person who ran the command's nerves.
+            msg = (f'{exc} Reload was undone.')
+            raise ServerError.YAMLInvalidError(msg)
+        except ServerError.FileSyntaxError as exc:
+            msg = f'{exc} Reload was undone.'
+            raise ServerError(msg)
 
         # Only on success reload
         self.load_characters()
         self.load_backgrounds()
-
-        try:
-            self.load_music()
-        except ServerError as exc:
-            self.char_list, self.music_list = backup
-            self.background_manager.restore_backgrounds()
-            msg = ('The new music list returned the following error when loading: `{}`. Fix the '
-                   'error and try again. Reload was undone.'
-                   .format(exc))
-            raise ServerError.FileSyntaxError(msg)
+        self.load_music()
 
     def reload_commands(self):
         try:
@@ -330,16 +317,21 @@ class TsuserverDR:
 
         """
         return sorted(self.client_manager.clients)
+
     def get_player_count(self) -> int:
         # Ignore players in the server selection screen.
         return len([client for client in self.get_clients() if client.char_id is not None])
 
-    def _check_areas_bg(self):
-        default_background = self.background_manager.get_default_background()
-        if default_background is None:
-            return
+    def load_backgrounds(self) -> List[str]:
+        old_backgrounds = self.background_manager.get_backgrounds()
+        backgrounds = self.background_manager.load_backgrounds_from_file('config/backgrounds.yaml')
+
+        if old_backgrounds == backgrounds:
+            # No change implies backgrounds still valid, do nothing more
+            return backgrounds.copy()
 
         # Make sure each area still has a valid background
+        default_background = self.background_manager.get_default_background()
         for area in self.area_manager.areas:
             if not self.background_manager.is_background(area.background) and not area.cbg_allowed:
                 # The area no longer has a valid background, so change it to some valid background
@@ -347,12 +339,6 @@ class TsuserverDR:
                 area.change_background(default_background)
                 area.broadcast_ooc(f'After a server refresh, your area no longer had a valid '
                                    f'background. Switching to {default_background}.')
-
-    def load_backgrounds(self, check_areas_bg: bool = True) -> List[str]:
-        backgrounds = self.background_manager.load_backgrounds_from_file('backgrounds.yaml')
-
-        if check_areas_bg:
-            self._check_areas_bg()
 
         return backgrounds.copy()
 
