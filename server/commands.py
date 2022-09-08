@@ -11382,6 +11382,42 @@ def ooc_cmd_mindreader(client: ClientManager.Client, arg: str):
                                f'({client.area.id}).', is_zstaff_flex=True)
 
 
+def ooc_cmd_bglist(client: ClientManager.Client, arg: str):
+    Constants.assert_command(client, arg, is_officer=True)
+
+    if not arg:
+        source_file = 'config/backgrounds.yaml'
+        msg = 'the default backgrounds list file'
+    else:
+        source_file = f'config/backgrounds_lists/{arg}.yaml'
+        msg = f'the custom backgrounds list file `{source_file}`'
+    fail_msg = f'Unable to load {msg}'
+
+    try:
+        client.server.load_backgrounds(source_file)
+    except ServerError.FileInvalidNameError:
+        raise ServerError(f'{fail_msg}: '
+                          f'File names may not contain relative directories.')
+    except ServerError.FileNotFoundError:
+        raise ServerError(f'{fail_msg}: '
+                          f'File not found.')
+    except ServerError.FileOSError as exc:
+        raise ServerError(f'{fail_msg}: '
+                          f'An OS error occurred: `{exc}`.')
+    except ServerError.YAMLInvalidError as exc:
+        raise ServerError(f'{fail_msg}: '
+                          f'A YAML syntax error occurred: `{exc}`.')
+    except ServerError.FileSyntaxError as exc:
+        raise ServerError(f'{fail_msg}: '
+                          f'A TSDR syntax error occurred: `{exc}`.')
+    else:
+        client.send_ooc(f'You have loaded {msg}.')
+        client.send_ooc_others(f'The {msg} has been loaded.',
+                               is_officer=False)
+        client.send_ooc_others(f'{client.name} [{client.id}] has loaded {msg}.',
+                               is_officer=True)
+
+
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):
     """
     VERY DANGEROUS. SHOULD ONLY BE ENABLED FOR DEBUGGING.

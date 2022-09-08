@@ -69,7 +69,6 @@ class BackgroundManager:
         """
 
         backgrounds = self.validate_file(source_file)
-        self.validate_file()
         output = self._load_backgrounds(backgrounds, source_file)
         self._check_structure()
         return output

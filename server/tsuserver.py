@@ -321,7 +321,7 @@ class TsuserverDR:
         # Ignore players in the server selection screen.
         return len([client for client in self.get_clients() if client.char_id is not None])
 
-    def load_backgrounds(self) -> List[str]:
+    def load_backgrounds(self, source_file: str = 'config/backgrounds.yaml') -> List[str]:
         """
         Load background file `config/backgrounds.yaml`.
 
@@ -348,7 +348,7 @@ class TsuserverDR:
         """
 
         old_backgrounds = self.background_manager.get_backgrounds()
-        backgrounds = self.background_manager.load_backgrounds_from_file('config/backgrounds.yaml')
+        backgrounds = self.background_manager.load_backgrounds_from_file(source_file)
 
         if old_backgrounds == backgrounds:
             # No change implies backgrounds still valid, do nothing more
@@ -361,8 +361,8 @@ class TsuserverDR:
                 # The area no longer has a valid background, so change it to some valid background
                 # like the first one
                 area.change_background(default_background)
-                area.broadcast_ooc(f'After a server refresh, your area no longer had a valid '
-                                   f'background. Switching to {default_background}.')
+                area.broadcast_ooc(f'After a change in the backgrounds list, your area no longer '
+                                   f'had a valid background. Switching to {default_background}.')
 
         return backgrounds.copy()
 
