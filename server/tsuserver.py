@@ -49,7 +49,6 @@ from server.party_manager import PartyManager
 from server.tasker import Tasker
 from server.timer_manager import TimerManager
 from server.trial_manager import TrialManager
-from server.validate.backgrounds import ValidateBackgrounds
 from server.zone_manager import ZoneManager
 
 from server.validate.characters import ValidateCharacters
@@ -258,7 +257,7 @@ class TsuserverDR:
 
     def reload(self):
         try:
-            ValidateBackgrounds().validate(f'config/backgrounds.yaml')
+            self.background_manager.validate_file()
             ValidateCharacters().validate('config/characters.yaml')
             ValidateMusic().validate('config/music.yaml')
         except ServerError.YAMLInvalidError as exc:

@@ -59,4 +59,8 @@ class BackgroundManager:
         return background.lower() in self._backgrounds
 
     def _check_structure(self):
+        # At least one background
+        assert self._backgrounds
+
+        # The default background is actually a background
         assert self.is_background(self._default_background)
