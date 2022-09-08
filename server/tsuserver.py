@@ -322,6 +322,31 @@ class TsuserverDR:
         return len([client for client in self.get_clients() if client.char_id is not None])
 
     def load_backgrounds(self) -> List[str]:
+        """
+        Load background file `config/backgrounds.yaml`.
+
+        Parameters
+        ----------
+        source_file : str
+            Relative path from server root folder to background file.
+
+        Returns
+        -------
+        List[str]
+            Backgrounds.
+
+        Raises
+        ------
+        ServerError.FileNotFoundError
+            If the file was not found.
+        ServerError.FileOSError
+            If there was an operating system error when opening the file.
+        ServerError.YAMLInvalidError
+            If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
+        ServerError.FileSyntaxError
+            If the file failed verification for its asset type.
+        """
+
         old_backgrounds = self.background_manager.get_backgrounds()
         backgrounds = self.background_manager.load_backgrounds_from_file('config/backgrounds.yaml')
 

@@ -41,7 +41,35 @@ class BackgroundManager:
         return backgrounds
 
     def load_backgrounds_from_file(self, source_file: str) -> List[str]:
+        """
+        Set the background list from a given file.
+
+        Parameters
+        ----------
+        source_file : str
+            Relative path from server root folder to background file.
+
+        Returns
+        -------
+        List[str]
+            Backgrounds.
+
+        Raises
+        ------
+        ServerError.FileInvalidNameError
+            If `source_file` includes relative directories.
+        ServerError.FileNotFoundError
+            If the file was not found.
+        ServerError.FileOSError
+            If there was an operating system error when opening the file.
+        ServerError.YAMLInvalidError
+            If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
+        ServerError.FileSyntaxError
+            If the file failed verification for its asset type.
+        """
+
         backgrounds = self.validate_file(source_file)
+        self.validate_file()
         output = self._load_backgrounds(backgrounds, source_file)
         self._check_structure()
         return output
