@@ -11382,7 +11382,28 @@ def ooc_cmd_mindreader(client: ClientManager.Client, arg: str):
                                f'({client.area.id}).', is_zstaff_flex=True)
 
 
-def ooc_cmd_bglist(client: ClientManager.Client, arg: str):
+def ooc_cmd_bg_list(client: ClientManager.Client, arg: str):
+    """ (OFFICER ONLY)
+    Sets the server's current backgrounds list (what backgrounds areas may normally use at any given
+    time). If given no arguments, it will return the backgrounds list to its original value
+    (in config/backgrounds.yaml).
+    Returns an error if the given backgrounds list name includes relative directories,
+    was not found, caused an OS error when loading, or raised a YAML or asset syntax error when
+    loading.
+
+    SYNTAX
+    /bg_list <bg_list>
+
+    PARAMETERS
+    <bg_list>: Name of the intended backgrounds list
+
+    EXAMPLES
+    >>> /bg_list beach
+    Load the "beach" backgrounds list.
+    >>> /bg_list
+    Reset the backgrounds list to its original value.
+    """
+
     Constants.assert_command(client, arg, is_officer=True)
 
     if not arg:
@@ -11406,10 +11427,10 @@ def ooc_cmd_bglist(client: ClientManager.Client, arg: str):
                           f'An OS error occurred: `{exc}`.')
     except ServerError.YAMLInvalidError as exc:
         raise ServerError(f'{fail_msg}: '
-                          f'A YAML syntax error occurred: `{exc}`.')
+                          f'`{exc}`.')
     except ServerError.FileSyntaxError as exc:
         raise ServerError(f'{fail_msg}: '
-                          f'A TSDR syntax error occurred: `{exc}`.')
+                          f'An asset syntax error occurred: `{exc}`.')
     else:
         client.send_ooc(f'You have loaded {msg}.')
         client.send_ooc_others(f'The {msg} has been loaded.',

@@ -374,7 +374,7 @@ class Constants():
                 raise ServerError.YAMLInvalidError(msg)
             return contents
         except yaml.YAMLError as exc:
-            msg = ('File {} returned the following YAML error when loading: `{}`. Fix the syntax '
+            msg = ('File {} returned the following YAML syntax error when loading: `{}`. Fix the syntax '
                    'error and try again.'
                    .format(file_name, exc))
             raise ServerError.YAMLInvalidError(msg)
