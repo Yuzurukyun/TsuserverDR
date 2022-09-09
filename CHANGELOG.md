@@ -804,3 +804,6 @@
 ### (4.3.5)
 * Added client version and server version consistently to printed server error messages
 * Fixed /lasterror providing duplicate error information
+* Added support for loading custom background lists without changing `config/backgrounds.yaml` via
+  - /bg_list
+  - /bg_list_info
