@@ -11382,6 +11382,90 @@ def ooc_cmd_mindreader(client: ClientManager.Client, arg: str):
                                f'({client.area.id}).', is_zstaff_flex=True)
 
 
+def ooc_cmd_bg_list(client: ClientManager.Client, arg: str):
+    """ (OFFICER ONLY)
+    Sets the server's current background list (what backgrounds areas may normally use at any given
+    time). If given no arguments, it will return the background list to its original value
+    (in config/backgrounds.yaml).
+    Returns an error if the given background list name includes relative directories,
+    was not found, caused an OS error when loading, or raised a YAML or asset syntax error when
+    loading.
+
+    SYNTAX
+    /bg_list <bg_list>
+
+    PARAMETERS
+    <bg_list>: Name of the intended background list
+
+    EXAMPLES
+    >>> /bg_list beach
+    Load the "beach" background list.
+    >>> /bg_list
+    Reset the background list to its original value.
+    """
+
+    Constants.assert_command(client, arg, is_officer=True)
+
+    if not arg:
+        source_file = 'config/backgrounds.yaml'
+        msg = 'the default background list file'
+    else:
+        source_file = f'config/background_lists/{arg}.yaml'
+        msg = f'the custom background list file `{source_file}`'
+    fail_msg = f'Unable to load {msg}'
+
+    try:
+        client.server.load_backgrounds(source_file)
+    except ServerError.FileInvalidNameError:
+        raise ServerError(f'{fail_msg}: '
+                          f'File names may not contain relative directories.')
+    except ServerError.FileNotFoundError:
+        raise ServerError(f'{fail_msg}: '
+                          f'File not found.')
+    except ServerError.FileOSError as exc:
+        raise ServerError(f'{fail_msg}: '
+                          f'An OS error occurred: `{exc}`.')
+    except ServerError.YAMLInvalidError as exc:
+        raise ServerError(f'{fail_msg}: '
+                          f'`{exc}`.')
+    except ServerError.FileSyntaxError as exc:
+        raise ServerError(f'{fail_msg}: '
+                          f'An asset syntax error occurred: `{exc}`.')
+    else:
+        client.send_ooc(f'You have loaded {msg}.')
+        client.send_ooc_others(f'The {msg} has been loaded.',
+                               is_officer=False)
+        client.send_ooc_others(f'{client.name} [{client.id}] has loaded {msg}.',
+                               is_officer=True)
+
+
+def ooc_cmd_bg_list_info(client: ClientManager.Client, arg: str):
+    """ (OFFICER ONLY)
+    Returns the current background list.
+
+    SYNTAX
+    /bg_list_info
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    >>> /bg_list_info
+    May return something like this:
+    | $H: The current background list is the custom list `custom`.
+    """
+
+    Constants.assert_command(client, arg, is_officer=True, parameters='=0')
+
+    raw_name = client.server.background_manager.get_source_file()
+    if 'config/background_lists/' in raw_name:
+        name = f'the custom list `{raw_name[len("config/background_lists/"):-len(".yaml")]}`'
+    else:
+        name = 'the default list'
+
+    client.send_ooc(f'The current background list is {name}.')
+
+
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):
     """
     VERY DANGEROUS. SHOULD ONLY BE ENABLED FOR DEBUGGING.

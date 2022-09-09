@@ -17,6 +17,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+from io import TextIOWrapper
 from typing import Awaitable, Any, Callable, Iterable, List, Optional, Set, Tuple
 import typing
 if typing.TYPE_CHECKING:
@@ -273,7 +274,33 @@ class Constants():
         return new_params
 
     @staticmethod
-    def fopen(file_name: str, *args, disallow_parent_folder: bool = True, **kwargs):
+    def fopen(file_name: str, *args, disallow_parent_folder: bool = True,
+              **kwargs) -> TextIOWrapper:
+        """
+        Open file.
+
+        Parameters
+        ----------
+        file_name : str
+            Path to folder relative to root server directory.
+        disallow_parent_folder : bool, optional
+            If paths including relative directories should be disallowed or not, by default True.
+
+        Returns
+        -------
+        TextIOWrapper
+            File descriptor.
+
+        Raises
+        ------
+        ServerError.FileInvalidNameError
+            If `file_name` includes relative directories and `disallow_parent_folder` is False.
+        ServerError.FileNotFoundError
+            If the file was not found.
+        ServerError.FileOSError
+            If there was an operating system error when opening the file.
+        """
+
         if disallow_parent_folder and Constants.includes_relative_directories(file_name):
             info = f'File names may not reference parent or current directories: {file_name}'
             raise ServerError.FileInvalidNameError(info)
@@ -316,7 +343,26 @@ class Constants():
         return name.startswith('%') or '#' in name
 
     @staticmethod
-    def yaml_load(file: str) -> Any:
+    def yaml_load(file: TextIOWrapper) -> Any:
+        """
+        Load a YAML file.
+
+        Parameters
+        ----------
+        file : TextIOWrapper
+            File to open.
+
+        Returns
+        -------
+        Any
+            Contents of the YAML file.
+
+        Raises
+        ------
+        ServerError.YAMLInvalidError
+            If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
+        """
+
         # Extract the name of the yaml in case of errors
         separator = max(file.name.rfind('\\'), file.name.rfind('/'))
         file_name = file.name[separator+1:]
@@ -328,7 +374,7 @@ class Constants():
                 raise ServerError.YAMLInvalidError(msg)
             return contents
         except yaml.YAMLError as exc:
-            msg = ('File {} returned the following YAML error when loading: `{}`. Fix the syntax '
+            msg = ('File {} returned the following YAML syntax error when loading: `{}`. Fix the syntax '
                    'error and try again.'
                    .format(file_name, exc))
             raise ServerError.YAMLInvalidError(msg)

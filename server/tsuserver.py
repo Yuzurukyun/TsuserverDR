@@ -20,7 +20,6 @@
 # This class will suffer major reworkings for 4.3
 
 from __future__ import annotations
-from multiprocessing.connection import Client
 from typing import Any, Callable, Dict, List, Tuple
 
 import asyncio
@@ -37,13 +36,14 @@ import warnings
 import yaml
 
 from server import logger
-from server.network.ao_protocol import AOProtocol
 from server.area_manager import AreaManager
+from server.background_manager import BackgroundManager
 from server.ban_manager import BanManager
 from server.constants import Constants
 from server.client_manager import ClientManager
 from server.exceptions import ServerError
 from server.game_manager import GameManager
+from server.network.ao_protocol import AOProtocol
 from server.network.ms3_protocol import MasterServerClient
 from server.party_manager import PartyManager
 from server.tasker import Tasker
@@ -51,7 +51,6 @@ from server.timer_manager import TimerManager
 from server.trial_manager import TrialManager
 from server.zone_manager import ZoneManager
 
-from server.validate.backgrounds import ValidateBackgrounds
 from server.validate.characters import ValidateCharacters
 from server.validate.config import ValidateConfig
 from server.validate.gimp import ValidateGimp
@@ -69,8 +68,8 @@ class TsuserverDR:
         self.release = 4
         self.major_version = 3
         self.minor_version = 5
-        self.segment_version = 'a2'
-        self.internal_version = 'm220906b'
+        self.segment_version = 'a3'
+        self.internal_version = 'm220908a'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
@@ -110,13 +109,13 @@ class TsuserverDR:
         self.trial_manager = TrialManager(self)
         self.zone_manager = ZoneManager(self)
         self.area_manager = AreaManager(self)
+        self.background_manager = BackgroundManager(self)
         self.ban_manager = BanManager(self)
         self.party_manager = PartyManager(self)
 
         self.ipid_list = {}
         self.hdid_list = {}
         self.music_list = None
-        self.backgrounds = None
         self.gimp_list = list()
         self.load_commandhelp()
         self.load_music()
@@ -139,6 +138,14 @@ class TsuserverDR:
             self.new_110_music = set(yaml.load(f, yaml.SafeLoader))
 
         self._server = None
+
+    @property
+    def backgrounds(self):
+        message = ('Code is using old backgrounds syntax. Please change it (or ask your '
+                   'server developer) so that it uses background_manager.get_backgrounds() instead.'
+                   'This old syntax will be removed in 4.4.')
+        warnings.warn(message, category=UserWarning, stacklevel=2)
+        return self.background_manager.get_backgrounds()
 
     async def start(self):
         self.loop = asyncio.get_event_loop()
@@ -217,7 +224,6 @@ class TsuserverDR:
         raise await self.error_queue.get()
 
     async def normal_shutdown(self):
-
         # Cleanup operations
         self.shutting_down = True
 
@@ -250,35 +256,23 @@ class TsuserverDR:
         return mes
 
     def reload(self):
-        # Keep backups in case of failure
-        backup = [self.char_list.copy(), self.music_list.copy(), self.backgrounds.copy()]
-
-        # Do a dummy YAML load to see if the files can be loaded and parsed at all first.
-        reloaded_assets = [self.load_characters, self.load_backgrounds, self.load_music]
-        for reloaded_asset in reloaded_assets:
-            try:
-                reloaded_asset()
-            except ServerError.YAMLInvalidError as exc:
-                # The YAML exception already provides a full description. Just add the fact the
-                # reload was undone to ease the person who ran the command's nerves.
-                msg = (f'{exc} Reload was undone.')
-                raise ServerError.YAMLInvalidError(msg)
-            except ServerError.FileSyntaxError as exc:
-                msg = f'{exc} Reload was undone.'
-                raise ServerError(msg)
+        try:
+            self.background_manager.validate_file()
+            ValidateCharacters().validate('config/characters.yaml')
+            ValidateMusic().validate('config/music.yaml')
+        except ServerError.YAMLInvalidError as exc:
+            # The YAML exception already provides a full description. Just add the fact the
+            # reload was undone to ease the person who ran the command's nerves.
+            msg = (f'{exc} Reload was undone.')
+            raise ServerError.YAMLInvalidError(msg)
+        except ServerError.FileSyntaxError as exc:
+            msg = f'{exc} Reload was undone.'
+            raise ServerError(msg)
 
         # Only on success reload
         self.load_characters()
         self.load_backgrounds()
-
-        try:
-            self.load_music()
-        except ServerError as exc:
-            self.char_list, self.music_list, self.backgrounds = backup
-            msg = ('The new music list returned the following error when loading: `{}`. Fix the '
-                   'error and try again. Reload was undone.'
-                   .format(exc))
-            raise ServerError.FileSyntaxError(msg)
+        self.load_music()
 
     def reload_commands(self):
         try:
@@ -327,19 +321,48 @@ class TsuserverDR:
         # Ignore players in the server selection screen.
         return len([client for client in self.get_clients() if client.char_id is not None])
 
-    def load_backgrounds(self) -> List[str]:
-        backgrounds = ValidateBackgrounds().validate('config/backgrounds.yaml')
+    def load_backgrounds(self, source_file: str = 'config/backgrounds.yaml') -> List[str]:
+        """
+        Load background file `config/backgrounds.yaml`.
 
-        self.backgrounds = backgrounds
-        default_background = self.backgrounds[0]
+        Parameters
+        ----------
+        source_file : str
+            Relative path from server root folder to background file.
+
+        Returns
+        -------
+        List[str]
+            Backgrounds.
+
+        Raises
+        ------
+        ServerError.FileNotFoundError
+            If the file was not found.
+        ServerError.FileOSError
+            If there was an operating system error when opening the file.
+        ServerError.YAMLInvalidError
+            If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
+        ServerError.FileSyntaxError
+            If the file failed verification for its asset type.
+        """
+
+        old_backgrounds = self.background_manager.get_backgrounds()
+        backgrounds = self.background_manager.load_backgrounds_from_file(source_file)
+
+        if old_backgrounds == backgrounds:
+            # No change implies backgrounds still valid, do nothing more
+            return backgrounds.copy()
+
         # Make sure each area still has a valid background
+        default_background = self.background_manager.get_default_background()
         for area in self.area_manager.areas:
-            if area.background not in self.backgrounds and not area.cbg_allowed:
+            if not self.background_manager.is_background(area.background) and not area.cbg_allowed:
                 # The area no longer has a valid background, so change it to some valid background
                 # like the first one
                 area.change_background(default_background)
-                area.broadcast_ooc(f'After a server refresh, your area no longer had a valid '
-                                   f'background. Switching to {default_background}.')
+                area.broadcast_ooc(f'After a change in the background list, your area no longer '
+                                   f'had a valid background. Switching to {default_background}.')
 
         return backgrounds.copy()
 

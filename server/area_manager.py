@@ -302,7 +302,7 @@ class AreaManager:
                 If the server attempted to validate the background name and failed.
             """
 
-            if validate and bg.lower() not in [name.lower() for name in self.server.backgrounds]:
+            if validate and not self.server.background_manager.is_background(bg):
                 raise AreaError('Invalid background name.')
 
             if self.lights:
