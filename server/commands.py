@@ -11439,6 +11439,33 @@ def ooc_cmd_bg_list(client: ClientManager.Client, arg: str):
                                is_officer=True)
 
 
+def ooc_cmd_bg_list_info(client: ClientManager.Client, arg: str):
+    """ (OFFICER ONLY)
+    Returns the current backgrounds list.
+
+    SYNTAX
+    /bg_list_info
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    >>> /bg_list_info
+    May return something like this:
+    | $H: The current backgrounds list is the custom list `custom`.
+    """
+
+    Constants.assert_command(client, arg, is_officer=True, parameters='=0')
+
+    raw_name = client.server.background_manager.get_source_file()
+    if 'config/backgrounds_lists/' in raw_name:
+        name = f'the custom list `{raw_name[len("config/backgrounds_lists/"):-len(".yaml")]}`'
+    else:
+        name = 'the default list'
+
+    client.send_ooc(f'The current backgrounds list is {name}.')
+
+
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):
     """
     VERY DANGEROUS. SHOULD ONLY BE ENABLED FOR DEBUGGING.
