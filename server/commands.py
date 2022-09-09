@@ -11384,10 +11384,10 @@ def ooc_cmd_mindreader(client: ClientManager.Client, arg: str):
 
 def ooc_cmd_bg_list(client: ClientManager.Client, arg: str):
     """ (OFFICER ONLY)
-    Sets the server's current backgrounds list (what backgrounds areas may normally use at any given
-    time). If given no arguments, it will return the backgrounds list to its original value
+    Sets the server's current background list (what backgrounds areas may normally use at any given
+    time). If given no arguments, it will return the background list to its original value
     (in config/backgrounds.yaml).
-    Returns an error if the given backgrounds list name includes relative directories,
+    Returns an error if the given background list name includes relative directories,
     was not found, caused an OS error when loading, or raised a YAML or asset syntax error when
     loading.
 
@@ -11395,23 +11395,23 @@ def ooc_cmd_bg_list(client: ClientManager.Client, arg: str):
     /bg_list <bg_list>
 
     PARAMETERS
-    <bg_list>: Name of the intended backgrounds list
+    <bg_list>: Name of the intended background list
 
     EXAMPLES
     >>> /bg_list beach
-    Load the "beach" backgrounds list.
+    Load the "beach" background list.
     >>> /bg_list
-    Reset the backgrounds list to its original value.
+    Reset the background list to its original value.
     """
 
     Constants.assert_command(client, arg, is_officer=True)
 
     if not arg:
         source_file = 'config/backgrounds.yaml'
-        msg = 'the default backgrounds list file'
+        msg = 'the default background list file'
     else:
-        source_file = f'config/backgrounds_lists/{arg}.yaml'
-        msg = f'the custom backgrounds list file `{source_file}`'
+        source_file = f'config/background_lists/{arg}.yaml'
+        msg = f'the custom background list file `{source_file}`'
     fail_msg = f'Unable to load {msg}'
 
     try:
@@ -11441,7 +11441,7 @@ def ooc_cmd_bg_list(client: ClientManager.Client, arg: str):
 
 def ooc_cmd_bg_list_info(client: ClientManager.Client, arg: str):
     """ (OFFICER ONLY)
-    Returns the current backgrounds list.
+    Returns the current background list.
 
     SYNTAX
     /bg_list_info
@@ -11452,18 +11452,18 @@ def ooc_cmd_bg_list_info(client: ClientManager.Client, arg: str):
     EXAMPLES
     >>> /bg_list_info
     May return something like this:
-    | $H: The current backgrounds list is the custom list `custom`.
+    | $H: The current background list is the custom list `custom`.
     """
 
     Constants.assert_command(client, arg, is_officer=True, parameters='=0')
 
     raw_name = client.server.background_manager.get_source_file()
-    if 'config/backgrounds_lists/' in raw_name:
-        name = f'the custom list `{raw_name[len("config/backgrounds_lists/"):-len(".yaml")]}`'
+    if 'config/background_lists/' in raw_name:
+        name = f'the custom list `{raw_name[len("config/background_lists/"):-len(".yaml")]}`'
     else:
         name = 'the default list'
 
-    client.send_ooc(f'The current backgrounds list is {name}.')
+    client.send_ooc(f'The current background list is {name}.')
 
 
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):

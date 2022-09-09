@@ -361,7 +361,7 @@ class TsuserverDR:
                 # The area no longer has a valid background, so change it to some valid background
                 # like the first one
                 area.change_background(default_background)
-                area.broadcast_ooc(f'After a change in the backgrounds list, your area no longer '
+                area.broadcast_ooc(f'After a change in the background list, your area no longer '
                                    f'had a valid background. Switching to {default_background}.')
 
         return backgrounds.copy()
