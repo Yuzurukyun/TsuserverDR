@@ -259,7 +259,7 @@ class TsuserverDR:
     def reload(self):
         try:
             self.background_manager.validate_file()
-            ValidateCharacters().validate('config/characters.yaml')
+            self.character_manager.validate_file()
             ValidateMusic().validate('config/music.yaml')
         except ServerError.YAMLInvalidError as exc:
             # The YAML exception already provides a full description. Just add the fact the
@@ -324,12 +324,13 @@ class TsuserverDR:
 
     def load_backgrounds(self, source_file: str = 'config/backgrounds.yaml') -> List[str]:
         """
-        Load background file `config/backgrounds.yaml`.
+        Load a background list file.
 
         Parameters
         ----------
         source_file : str
-            Relative path from server root folder to background file.
+            Relative path from server root folder to background list file, by default
+            'config/backgrounds.yaml'
 
         Returns
         -------
@@ -420,6 +421,32 @@ class TsuserverDR:
         return self.config
 
     def load_characters(self, source_file: str = 'config/characters.yaml') -> List[str]:
+        """
+        Load a character list file.
+
+        Parameters
+        ----------
+        source_file : str, optional
+            Relative path from server root folder to character list file, by default
+            'config/characters.yaml'
+
+        Returns
+        -------
+        List[str]
+            Characters.
+
+        Raises
+        ------
+        ServerError.FileNotFoundError
+            If the file was not found.
+        ServerError.FileOSError
+            If there was an operating system error when opening the file.
+        ServerError.YAMLInvalidError
+            If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
+        ServerError.FileSyntaxError
+            If the file failed verification for its asset type.
+        """
+
         old_characters = self.character_manager.get_characters()
         characters = self.character_manager.validate_file(source_file)
         if old_characters == characters:
@@ -437,7 +464,8 @@ class TsuserverDR:
                 pass
             elif old_char_name not in new_chars:
                 # Character no longer exists, so switch to spectator
-                client.send_ooc('Your character is no longer available. Switching to spectator.')
+                client.send_ooc(f'After a change in the character list, your character is no '
+                                f'longer available. Switching to {self.config["spectator_name"]}.')
             else:
                 target_char_id = new_chars[old_char_name]
 
@@ -447,8 +475,8 @@ class TsuserverDR:
                     })
                 client.change_character(target_char_id, force=True)
             else:
-                client.send_ooc('The server character list was changed and no longer reflects your '
-                                'client character list. Please rejoin the server.')
+                client.send_ooc('After a change in the character list, your client character list '
+                                'is no longer synchronized. Please rejoin the server.')
 
         # Only now update internally. This is to allow `change_character` to work properly.
         self.character_manager.load_characters_from_file(source_file)

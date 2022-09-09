@@ -75,7 +75,7 @@ class CharacterManager:
 
     def get_character_name(self, char_id: Union[int, None]) -> str:
         if not self.is_valid_character_id(char_id):
-            raise NotImplementedError
+            raise CharacterError.CharacterIDNotFound
         if char_id == -1:
             return self._server.config['spectator_name']
         if char_id is None:
@@ -89,7 +89,7 @@ class CharacterManager:
         for i, ch in enumerate(self._characters):
             if ch.lower() == name.lower():
                 return i
-        raise NotImplementedError(f'Character {name} not found.')
+        raise CharacterError.CharacterNotFound(f'Character {name} not found.')
 
     def _check_structure(self):
         # At least one character
