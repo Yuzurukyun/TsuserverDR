@@ -1346,7 +1346,7 @@ def ooc_cmd_char_restrict(client: ClientManager.Client, arg: str):
     except ArgumentError:
         raise ArgumentError('This command takes one character name.')
 
-    if arg not in client.server.char_list:
+    if not client.server.character_manager.is_character(arg):
         raise ArgumentError('Unrecognized character folder name: {}'.format(arg))
 
     status = {True: 'enabled', False: 'disabled'}
@@ -8029,7 +8029,7 @@ def ooc_cmd_switch(client: ClientManager.Client, arg: str):
         raise ArgumentError('You must specify a character name.')
 
     # Obtain char_id if character exists and then try and change to given char if available
-    char_id = client.server.get_char_id_by_name(arg)
+    char_id = client.server.character_manager.get_character_id_by_name(arg)
     client.change_character(char_id, force=client.is_mod)
     client.send_ooc(f'Changed character to {arg}.')
 

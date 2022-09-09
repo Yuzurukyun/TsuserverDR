@@ -342,7 +342,8 @@ class AreaManager:
 
             unavailable = {x.char_id for x in self.clients if x.has_character()}
             unavailable |= more_unavail_chars
-            restricted = {self.server.char_list.index(name) for name in self.restricted_chars}
+            restricted = {self.server.character_manager.get_character_id_by_name(name)
+                          for name in self.restricted_chars}
 
             if not allow_restricted:
                 unavailable |= restricted
@@ -376,7 +377,8 @@ class AreaManager:
 
             unusable = self.get_chars_unusable(allow_restricted=allow_restricted,
                                                more_unavail_chars=more_unavail_chars)
-            available = {i for i in range(len(self.server.char_list)) if i not in unusable}
+            available = {i for i in range(len(self.server.character_manager.get_characters()))
+                         if i not in unusable}
 
             if not available:
                 raise AreaError('No available characters.')
@@ -1141,7 +1143,7 @@ class AreaManager:
         """
 
         areas = ValidateAreas().validate(area_list_file, extra_parameters={
-            'server_character_list': self.server.char_list,
+            'server_character_list': self.server.character_manager.get_characters(),
             'server_default_area_description': self.server.config['default_area_description']
             })
 

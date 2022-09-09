@@ -797,7 +797,7 @@ class ClientManager:
 
             old_char, old_char_id = self.get_char_name(), self.char_id
 
-            if not self.server.is_valid_char_id(char_id):
+            if not self.server.character_manager.is_valid_character_id(char_id):
                 raise ClientError('Invalid character ID.')
             if not target_area.is_char_available(char_id, allow_restricted=self.is_staff()):
                 if force:
@@ -1597,7 +1597,7 @@ class ClientManager:
             raise NotImplementedError
 
         def refresh_char_list(self):
-            char_list = [0] * len(self.server.char_list)
+            char_list = [0] * len(self.server.character_manager.get_characters())
             unusable_ids = self.area.get_chars_unusable(allow_restricted=self.is_staff())
             # Remove sneaked players from unusable if needed so that they don't appear as taken
             # Their characters will not be able to be reused, but at least that's one less clue
@@ -1615,11 +1615,11 @@ class ClientManager:
                 })
 
         def refresh_visible_char_list(self):
-            char_list = [0] * len(self.server.char_list)
+            char_list = [0] * len(self.server.character_manager.get_characters())
             unusable_ids = {c.char_id for c in self.get_visible_clients(self.area)
                             if c.has_character()}
             if not self.is_staff():
-                unusable_ids |= {self.server.char_list.index(name)
+                unusable_ids |= {self.server.character_manager.get_character_id_by_name(name)
                                 for name in self.area.restricted_chars}
 
             for x in unusable_ids:
@@ -1890,11 +1890,7 @@ class ClientManager:
             if char_id is None:
                 char_id = self.char_id
 
-            if char_id == -1:
-                return self.server.config['spectator_name']
-            if char_id is None:
-                return self.server.server_select_name
-            return self.server.char_list[char_id]
+            return self.server.character_manager.get_character_name(char_id)
 
         def get_showname_history(self) -> str:
             info = '== Showname history of client {} =='.format(self.id)

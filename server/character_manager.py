@@ -62,14 +62,34 @@ class CharacterManager:
         return output
 
     def _load_characters(self, new_list: List[str], source_file: str) -> List[str]:
-        lower = [name.lower() for name in new_list]
-        self._characters = lower
+        self._characters = new_list.copy()
         self._source_file = source_file
 
-        return lower.copy()
+        return new_list.copy()
 
     def is_character(self, character: str) -> bool:
-        return character.lower() in self._characters
+        return character in self._characters
+
+    def is_valid_character_id(self, char_id: Union[int, None]) -> bool:
+        return char_id is None or len(self._characters) > char_id >= -1
+
+    def get_character_name(self, char_id: Union[int, None]) -> str:
+        if not self.is_valid_character_id(char_id):
+            raise NotImplementedError
+        if char_id == -1:
+            return self._server.config['spectator_name']
+        if char_id is None:
+            return self._server.server_select_name
+
+        return self._characters[char_id]
+
+    def get_character_id_by_name(self, name: str) -> int:
+        if name == self._server.config['spectator_name']:
+            return -1
+        for i, ch in enumerate(self._characters):
+            if ch.lower() == name.lower():
+                return i
+        raise NotImplementedError(f'Character {name} not found.')
 
     def _check_structure(self):
         # At least one character

@@ -39,6 +39,7 @@ from server import logger
 from server.area_manager import AreaManager
 from server.background_manager import BackgroundManager
 from server.ban_manager import BanManager
+from server.character_manager import CharacterManager
 from server.constants import Constants
 from server.client_manager import ClientManager
 from server.exceptions import ServerError
@@ -101,7 +102,7 @@ class TsuserverDR:
         self.load_config()
         self.timer_manager = TimerManager(self)
         self.client_manager: ClientManager = client_manager(self)
-        self.char_list = list()
+        self.character_manager = CharacterManager(self)
         self.load_iniswaps()
         self.load_characters()
 
@@ -418,13 +419,13 @@ class TsuserverDR:
 
         return self.config
 
-    def load_characters(self) -> List[str]:
-        characters = ValidateCharacters().validate('config/characters.yaml')
-
-        if self.char_list == characters:
+    def load_characters(self, source_file: str = 'config/characters.yaml') -> List[str]:
+        old_characters = self.character_manager.get_characters()
+        characters = self.character_manager.validate_file(source_file)
+        if old_characters == characters:
             return characters.copy()
 
-        # Inconsistent character list, so change everyone to spectator
+        # Inconsistent character list, so change to spectator those who lost their character.
         new_chars = {char: num for (num, char) in enumerate(characters)}
 
         for client in self.get_clients():
@@ -437,7 +438,6 @@ class TsuserverDR:
             elif old_char_name not in new_chars:
                 # Character no longer exists, so switch to spectator
                 client.send_ooc('Your character is no longer available. Switching to spectator.')
-                pass
             else:
                 target_char_id = new_chars[old_char_name]
 
@@ -450,7 +450,8 @@ class TsuserverDR:
                 client.send_ooc('The server character list was changed and no longer reflects your '
                                 'client character list. Please rejoin the server.')
 
-        self.char_list = characters
+        # Only now update internally. This is to allow `change_character` to work properly.
+        self.character_manager.load_characters_from_file(source_file)
         return characters.copy()
 
     def load_commandhelp(self):
@@ -737,15 +738,18 @@ class TsuserverDR:
         return prepared_music_list
 
     def is_valid_char_id(self, char_id: int) -> bool:
-        return len(self.char_list) > char_id >= -1
+        message = ('Code is using old characters syntax. Please change it (or ask your '
+                   'server developer) so that it uses character_manager.is_valid_character_id() '
+                   'instead. This old syntax will be removed in 4.4.')
+        warnings.warn(message, category=UserWarning, stacklevel=2)
+        return self.character_manager.is_valid_character_id(char_id)
 
     def get_char_id_by_name(self, name: str) -> int:
-        if name == self.config['spectator_name']:
-            return -1
-        for i, ch in enumerate(self.char_list):
-            if ch.lower() == name.lower():
-                return i
-        raise ServerError(f'Character {name} not found.')
+        message = ('Code is using old characters syntax. Please change it (or ask your '
+                   'server developer) so that it uses character_manager.is_valid_character_id() '
+                   'instead. This old syntax will be removed in 4.4.')
+        warnings.warn(message, category=UserWarning, stacklevel=2)
+        return self.character_manager.get_character_id_by_name(name)
 
     def get_song_data(self, music: str, c: ClientManager.Client = None) -> Tuple[str, int, str]:
         # The client's personal music list should also be a valid place to search
