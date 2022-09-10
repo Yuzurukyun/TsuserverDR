@@ -40,7 +40,7 @@ class BackgroundManager:
         backgrounds = ValidateBackgrounds().validate(source_file)
         return backgrounds
 
-    def load_backgrounds_from_file(self, source_file: str) -> List[str]:
+    def load_backgrounds(self, source_file: str) -> List[str]:
         """
         Set the background list from a given file.
 

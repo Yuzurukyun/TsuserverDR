@@ -69,8 +69,8 @@ class TsuserverDR:
         self.release = 4
         self.major_version = 3
         self.minor_version = 5
-        self.segment_version = 'a4'
-        self.internal_version = 'm220909a'
+        self.segment_version = 'a5'
+        self.internal_version = 'm220909b'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
@@ -350,7 +350,7 @@ class TsuserverDR:
         """
 
         old_backgrounds = self.background_manager.get_backgrounds()
-        backgrounds = self.background_manager.load_backgrounds_from_file(source_file)
+        backgrounds = self.background_manager.load_backgrounds(source_file)
 
         if old_backgrounds == backgrounds:
             # No change implies backgrounds still valid, do nothing more
@@ -358,7 +358,7 @@ class TsuserverDR:
 
         # Make sure each area still has a valid background
         default_background = self.background_manager.get_default_background()
-        for area in self.area_manager.areas:
+        for area in self.area_manager.get_areas():
             if not self.background_manager.is_background(area.background) and not area.cbg_allowed:
                 # The area no longer has a valid background, so change it to some valid background
                 # like the first one
@@ -479,7 +479,7 @@ class TsuserverDR:
                                 'is no longer synchronized. Please rejoin the server.')
 
         # Only now update internally. This is to allow `change_character` to work properly.
-        self.character_manager.load_characters_from_file(source_file)
+        self.character_manager.load_characters(source_file)
         return characters.copy()
 
     def load_commandhelp(self):
@@ -719,7 +719,7 @@ class TsuserverDR:
 
         # Now add areas
         prepared_area_list = list()
-        for area in self.area_manager.areas:
+        for area in self.area_manager.get_areas():
             if need_to_check or area.name in from_area.visible_areas:
                 prepared_area_list.append("{}-{}".format(area.id, area.name))
 

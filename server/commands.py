@@ -219,7 +219,8 @@ def ooc_cmd_area_list(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_officer=True)
 
     # lists which areas are locked before the reload
-    old_locked_areas = [area.name for area in client.server.area_manager.areas if area.is_locked]
+    old_locked_areas = [area.name for area in client.server.area_manager.get_areas()
+                        if area.is_locked]
 
     if not arg:
         client.server.area_manager.load_areas()
@@ -939,8 +940,9 @@ def ooc_cmd_bloodtrail_list(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
     # Get all areas with blood in them
-    areas = sorted([area for area in client.server.area_manager.areas if len(area.bleeds_to) > 0 or
-                    area.blood_smeared], key=lambda x: x.name)
+    areas = sorted([area for area in client.server.area_manager.get_areas()
+                    if len(area.bleeds_to) > 0 or area.blood_smeared],
+                   key=lambda x: x.name)
 
     # No areas found means there are no blood trails
     if not areas:
@@ -4063,7 +4065,7 @@ def ooc_cmd_look_list(client: ClientManager.Client, arg: str):
 
     info = '== Areas in this server with custom descriptions =='
     # Get all areas with changed descriptions
-    areas = [area for area in client.server.area_manager.areas
+    areas = [area for area in client.server.area_manager.get_areas()
              if area.description != area.default_description]
 
     # No areas found means there are no areas with changed descriptions
@@ -7447,7 +7449,7 @@ def ooc_cmd_scream_set_range(client: ClientManager.Client, arg: str):
                 raise ArgumentError('You may not include multiple areas when including a special '
                                     'keyword.')
             area_names = '<ALL>'
-            client.area.scream_range = {area.name for area in client.server.area_manager.areas
+            client.area.scream_range = {area.name for area in client.server.area_manager.get_areas()
                                         if area != client.area}
         elif '<REACHABLE_AREAS>' in raw_areas:
             if len(raw_areas) != 1:

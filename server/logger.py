@@ -114,7 +114,7 @@ def log_error(msg, server, errortype='P') -> str:
             msg += '\n*Old area list: {}'.format(server.old_area_list)
             msg += '\n*Current areas:'
 
-            for area in server.area_manager.areas:
+            for area in server.area_manager.get_areas():
                 msg += '\n**{}'.format(area)
                 for c in area.clients:
                     msg += '\n***{}'.format(c)

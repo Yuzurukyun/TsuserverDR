@@ -225,7 +225,7 @@ def net_cmd_askchaa(client: ClientManager.Client, pargs: Dict[str, Any]):
     evi_cnt = 0
     music_cnt = sum([len(item['songs']) + 1
                         for item in client.server.music_list])  # +1 for category
-    area_cnt = len(client.server.area_manager.areas)
+    area_cnt = len(client.server.area_manager.get_areas())
     client.send_command_dict('SI', {
         'char_count': char_cnt,
         'evidence_count': evi_cnt,

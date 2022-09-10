@@ -28,7 +28,7 @@ class CharacterManager:
         characters = ValidateCharacters().validate(source_file)
         return characters
 
-    def load_characters_from_file(self, source_file: str) -> List[str]:
+    def load_characters(self, source_file: str) -> List[str]:
         """
         Set the character list from a given file.
 

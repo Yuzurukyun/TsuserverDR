@@ -1400,7 +1400,7 @@ class ClientManager:
         def send_area_list(self):
             msg = '=== Areas ==='
             lock = {True: '[LOCKED]', False: ''}
-            for i, area in enumerate(self.server.area_manager.areas):
+            for i, area in enumerate(self.server.area_manager.get_areas()):
                 owner = 'FREE'
                 if area.owned:
                     for client in [x for x in area.clients if x.is_cm]:
@@ -1420,7 +1420,7 @@ class ClientManager:
 
         def send_limited_area_list(self):
             msg = '=== Areas ==='
-            for i, area in enumerate(self.server.area_manager.areas):
+            for i, area in enumerate(self.server.area_manager.get_areas()):
                 msg += '\r\nArea {}: {}'.format(i, area.name)
                 if self.area == area:
                     msg += ' [*]'
@@ -1530,7 +1530,7 @@ class ClientManager:
                 # all areas info
 
                 if area_id == -1:
-                    areas = self.server.area_manager.areas
+                    areas = self.server.area_manager.get_areas()
                 elif area_id == -2:
                     zone = self.zone_watched
                     if zone is None:
@@ -1581,15 +1581,15 @@ class ClientManager:
 
         def send_all_area_hdid(self):
             info = '== HDID List =='
-            for i in range(len(self.server.area_manager.areas)):
-                if len(self.server.area_manager.areas[i].clients) > 0:
+            for i in range(len(self.server.area_manager.get_areas())):
+                if len(self.server.area_manager.get_areas()[i].clients) > 0:
                     info += '\r\n{}'.format(self.get_area_hdid(i))
             self.send_ooc(info)
 
         def send_all_area_ip(self):
             info = '== IP List =='
-            for i in range(len(self.server.area_manager.areas)):
-                if len(self.server.area_manager.areas[i].clients) > 0:
+            for i in range(len(self.server.area_manager.get_areas())):
+                if len(self.server.area_manager.get_areas()[i].clients) > 0:
                     info += '\r\n{}'.format(self.get_area_ip(i))
             self.send_ooc(info)
 
@@ -1997,7 +1997,8 @@ class ClientManager:
                 areas = set()
             else:
                 start, end = self.multi_ic[0].id, self.multi_ic[1].id
-                areas = {area for area in self.server.area_manager.areas if start <= area.id <= end}
+                areas = {area for area in self.server.area_manager.get_areas()
+                         if start <= area.id <= end}
             info += ('\n*Global IC range: {}. Global IC prefix: {}'
                      .format(Constants.format_area_ranges(areas),
                              'None' if not self.multi_ic_pre else f'`{self.multi_ic_pre}`'))
@@ -2232,7 +2233,7 @@ class ClientManager:
         if local:
             areas = [client.area]
         else:
-            areas = client.server.area_manager.areas
+            areas = client.server.area_manager.get_areas()
         targets = []
         if key == TargetType.ALL:
             for nkey in range(8):

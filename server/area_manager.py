@@ -35,8 +35,9 @@ if typing.TYPE_CHECKING:
 
 import asyncio
 import time
+import warnings
 
-from server import clients, logger
+from server import logger
 from server.constants import Constants
 from server.evidence import EvidenceList
 from server.exceptions import AreaError, ServerError
@@ -1114,10 +1115,21 @@ class AreaManager:
         """
 
         self.server = server
-        self.areas = []
+        self._areas = []
         self.area_names = set()
         self.publisher = Publisher(self)
         self.load_areas()
+
+    @property
+    def areas(self) -> List[Area]:
+        message = ('Code is using old areas syntax. Please change it (or ask your '
+                   'server developer) so that it uses AreaManager.get_areas() instead.'
+                   'This old syntax will be removed in 4.4.')
+        warnings.warn(message, category=UserWarning, stacklevel=2)
+        return self.get_areas()
+
+    def get_areas(self) -> List[Area]:
+        return self._areas.copy()
 
     def load_areas(self, area_list_file: str = 'config/areas.yaml'):
         """
@@ -1152,9 +1164,9 @@ class AreaManager:
         for (i, area_item) in enumerate(areas):
             temp_areas.append(self.Area(i, self.server, area_item))
 
-        old_areas = self.areas
-        self.areas = temp_areas
-        self.area_names = [area.name for area in self.areas]
+        old_areas = self._areas
+        self._areas = temp_areas
+        self.area_names = [area.name for area in self._areas]
 
         # Only once all areas have been created, actually set the corresponding values
         # Helps avoiding junk area lists if there was an error
@@ -1188,7 +1200,7 @@ class AreaManager:
         self.publisher.publish('areas_loaded', dict())
 
         # If the default area ID is now past the number of available areas, reset it back to zero
-        if self.server.default_area >= len(self.areas):
+        if self.server.default_area >= len(self._areas):
             self.server.default_area = 0
 
         for area in old_areas:
@@ -1241,7 +1253,7 @@ class AreaManager:
         Return the Area object corresponding to the server's default area.
         """
 
-        return self.areas[self.server.default_area]
+        return self._areas[self.server.default_area]
 
     def get_area_by_name(self, name: str) -> AreaManager.Area:
         """
@@ -1263,7 +1275,7 @@ class AreaManager:
             If no area has the given name.
         """
 
-        for area in self.areas:
+        for area in self._areas:
             if area.name == name:
                 return area
         raise AreaError('Area not found.')
@@ -1288,7 +1300,7 @@ class AreaManager:
             If no area has the given ID.
         """
 
-        for area in self.areas:
+        for area in self._areas:
             if area.id == area_id:
                 return area
         raise AreaError('Area not found.')
@@ -1310,7 +1322,7 @@ class AreaManager:
         Returns
         ------
         set of self.Area
-            All areas in `self.areas` that satisfy area1.id <= area.id <= area2.id
+            All areas in `self.get_areas()` that satisfy area1.id <= area.id <= area2.id
         """
 
         return {self.get_area_by_id(i) for i in range(area1.id, area2.id+1)}
