@@ -235,7 +235,8 @@ class ClientManager:
                     })
 
         def send_ooc_others(self, msg: str, username: str = None, allow_empty: bool = False,
-                            is_staff=None, is_officer=None, in_area=None, not_to=None, part_of=None,
+                            is_staff=None, is_officer=None, in_area=None,
+                            not_to: Set = None, part_of=None,
                             to_blind=None, to_deaf=None, is_zstaff=None, is_zstaff_flex=None,
                             pred: Callable[[ClientManager.Client], bool] = None):
             if not allow_empty and not msg:

@@ -629,8 +629,6 @@ class ZoneManager:
             for watcher in self._watchers:
                 self._cleanup_removed_watcher(watcher)
 
-            return
-
         def is_deleted(self) -> bool:
             """
             Returns whether the zone was previously deleted.

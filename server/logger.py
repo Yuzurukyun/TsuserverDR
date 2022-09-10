@@ -141,6 +141,7 @@ def log_server(msg, client=None):
 
 
 def log_server2(msg, client=None):
+    # Empty for test.py purposes
     pass
 
 
@@ -151,6 +152,7 @@ def log_print(msg, client=None):
 
 
 def log_print2(msg, client=None):
+    # Empty for test.py purposes
     pass
 
 
@@ -162,10 +164,6 @@ def log_pdebug(msg, client=None):
 def log_pserver(msg, client=None):
     log_server(msg, client=client)
     log_print(msg, client=client)
-
-# def log_rp(msg, client=None):
-#    msg = parse_client_info(client) + msg
-#    logging.getLogger('rp').info(msg)
 
 
 def parse_client_info(client):

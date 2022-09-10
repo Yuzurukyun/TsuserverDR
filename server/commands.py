@@ -1038,9 +1038,10 @@ def ooc_cmd_bloodtrail_smear(client: ClientManager.Client, arg: str):
         if area.blood_smeared:
             client.send_ooc('Area {} already has its blood trails smeared.'.format(area.name))
         else:
-            client.send_ooc_others('{} smeared the blood trail in your area.'
-                                   .format(client.displayname), is_zstaff_flex=False,
-                                   in_area=area, to_blind=False, pred=lambda c: area.lights)
+            if area.lights:
+                client.send_ooc_others('{} smeared the blood trail in your area.'
+                                    .format(client.displayname), is_zstaff_flex=False,
+                                    in_area=area, to_blind=False)
             area.blood_smeared = True
             successful_smears.add(area.name)
 
@@ -3074,7 +3075,7 @@ def ooc_cmd_handicap(client: ClientManager.Client, arg: str):
                                'on {} in area {} ({}).'
                                .format(client.displayname, client.id, name, length, c.displayname,
                                        client.area.name, client.area.id),
-                               is_zstaff_flex=True, pred=lambda x: x != c)
+                               is_zstaff_flex=True, not_to={c})
 
         c.change_handicap(True, length=length, name=name, announce_if_over=announce_if_over)
 
@@ -11470,7 +11471,7 @@ def ooc_cmd_area_list_info(client: ClientManager.Client, arg: str):
     EXAMPLES
     >>> /area_list_info
     May return something like this:
-    | $H: The current character list is the custom list `beach`.
+    | $H: The current area list is the custom list `beach`.
     """
 
     Constants.assert_command(client, arg, is_officer=True, parameters='=0')

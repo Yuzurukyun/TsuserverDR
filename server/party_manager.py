@@ -138,10 +138,10 @@ class PartyManager:
             if uninclude is None:
                 uninclude = set()
 
-            leader = self.leaders
+            leaders = self.leaders
             if include_staff:
-                leader |= {c for c in self.members if c.is_staff()}
-            return self.leaders-uninclude
+                leaders |= {c for c in self.members if c.is_staff()}
+            return leaders-uninclude
 
         def get_details(self, tc=False):
             return self.pid, self.area, self.player_limit, self.leaders, self.members-self.leaders

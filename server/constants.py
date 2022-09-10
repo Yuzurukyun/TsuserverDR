@@ -879,7 +879,7 @@ class Constants():
         return message
 
     @staticmethod
-    def cjoin(structure: Iterable, the: str = False, sort: bool = True) -> str:
+    def cjoin(structure: Iterable, the: bool = False, sort: bool = True) -> str:
         if not structure:
             return ''
 
