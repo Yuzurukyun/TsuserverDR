@@ -1114,10 +1114,9 @@ class AreaManager(AssetManager):
             The server this area belongs to.
         """
 
-        self.server = server
+        super().__init__(server)
         self._areas = []
         self.area_names = set()
-        self.publisher = Publisher(self)
         self.load_areas()
 
     @property
@@ -1126,6 +1125,15 @@ class AreaManager(AssetManager):
                                   'AreaManager.get_areas()',
                                   '4.4')
         return self.get_areas()
+
+    def get_name(self) -> str:
+        return 'area list'
+
+    def get_default_file(self) -> str:
+        return 'config/area.yaml'
+
+    def get_loader(self) -> Callable[[str, ], str]:
+        return self.server.load_areas
 
     def get_areas(self) -> List[Area]:
         return self._areas.copy()

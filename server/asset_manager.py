@@ -5,6 +5,7 @@ import typing
 from typing import Any, Callable
 
 from server.exceptions import ServerError
+from server.subscriber import Publisher
 
 if typing.TYPE_CHECKING:
     from client_manager import ClientManager
@@ -12,7 +13,8 @@ if typing.TYPE_CHECKING:
 
 class AssetManager:
     def __init__(self, server: TsuserverDR):
-        self._server = server
+        self.server = server
+        self.publisher = Publisher(self)
 
     def get_name(self) -> str:
         raise NotImplementedError
@@ -20,25 +22,10 @@ class AssetManager:
     def get_default_file(self) -> str:
         raise NotImplementedError
 
-    def get_loader_method(self) -> Callable[[str, ], Any]:
+    def get_loader(self) -> Callable[[str, ], Any]:
         raise NotImplementedError
 
     def command_load_asset(self, client: ClientManager.Client, file: str):
-        """
-        if file_type == 'backgrounds':
-            name = 'background list'
-            default_file = 'config/backgrounds.yaml'
-            method = client.server.load_backgrounds
-        elif file_type == 'characters':
-            name = 'character list'
-            default_file = 'config/characters.yaml'
-            method = client.server.load_characters
-        elif file_type == 'areas':
-            name = 'area list'
-            default_file = 'config/areas.yaml'
-            method = client.server.load_areas
-        """
-
         if not file:
             source_file = self.get_default_file()
             msg = f'the default {self.get_name()} file'
@@ -48,7 +35,7 @@ class AssetManager:
         fail_msg = f'Unable to load {msg}'
 
         try:
-            self.get_loader_method()(source_file)
+            self.get_loader()(source_file)
         except ServerError.FileInvalidNameError:
             raise ServerError(f'{fail_msg}: '
                             f'File names may not contain relative directories.')

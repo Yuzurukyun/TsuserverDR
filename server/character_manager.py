@@ -2,18 +2,29 @@ from __future__ import annotations
 
 import typing
 
-from typing import List, Union
+from typing import Callable, List, Union
+from server.asset_manager import AssetManager
+from server.exceptions import CharacterError
 
 from server.validate.characters import ValidateCharacters
 
 if typing.TYPE_CHECKING:
     from server.tsuserver import TsuserverDR
 
-class CharacterManager:
+class CharacterManager(AssetManager):
     def __init__(self, server: TsuserverDR):
-        self._server = server
+        super().__init__(server)
         self._characters = []
         self._source_file = 'config/characters.yaml'
+
+    def get_name(self) -> str:
+        return 'character list'
+
+    def get_default_file(self) -> str:
+        return 'config/characters.yaml'
+
+    def get_loader(self) -> Callable[[str, ], str]:
+        return self.server.load_characters
 
     def get_characters(self) -> List[str]:
         return self._characters.copy()
@@ -75,21 +86,21 @@ class CharacterManager:
 
     def get_character_name(self, char_id: Union[int, None]) -> str:
         if not self.is_valid_character_id(char_id):
-            raise CharacterError.CharacterIDNotFound
+            raise CharacterError.CharacterIDNotFoundError
         if char_id == -1:
-            return self._server.config['spectator_name']
+            return self.server.config['spectator_name']
         if char_id is None:
-            return self._server.server_select_name
+            return self.server.server_select_name
 
         return self._characters[char_id]
 
     def get_character_id_by_name(self, name: str) -> int:
-        if name == self._server.config['spectator_name']:
+        if name == self.server.config['spectator_name']:
             return -1
         for i, ch in enumerate(self._characters):
             if ch.lower() == name.lower():
                 return i
-        raise CharacterError.CharacterNotFound(f'Character {name} not found.')
+        raise CharacterError.CharacterNotFoundError(f'Character {name} not found.')
 
     def _check_structure(self):
         # At least one character
