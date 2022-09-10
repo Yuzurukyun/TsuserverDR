@@ -40,7 +40,7 @@ from server import logger
 from server.asset_manager import AssetManager
 from server.constants import Constants
 from server.evidence import EvidenceList
-from server.exceptions import AreaError, ServerError
+from server.exceptions import AreaError, MusicError, ServerError
 from server.subscriber import Publisher
 
 from server.validate.areas import ValidateAreas
@@ -718,11 +718,9 @@ class AreaManager(AssetManager):
             ------
             ServerError.FileInvalidNameError:
                 If `name` references parent or current directories (e.g. "../hi.opus")
-            ServerError.MusicNotFoundError:
+            MusicError.MusicNotFoundError:
                 If `name` is not a music track in the server or client's music list and
                 `raise_if_not_found` is True.
-            ServerError (with code 'FileInvalidName')
-                If `name` references parent or current directories (e.g. "../hi.opus")
             """
 
             if not pargs:
@@ -732,8 +730,8 @@ class AreaManager(AssetManager):
                 raise ServerError.FileInvalidNameError(info)
 
             try:
-                name, length, source = self.server.get_song_data(name, c=client)
-            except ServerError.MusicNotFoundError:
+                name, length, source = client.music_manager.get_music_data(name)
+            except MusicError.MusicNotFoundError:
                 if raise_if_not_found:
                     raise
                 name, length, source = name, -1, ''
@@ -1345,6 +1343,18 @@ class AreaManager(AssetManager):
 
         return {self.get_area_by_id(i) for i in range(area1.id, area2.id+1)}
 
+    def get_client_view(self, client: ClientManager.Client, from_area: Area) -> List[str]:
+        # Determine whether to filter the areas in the results
+        need_to_check = from_area is None or client.is_staff() or client.is_transient
+
+        # Now add areas
+        prepared_area_list = list()
+        for area in self.get_areas():
+            if need_to_check or area.name in from_area.visible_areas:
+                prepared_area_list.append("{}-{}".format(area.id, area.name))
+
+        return prepared_area_list
+
     def change_passage_lock(self, client: ClientManager.Client,
                             areas: List[AreaManager.Area],
                             bilock: bool = False,
@@ -1380,6 +1390,6 @@ class AreaManager(AssetManager):
                     areas[i].visible_areas.add(areas[1-i].name)
 
             for client in areas[i].clients:
-                client.reload_music_list()
+                client.send_music_list_view()
 
         return now_reachable

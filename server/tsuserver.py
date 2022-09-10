@@ -32,6 +32,7 @@ import ssl
 import sys
 import traceback
 import urllib.request, urllib.error
+import warnings
 import yaml
 
 from server import logger
@@ -41,7 +42,7 @@ from server.ban_manager import BanManager
 from server.character_manager import CharacterManager
 from server.constants import Constants
 from server.client_manager import ClientManager
-from server.exceptions import ServerError
+from server.exceptions import MusicError, ServerError
 from server.game_manager import GameManager
 from server.network.ao_protocol import AOProtocol
 from server.network.ms3_protocol import MasterServerClient
@@ -62,7 +63,7 @@ class TsuserverDR:
                  client_manager: ClientManager = None, in_test: bool = False):
         self.logged_packet_limit = 100  # Arbitrary
         self.logged_packets = []
-        self.print_packets = False  # For debugging purposes
+        self.print_packets = True  # For debugging purposes
         self._server = None  # Internal server object, changed to proper object later
 
         self.release = 4
@@ -643,6 +644,11 @@ class TsuserverDR:
 
     def load_music(self, music_list_file: str = 'config/music.yaml',
                    server_music_list: bool = True) -> List[Dict[str, Any]]:
+        message = (f'Code is using old server music list syntax. Please change it (or ask your '
+                   f'server developer) so that it uses per-client music list instead. '
+                   f'This old syntax will be removed in 4.4.')
+        warnings.warn(message, category=UserWarning, stacklevel=2)
+
         music_list = ValidateMusic().validate(music_list_file)
 
         if server_music_list:
@@ -711,6 +717,9 @@ class TsuserverDR:
     def build_music_list(self, from_area: AreaManager.Area = None, c: ClientManager.Client = None,
                          music_list: List[Dict[str, Any]] = None, include_areas: bool = True,
                          include_music: bool = True) -> List[str]:
+        Constants.warn_deprecated('server.build_music_list',
+                                  'client.get_area_and_music_list',
+                                  '4.4')
         built_music_list = list()
 
         # add areas first, if needed
@@ -742,23 +751,16 @@ class TsuserverDR:
             Area list that matches intended perspective.
         """
 
-        # Determine whether to filter the areas in the results
-        need_to_check = (from_area is None or (c is not None and (c.is_staff() or c.is_transient)))
-
-        # Now add areas
-        prepared_area_list = list()
-        for area in self.area_manager.get_areas():
-            if need_to_check or area.name in from_area.visible_areas:
-                prepared_area_list.append("{}-{}".format(area.id, area.name))
-
-        return prepared_area_list
+        Constants.warn_deprecated('server.prepare_area_list',
+                                  'area_manager.get_client_view',
+                                  '4.4')
+        return self.area_manager.get_client_view(c, from_area=from_area)
 
     def prepare_music_list(self, c: ClientManager.Client = None,
                            specific_music_list: List[Dict[str, Any]] = None) -> List[str]:
         """
         If `specific_music_list` is not None, return a client-ready version of that music list.
-        Else, if `c` is a client with a custom chosen music list, return their latest music list.
-        Otherwise, return a client-ready version of the server music list.
+        Else, return their latest music list.
 
         Parameters
         ----------
@@ -774,13 +776,12 @@ class TsuserverDR:
             Music list ready to be sent to clients
         """
 
-        # If not provided a specific music list to overwrite
-        if specific_music_list is None:
-            specific_music_list = self.music_list  # Default value
-            # But just in case, check if this came as a request of a client who had a
-            # previous music list preference
-            if c and c.music_list is not None:
-                specific_music_list = c.music_list
+        Constants.warn_deprecated('server.prepare_music_list',
+                                  'client.music_manager.get_client_view',
+                                  '4.4')
+
+        if not specific_music_list:
+            return c.music_manager.get_client_view()
 
         prepared_music_list = list()
         for item in specific_music_list:
@@ -806,23 +807,14 @@ class TsuserverDR:
         return self.character_manager.get_character_id_by_name(name)
 
     def get_song_data(self, music: str, c: ClientManager.Client = None) -> Tuple[str, int, str]:
-        # The client's personal music list should also be a valid place to search
-        # so search in there too if possible
-        if c and c.music_list:
-            valid_music = self.music_list + c.music_list
-        else:
-            valid_music = self.music_list
+        Constants.warn_deprecated('server.get_song_data',
+                                  'client.music_manager.get_music_data',
+                                  '4.4')
 
-        for item in valid_music:
-            if item['category'] == music:
-                return item['category'], -1, ''
-            for song in item['songs']:
-                if song['name'] == music:
-                    name = song['name']
-                    length = song['length'] if 'length' in song else -1
-                    source = song['source'] if 'source' in song else ''
-                    return name, length, source
-        raise ServerError.MusicNotFoundError('Music not found.')
+        try:
+            return c.music_manager.get_music_data(music)
+        except MusicError.MusicNotFoundError:
+            raise ServerError.MusicNotFoundError('Music not found.')
 
     def make_all_clients_do(self, function: str, *args: List[str],
                             pred: Callable[[ClientManager.Client], bool] = lambda x: True,

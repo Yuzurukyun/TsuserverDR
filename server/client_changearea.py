@@ -863,7 +863,7 @@ class ClientChangeArea:
         if found_something:
             client.send_ic_attention(ding=ding_something)
 
-        client.reload_music_list() # Update music list to include new area's reachable areas
+        client.send_music_list_view() # Update music list to include new area's reachable areas
         # If new area has lurk callout timer, reset it to that, provided it makes sense
         client.check_lurk()
         client.server.tasker.create_task(client, ['as_afk_kick', area.afk_delay, area.afk_sendto])
