@@ -222,31 +222,7 @@ def ooc_cmd_area_list(client: ClientManager.Client, arg: str):
     old_locked_areas = [area.name for area in client.server.area_manager.get_areas()
                         if area.is_locked]
 
-    if not arg:
-        client.server.load_areas()
-        client.send_ooc('You have restored the original area list of the server.')
-        client.send_ooc_others('The original area list of the server has been restored.',
-                               is_officer=False)
-        client.send_ooc_others('{} [{}] has restored the original area list of the server.'
-                               .format(client.name, client.id), is_officer=True)
-    else:
-        source_file = 'config/area_lists/{}.yaml'.format(arg)
-        try:
-            client.server.load_areas(source_file=source_file)
-        except ServerError.FileNotFoundError:
-            raise ArgumentError('Could not find the area list file `{}`.'.format(source_file))
-        except ServerError.FileOSError as exc:
-            raise ArgumentError('Unable to open area list file `{}`: `{}`.'
-                                .format(source_file, exc.message))
-        except AreaError as exc:
-            raise ArgumentError('The area list {} returned the following error when loading: `{}`.'
-                                .format(source_file, exc))
-
-        client.send_ooc('You have loaded the area list {}.'.format(arg))
-        client.send_ooc_others('The area list {} has been loaded.'.format(arg), is_officer=False)
-        client.send_ooc_others('{} [{}] has loaded the area list {}.'
-                               .format(client.name, client.id, arg),
-                               is_officer=True)
+    client.server.area_manager.command_load_asset(client, arg)
 
     # Every area that was locked before the reload gets warned that their areas were unlocked.
     for area_name in old_locked_areas:

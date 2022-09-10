@@ -1116,6 +1116,7 @@ class AreaManager(AssetManager):
 
         super().__init__(server)
         self._areas = []
+        self._source_file = 'config/areas.yaml'
         self.area_names = set()
         self.load_areas()
 
@@ -1130,13 +1131,16 @@ class AreaManager(AssetManager):
         return 'area list'
 
     def get_default_file(self) -> str:
-        return 'config/area.yaml'
+        return 'config/areas.yaml'
 
     def get_loader(self) -> Callable[[str, ], str]:
         return self.server.load_areas
 
     def get_areas(self) -> List[Area]:
         return self._areas.copy()
+
+    def get_source_file(self) -> str:
+        return self._source_file
 
     def load_areas(self, area_list_file: str = 'config/areas.yaml') -> List[Area]:
         """
@@ -1170,11 +1174,13 @@ class AreaManager(AssetManager):
             })
 
         # Now we are ready to create the areas
+        self._source_file = area_list_file
+
         temp_areas = list()
         for (i, area_item) in enumerate(areas):
             temp_areas.append(self.Area(i, self.server, area_item))
 
-        old_areas = self._areas
+        old_areas = self.get_areas()
         self._areas = temp_areas
         self.area_names = [area.name for area in self._areas]
 
