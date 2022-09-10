@@ -256,6 +256,13 @@ class FileValidity:
 
 class Constants():
     @staticmethod
+    def warn_deprecated(original_name: str, new_name: str, to_be_removed_in: str):
+        message = (f'Code is using old {original_name} syntax. Please change it (or ask your '
+                   f'server developer) so that it uses {new_name} instead. '
+                   f'This old syntax will be removed in {to_be_removed_in}.')
+        warnings.warn(message, category=UserWarning, stacklevel=3)
+
+    @staticmethod
     def decode_ao_packet(params: List[str]) -> List[str]:
         new_params = [
                 (arg.replace('<num>', '#').replace('<percent>', '%')
@@ -831,10 +838,9 @@ class Constants():
 
     @staticmethod
     def gimp_message():
-        message = ('Code is using old gimp_message syntax. Please change it (or ask your '
-                   'server developer) so that it uses server.gimp_list instead. '
-                   'This old syntax will be removed in 4.4.')
-        warnings.warn(message, category=UserWarning, stacklevel=2)
+        Constants.warn_deprecated('Constants.gimp_message()',
+                                  'random.choice(server.gimp_list)',
+                                  '4.4')
         message = ['ERP IS BAN',
                    'I\'m fucking gimped because I\'m both autistic and a retard!',
                    'HELP ME',
@@ -986,10 +992,9 @@ class Constants():
 
     @staticmethod
     def parse_passage_lock(client, areas, bilock=False):
-        message = ('Code is using old change_passage_lock syntax. Please change it (or ask your '
-                   'server developer) so that it uses Constants.change_passage_lock instead.'
-                   'This old syntax will be removed in 4.4.')
-        warnings.warn(message, category=UserWarning, stacklevel=2)
+        Constants.warn_deprecated('Constants.parse_passage_lock()',
+                                  'Constants.change_passage_lock()',
+                                  '4.4')
         client.server.area_manager.change_passage_lock(client, areas, bilock=bilock)
 
     @staticmethod

@@ -32,7 +32,6 @@ import ssl
 import sys
 import traceback
 import urllib.request, urllib.error
-import warnings
 import yaml
 
 from server import logger
@@ -69,8 +68,8 @@ class TsuserverDR:
         self.release = 4
         self.major_version = 3
         self.minor_version = 5
-        self.segment_version = 'a5'
-        self.internal_version = 'm220909b'
+        self.segment_version = 'a6'
+        self.internal_version = 'm220909c'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
@@ -142,10 +141,9 @@ class TsuserverDR:
 
     @property
     def backgrounds(self):
-        message = ('Code is using old backgrounds syntax. Please change it (or ask your '
-                   'server developer) so that it uses background_manager.get_backgrounds() instead.'
-                   'This old syntax will be removed in 4.4.')
-        warnings.warn(message, category=UserWarning, stacklevel=2)
+        Constants.warn_deprecated('server.backgrounds',
+                                  'server.background_manager.get_backgrounds()',
+                                  '4.4')
         return self.background_manager.get_backgrounds()
 
     async def start(self):
@@ -766,17 +764,15 @@ class TsuserverDR:
         return prepared_music_list
 
     def is_valid_char_id(self, char_id: int) -> bool:
-        message = ('Code is using old characters syntax. Please change it (or ask your '
-                   'server developer) so that it uses character_manager.is_valid_character_id() '
-                   'instead. This old syntax will be removed in 4.4.')
-        warnings.warn(message, category=UserWarning, stacklevel=2)
+        Constants.warn_deprecated('server.is_valid_char_id()',
+                                  'server.character_manager.is_valid_character_id()',
+                                  '4.4')
         return self.character_manager.is_valid_character_id(char_id)
 
     def get_char_id_by_name(self, name: str) -> int:
-        message = ('Code is using old characters syntax. Please change it (or ask your '
-                   'server developer) so that it uses character_manager.is_valid_character_id() '
-                   'instead. This old syntax will be removed in 4.4.')
-        warnings.warn(message, category=UserWarning, stacklevel=2)
+        Constants.warn_deprecated('server.get_char_id_by_name()',
+                                  'server.character_manager.get_character_id_by_name()',
+                                  '4.4')
         return self.character_manager.get_character_id_by_name(name)
 
     def get_song_data(self, music: str, c: ClientManager.Client = None) -> Tuple[str, int, str]:

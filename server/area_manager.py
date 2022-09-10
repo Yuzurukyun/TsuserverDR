@@ -35,7 +35,6 @@ if typing.TYPE_CHECKING:
 
 import asyncio
 import time
-import warnings
 
 from server import logger
 from server.constants import Constants
@@ -1122,10 +1121,9 @@ class AreaManager:
 
     @property
     def areas(self) -> List[Area]:
-        message = ('Code is using old areas syntax. Please change it (or ask your '
-                   'server developer) so that it uses AreaManager.get_areas() instead.'
-                   'This old syntax will be removed in 4.4.')
-        warnings.warn(message, category=UserWarning, stacklevel=2)
+        Constants.warn_deprecated('AreaManager.areas',
+                                  'AreaManager.get_areas()',
+                                  '4.4')
         return self.get_areas()
 
     def get_areas(self) -> List[Area]:
