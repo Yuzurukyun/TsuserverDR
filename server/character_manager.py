@@ -3,9 +3,9 @@ from __future__ import annotations
 import typing
 
 from typing import Callable, List, Union
+
 from server.asset_manager import AssetManager
 from server.exceptions import CharacterError
-
 from server.validate.characters import ValidateCharacters
 
 if typing.TYPE_CHECKING:

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import typing
 
-from typing import Any, Callable, List, Union
-from server.asset_manager import AssetManager
+from typing import Callable, List, Union
 
+from server.asset_manager import AssetManager
 from server.exceptions import BackgroundError
 from server.validate.backgrounds import ValidateBackgrounds
 
