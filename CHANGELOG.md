@@ -810,3 +810,5 @@
 * Added support for loading custom character lists without changing `config/characters.yaml` via the `config/character_lists` folder and commands
   - /char_list
   - /char_list_info
+* Updated wording of /area_list so that it matches the wording of /bg_list and /char_list on success or failure
+* Added /area_list_info, which returns the current area list

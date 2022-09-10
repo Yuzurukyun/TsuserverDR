@@ -11457,6 +11457,27 @@ def ooc_cmd_char_list_info(client: ClientManager.Client, arg: str):
     client.server.character_manager.command_list_info(client)
 
 
+def ooc_cmd_area_list_info(client: ClientManager.Client, arg: str):
+    """ (OFFICER ONLY)
+    Returns the current area list.
+
+    SYNTAX
+    /area_list_info
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    >>> /area_list_info
+    May return something like this:
+    | $H: The current character list is the custom list `beach`.
+    """
+
+    Constants.assert_command(client, arg, is_officer=True, parameters='=0')
+
+    client.server.area_manager.command_list_info(client)
+
+
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):
     """
     VERY DANGEROUS. SHOULD ONLY BE ENABLED FOR DEBUGGING.

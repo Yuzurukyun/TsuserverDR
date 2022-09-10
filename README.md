@@ -668,7 +668,9 @@ GMs can:
     - If not given a target area, it will use the server's default area (usually area 0).
 * **area_list** "area list"
     - Sets the server's current area list.
-    - If not given an area list, it will use the default file `config/areas.yaml`
+    - If not given an area list, it will use the default file `config/areas.yaml`.
+* **area_list_info**
+    - Returns the server's current area list.
 * **area_lists**
     - Lists all available area lists as established in `config/area_lists.yaml`.
 * **bg_list** "list"
