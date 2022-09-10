@@ -14,7 +14,7 @@ class BackgroundManager:
     def __init__(self, server: TsuserverDR):
         self._server = server
         self._backgrounds = ['default']
-        self._source_file = 'backgrounds.yaml'
+        self._source_file = 'config/backgrounds.yaml'
         self._default_background = self._backgrounds[0]
 
     def get_backgrounds(self) -> List[str]:

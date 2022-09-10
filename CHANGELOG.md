@@ -804,6 +804,9 @@
 ### (4.3.5)
 * Added client version and server version consistently to printed server error messages
 * Fixed /lasterror providing duplicate error information
-* Added support for loading custom background lists without changing `config/backgrounds.yaml` via
+* Added support for loading custom background lists without changing `config/backgrounds.yaml` via the `config/background_lists` folder and commands
   - /bg_list
   - /bg_list_info
+* Added support for loading custom character lists without changing `config/characters.yaml` via the `config/character_lists` folder and commands
+  - /char_list
+  - /char_list_info

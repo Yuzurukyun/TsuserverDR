@@ -1346,7 +1346,7 @@ def ooc_cmd_char_restrict(client: ClientManager.Client, arg: str):
     except ArgumentError:
         raise ArgumentError('This command takes one character name.')
 
-    if arg not in client.server.char_list:
+    if not client.server.character_manager.is_character(arg):
         raise ArgumentError('Unrecognized character folder name: {}'.format(arg))
 
     status = {True: 'enabled', False: 'disabled'}
@@ -8029,7 +8029,7 @@ def ooc_cmd_switch(client: ClientManager.Client, arg: str):
         raise ArgumentError('You must specify a character name.')
 
     # Obtain char_id if character exists and then try and change to given char if available
-    char_id = client.server.get_char_id_by_name(arg)
+    char_id = client.server.character_manager.get_character_id_by_name(arg)
     client.change_character(char_id, force=client.is_mod)
     client.send_ooc(f'Changed character to {arg}.')
 
@@ -11385,9 +11385,10 @@ def ooc_cmd_mindreader(client: ClientManager.Client, arg: str):
 def ooc_cmd_bg_list(client: ClientManager.Client, arg: str):
     """ (OFFICER ONLY)
     Sets the server's current background list (what backgrounds areas may normally use at any given
-    time). If given no arguments, it will return the background list to its original value
+    time).
+    If given no arguments, it will return the background list to its original value
     (in config/backgrounds.yaml).
-    Returns an error if the given background list name includes relative directories,
+    Returns an error if the given background list name included relative directories,
     was not found, caused an OS error when loading, or raised a YAML or asset syntax error when
     loading.
 
@@ -11464,6 +11465,90 @@ def ooc_cmd_bg_list_info(client: ClientManager.Client, arg: str):
         name = 'the default list'
 
     client.send_ooc(f'The current background list is {name}.')
+
+
+def ooc_cmd_char_list(client: ClientManager.Client, arg: str):
+    """ (OFFICER ONLY)
+    Sets the server's current character list (what characters a player may use at any given time).
+    If given no arguments, it will return the character list to its original value
+    (in config/characters.yaml).
+    Returns an error if the given character list name included relative directories,
+    was not found, caused an OS error when loading, or raised a YAML or asset syntax error when
+    loading.
+
+    SYNTAX
+    /char_list <char_list>
+
+    PARAMETERS
+    <char_list>: Name of the intended character list
+
+    EXAMPLES
+    >>> /char_list Transylvania
+    Load the "Transylvania" character list.
+    >>> /char_list
+    Reset the character list to its original value.
+    """
+
+    Constants.assert_command(client, arg, is_officer=True)
+
+    if not arg:
+        source_file = 'config/characters.yaml'
+        msg = 'the default character list file'
+    else:
+        source_file = f'config/character_lists/{arg}.yaml'
+        msg = f'the custom character list file `{source_file}`'
+    fail_msg = f'Unable to load {msg}'
+
+    try:
+        client.server.load_characters(source_file)
+    except ServerError.FileInvalidNameError:
+        raise ServerError(f'{fail_msg}: '
+                          f'File names may not contain relative directories.')
+    except ServerError.FileNotFoundError:
+        raise ServerError(f'{fail_msg}: '
+                          f'File not found.')
+    except ServerError.FileOSError as exc:
+        raise ServerError(f'{fail_msg}: '
+                          f'An OS error occurred: `{exc}`.')
+    except ServerError.YAMLInvalidError as exc:
+        raise ServerError(f'{fail_msg}: '
+                          f'`{exc}`.')
+    except ServerError.FileSyntaxError as exc:
+        raise ServerError(f'{fail_msg}: '
+                          f'An asset syntax error occurred: `{exc}`.')
+    else:
+        client.send_ooc(f'You have loaded {msg}.')
+        client.send_ooc_others(f'The {msg} has been loaded.',
+                               is_officer=False)
+        client.send_ooc_others(f'{client.name} [{client.id}] has loaded {msg}.',
+                               is_officer=True)
+
+
+def ooc_cmd_char_list_info(client: ClientManager.Client, arg: str):
+    """ (OFFICER ONLY)
+    Returns the current character list.
+
+    SYNTAX
+    /char_list_info
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    >>> /char_list_info
+    May return something like this:
+    | $H: The current character list is the custom list `custom`.
+    """
+
+    Constants.assert_command(client, arg, is_officer=True, parameters='=0')
+
+    raw_name = client.server.character_manager.get_source_file()
+    if 'config/character_lists/' in raw_name:
+        name = f'the custom list `{raw_name[len("config/character_lists/"):-len(".yaml")]}`'
+    else:
+        name = 'the default list'
+
+    client.send_ooc(f'The current character list is {name}.')
 
 
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):

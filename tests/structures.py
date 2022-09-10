@@ -902,7 +902,10 @@ class _TestTsuserverDR(TsuserverDR):
         c.send_command_cts("RD#%")
 
         c.send_command_cts("CC#{}#{}#{}#%".format(c.id, char_id, hdid))
-        exp = self.char_list[char_id] if char_id >= 0 else self.config['spectator_name']
+        if char_id >= 0:
+            exp = self.character_manager.get_characters()[char_id]
+        else:
+            exp = self.config['spectator_name']
         res = c.get_char_name()
         assert exp == res, (char_id, exp, res)
         c.discard_all()
@@ -923,7 +926,7 @@ class _TestTsuserverDR(TsuserverDR):
 
         for i in range(number):
             area = self.area_manager.default_area()
-            for j in range(len(self.char_list)):
+            for j in range(len(self.character_manager.get_characters())):
                 if area.is_char_available(j):
                     char_id = j
                     break
