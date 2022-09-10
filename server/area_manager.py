@@ -37,6 +37,7 @@ import asyncio
 import time
 
 from server import logger
+from server.asset_manager import AssetManager
 from server.constants import Constants
 from server.evidence import EvidenceList
 from server.exceptions import AreaError, ServerError
@@ -45,7 +46,7 @@ from server.subscriber import Publisher
 from server.validate.areas import ValidateAreas
 
 
-class AreaManager:
+class AreaManager(AssetManager):
     """
     Create a new manager for the areas in a server.
     Contains the Area object definition, as well as the server's area list.
@@ -1113,10 +1114,10 @@ class AreaManager:
             The server this area belongs to.
         """
 
-        self.server = server
+        super().__init__(server)
         self._areas = []
+        self._source_file = 'config/areas.yaml'
         self.area_names = set()
-        self.publisher = Publisher(self)
         self.load_areas()
 
     @property
@@ -1126,10 +1127,22 @@ class AreaManager:
                                   '4.4')
         return self.get_areas()
 
+    def get_name(self) -> str:
+        return 'area list'
+
+    def get_default_file(self) -> str:
+        return 'config/areas.yaml'
+
+    def get_loader(self) -> Callable[[str, ], str]:
+        return self.server.load_areas
+
     def get_areas(self) -> List[Area]:
         return self._areas.copy()
 
-    def load_areas(self, area_list_file: str = 'config/areas.yaml'):
+    def get_source_file(self) -> str:
+        return self._source_file
+
+    def load_areas(self, area_list_file: str = 'config/areas.yaml') -> List[Area]:
         """
         Load an area list.
 
@@ -1138,18 +1151,21 @@ class AreaManager:
         area_list_file: str, optional
             Location of the area list to load. Defaults to 'config/areas.yaml'.
 
+        Returns
+        -------
+        List[AreaManager.Area]
+            Areas.
+
         Raises
         ------
-        AreaError
-            If any one of the following conditions are met:
-            * An area has no 'area' or no 'background' tag.
-            * An area uses the deprecated 'sound_proof' tag.
-            * Two areas have the same name.
-            * An area parameter was left deliberately blank as opposed to fully erased.
-            * An area has a passage to an undefined area.
-
-        FileNotFound
-            If the area list could not be found.
+        ServerError.FileNotFoundError
+            If the file was not found.
+        ServerError.FileOSError
+            If there was an operating system error when opening the file.
+        ServerError.YAMLInvalidError
+            If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
+        ServerError.FileSyntaxError
+            If the file failed verification for its asset type.
         """
 
         areas = ValidateAreas().validate(area_list_file, extra_parameters={
@@ -1158,11 +1174,13 @@ class AreaManager:
             })
 
         # Now we are ready to create the areas
+        self._source_file = area_list_file
+
         temp_areas = list()
         for (i, area_item) in enumerate(areas):
             temp_areas.append(self.Area(i, self.server, area_item))
 
-        old_areas = self._areas
+        old_areas = self.get_areas()
         self._areas = temp_areas
         self.area_names = [area.name for area in self._areas]
 
@@ -1245,6 +1263,8 @@ class AreaManager:
         # Update the server's area list only once everything is successful
         self.server.old_area_list = self.server.area_list
         self.server.area_list = area_list_file
+
+        return self._areas.copy()
 
     def default_area(self) -> AreaManager.Area:
         """

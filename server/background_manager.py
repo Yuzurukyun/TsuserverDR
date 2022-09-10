@@ -2,20 +2,30 @@ from __future__ import annotations
 
 import typing
 
-from typing import List, Union
+from typing import Callable, List, Union
 
+from server.asset_manager import AssetManager
 from server.exceptions import BackgroundError
 from server.validate.backgrounds import ValidateBackgrounds
 
 if typing.TYPE_CHECKING:
     from server.tsuserver import TsuserverDR
 
-class BackgroundManager:
+class BackgroundManager(AssetManager):
     def __init__(self, server: TsuserverDR):
-        self._server = server
+        super().__init__(server)
         self._backgrounds = ['default']
         self._source_file = 'config/backgrounds.yaml'
         self._default_background = self._backgrounds[0]
+
+    def get_name(self) -> str:
+        return 'background list'
+
+    def get_default_file(self) -> str:
+        return 'config/backgrounds.yaml'
+
+    def get_loader(self) -> Callable[[str, ], str]:
+        return self.server.load_backgrounds
 
     def get_backgrounds(self) -> List[str]:
         return self._backgrounds.copy()

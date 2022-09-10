@@ -222,31 +222,7 @@ def ooc_cmd_area_list(client: ClientManager.Client, arg: str):
     old_locked_areas = [area.name for area in client.server.area_manager.get_areas()
                         if area.is_locked]
 
-    if not arg:
-        client.server.area_manager.load_areas()
-        client.send_ooc('You have restored the original area list of the server.')
-        client.send_ooc_others('The original area list of the server has been restored.',
-                               is_officer=False)
-        client.send_ooc_others('{} [{}] has restored the original area list of the server.'
-                               .format(client.name, client.id), is_officer=True)
-    else:
-        try:
-            new_area_file = 'config/area_lists/{}.yaml'.format(arg)
-            client.server.area_manager.load_areas(area_list_file=new_area_file)
-        except ServerError.FileNotFoundError:
-            raise ArgumentError('Could not find the area list file `{}`.'.format(new_area_file))
-        except ServerError.FileOSError as exc:
-            raise ArgumentError('Unable to open area list file `{}`: `{}`.'
-                                .format(new_area_file, exc.message))
-        except AreaError as exc:
-            raise ArgumentError('The area list {} returned the following error when loading: `{}`.'
-                                .format(new_area_file, exc))
-
-        client.send_ooc('You have loaded the area list {}.'.format(arg))
-        client.send_ooc_others('The area list {} has been loaded.'.format(arg), is_officer=False)
-        client.send_ooc_others('{} [{}] has loaded the area list {}.'
-                               .format(client.name, client.id, arg),
-                               is_officer=True)
+    client.server.area_manager.command_load_asset(client, arg)
 
     # Every area that was locked before the reload gets warned that their areas were unlocked.
     for area_name in old_locked_areas:
@@ -11409,37 +11385,7 @@ def ooc_cmd_bg_list(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, is_officer=True)
 
-    if not arg:
-        source_file = 'config/backgrounds.yaml'
-        msg = 'the default background list file'
-    else:
-        source_file = f'config/background_lists/{arg}.yaml'
-        msg = f'the custom background list file `{source_file}`'
-    fail_msg = f'Unable to load {msg}'
-
-    try:
-        client.server.load_backgrounds(source_file)
-    except ServerError.FileInvalidNameError:
-        raise ServerError(f'{fail_msg}: '
-                          f'File names may not contain relative directories.')
-    except ServerError.FileNotFoundError:
-        raise ServerError(f'{fail_msg}: '
-                          f'File not found.')
-    except ServerError.FileOSError as exc:
-        raise ServerError(f'{fail_msg}: '
-                          f'An OS error occurred: `{exc}`.')
-    except ServerError.YAMLInvalidError as exc:
-        raise ServerError(f'{fail_msg}: '
-                          f'`{exc}`.')
-    except ServerError.FileSyntaxError as exc:
-        raise ServerError(f'{fail_msg}: '
-                          f'An asset syntax error occurred: `{exc}`.')
-    else:
-        client.send_ooc(f'You have loaded {msg}.')
-        client.send_ooc_others(f'The {msg} has been loaded.',
-                               is_officer=False)
-        client.send_ooc_others(f'{client.name} [{client.id}] has loaded {msg}.',
-                               is_officer=True)
+    client.server.background_manager.command_load_asset(client, arg)
 
 
 def ooc_cmd_bg_list_info(client: ClientManager.Client, arg: str):
@@ -11460,13 +11406,7 @@ def ooc_cmd_bg_list_info(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, is_officer=True, parameters='=0')
 
-    raw_name = client.server.background_manager.get_source_file()
-    if 'config/background_lists/' in raw_name:
-        name = f'the custom list `{raw_name[len("config/background_lists/"):-len(".yaml")]}`'
-    else:
-        name = 'the default list'
-
-    client.send_ooc(f'The current background list is {name}.')
+    client.server.background_manager.command_list_info(client)
 
 
 def ooc_cmd_char_list(client: ClientManager.Client, arg: str):
@@ -11493,37 +11433,7 @@ def ooc_cmd_char_list(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, is_officer=True)
 
-    if not arg:
-        source_file = 'config/characters.yaml'
-        msg = 'the default character list file'
-    else:
-        source_file = f'config/character_lists/{arg}.yaml'
-        msg = f'the custom character list file `{source_file}`'
-    fail_msg = f'Unable to load {msg}'
-
-    try:
-        client.server.load_characters(source_file)
-    except ServerError.FileInvalidNameError:
-        raise ServerError(f'{fail_msg}: '
-                          f'File names may not contain relative directories.')
-    except ServerError.FileNotFoundError:
-        raise ServerError(f'{fail_msg}: '
-                          f'File not found.')
-    except ServerError.FileOSError as exc:
-        raise ServerError(f'{fail_msg}: '
-                          f'An OS error occurred: `{exc}`.')
-    except ServerError.YAMLInvalidError as exc:
-        raise ServerError(f'{fail_msg}: '
-                          f'`{exc}`.')
-    except ServerError.FileSyntaxError as exc:
-        raise ServerError(f'{fail_msg}: '
-                          f'An asset syntax error occurred: `{exc}`.')
-    else:
-        client.send_ooc(f'You have loaded {msg}.')
-        client.send_ooc_others(f'The {msg} has been loaded.',
-                               is_officer=False)
-        client.send_ooc_others(f'{client.name} [{client.id}] has loaded {msg}.',
-                               is_officer=True)
+    client.server.character_manager.command_load_asset(client, arg)
 
 
 def ooc_cmd_char_list_info(client: ClientManager.Client, arg: str):
@@ -11544,13 +11454,28 @@ def ooc_cmd_char_list_info(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, is_officer=True, parameters='=0')
 
-    raw_name = client.server.character_manager.get_source_file()
-    if 'config/character_lists/' in raw_name:
-        name = f'the custom list `{raw_name[len("config/character_lists/"):-len(".yaml")]}`'
-    else:
-        name = 'the default list'
+    client.server.character_manager.command_list_info(client)
 
-    client.send_ooc(f'The current character list is {name}.')
+
+def ooc_cmd_area_list_info(client: ClientManager.Client, arg: str):
+    """ (OFFICER ONLY)
+    Returns the current area list.
+
+    SYNTAX
+    /area_list_info
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    >>> /area_list_info
+    May return something like this:
+    | $H: The current character list is the custom list `beach`.
+    """
+
+    Constants.assert_command(client, arg, is_officer=True, parameters='=0')
+
+    client.server.area_manager.command_list_info(client)
 
 
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):

@@ -68,8 +68,8 @@ class TsuserverDR:
         self.release = 4
         self.major_version = 3
         self.minor_version = 5
-        self.segment_version = 'a6'
-        self.internal_version = 'm220909c'
+        self.segment_version = 'a7'
+        self.internal_version = 'm220910a'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
@@ -319,6 +319,36 @@ class TsuserverDR:
     def get_player_count(self) -> int:
         # Ignore players in the server selection screen.
         return len([client for client in self.get_clients() if client.char_id is not None])
+
+    def load_areas(self, source_file: str = 'config/areas.yaml') -> List[AreaManager.Area]:
+        """
+        Load an area list file.
+
+        Parameters
+        ----------
+        source_file : str
+            Relative path from server root folder to the area list file, by default
+            'config/areas.yaml'
+
+        Returns
+        -------
+        List[AreaManager.Area]
+            Areas.
+
+        Raises
+        ------
+        ServerError.FileNotFoundError
+            If the file was not found.
+        ServerError.FileOSError
+            If there was an operating system error when opening the file.
+        ServerError.YAMLInvalidError
+            If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
+        ServerError.FileSyntaxError
+            If the file failed verification for its asset type.
+        """
+
+        areas = self.area_manager.load_areas(area_list_file=source_file)
+        return areas.copy()
 
     def load_backgrounds(self, source_file: str = 'config/backgrounds.yaml') -> List[str]:
         """
