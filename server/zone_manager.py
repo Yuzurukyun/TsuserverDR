@@ -25,7 +25,7 @@ as well as perform tasks only on the areas of the zone.
 
 from __future__ import annotations
 import typing
-from typing import Any, Set
+from typing import Any, Dict, Set
 if typing.TYPE_CHECKING:
     # Avoid circular referencing
     from server.area_manager import AreaManager
@@ -815,7 +815,7 @@ class ZoneManager:
         self._check_structure()
         return zone_id
 
-    def get_zones(self) -> Set[ZoneManager.Zone]:
+    def get_zones(self) -> Dict[str, ZoneManager.Zone]:
         """
         Return all of the zones this manager is handling.
 

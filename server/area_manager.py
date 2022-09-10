@@ -37,6 +37,7 @@ import asyncio
 import time
 
 from server import logger
+from server.asset_manager import AssetManager
 from server.constants import Constants
 from server.evidence import EvidenceList
 from server.exceptions import AreaError, ServerError
@@ -45,7 +46,7 @@ from server.subscriber import Publisher
 from server.validate.areas import ValidateAreas
 
 
-class AreaManager:
+class AreaManager(AssetManager):
     """
     Create a new manager for the areas in a server.
     Contains the Area object definition, as well as the server's area list.
@@ -1129,27 +1130,25 @@ class AreaManager:
     def get_areas(self) -> List[Area]:
         return self._areas.copy()
 
-    def load_areas(self, area_list_file: str = 'config/areas.yaml'):
+    def load_areas(self, area_list_file: str = 'config/areas.yaml') -> List[Area]:
         """
         Load an area list.
 
-        Parameters
-        ----------
-        area_list_file: str, optional
-            Location of the area list to load. Defaults to 'config/areas.yaml'.
+        Returns
+        -------
+        List[AreaManager.Area]
+            Areas.
 
         Raises
         ------
-        AreaError
-            If any one of the following conditions are met:
-            * An area has no 'area' or no 'background' tag.
-            * An area uses the deprecated 'sound_proof' tag.
-            * Two areas have the same name.
-            * An area parameter was left deliberately blank as opposed to fully erased.
-            * An area has a passage to an undefined area.
-
-        FileNotFound
-            If the area list could not be found.
+        ServerError.FileNotFoundError
+            If the file was not found.
+        ServerError.FileOSError
+            If there was an operating system error when opening the file.
+        ServerError.YAMLInvalidError
+            If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
+        ServerError.FileSyntaxError
+            If the file failed verification for its asset type.
         """
 
         areas = ValidateAreas().validate(area_list_file, extra_parameters={
@@ -1245,6 +1244,8 @@ class AreaManager:
         # Update the server's area list only once everything is successful
         self.server.old_area_list = self.server.area_list
         self.server.area_list = area_list_file
+
+        return self._areas.copy()
 
     def default_area(self) -> AreaManager.Area:
         """

@@ -223,24 +223,24 @@ def ooc_cmd_area_list(client: ClientManager.Client, arg: str):
                         if area.is_locked]
 
     if not arg:
-        client.server.area_manager.load_areas()
+        client.server.load_areas()
         client.send_ooc('You have restored the original area list of the server.')
         client.send_ooc_others('The original area list of the server has been restored.',
                                is_officer=False)
         client.send_ooc_others('{} [{}] has restored the original area list of the server.'
                                .format(client.name, client.id), is_officer=True)
     else:
+        source_file = 'config/area_lists/{}.yaml'.format(arg)
         try:
-            new_area_file = 'config/area_lists/{}.yaml'.format(arg)
-            client.server.area_manager.load_areas(area_list_file=new_area_file)
+            client.server.load_areas(source_file=source_file)
         except ServerError.FileNotFoundError:
-            raise ArgumentError('Could not find the area list file `{}`.'.format(new_area_file))
+            raise ArgumentError('Could not find the area list file `{}`.'.format(source_file))
         except ServerError.FileOSError as exc:
             raise ArgumentError('Unable to open area list file `{}`: `{}`.'
-                                .format(new_area_file, exc.message))
+                                .format(source_file, exc.message))
         except AreaError as exc:
             raise ArgumentError('The area list {} returned the following error when loading: `{}`.'
-                                .format(new_area_file, exc))
+                                .format(source_file, exc))
 
         client.send_ooc('You have loaded the area list {}.'.format(arg))
         client.send_ooc_others('The area list {} has been loaded.'.format(arg), is_officer=False)
@@ -11409,37 +11409,8 @@ def ooc_cmd_bg_list(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, is_officer=True)
 
-    if not arg:
-        source_file = 'config/backgrounds.yaml'
-        msg = 'the default background list file'
-    else:
-        source_file = f'config/background_lists/{arg}.yaml'
-        msg = f'the custom background list file `{source_file}`'
-    fail_msg = f'Unable to load {msg}'
+    Constants.command_load_asset(client, arg, 'backgrounds')
 
-    try:
-        client.server.load_backgrounds(source_file)
-    except ServerError.FileInvalidNameError:
-        raise ServerError(f'{fail_msg}: '
-                          f'File names may not contain relative directories.')
-    except ServerError.FileNotFoundError:
-        raise ServerError(f'{fail_msg}: '
-                          f'File not found.')
-    except ServerError.FileOSError as exc:
-        raise ServerError(f'{fail_msg}: '
-                          f'An OS error occurred: `{exc}`.')
-    except ServerError.YAMLInvalidError as exc:
-        raise ServerError(f'{fail_msg}: '
-                          f'`{exc}`.')
-    except ServerError.FileSyntaxError as exc:
-        raise ServerError(f'{fail_msg}: '
-                          f'An asset syntax error occurred: `{exc}`.')
-    else:
-        client.send_ooc(f'You have loaded {msg}.')
-        client.send_ooc_others(f'The {msg} has been loaded.',
-                               is_officer=False)
-        client.send_ooc_others(f'{client.name} [{client.id}] has loaded {msg}.',
-                               is_officer=True)
 
 
 def ooc_cmd_bg_list_info(client: ClientManager.Client, arg: str):
