@@ -668,13 +668,23 @@ GMs can:
     - If not given a target area, it will use the server's default area (usually area 0).
 * **area_list** "area list"
     - Sets the server's current area list.
-    - If not given an area list, it will restore the original area list as it was on server bootup.
+    - If not given an area list, it will use the default file `config/areas.yaml`
 * **area_lists**
     - Lists all available area lists as established in `config/area_lists.yaml`.
+* **bg_list** "list"
+    - Sets the server's current background list.
+    - If not given a background list, it will use the default file `config/backgrounds.yaml`.
+* **bg_list_info**
+    - Returns the server's current background list.
 * **blockdj** "ID/IPID"
     - Mutes the target from changing music.
 * **charlog** "ID/IPID"
     - Lists all character changes (including iniswaps and character name changes) a target has gone through since connecting, including the time they were changed.
+* **char_list** "list"
+    - Sets the server's current character list.
+    - If not given a character list, it will use the default file `config/characters.yaml`.
+* **char_list_info**
+    - Returns the server's current character list.
 * **cleargm** "ID"
     - Logs out the target from their GM rank, or all GMs in the server if not given a target, and puts them in RP mode if needed.
 * **g** "message"
