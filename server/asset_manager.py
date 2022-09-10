@@ -25,12 +25,18 @@ class AssetManager:
     def get_loader(self) -> Callable[[str, ], Any]:
         raise NotImplementedError
 
+    def get_source_file(self) -> str:
+        raise NotImplementedError
+
+    def get_default_custom_folder(self) -> str:
+        return f'config/{self.get_name().replace(" ", "_")}s'
+
     def command_load_asset(self, client: ClientManager.Client, file: str):
         if not file:
             source_file = self.get_default_file()
             msg = f'the default {self.get_name()} file'
         else:
-            source_file = f'config/{self.get_name().replace(" ", "_")}/{file}.yaml'
+            source_file = f'{self.get_default_custom_folder()}/{file}.yaml'
             msg = f'the custom {self.get_name()} file `{source_file}`'
         fail_msg = f'Unable to load {msg}'
 
@@ -57,3 +63,13 @@ class AssetManager:
                                    is_officer=False)
             client.send_ooc_others(f'{client.name} [{client.id}] has loaded {msg}.',
                                    is_officer=True)
+
+    def command_list_info(self, client: ClientManager.Client):
+        raw_name = self.get_source_file()
+        if raw_name.startswith(self.get_default_custom_folder()):
+            name = (f'the custom list '
+                    f'`{raw_name[len(self.get_default_custom_folder())+1:-len(".yaml")]}`')
+        else:
+            name = 'the default list'
+
+        client.send_ooc(f'The current {self.get_name()} is {name}.')

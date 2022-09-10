@@ -11409,8 +11409,7 @@ def ooc_cmd_bg_list(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, is_officer=True)
 
-    Constants.command_load_asset(client, arg, 'backgrounds')
-
+    client.server.background_manager.command_load_asset(client, arg)
 
 
 def ooc_cmd_bg_list_info(client: ClientManager.Client, arg: str):
@@ -11431,13 +11430,7 @@ def ooc_cmd_bg_list_info(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, is_officer=True, parameters='=0')
 
-    raw_name = client.server.background_manager.get_source_file()
-    if 'config/background_lists/' in raw_name:
-        name = f'the custom list `{raw_name[len("config/background_lists/"):-len(".yaml")]}`'
-    else:
-        name = 'the default list'
-
-    client.send_ooc(f'The current background list is {name}.')
+    client.server.background_manager.command_list_info(client)
 
 
 def ooc_cmd_char_list(client: ClientManager.Client, arg: str):
@@ -11464,37 +11457,7 @@ def ooc_cmd_char_list(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, is_officer=True)
 
-    if not arg:
-        source_file = 'config/characters.yaml'
-        msg = 'the default character list file'
-    else:
-        source_file = f'config/character_lists/{arg}.yaml'
-        msg = f'the custom character list file `{source_file}`'
-    fail_msg = f'Unable to load {msg}'
-
-    try:
-        client.server.load_characters(source_file)
-    except ServerError.FileInvalidNameError:
-        raise ServerError(f'{fail_msg}: '
-                          f'File names may not contain relative directories.')
-    except ServerError.FileNotFoundError:
-        raise ServerError(f'{fail_msg}: '
-                          f'File not found.')
-    except ServerError.FileOSError as exc:
-        raise ServerError(f'{fail_msg}: '
-                          f'An OS error occurred: `{exc}`.')
-    except ServerError.YAMLInvalidError as exc:
-        raise ServerError(f'{fail_msg}: '
-                          f'`{exc}`.')
-    except ServerError.FileSyntaxError as exc:
-        raise ServerError(f'{fail_msg}: '
-                          f'An asset syntax error occurred: `{exc}`.')
-    else:
-        client.send_ooc(f'You have loaded {msg}.')
-        client.send_ooc_others(f'The {msg} has been loaded.',
-                               is_officer=False)
-        client.send_ooc_others(f'{client.name} [{client.id}] has loaded {msg}.',
-                               is_officer=True)
+    client.server.character_manager.command_load_asset(client, arg)
 
 
 def ooc_cmd_char_list_info(client: ClientManager.Client, arg: str):
@@ -11515,13 +11478,7 @@ def ooc_cmd_char_list_info(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, is_officer=True, parameters='=0')
 
-    raw_name = client.server.character_manager.get_source_file()
-    if 'config/character_lists/' in raw_name:
-        name = f'the custom list `{raw_name[len("config/character_lists/"):-len(".yaml")]}`'
-    else:
-        name = 'the default list'
-
-    client.send_ooc(f'The current character list is {name}.')
+    client.server.character_manager.command_list_info(client)
 
 
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):

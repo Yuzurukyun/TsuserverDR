@@ -1142,6 +1142,11 @@ class AreaManager(AssetManager):
         """
         Load an area list.
 
+        Parameters
+        ----------
+        area_list_file: str, optional
+            Location of the area list to load. Defaults to 'config/areas.yaml'.
+
         Returns
         -------
         List[AreaManager.Area]
