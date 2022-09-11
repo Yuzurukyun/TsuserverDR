@@ -273,7 +273,7 @@ class TsuserverDR:
         try:
             self.background_manager.validate_file()
             self.character_manager.validate_file()
-            ValidateMusic().validate('config/music.yaml')
+            self.music_manager.validate_file()
         except ServerError.YAMLInvalidError as exc:
             # The YAML exception already provides a full description. Just add the fact the
             # reload was undone to ease the person who ran the command's nerves.
@@ -658,23 +658,12 @@ class TsuserverDR:
 
     def load_music(self, music_list_file: str = 'config/music.yaml',
                    server_music_list: bool = True) -> List[Dict[str, Any]]:
-        message = (f'Code is using old server music list syntax. Please change it (or ask your '
-                   f'server developer) so that it uses per-client music list instead. '
-                   f'This old syntax will be removed in 4.4.')
-        warnings.warn(message, category=UserWarning, stacklevel=2)
-
-        music_list = ValidateMusic().validate(music_list_file)
-
-        if server_music_list:
-            self.music_list = music_list
-            try:
-                self.build_music_list(music_list=music_list)
-            except ServerError.FileSyntaxError as exc:
-                msg = (f'File {music_list_file} returned the following error when loading: '
-                       f'`{exc.message}`')
-                raise ServerError.FileSyntaxError(msg)
-
-        return music_list.copy()
+        if server_music_list is not True:
+            Constants.warn_deprecated('non-default value of server_music_list parameter',
+                                      'server.music_manager.validate_file',
+                                      '4.4')
+        music = self.music_manager.load_music(music_list_file)
+        return music.copy()
 
     def load_gimp(self):
         try:

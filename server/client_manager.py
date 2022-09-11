@@ -75,7 +75,8 @@ class ClientManager:
             self.ever_outbounded_time_of_day = False
 
             self.music_manager = MusicManager(server)
-            self.music_manager.load_music(self.music_manager.get_source_file())
+            # Avoid doing an OS call for a new client
+            self.music_manager.load_music_raw(self.server.music_manager.get_music())
 
             self.area = server.area_manager.default_area()
             self.new_area = self.area  # It is different from self.area in transition to a new area

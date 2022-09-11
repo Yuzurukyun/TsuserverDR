@@ -68,7 +68,9 @@ class AssetManager:
 
     def command_list_info(self, client: ClientManager.Client):
         raw_name = self.get_source_file()
-        if raw_name.startswith(self.get_default_custom_folder()):
+        if raw_name is None:
+            name = 'a non-standard list'
+        elif raw_name.startswith(self.get_default_custom_folder()):
             name = (f'the custom list '
                     f'`{raw_name[len(self.get_default_custom_folder())+1:-len(".yaml")]}`')
         else:
