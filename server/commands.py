@@ -11465,6 +11465,27 @@ def ooc_cmd_area_list_info(client: ClientManager.Client, arg: str):
     client.server.area_manager.command_list_info(client)
 
 
+def ooc_cmd_music_list_info(client: ClientManager.Client, arg: str):
+    """
+    Returns your current music list.
+
+    SYNTAX
+    /music_list_info
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    >>> /music_list_info
+    May return something like this:
+    | $H: The current music list is the custom list `trial`.
+    """
+
+    Constants.assert_command(client, arg,  parameters='=0')
+
+    client.music_manager.command_list_info(client)
+
+
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):
     """
     VERY DANGEROUS. SHOULD ONLY BE ENABLED FOR DEBUGGING.

@@ -76,7 +76,7 @@ class ClientManager:
 
             self.music_manager = MusicManager(server)
             # Avoid doing an OS call for a new client
-            self.music_manager.load_music_raw(self.server.music_manager.get_music())
+            self.music_manager.transfer_contents_from_manager(self.server.music_manager)
 
             self.area = server.area_manager.default_area()
             self.new_area = self.area  # It is different from self.area in transition to a new area

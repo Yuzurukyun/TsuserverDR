@@ -186,6 +186,8 @@ Additional notes are listed at the end of the command list. Unless otherwise spe
     - Returns the server's Message of the Day.
 * **music_list** "music list name"
     - Sets your music list to the given one, or restores the original one if not given any.
+* **music_list_info**
+    - Returns your current music list.
 * **music_lists**
     - Lists all available music lists as established in `config/music_lists.yaml`.
 * **notecard** "content"

@@ -811,4 +811,4 @@
   - /char_list
   - /char_list_info
 * Updated wording of /area_list and /music_list so that it matches the wording of /bg_list and /char_list on success or failure
-* Added /area_list_info, which returns the current area list
+* Added /area_list_info and /music_list_info, which returns the name of the current area list and music list respectively

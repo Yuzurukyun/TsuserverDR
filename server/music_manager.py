@@ -80,6 +80,14 @@ class MusicManager(AssetManager):
 
         return output
 
+    def transfer_contents_from_manager(self, other: MusicManager) -> List[Dict[str, Any]]:
+        music = other.get_music()
+        source_file = other.get_source_file()
+        output = self._load_music(music, source_file)
+        self._check_structure()
+
+        return output
+
     def _load_music(self, new_list: List[Dict[str, Any]], source_file: Union[str, None]) -> List[Dict[str, Any]]:
         self._music = new_list.copy()
         self._source_file = source_file
