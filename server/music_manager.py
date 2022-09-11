@@ -24,7 +24,7 @@ class MusicManager(AssetManager):
         return 'config/music.yaml'
 
     def get_loader(self) -> Callable[[str, ], str]:
-        return self.server.load_music
+        return self.load_music
 
     def get_music(self) -> List[Dict[str, Any]]:
         return self._music.copy()

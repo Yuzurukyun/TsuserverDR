@@ -31,7 +31,8 @@ class AssetManager:
     def get_default_custom_folder(self) -> str:
         return f'config/{self.get_name().replace(" ", "_")}s'
 
-    def command_load_asset(self, client: ClientManager.Client, file: str):
+    def command_load_asset(self, client: ClientManager.Client, file: str,
+                           notify_others: bool = True):
         if not file:
             source_file = self.get_default_file()
             msg = f'the default {self.get_name()} file'
@@ -59,10 +60,11 @@ class AssetManager:
                             f'An asset syntax error occurred: `{exc}`.')
         else:
             client.send_ooc(f'You have loaded {msg}.')
-            client.send_ooc_others(f'The {msg} has been loaded.',
-                                   is_officer=False)
-            client.send_ooc_others(f'{client.name} [{client.id}] has loaded {msg}.',
-                                   is_officer=True)
+            if notify_others:
+                client.send_ooc_others(f'{msg[0].upper()}{msg[1:]} has been loaded.',
+                                    is_officer=False)
+                client.send_ooc_others(f'{client.name} [{client.id}] has loaded {msg}.',
+                                    is_officer=True)
 
     def command_list_info(self, client: ClientManager.Client):
         raw_name = self.get_source_file()

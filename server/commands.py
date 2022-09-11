@@ -4381,13 +4381,15 @@ def ooc_cmd_music_list(client: ClientManager.Client, arg: str):
     a client basis. If given no arguments, it will return the music list to its default value
     (in music.yaml). The list of music lists can be accessed with /music_lists. Clients that do not
     process 'SM' packets can use this command without crashing, but it will have no visual effect.
-    Returns an error if the given music list was not found.
+    Returns an error if the given music list name included relative directories,
+    was not found, caused an OS error when loading, or raised a YAML or asset syntax error when
+    loading.
 
     SYNTAX
     /music_list <music_list>
 
     PARAMETERS
-    <music_list>: Name of the intended music_list
+    <music_list>: Name of the intended music list
 
     EXAMPLES
     >>> /music_list dr2
@@ -4396,24 +4398,10 @@ def ooc_cmd_music_list(client: ClientManager.Client, arg: str):
     Reset the music list to its default value.
     """
 
-    if not arg:
-        client.music_list = None
-        client.send_music_list_view()
-        client.send_ooc('You have restored the original music list of the server.')
-    else:
-        try:
-            new_music_file = 'config/music_lists/{}.yaml'.format(arg)
-            client.send_music_list_view(new_music_file=new_music_file)
-        except ServerError.FileSyntaxError as exc:
-            raise ArgumentError('The music list {} returned the following error when loading: `{}`.'
-                                .format(new_music_file, exc))
-        except ServerError.FileNotFoundError:
-            raise ArgumentError('Could not find the music list file `{}`.'.format(new_music_file))
-        except ServerError.FileOSError as exc:
-            raise ArgumentError('Unable to open music list file `{}`: `{}`.'
-                                .format(new_music_file, exc.message))
+    Constants.assert_command(client, arg)
 
-        client.send_ooc('You have loaded the music list {}.'.format(arg))
+    client.music_manager.command_load_asset(client, arg, notify_others=False)
+    client.send_music_list_view()
 
 
 def ooc_cmd_music_lists(client: ClientManager.Client, arg: str):
