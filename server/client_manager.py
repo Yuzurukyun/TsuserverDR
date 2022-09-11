@@ -20,6 +20,8 @@ from __future__ import annotations
 
 import typing
 from typing import Any, Callable, List, Optional, Set, Tuple, Dict, Union
+
+from server.music_manager import MusicManager
 if typing.TYPE_CHECKING:
     # Avoid circular referencing
     from server.area_manager import AreaManager
@@ -72,6 +74,10 @@ class ClientManager:
             self.ever_outbounded_gamemode = False
             self.ever_outbounded_time_of_day = False
 
+            self.music_manager = MusicManager(server)
+            # Avoid doing an OS call for a new client
+            self.music_manager.transfer_contents_from_manager(self.server.music_manager)
+
             self.area = server.area_manager.default_area()
             self.new_area = self.area  # It is different from self.area in transition to a new area
             self.party = None
@@ -99,7 +105,6 @@ class ClientManager:
             self.multi_ic_pre = ''
             self.following = None
             self.followedby = set()
-            self.music_list = None
             self.showname_history = list()
             self.is_transient = False
             self.handicap = None
@@ -152,6 +157,13 @@ class ClientManager:
             self.mflood_times = self.server.config['music_change_floodguard']['times_per_interval']
             self.mflood_mutelength = self.server.config['music_change_floodguard']['mute_length']
             self.mflood_log = list()
+
+        @property
+        def music_list(self) -> List[Dict[str, Any]]:
+            Constants.warn_deprecated('client.music_list',
+                                      'client.music_manager.get_music',
+                                      '4.4')
+            return self.music_manager.get_music()
 
         def send_command(self, command: str, *args: List):
             self.protocol.data_send(command, *args)
@@ -908,47 +920,44 @@ class ClientManager:
         def reload_character(self):
             self.change_character(self.char_id, force=True)
 
+        def get_area_and_music_list(self):
+            area_list = self.server.area_manager.get_client_view(self, from_area=self.area)
+            music_list = self.music_manager.get_client_view()
+
+            return area_list+music_list
+
+        def send_music_list_view(self):
+            area_list = self.server.area_manager.get_client_view(self, from_area=self.area)
+            music_list = self.music_manager.get_client_view()
+
+            if self.packet_handler.HAS_DISTINCT_AREA_AND_MUSIC_LIST_OUTGOING_PACKETS:
+                # DRO 1.1.0+, KFO and AO2.8.4+ deals with music lists differently than older clients
+                # They want the area lists and music lists separate, so they will have it like that
+                self.send_command_dict('FA', {
+                    'areas_ao2_list': area_list,
+                    })
+                self.send_command_dict('FM', {
+                    'music_ao2_list': music_list,
+                    })
+            else:
+                self.send_command_dict('FM', {
+                    'music_ao2_list': area_list+music_list,
+                    })
+
         def reload_music_list(self, new_music_file=None):
             """
             Rebuild the music list so that it only contains the target area's
             reachable areas+music. Useful when moving areas/logging in or out.
             """
 
-            # Check if a new music file has been chosen, and if so, parse it
+            Constants.warn_deprecated('client.reload_music_list',
+                                      'client.send_music_list_view',
+                                      '4.4',)
+
             if new_music_file:
-                raw_music_list = self.server.load_music(music_list_file=new_music_file,
-                                                        server_music_list=False)
-            else:
-                raw_music_list = self.music_list
+                self.music_manager.load_music(new_music_file)
 
-            if self.packet_handler.HAS_DISTINCT_AREA_AND_MUSIC_LIST_OUTGOING_PACKETS:
-                # DRO 1.1.0+, KFO and AO2.8.4+ deals with music lists differently than older clients
-                # They want the area lists and music lists separate, so they will have it like that
-                area_list = self.server.build_music_list(from_area=self.area, c=self,
-                                                         include_areas=True,
-                                                         include_music=False)
-                self.send_command_dict('FA', {
-                    'areas_ao2_list': area_list,
-                    })
-                music_list = self.server.prepare_music_list(c=self,
-                                                            specific_music_list=raw_music_list)
-                self.send_command_dict('FM', {
-                    'music_ao2_list': music_list,
-                    })
-            else:
-                # DRO 1.0.0< and AO2.6< protocol
-                reloaded_music_list = self.server.build_music_list(from_area=self.area, c=self,
-                                                                   music_list=raw_music_list)
-                self.send_command_dict('FM', {
-                    'music_ao2_list': reloaded_music_list,
-                    })
-
-            # Update the new music list of the client once everything is done, if a new music list
-            # was indeed loaded. Doing this only now prevents setting the music list to something
-            # broken, as build_music_list checks for syntax and raises an error if bad syntax
-            # so if the code makes it here, the loaded music list is good.
-            if raw_music_list:
-                self.music_list = raw_music_list
+            self.send_music_list_view()
 
         def check_change_area(self, area: AreaManager.Area,
                               override_passages: bool = False,
@@ -1697,7 +1706,7 @@ class ClientManager:
             # The following actions are true for all logged in roles
             if self.area.evidence_mod == 'HiddenCM':
                 self.area.broadcast_evidence_list()
-            self.reload_music_list()  # Update music list to show all areas
+            self.send_music_list_view()  # Update music list to show all areas
 
             self.send_ooc('Logged in as a {}.'.format(role))
             # Filter out messages about GMs because they were called earlier in auth_gm
@@ -1817,7 +1826,7 @@ class ClientManager:
                 self.area.broadcast_evidence_list()
 
             # Update the music list to show reachable areas and activate the AFK timer
-            self.reload_music_list()
+            self.send_music_list_view()
             self.server.tasker.create_task(self, ['as_afk_kick', self.area.afk_delay,
                                                   self.area.afk_sendto])
 

@@ -16,14 +16,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 import datetime
 import logging
 import sys
 import time
 import traceback
+import typing
+
+from typing import Union
 
 from server.constants import Constants
 
+if typing.TYPE_CHECKING:
+    from server.tsuserver import TsuserverDR
 
 def setup_logger(debug):
     logging.Formatter.converter = time.gmtime
@@ -70,7 +77,7 @@ def log_debug(msg, client=None):
     logging.getLogger('debug').debug(msg)
 
 
-def log_error(msg, server, errortype='P') -> str:
+def log_error(msg, server: Union[TsuserverDR, None], errortype='P') -> str:
     # errortype "C" if server raised an error as a result of a client packet.
     # errortype "D" if player manually requested an error dump
     # errortype "P" if server raised an error for any other reason
@@ -110,7 +117,7 @@ def log_error(msg, server, errortype='P') -> str:
         # Add list of areas to error log
         try:
             msg += '\n\n\n= Area dump ='
-            msg += '\n*Current area list: {}'.format(server.area_list)
+            msg += '\n*Current area list: {}'.format(server.area_manager.get_source_file())
             msg += '\n*Old area list: {}'.format(server.old_area_list)
             msg += '\n*Current areas:'
 

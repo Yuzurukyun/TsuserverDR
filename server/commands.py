@@ -28,7 +28,7 @@ import traceback
 
 from server import logger
 from server.constants import Constants, TargetType
-from server.exceptions import ArgumentError, AreaError, ClientError, ServerError
+from server.exceptions import ArgumentError, AreaError, ClientError, MusicError, ServerError
 from server.exceptions import PartyError, ZoneError, TrialError, NonStopDebateError
 from server.client_manager import ClientManager
 
@@ -222,7 +222,7 @@ def ooc_cmd_area_list(client: ClientManager.Client, arg: str):
     old_locked_areas = [area.name for area in client.server.area_manager.get_areas()
                         if area.is_locked]
 
-    client.server.area_manager.command_load_asset(client, arg)
+    client.server.area_manager.command_list_load(client, arg)
 
     # Every area that was locked before the reload gets warned that their areas were unlocked.
     for area_name in old_locked_areas:
@@ -4381,13 +4381,15 @@ def ooc_cmd_music_list(client: ClientManager.Client, arg: str):
     a client basis. If given no arguments, it will return the music list to its default value
     (in music.yaml). The list of music lists can be accessed with /music_lists. Clients that do not
     process 'SM' packets can use this command without crashing, but it will have no visual effect.
-    Returns an error if the given music list was not found.
+    Returns an error if the given music list name included relative directories,
+    was not found, caused an OS error when loading, or raised a YAML or asset syntax error when
+    loading.
 
     SYNTAX
     /music_list <music_list>
 
     PARAMETERS
-    <music_list>: Name of the intended music_list
+    <music_list>: Name of the intended music list
 
     EXAMPLES
     >>> /music_list dr2
@@ -4396,24 +4398,10 @@ def ooc_cmd_music_list(client: ClientManager.Client, arg: str):
     Reset the music list to its default value.
     """
 
-    if not arg:
-        client.music_list = None
-        client.reload_music_list()
-        client.send_ooc('You have restored the original music list of the server.')
-    else:
-        try:
-            new_music_file = 'config/music_lists/{}.yaml'.format(arg)
-            client.reload_music_list(new_music_file=new_music_file)
-        except ServerError.FileSyntaxError as exc:
-            raise ArgumentError('The music list {} returned the following error when loading: `{}`.'
-                                .format(new_music_file, exc))
-        except ServerError.FileNotFoundError:
-            raise ArgumentError('Could not find the music list file `{}`.'.format(new_music_file))
-        except ServerError.FileOSError as exc:
-            raise ArgumentError('Unable to open music list file `{}`: `{}`.'
-                                .format(new_music_file, exc.message))
+    Constants.assert_command(client, arg)
 
-        client.send_ooc('You have loaded the music list {}.'.format(arg))
+    client.music_manager.command_list_load(client, arg, notify_others=False)
+    client.send_music_list_view()
 
 
 def ooc_cmd_music_lists(client: ClientManager.Client, arg: str):
@@ -6512,8 +6500,8 @@ def ooc_cmd_play(client: ClientManager.Client, arg: str):
 
     # Warn if track is not in the music list
     try:
-        client.server.get_song_data(arg, c=client)
-    except ServerError.MusicNotFoundError:
+        client.music_manager.get_music_data(arg)
+    except MusicError.MusicNotFoundError:
         client.send_ooc(f'Warning: `{arg}` is not a recognized track name, so the server will not '
                         'loop it.')
 
@@ -6799,9 +6787,7 @@ def ooc_cmd_randommusic(client: ClientManager.Client, arg: str):
 
     # Find all music tracks
     music_names = list()
-    music_list = client.music_list
-    if music_list is None:
-        music_list = client.server.music_list
+    music_list = client.music_manager.get_music_data()
 
     for item in music_list:
         songs = item['songs']
@@ -7142,8 +7128,8 @@ def ooc_cmd_rplay(client: ClientManager.Client, arg: str):
 
     # Warn if track is not in the music list
     try:
-        client.server.get_song_data(arg, c=client)
-    except ServerError.MusicNotFoundError:
+        client.music_manager.get_music_data(arg)
+    except MusicError.MusicNotFoundError:
         client.send_ooc(f'(X) Warning: `{arg}` is not a recognized track name, so the server will '
                         f'not loop it.')
 
@@ -8547,7 +8533,7 @@ def ooc_cmd_transient(client: ClientManager.Client, arg: str):
         client.send_ooc('{} ({}) is {} transient to passage locks.'
                         .format(c.displayname, c.area.id, status[c.is_transient]))
         c.send_ooc('You are {} transient to passage locks.'.format(status[c.is_transient]))
-        c.reload_music_list()  # Update their music list to reflect their new status
+        c.send_music_list_view()  # Update their music list to reflect their new status
 
 
 def ooc_cmd_trial(client: ClientManager.Client, arg: str):
@@ -10716,8 +10702,8 @@ def ooc_cmd_zone_play(client: ClientManager.Client, arg: str):
 
     # Warn if track is not in the music list
     try:
-        client.server.get_song_data(arg, c=client)
-    except ServerError.MusicNotFoundError:
+        client.music_manager.get_music_data(arg)
+    except MusicError.MusicNotFoundError:
         client.send_ooc(f'(X) Warning: `{arg}` is not a recognized track name, so the server will '
                         f'not loop it.')
 
@@ -11386,7 +11372,7 @@ def ooc_cmd_bg_list(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, is_officer=True)
 
-    client.server.background_manager.command_load_asset(client, arg)
+    client.server.background_manager.command_list_load(client, arg)
 
 
 def ooc_cmd_bg_list_info(client: ClientManager.Client, arg: str):
@@ -11434,7 +11420,7 @@ def ooc_cmd_char_list(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, is_officer=True)
 
-    client.server.character_manager.command_load_asset(client, arg)
+    client.server.character_manager.command_list_load(client, arg)
 
 
 def ooc_cmd_char_list_info(client: ClientManager.Client, arg: str):
@@ -11477,6 +11463,27 @@ def ooc_cmd_area_list_info(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_officer=True, parameters='=0')
 
     client.server.area_manager.command_list_info(client)
+
+
+def ooc_cmd_music_list_info(client: ClientManager.Client, arg: str):
+    """
+    Returns your current music list.
+
+    SYNTAX
+    /music_list_info
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    >>> /music_list_info
+    May return something like this:
+    | $H: The current music list is the custom list `trial`.
+    """
+
+    Constants.assert_command(client, arg,  parameters='=0')
+
+    client.music_manager.command_list_info(client)
 
 
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):

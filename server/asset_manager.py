@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing
 
-from typing import Any, Callable
+from typing import Any, Callable, Union
 
 from server.exceptions import ServerError
 from server.subscriber import Publisher
@@ -25,13 +25,14 @@ class AssetManager:
     def get_loader(self) -> Callable[[str, ], Any]:
         raise NotImplementedError
 
-    def get_source_file(self) -> str:
+    def get_source_file(self) -> Union[str, None]:
         raise NotImplementedError
 
     def get_default_custom_folder(self) -> str:
         return f'config/{self.get_name().replace(" ", "_")}s'
 
-    def command_load_asset(self, client: ClientManager.Client, file: str):
+    def command_list_load(self, client: ClientManager.Client, file: str,
+                           notify_others: bool = True):
         if not file:
             source_file = self.get_default_file()
             msg = f'the default {self.get_name()} file'
@@ -59,17 +60,23 @@ class AssetManager:
                             f'An asset syntax error occurred: `{exc}`.')
         else:
             client.send_ooc(f'You have loaded {msg}.')
-            client.send_ooc_others(f'The {msg} has been loaded.',
-                                   is_officer=False)
-            client.send_ooc_others(f'{client.name} [{client.id}] has loaded {msg}.',
-                                   is_officer=True)
+            if notify_others:
+                client.send_ooc_others(f'{msg[0].upper()}{msg[1:]} has been loaded.',
+                                    is_officer=False)
+                client.send_ooc_others(f'{client.name} [{client.id}] has loaded {msg}.',
+                                    is_officer=True)
 
     def command_list_info(self, client: ClientManager.Client):
         raw_name = self.get_source_file()
-        if raw_name.startswith(self.get_default_custom_folder()):
+        if raw_name is None:
+            name = 'a non-standard list'
+        elif raw_name.startswith(self.get_default_custom_folder()):
             name = (f'the custom list '
                     f'`{raw_name[len(self.get_default_custom_folder())+1:-len(".yaml")]}`')
         else:
             name = 'the default list'
 
         client.send_ooc(f'The current {self.get_name()} is {name}.')
+
+    def _check_structure(self) -> bool:
+        raise NotImplementedError

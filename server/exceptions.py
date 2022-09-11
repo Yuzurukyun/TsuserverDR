@@ -93,6 +93,11 @@ class CharacterError(TsuserverException):
         pass
 
 
+@recreate_subexceptions
+class MusicError(TsuserverException):
+    class MusicNotFoundError(TsuserverException):
+        pass
+
 class ArgumentError(TsuserverException):
     pass
 

@@ -30,7 +30,7 @@ class BackgroundManager(AssetManager):
     def get_backgrounds(self) -> List[str]:
         return self._backgrounds.copy()
 
-    def get_source_file(self) -> str:
+    def get_source_file(self) -> Union[str, None]:
         return self._source_file
 
     def get_default_background(self) -> str:
@@ -83,7 +83,14 @@ class BackgroundManager(AssetManager):
         self._check_structure()
         return output
 
-    def _load_backgrounds(self, new_list: List[str], source_file: str) -> List[str]:
+    def load_backgrounds_raw(self, yaml_contents: List) -> List[str]:
+        backgrounds = ValidateBackgrounds().validate_contents(yaml_contents)
+        output = self._load_backgrounds(backgrounds, None)
+        self._check_structure()
+
+        return output
+
+    def _load_backgrounds(self, new_list: List[str], source_file: Union[str, None]) -> List[str]:
         lower = [name.lower() for name in new_list]
         self._backgrounds = lower
         self._source_file = source_file
