@@ -851,6 +851,8 @@ class ClientChangeArea:
 
         if client.is_blind:
             client.send_background(name=client.server.config['blackout_background'])
+        elif not area.lights:
+            client.send_background(name=client.server.config['blackout_background'])
         else:
             client.send_background(name=client.area.background,
                                    tod_backgrounds=client.area.get_background_tod())

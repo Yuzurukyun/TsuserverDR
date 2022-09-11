@@ -1032,6 +1032,8 @@ class ClientManager:
 
             if self.is_blind:
                 self.send_ic_blankpost()  # Clear screen
+            elif not self.area.lights:
+                self.send_background(name=self.server.config['blackout_background'])
             else:
                 self.send_background(name=self.area.background,
                                      tod_backgrounds=self.area.get_background_tod())
