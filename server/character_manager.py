@@ -29,7 +29,7 @@ class CharacterManager(AssetManager):
     def get_characters(self) -> List[str]:
         return self._characters.copy()
 
-    def get_source_file(self) -> str:
+    def get_source_file(self) -> Union[str, None]:
         return self._source_file
 
     def validate_file(self, source_file: Union[str, None] = None) -> List[str]:
@@ -72,7 +72,14 @@ class CharacterManager(AssetManager):
         self._check_structure()
         return output
 
-    def _load_characters(self, new_list: List[str], source_file: str) -> List[str]:
+    def load_characters_raw(self, yaml_contents: List) -> List[str]:
+        characters = ValidateCharacters().validate_contents(yaml_contents)
+        output = self._load_characters(characters, None)
+        self._check_structure()
+
+        return output
+
+    def _load_characters(self, new_list: List[str], source_file: Union[str, None]) -> List[str]:
         self._characters = new_list.copy()
         self._source_file = source_file
 

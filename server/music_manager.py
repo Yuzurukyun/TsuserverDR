@@ -29,7 +29,7 @@ class MusicManager(AssetManager):
     def get_music(self) -> List[Dict[str, Any]]:
         return self._music.copy()
 
-    def get_source_file(self) -> str:
+    def get_source_file(self) -> Union[str, None]:
         return self._source_file
 
     def validate_file(self, source_file: Union[str, None] = None) -> List[Dict[str, Any]]:
@@ -70,9 +70,17 @@ class MusicManager(AssetManager):
         music = self.validate_file(source_file)
         output = self._load_music(music, source_file)
         self._check_structure()
+
         return output
 
-    def _load_music(self, new_list: List[Dict[str, Any]], source_file: str) -> List[Dict[str, Any]]:
+    def load_music_raw(self, yaml_contents: List) -> List[str]:
+        music = ValidateMusic().validate_contents(yaml_contents)
+        output = self._load_music(music, None)
+        self._check_structure()
+
+        return output
+
+    def _load_music(self, new_list: List[Dict[str, Any]], source_file: Union[str, None]) -> List[Dict[str, Any]]:
         self._music = new_list.copy()
         self._source_file = source_file
 

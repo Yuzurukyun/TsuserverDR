@@ -44,6 +44,7 @@ from server.constants import Constants
 from server.client_manager import ClientManager
 from server.exceptions import MusicError, ServerError
 from server.game_manager import GameManager
+from server.music_manager import MusicManager
 from server.network.ao_protocol import AOProtocol
 from server.network.ms3_protocol import MasterServerClient
 from server.party_manager import PartyManager
@@ -92,7 +93,6 @@ class TsuserverDR:
         self.loop = None
         self.last_error = None
         self.allowed_iniswaps = None
-        self.area_list = None
         self.old_area_list = None
         self.default_area = 0
         self.all_passwords = list()
@@ -111,12 +111,12 @@ class TsuserverDR:
         self.zone_manager = ZoneManager(self)
         self.area_manager = AreaManager(self)
         self.background_manager = BackgroundManager(self)
+        self.music_manager = MusicManager(self)
         self.ban_manager = BanManager(self)
         self.party_manager = PartyManager(self)
 
         self.ipid_list = {}
         self.hdid_list = {}
-        self.music_list = None
         self.gimp_list = list()
         self.load_commandhelp()
         self.load_music()
@@ -146,6 +146,20 @@ class TsuserverDR:
                                   'server.background_manager.get_backgrounds()',
                                   '4.4')
         return self.background_manager.get_backgrounds()
+
+    @property
+    def music_list(self):
+        Constants.warn_deprecated('server.music_list',
+                                  'server.music_manager.get_music()',
+                                  '4.4')
+        return self.music_manager.get_music()
+
+    @property
+    def area_list(self):
+        Constants.warn_deprecated('server.area_list',
+                                  'server.area_manager.get_source_file()',
+                                  '4.4')
+        return self.area_manager.get_source_file()
 
     async def start(self):
         self.loop = asyncio.get_event_loop()

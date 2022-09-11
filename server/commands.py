@@ -222,7 +222,7 @@ def ooc_cmd_area_list(client: ClientManager.Client, arg: str):
     old_locked_areas = [area.name for area in client.server.area_manager.get_areas()
                         if area.is_locked]
 
-    client.server.area_manager.command_load_asset(client, arg)
+    client.server.area_manager.command_list_load(client, arg)
 
     # Every area that was locked before the reload gets warned that their areas were unlocked.
     for area_name in old_locked_areas:
@@ -4400,7 +4400,7 @@ def ooc_cmd_music_list(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg)
 
-    client.music_manager.command_load_asset(client, arg, notify_others=False)
+    client.music_manager.command_list_load(client, arg, notify_others=False)
     client.send_music_list_view()
 
 
@@ -11372,7 +11372,7 @@ def ooc_cmd_bg_list(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, is_officer=True)
 
-    client.server.background_manager.command_load_asset(client, arg)
+    client.server.background_manager.command_list_load(client, arg)
 
 
 def ooc_cmd_bg_list_info(client: ClientManager.Client, arg: str):
@@ -11420,7 +11420,7 @@ def ooc_cmd_char_list(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, is_officer=True)
 
-    client.server.character_manager.command_load_asset(client, arg)
+    client.server.character_manager.command_list_load(client, arg)
 
 
 def ooc_cmd_char_list_info(client: ClientManager.Client, arg: str):

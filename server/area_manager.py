@@ -25,7 +25,7 @@ all necessary actions in order to simulate different rooms.
 
 from __future__ import annotations
 import typing
-from typing import Any, Callable, Dict, List, Set, Tuple
+from typing import Any, Callable, Dict, List, Set, Tuple, Union
 if typing.TYPE_CHECKING:
     # Avoid circular referencing
     from server.client_manager import ClientManager
@@ -1137,7 +1137,7 @@ class AreaManager(AssetManager):
     def get_areas(self) -> List[Area]:
         return self._areas.copy()
 
-    def get_source_file(self) -> str:
+    def get_source_file(self) -> Union[str, None]:
         return self._source_file
 
     def load_areas(self, area_list_file: str = 'config/areas.yaml') -> List[Area]:
@@ -1170,9 +1170,26 @@ class AreaManager(AssetManager):
             'server_character_list': self.server.character_manager.get_characters(),
             'server_default_area_description': self.server.config['default_area_description']
             })
+        areas = self._load_areas(areas, area_list_file)
+        self._check_structure()
+
+        return areas
+
+    def load_areas_raw(self, yaml_contents: Dict) -> List[Area]:
+        areas = ValidateAreas().validate_contents(yaml_contents, extra_parameters={
+            'server_character_list': self.server.character_manager.get_characters(),
+            'server_default_area_description': self.server.config['default_area_description']
+            })
+        areas = self._load_areas(areas, None)
+        self._check_structure()
+
+        return areas
+
+    def _load_areas(self, areas: List[Area], source_file: Union[str, None]) -> List[Area]:
+        self.server.old_area_list = self._source_file
 
         # Now we are ready to create the areas
-        self._source_file = area_list_file
+        self._source_file = source_file
 
         temp_areas = list()
         for (i, area_item) in enumerate(areas):
@@ -1257,10 +1274,6 @@ class AreaManager(AssetManager):
         # This is done separately
         for area in old_areas:
             area.destroy()
-
-        # Update the server's area list only once everything is successful
-        self.server.old_area_list = self.server.area_list
-        self.server.area_list = area_list_file
 
         return self._areas.copy()
 
@@ -1393,3 +1406,6 @@ class AreaManager(AssetManager):
                 client.send_music_list_view()
 
         return now_reachable
+
+    def _check_structure(self) -> bool:
+        assert self._areas

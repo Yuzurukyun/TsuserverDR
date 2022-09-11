@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing
 
-from typing import Any, Callable
+from typing import Any, Callable, Union
 
 from server.exceptions import ServerError
 from server.subscriber import Publisher
@@ -25,13 +25,13 @@ class AssetManager:
     def get_loader(self) -> Callable[[str, ], Any]:
         raise NotImplementedError
 
-    def get_source_file(self) -> str:
+    def get_source_file(self) -> Union[str, None]:
         raise NotImplementedError
 
     def get_default_custom_folder(self) -> str:
         return f'config/{self.get_name().replace(" ", "_")}s'
 
-    def command_load_asset(self, client: ClientManager.Client, file: str,
+    def command_list_load(self, client: ClientManager.Client, file: str,
                            notify_others: bool = True):
         if not file:
             source_file = self.get_default_file()
@@ -75,3 +75,6 @@ class AssetManager:
             name = 'the default list'
 
         client.send_ooc(f'The current {self.get_name()} is {name}.')
+
+    def _check_structure(self) -> bool:
+        raise NotImplementedError
