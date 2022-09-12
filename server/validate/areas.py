@@ -21,7 +21,7 @@ if r'../..' not in sys.path:
     sys.path.append(r'../..')
 
 from server.constants import Constants
-from server.exceptions import AreaError
+from server.exceptions import ServerError
 from server.validate_assets import Validate
 
 
@@ -71,10 +71,10 @@ class ValidateAreas(Validate):
             # Check required parameters
             if 'area' not in item or not item['area']:
                 info = 'Area {} has no name.'.format(current_area_id)
-                raise AreaError(info)
+                raise ServerError.FileSyntaxError(info)
             if 'background' not in item or not item['background']:
                 info = 'Area {} has no background.'.format(item['area'])
-                raise AreaError(info)
+                raise ServerError.FileSyntaxError(info)
 
             # Prevent reserved area names (it has a special meaning)
             reserved_names = {
@@ -87,7 +87,7 @@ class ValidateAreas(Validate):
                     info = ('An area in your area list is called "{name}". This is a reserved '
                             'name, so it is not a valid area name. Please change its name and try '
                             'again.')
-                    raise AreaError(info)
+                    raise ServerError.FileSyntaxError(info)
 
             # Prevent names that may be interpreted as a directory with . or ..
             # This prevents sending the client an entry to their music list which may be read as
@@ -96,14 +96,14 @@ class ValidateAreas(Validate):
                 info = (f'Area {item["area"]} could be interpreted as referencing the current or '
                         f'parent directories, so it is invalid. Please rename the area and try '
                         f'again.')
-                raise AreaError(info)
+                raise ServerError.FileSyntaxError(info)
 
             # Prevent conflicts with AO Protocol
             if Constants.includes_omniwhy_exploit(item['area']):
                 info = (f'Area {item["area"]} contains characters that could cause issues with '
                         f'certain AO clients, so it is invalid. Please rename the area and try '
                         f'again.')
-                raise AreaError(info)
+                raise ServerError.FileSyntaxError(info)
 
             # Check unset optional parameters
             for param in default_area_parameters:
@@ -116,13 +116,13 @@ class ValidateAreas(Validate):
                         'Support for sound_proof was removed in favor of scream_range. '
                         'Please replace the sound_proof tag with scream_range in '
                         'your area list and try again.'.format(item['area']))
-                raise AreaError(info)
+                raise ServerError.FileSyntaxError(info)
 
             # Avoid having areas with the same name
             if item['area'] in temp_area_names:
                 info = ('Two areas have the same name in area list: {}. '
                         'Please rename the duplicated areas and try again.'.format(item['area']))
-                raise AreaError(info)
+                raise ServerError.FileSyntaxError(info)
 
             # Check if any of the items were interpreted as Python Nones (maybe due to empty lines)
             for parameter in item:
@@ -131,7 +131,7 @@ class ValidateAreas(Validate):
                             'due to having an empty parameter line in your area list. '
                             'Please fix or remove the parameter from the area definition and try '
                             'again.'.format(parameter, item['area']))
-                    raise AreaError(info)
+                    raise ServerError.FileSyntaxError(info)
 
             # Check and fix background tods if needed, as YAML parses this as a list of
             if item['background_tod'] != dict():
@@ -140,14 +140,14 @@ class ValidateAreas(Validate):
                     info = (f'Expected background TOD for area {item["area"]} be '
                             f'one dictionary, found it was of type '
                             f'{type(raw_background_tod_map).__name__}: {raw_background_tod_map}')
-                    raise AreaError(info)
+                    raise ServerError.FileSyntaxError(info)
 
                 new_background_tod = dict()
                 if not isinstance(raw_background_tod_map, dict):
                     info = (f'Expected background TOD for area {item["area"]} be a dictionary, '
                             f'found it was of type {type(raw_background_tod_map).__name__}: '
                             f'{raw_background_tod_map}')
-                    raise AreaError(info)
+                    raise ServerError.FileSyntaxError(info)
 
                 for (key, value) in raw_background_tod_map.items():
                     tod_name = str(key)
@@ -156,22 +156,22 @@ class ValidateAreas(Validate):
                         info = (f'TOD name `{tod_name}` invalid for area {item["area"]}. '
                                 f'Make sure the TOD name has non-space characters and try '
                                 f'again.')
-                        raise AreaError(info)
+                        raise ServerError.FileSyntaxError(info)
                     if ' ' in tod_name:
                         info = (f'TOD name `{tod_name}` invalid for area {item["area"]}. '
                                 f'Make sure the TOD name has no space characters and try '
                                 f'again.')
-                        raise AreaError(info)
+                        raise ServerError.FileSyntaxError(info)
                     if '|' in tod_name:
                         info = (f'TOD name `{tod_name}` contains invalid character |.'
                                 f'Make sure the TOD name does not have that character and '
                                 f'try again.')
-                        raise AreaError(info)
+                        raise ServerError.FileSyntaxError(info)
                     if '|' in tod_background:
                         info = (f'TOD background `{tod_background}` contains invalid '
                                 f'character |. Make sure the TOD name does not have that '
                                 f'character and try again.')
-                        raise AreaError(tod_background)
+                        raise ServerError.FileSyntaxError(info)
 
                     new_background_tod[tod_name] = tod_background
                 item['background_tod'] = new_background_tod
@@ -214,21 +214,21 @@ class ValidateAreas(Validate):
                 info = (f'Area {name} has unrecognized areas {unrecognized_areas} defined as '
                         f'areas a player can reach to. Please rename the affected areas and try '
                         f'again.')
-                raise AreaError(info)
+                raise ServerError.FileSyntaxError(info)
 
             unrecognized_areas = visible_areas-temp_area_names
             if unrecognized_areas:
                 info = (f'Area {name} has unrecognized areas {unrecognized_areas} defined as '
                         f'areas a player can view. Please rename the affected areas and try '
                         f'again.')
-                raise AreaError(info)
+                raise ServerError.FileSyntaxError(info)
 
             unrecognized_areas = scream_range-temp_area_names
             if unrecognized_areas:
                 info = (f'Area {name} has unrecognized areas {unrecognized_areas} defined as '
                         f'areas screams can reach to. Please rename the affected areas and try '
                         f'again.')
-                raise AreaError(info)
+                raise ServerError.FileSyntaxError(info)
 
             # Make sure only characters that exist are part of the restricted char set
             if server_character_list is not None:
@@ -237,7 +237,7 @@ class ValidateAreas(Validate):
                     info = (f'Area {name} has unrecognized characters {unrecognized_characters} '
                             f'defined as restricted characters. Please make sure the characters '
                             f'exist and try again.')
-                    raise AreaError(info)
+                    raise ServerError.FileSyntaxError(info)
             elif restricted_chars:
                 found_uncheckable_restricted_chars = True
 

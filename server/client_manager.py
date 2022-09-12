@@ -20,6 +20,8 @@ from __future__ import annotations
 
 import typing
 from typing import Any, Callable, List, Optional, Set, Tuple, Dict, Union
+
+from server.music_manager import MusicManager
 if typing.TYPE_CHECKING:
     # Avoid circular referencing
     from server.area_manager import AreaManager
@@ -72,6 +74,10 @@ class ClientManager:
             self.ever_outbounded_gamemode = False
             self.ever_outbounded_time_of_day = False
 
+            self.music_manager = MusicManager(server)
+            # Avoid doing an OS call for a new client
+            self.music_manager.transfer_contents_from_manager(self.server.music_manager)
+
             self.area = server.area_manager.default_area()
             self.new_area = self.area  # It is different from self.area in transition to a new area
             self.party = None
@@ -99,7 +105,6 @@ class ClientManager:
             self.multi_ic_pre = ''
             self.following = None
             self.followedby = set()
-            self.music_list = None
             self.showname_history = list()
             self.is_transient = False
             self.handicap = None
@@ -152,6 +157,13 @@ class ClientManager:
             self.mflood_times = self.server.config['music_change_floodguard']['times_per_interval']
             self.mflood_mutelength = self.server.config['music_change_floodguard']['mute_length']
             self.mflood_log = list()
+
+        @property
+        def music_list(self) -> List[Dict[str, Any]]:
+            Constants.warn_deprecated('client.music_list',
+                                      'client.music_manager.get_music',
+                                      '4.4')
+            return self.music_manager.get_music()
 
         def send_command(self, command: str, *args: List):
             self.protocol.data_send(command, *args)
@@ -235,7 +247,8 @@ class ClientManager:
                     })
 
         def send_ooc_others(self, msg: str, username: str = None, allow_empty: bool = False,
-                            is_staff=None, is_officer=None, in_area=None, not_to=None, part_of=None,
+                            is_staff=None, is_officer=None, in_area=None,
+                            not_to: Set = None, part_of=None,
                             to_blind=None, to_deaf=None, is_zstaff=None, is_zstaff_flex=None,
                             pred: Callable[[ClientManager.Client], bool] = None):
             if not allow_empty and not msg:
@@ -797,7 +810,7 @@ class ClientManager:
 
             old_char, old_char_id = self.get_char_name(), self.char_id
 
-            if not self.server.is_valid_char_id(char_id):
+            if not self.server.character_manager.is_valid_character_id(char_id):
                 raise ClientError('Invalid character ID.')
             if not target_area.is_char_available(char_id, allow_restricted=self.is_staff()):
                 if force:
@@ -907,47 +920,44 @@ class ClientManager:
         def reload_character(self):
             self.change_character(self.char_id, force=True)
 
+        def get_area_and_music_list_view(self):
+            area_list = self.server.area_manager.get_client_view(self, from_area=self.area)
+            music_list = self.music_manager.get_client_view()
+
+            return area_list+music_list
+
+        def send_music_list_view(self):
+            area_list = self.server.area_manager.get_client_view(self, from_area=self.area)
+            music_list = self.music_manager.get_client_view()
+
+            if self.packet_handler.HAS_DISTINCT_AREA_AND_MUSIC_LIST_OUTGOING_PACKETS:
+                # DRO 1.1.0+, KFO and AO2.8.4+ deals with music lists differently than older clients
+                # They want the area lists and music lists separate, so they will have it like that
+                self.send_command_dict('FA', {
+                    'areas_ao2_list': area_list,
+                    })
+                self.send_command_dict('FM', {
+                    'music_ao2_list': music_list,
+                    })
+            else:
+                self.send_command_dict('FM', {
+                    'music_ao2_list': area_list+music_list,
+                    })
+
         def reload_music_list(self, new_music_file=None):
             """
             Rebuild the music list so that it only contains the target area's
             reachable areas+music. Useful when moving areas/logging in or out.
             """
 
-            # Check if a new music file has been chosen, and if so, parse it
+            Constants.warn_deprecated('client.reload_music_list',
+                                      'client.send_music_list_view',
+                                      '4.4',)
+
             if new_music_file:
-                raw_music_list = self.server.load_music(music_list_file=new_music_file,
-                                                        server_music_list=False)
-            else:
-                raw_music_list = self.music_list
+                self.music_manager.load_file(new_music_file)
 
-            if self.packet_handler.HAS_DISTINCT_AREA_AND_MUSIC_LIST_OUTGOING_PACKETS:
-                # DRO 1.1.0+, KFO and AO2.8.4+ deals with music lists differently than older clients
-                # They want the area lists and music lists separate, so they will have it like that
-                area_list = self.server.build_music_list(from_area=self.area, c=self,
-                                                         include_areas=True,
-                                                         include_music=False)
-                self.send_command_dict('FA', {
-                    'areas_ao2_list': area_list,
-                    })
-                music_list = self.server.prepare_music_list(c=self,
-                                                            specific_music_list=raw_music_list)
-                self.send_command_dict('FM', {
-                    'music_ao2_list': music_list,
-                    })
-            else:
-                # DRO 1.0.0< and AO2.6< protocol
-                reloaded_music_list = self.server.build_music_list(from_area=self.area, c=self,
-                                                                   music_list=raw_music_list)
-                self.send_command_dict('FM', {
-                    'music_ao2_list': reloaded_music_list,
-                    })
-
-            # Update the new music list of the client once everything is done, if a new music list
-            # was indeed loaded. Doing this only now prevents setting the music list to something
-            # broken, as build_music_list checks for syntax and raises an error if bad syntax
-            # so if the code makes it here, the loaded music list is good.
-            if raw_music_list:
-                self.music_list = raw_music_list
+            self.send_music_list_view()
 
         def check_change_area(self, area: AreaManager.Area,
                               override_passages: bool = False,
@@ -1022,6 +1032,8 @@ class ClientManager:
 
             if self.is_blind:
                 self.send_ic_blankpost()  # Clear screen
+            elif not self.area.lights:
+                self.send_background(name=self.server.config['blackout_background'])
             else:
                 self.send_background(name=self.area.background,
                                      tod_backgrounds=self.area.get_background_tod())
@@ -1400,7 +1412,7 @@ class ClientManager:
         def send_area_list(self):
             msg = '=== Areas ==='
             lock = {True: '[LOCKED]', False: ''}
-            for i, area in enumerate(self.server.area_manager.areas):
+            for i, area in enumerate(self.server.area_manager.get_areas()):
                 owner = 'FREE'
                 if area.owned:
                     for client in [x for x in area.clients if x.is_cm]:
@@ -1420,7 +1432,7 @@ class ClientManager:
 
         def send_limited_area_list(self):
             msg = '=== Areas ==='
-            for i, area in enumerate(self.server.area_manager.areas):
+            for i, area in enumerate(self.server.area_manager.get_areas()):
                 msg += '\r\nArea {}: {}'.format(i, area.name)
                 if self.area == area:
                     msg += ' [*]'
@@ -1530,7 +1542,7 @@ class ClientManager:
                 # all areas info
 
                 if area_id == -1:
-                    areas = self.server.area_manager.areas
+                    areas = self.server.area_manager.get_areas()
                 elif area_id == -2:
                     zone = self.zone_watched
                     if zone is None:
@@ -1581,15 +1593,15 @@ class ClientManager:
 
         def send_all_area_hdid(self):
             info = '== HDID List =='
-            for i in range(len(self.server.area_manager.areas)):
-                if len(self.server.area_manager.areas[i].clients) > 0:
+            for i in range(len(self.server.area_manager.get_areas())):
+                if len(self.server.area_manager.get_areas()[i].clients) > 0:
                     info += '\r\n{}'.format(self.get_area_hdid(i))
             self.send_ooc(info)
 
         def send_all_area_ip(self):
             info = '== IP List =='
-            for i in range(len(self.server.area_manager.areas)):
-                if len(self.server.area_manager.areas[i].clients) > 0:
+            for i in range(len(self.server.area_manager.get_areas())):
+                if len(self.server.area_manager.get_areas()[i].clients) > 0:
                     info += '\r\n{}'.format(self.get_area_ip(i))
             self.send_ooc(info)
 
@@ -1597,7 +1609,7 @@ class ClientManager:
             raise NotImplementedError
 
         def refresh_char_list(self):
-            char_list = [0] * len(self.server.char_list)
+            char_list = [0] * len(self.server.character_manager.get_characters())
             unusable_ids = self.area.get_chars_unusable(allow_restricted=self.is_staff())
             # Remove sneaked players from unusable if needed so that they don't appear as taken
             # Their characters will not be able to be reused, but at least that's one less clue
@@ -1615,11 +1627,11 @@ class ClientManager:
                 })
 
         def refresh_visible_char_list(self):
-            char_list = [0] * len(self.server.char_list)
+            char_list = [0] * len(self.server.character_manager.get_characters())
             unusable_ids = {c.char_id for c in self.get_visible_clients(self.area)
                             if c.has_character()}
             if not self.is_staff():
-                unusable_ids |= {self.server.char_list.index(name)
+                unusable_ids |= {self.server.character_manager.get_character_id_by_name(name)
                                 for name in self.area.restricted_chars}
 
             for x in unusable_ids:
@@ -1696,7 +1708,7 @@ class ClientManager:
             # The following actions are true for all logged in roles
             if self.area.evidence_mod == 'HiddenCM':
                 self.area.broadcast_evidence_list()
-            self.reload_music_list()  # Update music list to show all areas
+            self.send_music_list_view()  # Update music list to show all areas
 
             self.send_ooc('Logged in as a {}.'.format(role))
             # Filter out messages about GMs because they were called earlier in auth_gm
@@ -1816,7 +1828,7 @@ class ClientManager:
                 self.area.broadcast_evidence_list()
 
             # Update the music list to show reachable areas and activate the AFK timer
-            self.reload_music_list()
+            self.send_music_list_view()
             self.server.tasker.create_task(self, ['as_afk_kick', self.area.afk_delay,
                                                   self.area.afk_sendto])
 
@@ -1890,11 +1902,7 @@ class ClientManager:
             if char_id is None:
                 char_id = self.char_id
 
-            if char_id == -1:
-                return self.server.config['spectator_name']
-            if char_id is None:
-                return self.server.server_select_name
-            return self.server.char_list[char_id]
+            return self.server.character_manager.get_character_name(char_id)
 
         def get_showname_history(self) -> str:
             info = '== Showname history of client {} =='.format(self.id)
@@ -2001,7 +2009,8 @@ class ClientManager:
                 areas = set()
             else:
                 start, end = self.multi_ic[0].id, self.multi_ic[1].id
-                areas = {area for area in self.server.area_manager.areas if start <= area.id <= end}
+                areas = {area for area in self.server.area_manager.get_areas()
+                         if start <= area.id <= end}
             info += ('\n*Global IC range: {}. Global IC prefix: {}'
                      .format(Constants.format_area_ranges(areas),
                              'None' if not self.multi_ic_pre else f'`{self.multi_ic_pre}`'))
@@ -2236,7 +2245,7 @@ class ClientManager:
         if local:
             areas = [client.area]
         else:
-            areas = client.server.area_manager.areas
+            areas = client.server.area_manager.get_areas()
         targets = []
         if key == TargetType.ALL:
             for nkey in range(8):

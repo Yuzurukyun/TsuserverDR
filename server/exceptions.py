@@ -59,16 +59,44 @@ class ClientError(TsuserverException):
     class UnauthorizedError(TsuserverException):
         pass
 
+
 @recreate_subexceptions
 class AOProtocolError(TsuserverException):
     class InvalidInboundPacketArguments(TsuserverException):
         pass
+
+
+@recreate_subexceptions
+class BackgroundError(TsuserverException):
+    class BackgroundNotFoundError(TsuserverException):
+        pass
+
 
 @recreate_subexceptions
 class AreaError(TsuserverException):
     class ClientNotFound(TsuserverException):
         pass
 
+
+@recreate_subexceptions
+class BackgroundError(TsuserverException):
+    class BackgroundNotFoundError(TsuserverException):
+        pass
+
+
+@recreate_subexceptions
+class CharacterError(TsuserverException):
+    class CharacterNotFoundError(TsuserverException):
+        pass
+
+    class CharacterIDNotFoundError(TsuserverException):
+        pass
+
+
+@recreate_subexceptions
+class MusicError(TsuserverException):
+    class MusicNotFoundError(TsuserverException):
+        pass
 
 class ArgumentError(TsuserverException):
     pass

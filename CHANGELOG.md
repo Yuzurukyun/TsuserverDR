@@ -800,3 +800,20 @@
 ### 220831a (4.3.4-post2)
 * Fixed clients sending legitimate split packets being abnormally disconnected
 * Fixed character list reloads crashing when someone is in server select
+
+### 220912a (4.3.5)
+* Added client version and server version consistently to printed server error messages
+* Added support for loading custom background lists without changing `config/backgrounds.yaml` via the `config/background_lists` folder and commands
+  - /bg_list
+  - /bg_list_info
+* Added support for loading custom character lists without changing `config/characters.yaml` via the `config/character_lists` folder and commands
+  - /char_list
+  - /char_list_info
+* Updated wording of /area_list and /music_list so that it matches the wording of /bg_list and /char_list on success or failure
+* Added /area_list_info and /music_list_info, which returns the name of the current area list and music list respectively
+* Added support for changing backgrounds in an area associated with periods via commands
+  - /bg_period
+  - /bg_period_end
+* Changed console message indicating server address and port to reflect DRO no longer using the old syntax
+* Fixed /lasterror providing duplicate error information
+* Fixed /clock_period erroring out if a non-numerical invalid hour start or hour length was given.

@@ -221,11 +221,11 @@ def net_cmd_askchaa(client: ClientManager.Client, pargs: Dict[str, Any]):
     client.can_askchaa = False  # Enforce the joining process happening atomically
 
     # Make sure there is enough room for the client
-    char_cnt = len(client.server.char_list)
+    char_cnt = len(client.server.character_manager.get_characters())
     evi_cnt = 0
     music_cnt = sum([len(item['songs']) + 1
-                        for item in client.server.music_list])  # +1 for category
-    area_cnt = len(client.server.area_manager.areas)
+                     for item in client.music_manager.get_music()])  # +1 for category
+    area_cnt = len(client.server.area_manager.get_areas())
     client.send_command_dict('SI', {
         'char_count': char_cnt,
         'evidence_count': evi_cnt,
@@ -257,7 +257,7 @@ def net_cmd_rc(client: ClientManager.Client, pargs: Dict[str, Any]):
     if client.required_packets_received != {'HI', 'ID'}:
         return
     client.send_command_dict('SC', {
-        'chars_ao2_list': client.server.char_list,
+        'chars_ao2_list': client.server.character_manager.get_characters(),
         })
 
 
@@ -274,10 +274,9 @@ def net_cmd_rm(client: ClientManager.Client, pargs: Dict[str, Any]):
 
     # Force the server to rebuild the music list, so that clients who just join get the correct
     # music list (as well as every time they request an updated music list directly).
-    full_music_list = client.server.build_music_list(include_areas=True,
-                                                    include_music=True)
+    area_and_music_list = client.get_area_and_music_list_view()
     client.send_command_dict('SM', {
-        'music_ao2_list': full_music_list,
+        'music_ao2_list': area_and_music_list,
         })
 
 

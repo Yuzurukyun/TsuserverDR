@@ -28,7 +28,7 @@ import traceback
 
 from server import logger
 from server.constants import Constants, TargetType
-from server.exceptions import ArgumentError, AreaError, ClientError, ServerError
+from server.exceptions import ArgumentError, AreaError, ClientError, MusicError, ServerError
 from server.exceptions import PartyError, ZoneError, TrialError, NonStopDebateError
 from server.client_manager import ClientManager
 
@@ -219,33 +219,10 @@ def ooc_cmd_area_list(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_officer=True)
 
     # lists which areas are locked before the reload
-    old_locked_areas = [area.name for area in client.server.area_manager.areas if area.is_locked]
+    old_locked_areas = [area.name for area in client.server.area_manager.get_areas()
+                        if area.is_locked]
 
-    if not arg:
-        client.server.area_manager.load_areas()
-        client.send_ooc('You have restored the original area list of the server.')
-        client.send_ooc_others('The original area list of the server has been restored.',
-                               is_officer=False)
-        client.send_ooc_others('{} [{}] has restored the original area list of the server.'
-                               .format(client.name, client.id), is_officer=True)
-    else:
-        try:
-            new_area_file = 'config/area_lists/{}.yaml'.format(arg)
-            client.server.area_manager.load_areas(area_list_file=new_area_file)
-        except ServerError.FileNotFoundError:
-            raise ArgumentError('Could not find the area list file `{}`.'.format(new_area_file))
-        except ServerError.FileOSError as exc:
-            raise ArgumentError('Unable to open area list file `{}`: `{}`.'
-                                .format(new_area_file, exc.message))
-        except AreaError as exc:
-            raise ArgumentError('The area list {} returned the following error when loading: `{}`.'
-                                .format(new_area_file, exc))
-
-        client.send_ooc('You have loaded the area list {}.'.format(arg))
-        client.send_ooc_others('The area list {} has been loaded.'.format(arg), is_officer=False)
-        client.send_ooc_others('{} [{}] has loaded the area list {}.'
-                               .format(client.name, client.id, arg),
-                               is_officer=True)
+    client.server.area_manager.command_list_load(client, arg)
 
     # Every area that was locked before the reload gets warned that their areas were unlocked.
     for area_name in old_locked_areas:
@@ -939,8 +916,9 @@ def ooc_cmd_bloodtrail_list(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
     # Get all areas with blood in them
-    areas = sorted([area for area in client.server.area_manager.areas if len(area.bleeds_to) > 0 or
-                    area.blood_smeared], key=lambda x: x.name)
+    areas = sorted([area for area in client.server.area_manager.get_areas()
+                    if len(area.bleeds_to) > 0 or area.blood_smeared],
+                   key=lambda x: x.name)
 
     # No areas found means there are no blood trails
     if not areas:
@@ -1060,9 +1038,10 @@ def ooc_cmd_bloodtrail_smear(client: ClientManager.Client, arg: str):
         if area.blood_smeared:
             client.send_ooc('Area {} already has its blood trails smeared.'.format(area.name))
         else:
-            client.send_ooc_others('{} smeared the blood trail in your area.'
-                                   .format(client.displayname), is_zstaff_flex=False,
-                                   in_area=area, to_blind=False, pred=lambda c: area.lights)
+            if area.lights:
+                client.send_ooc_others('{} smeared the blood trail in your area.'
+                                    .format(client.displayname), is_zstaff_flex=False,
+                                    in_area=area, to_blind=False)
             area.blood_smeared = True
             successful_smears.add(area.name)
 
@@ -1346,7 +1325,7 @@ def ooc_cmd_char_restrict(client: ClientManager.Client, arg: str):
     except ArgumentError:
         raise ArgumentError('This command takes one character name.')
 
-    if arg not in client.server.char_list:
+    if not client.server.character_manager.is_character(arg):
         raise ArgumentError('Unrecognized character folder name: {}'.format(arg))
 
     status = {True: 'enabled', False: 'disabled'}
@@ -1749,14 +1728,14 @@ def ooc_cmd_clock_period(client: ClientManager.Client, arg: str):
         if not 0 <= hour_start < hours_in_day:
             raise ValueError
     except ValueError:
-        raise ArgumentError(f'Invalid period start hour {hour_start}.')
+        raise ArgumentError(f'Invalid period start hour {pre_hour_start}.')
 
     try:
         hour_length = int(pre_hour_length)
         if hour_length <= 0:
             raise ValueError
     except ValueError:
-        raise ArgumentError(f'Invalid period hour length {hour_length}.')
+        raise ArgumentError(f'Invalid period hour length {pre_hour_length}.')
 
     client.server.tasker.set_task_attr(client, ['as_day_cycle'], 'new_period_start',
                                        (hour_start, name, hour_length))
@@ -3096,7 +3075,7 @@ def ooc_cmd_handicap(client: ClientManager.Client, arg: str):
                                'on {} in area {} ({}).'
                                .format(client.displayname, client.id, name, length, c.displayname,
                                        client.area.name, client.area.id),
-                               is_zstaff_flex=True, pred=lambda x: x != c)
+                               is_zstaff_flex=True, not_to={c})
 
         c.change_handicap(True, length=length, name=name, announce_if_over=announce_if_over)
 
@@ -3654,7 +3633,7 @@ def ooc_cmd_lasterror(client: ClientManager.Client, arg: str):
     error which is what is usually sent to the offending client).
     Note that ClientErrors, ServerErrors, AreaErrors and ArgumentErrors are usually caught by the
     server itself, and would not normally cause issues.
-    Returns a ClientError if no errors had been raised and not been caught since server bootup.
+    Returns an error if no errors had been raised and not been caught since server bootup.
 
     SYNTAX
     /lasterror
@@ -3666,19 +3645,22 @@ def ooc_cmd_lasterror(client: ClientManager.Client, arg: str):
     >>> /lasterror
     May return something like this:
     | $H: The last uncaught error message was the following:
-    | TSUSERVER HAS ENCOUNTERED AN ERROR HANDLING A CLIENT PACKET
-    | *Server time: Mon Jul 1 14:10:26 2019
-    | *Packet details: CT ['Iuvee', '/lasterror']
-    | *Client status: C::0:1639795399:Iuvee:Kaede Akamatsu_HD:True:0
+    | TSUSERVERDR HAS ENCOUNTERED AN ERROR HANDLING A CLIENT PACKET
+    | *Server version: TsuserverDR 4.3.5-a1 (m220906a)
+    | *Server time: Tue Sep  6 10:25:55 2022
+    | *Packet details: CT ['Iuvee', '/exec 1']
+    | *Client version: ('DRO', '1.2.3')
+    | *Client status: C::0:2202575700:Iuvee:Kaede Akamatsu_HD:Iuvee:True:0
     | *Area status: A::0:Basement:1
+    |
     | Traceback (most recent call last):
-    | File ".../server/aoprotocol.py", line 88, in data_received
-    | self.net_cmd_dispatcher[cmd](self, args)
-    | File ".../server/aoprotocol.py", line 500, in net_cmd_ct
-    | function(self.client, arg)
-    | File ".../server/commands.py", line 4210, in ooc_cmd_lasterror
-    | final_trace = "".join(traceback.format_exc(etype, evalue, etraceback))
-    | TypeError: format_exc() takes from 0 to 2 positional arguments but 3 were given
+    | File "D:\\AO\\TsuserverDR\\server\\network\\ao_protocol.py", line 158, in _process_message
+    |     dispatched.function(self.client, pargs)
+    | File "D:\\AO\\TsuserverDR\\server\\network\\ao_commands.py", line 672, in net_cmd_ct
+    |     function(client, arg)
+    | File "D:\\AO\\TsuserverDR\\server\\commands.py", line 11420, in ooc_cmd_exec
+    |     debuge
+    | NameError: name 'debuge' is not defined
     """
 
     Constants.assert_command(client, arg, is_mod=True, parameters='=0')
@@ -3687,11 +3669,8 @@ def ooc_cmd_lasterror(client: ClientManager.Client, arg: str):
         raise ClientError('No error messages have been raised and not been caught since server '
                           'bootup.')
 
-    pre_info, etype, evalue, etraceback = client.server.last_error
-    final_trace = "".join(traceback.format_exception(etype, evalue, etraceback))
-    info = ('The last uncaught error message was the following:\n{}\n{}'
-            .format(pre_info, final_trace))
-    client.send_ooc(info)
+    pre_info, _, _, _ = client.server.last_error
+    client.send_ooc(f'The last uncaught error message was the following:\n{pre_info}')
 
 
 def ooc_cmd_lights(client: ClientManager.Client, arg: str):
@@ -4063,7 +4042,7 @@ def ooc_cmd_look_list(client: ClientManager.Client, arg: str):
 
     info = '== Areas in this server with custom descriptions =='
     # Get all areas with changed descriptions
-    areas = [area for area in client.server.area_manager.areas
+    areas = [area for area in client.server.area_manager.get_areas()
              if area.description != area.default_description]
 
     # No areas found means there are no areas with changed descriptions
@@ -4402,13 +4381,15 @@ def ooc_cmd_music_list(client: ClientManager.Client, arg: str):
     a client basis. If given no arguments, it will return the music list to its default value
     (in music.yaml). The list of music lists can be accessed with /music_lists. Clients that do not
     process 'SM' packets can use this command without crashing, but it will have no visual effect.
-    Returns an error if the given music list was not found.
+    Returns an error if the given music list name included relative directories,
+    was not found, caused an OS error when loading, or raised a YAML or asset syntax error when
+    loading.
 
     SYNTAX
     /music_list <music_list>
 
     PARAMETERS
-    <music_list>: Name of the intended music_list
+    <music_list>: Name of the intended music list
 
     EXAMPLES
     >>> /music_list dr2
@@ -4417,24 +4398,10 @@ def ooc_cmd_music_list(client: ClientManager.Client, arg: str):
     Reset the music list to its default value.
     """
 
-    if not arg:
-        client.music_list = None
-        client.reload_music_list()
-        client.send_ooc('You have restored the original music list of the server.')
-    else:
-        try:
-            new_music_file = 'config/music_lists/{}.yaml'.format(arg)
-            client.reload_music_list(new_music_file=new_music_file)
-        except ServerError.FileSyntaxError as exc:
-            raise ArgumentError('The music list {} returned the following error when loading: `{}`.'
-                                .format(new_music_file, exc))
-        except ServerError.FileNotFoundError:
-            raise ArgumentError('Could not find the music list file `{}`.'.format(new_music_file))
-        except ServerError.FileOSError as exc:
-            raise ArgumentError('Unable to open music list file `{}`: `{}`.'
-                                .format(new_music_file, exc.message))
+    Constants.assert_command(client, arg)
 
-        client.send_ooc('You have loaded the music list {}.'.format(arg))
+    client.music_manager.command_list_load(client, arg, notify_others=False)
+    client.send_music_list_view()
 
 
 def ooc_cmd_music_lists(client: ClientManager.Client, arg: str):
@@ -6533,8 +6500,8 @@ def ooc_cmd_play(client: ClientManager.Client, arg: str):
 
     # Warn if track is not in the music list
     try:
-        client.server.get_song_data(arg, c=client)
-    except ServerError.MusicNotFoundError:
+        client.music_manager.get_music_data(arg)
+    except MusicError.MusicNotFoundError:
         client.send_ooc(f'Warning: `{arg}` is not a recognized track name, so the server will not '
                         'loop it.')
 
@@ -6820,9 +6787,7 @@ def ooc_cmd_randommusic(client: ClientManager.Client, arg: str):
 
     # Find all music tracks
     music_names = list()
-    music_list = client.music_list
-    if music_list is None:
-        music_list = client.server.music_list
+    music_list = client.music_manager.get_music_data()
 
     for item in music_list:
         songs = item['songs']
@@ -7163,8 +7128,8 @@ def ooc_cmd_rplay(client: ClientManager.Client, arg: str):
 
     # Warn if track is not in the music list
     try:
-        client.server.get_song_data(arg, c=client)
-    except ServerError.MusicNotFoundError:
+        client.music_manager.get_music_data(arg)
+    except MusicError.MusicNotFoundError:
         client.send_ooc(f'(X) Warning: `{arg}` is not a recognized track name, so the server will '
                         f'not loop it.')
 
@@ -7447,7 +7412,7 @@ def ooc_cmd_scream_set_range(client: ClientManager.Client, arg: str):
                 raise ArgumentError('You may not include multiple areas when including a special '
                                     'keyword.')
             area_names = '<ALL>'
-            client.area.scream_range = {area.name for area in client.server.area_manager.areas
+            client.area.scream_range = {area.name for area in client.server.area_manager.get_areas()
                                         if area != client.area}
         elif '<REACHABLE_AREAS>' in raw_areas:
             if len(raw_areas) != 1:
@@ -8029,7 +7994,7 @@ def ooc_cmd_switch(client: ClientManager.Client, arg: str):
         raise ArgumentError('You must specify a character name.')
 
     # Obtain char_id if character exists and then try and change to given char if available
-    char_id = client.server.get_char_id_by_name(arg)
+    char_id = client.server.character_manager.get_character_id_by_name(arg)
     client.change_character(char_id, force=client.is_mod)
     client.send_ooc(f'Changed character to {arg}.')
 
@@ -8568,7 +8533,7 @@ def ooc_cmd_transient(client: ClientManager.Client, arg: str):
         client.send_ooc('{} ({}) is {} transient to passage locks.'
                         .format(c.displayname, c.area.id, status[c.is_transient]))
         c.send_ooc('You are {} transient to passage locks.'.format(status[c.is_transient]))
-        c.reload_music_list()  # Update their music list to reflect their new status
+        c.send_music_list_view()  # Update their music list to reflect their new status
 
 
 def ooc_cmd_trial(client: ClientManager.Client, arg: str):
@@ -10737,8 +10702,8 @@ def ooc_cmd_zone_play(client: ClientManager.Client, arg: str):
 
     # Warn if track is not in the music list
     try:
-        client.server.get_song_data(arg, c=client)
-    except ServerError.MusicNotFoundError:
+        client.music_manager.get_music_data(arg)
+    except MusicError.MusicNotFoundError:
         client.send_ooc(f'(X) Warning: `{arg}` is not a recognized track name, so the server will '
                         f'not loop it.')
 
@@ -11380,6 +11345,211 @@ def ooc_cmd_mindreader(client: ClientManager.Client, arg: str):
         client.send_ooc_others(f'(X) {client.displayname} ({client.id}) made themselves be '
                                f'{status2[target.is_mindreader]} mind reader '
                                f'({client.area.id}).', is_zstaff_flex=True)
+
+
+def ooc_cmd_bg_list(client: ClientManager.Client, arg: str):
+    """ (OFFICER ONLY)
+    Sets the server's current background list (what backgrounds areas may normally use at any given
+    time).
+    If given no arguments, it will return the background list to its original value
+    (in config/backgrounds.yaml).
+    Returns an error if the given background list name included relative directories,
+    was not found, caused an OS error when loading, or raised a YAML or asset syntax error when
+    loading.
+
+    SYNTAX
+    /bg_list <bg_list>
+
+    PARAMETERS
+    <bg_list>: Name of the intended background list
+
+    EXAMPLES
+    >>> /bg_list beach
+    Load the "beach" background list.
+    >>> /bg_list
+    Reset the background list to its original value.
+    """
+
+    Constants.assert_command(client, arg, is_officer=True)
+
+    client.server.background_manager.command_list_load(client, arg)
+
+
+def ooc_cmd_bg_list_info(client: ClientManager.Client, arg: str):
+    """ (OFFICER ONLY)
+    Returns the current background list.
+
+    SYNTAX
+    /bg_list_info
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    >>> /bg_list_info
+    May return something like this:
+    | $H: The current background list is the custom list `custom`.
+    """
+
+    Constants.assert_command(client, arg, is_officer=True, parameters='=0')
+
+    client.server.background_manager.command_list_info(client)
+
+
+def ooc_cmd_char_list(client: ClientManager.Client, arg: str):
+    """ (OFFICER ONLY)
+    Sets the server's current character list (what characters a player may use at any given time).
+    If given no arguments, it will return the character list to its original value
+    (in config/characters.yaml).
+    Returns an error if the given character list name included relative directories,
+    was not found, caused an OS error when loading, or raised a YAML or asset syntax error when
+    loading.
+
+    SYNTAX
+    /char_list <char_list>
+
+    PARAMETERS
+    <char_list>: Name of the intended character list
+
+    EXAMPLES
+    >>> /char_list Transylvania
+    Load the "Transylvania" character list.
+    >>> /char_list
+    Reset the character list to its original value.
+    """
+
+    Constants.assert_command(client, arg, is_officer=True)
+
+    client.server.character_manager.command_list_load(client, arg)
+
+
+def ooc_cmd_char_list_info(client: ClientManager.Client, arg: str):
+    """ (OFFICER ONLY)
+    Returns the current character list.
+
+    SYNTAX
+    /char_list_info
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    >>> /char_list_info
+    May return something like this:
+    | $H: The current character list is the custom list `custom`.
+    """
+
+    Constants.assert_command(client, arg, is_officer=True, parameters='=0')
+
+    client.server.character_manager.command_list_info(client)
+
+
+def ooc_cmd_area_list_info(client: ClientManager.Client, arg: str):
+    """ (OFFICER ONLY)
+    Returns the current area list.
+
+    SYNTAX
+    /area_list_info
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    >>> /area_list_info
+    May return something like this:
+    | $H: The current area list is the custom list `beach`.
+    """
+
+    Constants.assert_command(client, arg, is_officer=True, parameters='=0')
+
+    client.server.area_manager.command_list_info(client)
+
+
+def ooc_cmd_music_list_info(client: ClientManager.Client, arg: str):
+    """
+    Returns your current music list.
+
+    SYNTAX
+    /music_list_info
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    >>> /music_list_info
+    May return something like this:
+    | $H: The current music list is the custom list `trial`.
+    """
+
+    Constants.assert_command(client, arg,  parameters='=0')
+
+    client.music_manager.command_list_info(client)
+
+
+def ooc_cmd_bg_period(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Changes the background of the current area associated with the given period.
+    Returns an error if area background is locked and you are unathorized or if the sought
+    background does not exist.
+
+    SYNTAX
+    /bg_period <period_name> <background_name>
+
+    PARAMETERS
+    <period_name>: Period name
+    <background_name>: New background name, possibly with spaces (e.g. Principal's Room)
+
+    EXAMPLES
+    >>> /bg_period night Beach (night)
+    Changes background to Beach (night) whenever the area has a night period active.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='>1')
+    if not client.is_mod and client.area.bg_lock:
+        raise AreaError("This area's background is locked.")
+
+    args = arg.split()
+    tod_name = args[0]
+    bg_name = ' '.join(args[1:])
+
+    client.area.change_background_tod(bg_name, tod_name, validate=False)
+    client.send_ooc(f'You changed the background associated with period `{tod_name}` to '
+                    f'`{bg_name}`.')
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] changed the background '
+                            f'associated with period `{tod_name}` to `{bg_name}`.',
+                            is_zstaff_flex=True)
+    logger.log_server('[{}][{}]Changed background associated with period `{}` to {}'
+                      .format(client.area.id, client.get_char_name(), tod_name, bg_name), client)
+
+
+def ooc_cmd_bg_period_end(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Removes the background of the current area associated with the given period
+    Returns an error if area background is locked and you are unathorized or if the sought
+    background does not exist.
+
+    SYNTAX
+    /bg_period_end <period_name>
+
+    PARAMETERS
+    <period_name>: Period name
+
+    EXAMPLES
+    >>> /bg_period_end night
+    Removes the background associated with the night period of the current area.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='=1')
+    if not client.is_mod and client.area.bg_lock:
+        raise AreaError("This area's background is locked.")
+
+    client.area.change_background_tod('', arg, validate=False)
+    client.send_ooc(f'You removed the background associated with period `{arg}`.')
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] removed the background '
+                            f'associated with period `{arg}`.',
+                            is_zstaff_flex=True)
+    logger.log_server('[{}][{}]Removed background associated with period `{}`'
+                      .format(client.area.id, client.get_char_name(), arg), client)
 
 
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):

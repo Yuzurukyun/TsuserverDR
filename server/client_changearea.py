@@ -851,6 +851,8 @@ class ClientChangeArea:
 
         if client.is_blind:
             client.send_background(name=client.server.config['blackout_background'])
+        elif not area.lights:
+            client.send_background(name=client.server.config['blackout_background'])
         else:
             client.send_background(name=client.area.background,
                                    tod_backgrounds=client.area.get_background_tod())
@@ -863,7 +865,7 @@ class ClientChangeArea:
         if found_something:
             client.send_ic_attention(ding=ding_something)
 
-        client.reload_music_list() # Update music list to include new area's reachable areas
+        client.send_music_list_view() # Update music list to include new area's reachable areas
         # If new area has lurk callout timer, reset it to that, provided it makes sense
         client.check_lurk()
         client.server.tasker.create_task(client, ['as_afk_kick', area.afk_delay, area.afk_sendto])

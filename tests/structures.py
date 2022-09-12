@@ -122,7 +122,7 @@ class _Unittest(unittest.TestCase):
         if group == 'C':
             structure = self.server.client_manager.clients
         elif group == 'A':
-            structure = self.server.area_manager.areas
+            structure = self.server.area_manager.get_areas()
 
         if yes == 1:
             yes = {x for x in structure if x not in no}
@@ -438,17 +438,17 @@ class _TestClientManager(ClientManager):
                     if remove_match:
                         structure.pop(i)
                     return i, act_args
+
+            if somewhere:
+                connector = 'somewhere among'
             else:
-                if somewhere:
-                    connector = 'somewhere among'
-                else:
-                    connector = 'at the start of'
-                err = '{} had a packet not found.'.format(self)
-                err += ('\r\nCannot find \r\n {} \r\n{} the unhandled packets list'
-                        .format(exp_args, connector))
-                err += ('\r\nCurrent packets: \r\n*{}'
-                        .format('\r\n*'.join([str(x) for x in structure])))
-                raise AssertionError(err)
+                connector = 'at the start of'
+            err = '{} had a packet not found.'.format(self)
+            err += ('\r\nCannot find \r\n {} \r\n{} the unhandled packets list'
+                    .format(exp_args, connector))
+            err += ('\r\nCurrent packets: \r\n*{}'
+                    .format('\r\n*'.join([str(x) for x in structure])))
+            raise AssertionError(err)
 
         def assert_packet(self, command_type, args, over=False, ooc_over=False, ic_over=False,
                           somewhere=False, allow_partial_match=False):
@@ -841,7 +841,7 @@ class _TestClientManager(ClientManager):
                 # 16 = video
                 # 17 = hide_character
                 # 18 = client_id
-                if not (len(args) == 19):
+                if (len(args) != 19):
                     raise ValueError(f'Malformed MS packet for an IC message {args}: wrong length '
                                      f'({len(args)}).')
                 self.received_ic.append(args)
@@ -902,7 +902,10 @@ class _TestTsuserverDR(TsuserverDR):
         c.send_command_cts("RD#%")
 
         c.send_command_cts("CC#{}#{}#{}#%".format(c.id, char_id, hdid))
-        exp = self.char_list[char_id] if char_id >= 0 else self.config['spectator_name']
+        if char_id >= 0:
+            exp = self.character_manager.get_characters()[char_id]
+        else:
+            exp = self.config['spectator_name']
         res = c.get_char_name()
         assert exp == res, (char_id, exp, res)
         c.discard_all()
@@ -923,7 +926,7 @@ class _TestTsuserverDR(TsuserverDR):
 
         for i in range(number):
             area = self.area_manager.default_area()
-            for j in range(len(self.char_list)):
+            for j in range(len(self.character_manager.get_characters())):
                 if area.is_char_available(j):
                     char_id = j
                     break

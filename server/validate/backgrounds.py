@@ -34,6 +34,10 @@ class ValidateBackgrounds(Validate):
                    f'{type(contents).__name__}: {contents}.')
             raise ServerError.FileSyntaxError(msg)
 
+        if not contents:
+            msg = 'Expected the background list to have at least one background, found it had none.'
+            raise ServerError.FileSyntaxError(msg)
+
         for (i, background) in enumerate(contents.copy()):
             if background is None:
                 msg = (f'Expected all background names to be defined, '

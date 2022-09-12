@@ -25,7 +25,7 @@ all necessary actions in order to simulate different rooms.
 
 from __future__ import annotations
 import typing
-from typing import Any, Callable, Dict, List, Set, Tuple
+from typing import Any, Callable, Dict, List, Set, Tuple, Union
 if typing.TYPE_CHECKING:
     # Avoid circular referencing
     from server.client_manager import ClientManager
@@ -36,19 +36,21 @@ if typing.TYPE_CHECKING:
 import asyncio
 import time
 
-from server import clients, logger
+from server import logger
+from server.asset_manager import AssetManager
 from server.constants import Constants
 from server.evidence import EvidenceList
-from server.exceptions import AreaError, ServerError
+from server.exceptions import AreaError, MusicError, ServerError
 from server.subscriber import Publisher
 
 from server.validate.areas import ValidateAreas
 
 
-class AreaManager:
+class AreaManager(AssetManager):
     """
-    Create a new manager for the areas in a server.
-    Contains the Area object definition, as well as the server's area list.
+    A manager for areas. Area managers store a list of areas either from a
+    loaded file or an adequate Python representation.
+    It also contains the Area object definition.
     """
 
     class Area:
@@ -134,12 +136,16 @@ class AreaManager:
 
             # Store the current description separately from the default description
             self.description = self.default_description
-            # Have a background backup in order to restore temporary background changes
-            self.background_backup = self.background
 
             self.default_reachable_areas = self.reachable_areas.copy()
 
             self.reachable_areas.add(self.name) # Area can always reach itself
+
+        def background_backup(self) -> str:
+            Constants.warn_deprecated('area.background_backup',
+                                      'area.background',
+                                      '4.4')
+            return self.background
 
         @property
         def clients(self) -> Set[ClientManager.Client]:
@@ -192,7 +198,7 @@ class AreaManager:
             try:
                 self.clients.remove(client)
             except KeyError:
-                if not client.id == -1: # Ignore pre-clients (before getting playercount)
+                if client.id != -1: # Ignore pre-clients (before getting playercount)
                     info = 'Area {} does not contain client {}'.format(self, client)
                     raise KeyError(info)
 
@@ -302,16 +308,61 @@ class AreaManager:
                 If the server attempted to validate the background name and failed.
             """
 
-            if validate and bg.lower() not in [name.lower() for name in self.server.backgrounds]:
+            if validate and not self.server.background_manager.is_background(bg):
                 raise AreaError('Invalid background name.')
 
-            if self.lights:
-                self.background = bg
-            else:
-                self.background = self.server.config['blackout_background']
-                self.background_backup = bg
+            self.background = bg
             for c in self.clients:
                 if c.is_blind and not override_blind:
+                    c.send_background(name=self.server.config['blackout_background'])
+                elif not c.area.lights:
+                    c.send_background(name=self.server.config['blackout_background'])
+                else:
+                    c.send_background(name=self.background,
+                                      tod_backgrounds=self.get_background_tod())
+
+        def change_background_tod(self, bg: str, tod: str, validate: bool = True,
+                                  override_blind: bool = False):
+            """
+            If `bg` is non-empty, change the background of the given period of the current area.
+            Otherwise, remove the background associated with the given period.
+
+            Parameters
+            ----------
+            bg: str
+                New background name.
+            tod: str
+                Time of day.
+            validate: bool, optional
+                Whether to first determine if background name is listed as a server background
+                before changing. Defaults to True.
+            override_blind: bool, optional
+                Whether to send the intended background to blind people as opposed to the server
+                blackout one. Defaults to False (send blackout).
+
+            Raises
+            ------
+            AreaError
+                If the background name is non-empty and the server attempted to validate the
+                background name and failed, or if the background name is empty and the area already
+                has no backgroudn associated with the given period.
+            """
+
+            if validate and not self.server.background_manager.is_background(bg):
+                raise AreaError('Invalid background name.')
+
+            if tod not in self.background_tod and not bg:
+                raise AreaError(f'There already is no background associated with the period '
+                                f'`{tod}`.')
+            if bg:
+                self.background_tod[tod] = bg
+            else:
+                self.background_tod.pop(tod)
+
+            for c in self.clients:
+                if c.is_blind and not override_blind:
+                    c.send_background(name=self.server.config['blackout_background'])
+                elif not c.area.lights:
                     c.send_background(name=self.server.config['blackout_background'])
                 else:
                     c.send_background(name=self.background,
@@ -342,7 +393,8 @@ class AreaManager:
 
             unavailable = {x.char_id for x in self.clients if x.has_character()}
             unavailable |= more_unavail_chars
-            restricted = {self.server.char_list.index(name) for name in self.restricted_chars}
+            restricted = {self.server.character_manager.get_character_id_by_name(name)
+                          for name in self.restricted_chars}
 
             if not allow_restricted:
                 unavailable |= restricted
@@ -376,7 +428,8 @@ class AreaManager:
 
             unusable = self.get_chars_unusable(allow_restricted=allow_restricted,
                                                more_unavail_chars=more_unavail_chars)
-            available = {i for i in range(len(self.server.char_list)) if i not in unusable}
+            available = {i for i in range(len(self.server.character_manager.get_characters()))
+                         if i not in unusable}
 
             if not available:
                 raise AreaError('No available characters.')
@@ -608,19 +661,9 @@ class AreaManager:
             if self.lights == new_lights:
                 raise AreaError('The lights are already turned {}.'.format(status[new_lights]))
 
-            # Change background to match new status
-            if new_lights:
-                if self.background == self.server.config['blackout_background']:
-                    intended_background = self.background_backup
-                else:
-                    intended_background = self.background
-            else:
-                if self.background != self.server.config['blackout_background']:
-                    self.background_backup = self.background
-                intended_background = self.background
-
             self.lights = new_lights
-            self.change_background(intended_background, validate=False) # Allow restoring custom bg.
+
+            self.change_background(self.background, validate=False)  # Allow restoring custom bg.
 
             # Announce light status change
             if initiator: # If a player initiated the change light sequence, send targeted messages
@@ -715,11 +758,9 @@ class AreaManager:
             ------
             ServerError.FileInvalidNameError:
                 If `name` references parent or current directories (e.g. "../hi.opus")
-            ServerError.MusicNotFoundError:
+            MusicError.MusicNotFoundError:
                 If `name` is not a music track in the server or client's music list and
                 `raise_if_not_found` is True.
-            ServerError (with code 'FileInvalidName')
-                If `name` references parent or current directories (e.g. "../hi.opus")
             """
 
             if not pargs:
@@ -729,8 +770,8 @@ class AreaManager:
                 raise ServerError.FileInvalidNameError(info)
 
             try:
-                name, length, source = self.server.get_song_data(name, c=client)
-            except ServerError.MusicNotFoundError:
+                name, length, source = client.music_manager.get_music_data(name)
+            except MusicError.MusicNotFoundError:
                 if raise_if_not_found:
                     raise
                 name, length, source = name, -1, ''
@@ -1108,51 +1149,184 @@ class AreaManager:
         Parameters
         ----------
         server: TsuserverDR
-            The server this area belongs to.
+            The server this area manager belongs to.
         """
 
-        self.server = server
-        self.areas = []
+        super().__init__(server)
+        self._areas = []
+        self._source_file = 'config/areas.yaml'
         self.area_names = set()
-        self.publisher = Publisher(self)
-        self.load_areas()
+        self.load_file(self._source_file)
 
-    def load_areas(self, area_list_file: str = 'config/areas.yaml'):
+    @property
+    def areas(self) -> List[Area]:
+        Constants.warn_deprecated('AreaManager.areas',
+                                  'AreaManager.get_areas()',
+                                  '4.4')
+        return self.get_areas()
+
+    def get_name(self) -> str:
         """
-        Load an area list.
+        Return `'area list'`.
+
+        Returns
+        -------
+        str
+            `'area list'`.
+        """
+
+        return 'area list'
+
+    def get_default_file(self) -> str:
+        """
+        Return `'config/areas.yaml'`.
+
+        Returns
+        -------
+        str
+            `'config/areas.yaml'`.
+        """
+
+        return 'config/areas.yaml'
+
+    def get_loader(self) -> Callable[[str, ], str]:
+        """
+        Return `self.server.load_file`.
+
+        Returns
+        -------
+        Callable[[str, ], str]
+            `self.server.load_file`.
+        """
+
+        return self.server.load_areas
+
+    def get_source_file(self) -> Union[str, None]:
+        """
+        Return the source file of the last area list the manager successfully loaded relative to
+        the root directory of the server, or None if the latest loaded area list was loaded raw.
+
+        Returns
+        -------
+        Union[str, None]
+            Source file or None.
+        """
+
+        return self._source_file
+
+    def get_custom_folder(self) -> str:
+        """
+        Return `'config/area_lists'`.
+
+        Returns
+        -------
+        str
+            `'config/area_lists'`.
+        """
+
+        return 'config/area_lists'
+
+    def get_areas(self) -> List[Area]:
+        """
+        Return a copy of the areas managed by this manager.
+
+        Returns
+        -------
+        List[Area]
+            Areas managed.
+        """
+
+        return self._areas.copy()
+
+    def load_areas(self, area_list_file: str = 'config/areas.yaml') -> List[Area]:
+        Constants.warn_deprecated('area_manager.load_areas',
+                                  'area_manager.load_file',
+                                  '4.4')
+        return self.load_file(area_list_file)
+
+    def load_file(self, source_file: str) -> List:
+        """
+        Load an area list from a file.
 
         Parameters
         ----------
-        area_list_file: str, optional
-            Location of the area list to load. Defaults to 'config/areas.yaml'.
+        source_file: str
+            Location of the area list to load.
+
+        Returns
+        -------
+        List[AreaManager.Area]
+            Areas.
 
         Raises
         ------
-        AreaError
-            If any one of the following conditions are met:
-            * An area has no 'area' or no 'background' tag.
-            * An area uses the deprecated 'sound_proof' tag.
-            * Two areas have the same name.
-            * An area parameter was left deliberately blank as opposed to fully erased.
-            * An area has a passage to an undefined area.
-
-        FileNotFound
-            If the area list could not be found.
+        ServerError.FileNotFoundError
+            If the file was not found.
+        ServerError.FileOSError
+            If there was an operating system error when opening the file.
+        ServerError.YAMLInvalidError
+            If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
+        ServerError.FileSyntaxError
+            If the file failed verification for areas.
         """
 
-        areas = ValidateAreas().validate(area_list_file, extra_parameters={
-            'server_character_list': self.server.char_list,
+        areas = ValidateAreas().validate(source_file, extra_parameters={
+            'server_character_list': self.server.character_manager.get_characters(),
             'server_default_area_description': self.server.config['default_area_description']
             })
+        areas = self._load_areas(areas, source_file)
+        self._check_structure()
+
+        return areas
+
+    def load_raw(self, yaml_contents: Dict) -> List[Area]:
+        """
+        Load an area list from a YAML representation.
+
+        Parameters
+        ----------
+        yaml_contents: Dict
+            YAML representation.
+
+        Returns
+        -------
+        List[AreaManager.Area]
+            Areas.
+
+        Raises
+        ------
+        ServerError.FileNotFoundError
+            If the file was not found.
+        ServerError.FileOSError
+            If there was an operating system error when opening the file.
+        ServerError.YAMLInvalidError
+            If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
+        ServerError.FileSyntaxError
+            If the file failed verification for its asset type.
+        """
+
+        areas = ValidateAreas().validate_contents(yaml_contents, extra_parameters={
+            'server_character_list': self.server.character_manager.get_characters(),
+            'server_default_area_description': self.server.config['default_area_description']
+            })
+        areas = self._load_areas(areas, None)
+        self._check_structure()
+
+        return areas
+
+    def _load_areas(self, areas: List[Area], source_file: Union[str, None]) -> List[Area]:
+        self.server.old_area_list = self._source_file
 
         # Now we are ready to create the areas
+        self._source_file = source_file
+
         temp_areas = list()
         for (i, area_item) in enumerate(areas):
             temp_areas.append(self.Area(i, self.server, area_item))
 
-        old_areas = self.areas
-        self.areas = temp_areas
-        self.area_names = [area.name for area in self.areas]
+        old_areas = self.get_areas()
+        self._areas = temp_areas
+        self.area_names = [area.name for area in self._areas]
 
         # Only once all areas have been created, actually set the corresponding values
         # Helps avoiding junk area lists if there was an error
@@ -1186,7 +1360,7 @@ class AreaManager:
         self.publisher.publish('areas_loaded', dict())
 
         # If the default area ID is now past the number of available areas, reset it back to zero
-        if self.server.default_area >= len(self.areas):
+        if self.server.default_area >= len(self._areas):
             self.server.default_area = 0
 
         for area in old_areas:
@@ -1230,16 +1404,14 @@ class AreaManager:
         for area in old_areas:
             area.destroy()
 
-        # Update the server's area list only once everything is successful
-        self.server.old_area_list = self.server.area_list
-        self.server.area_list = area_list_file
+        return self._areas.copy()
 
     def default_area(self) -> AreaManager.Area:
         """
         Return the Area object corresponding to the server's default area.
         """
 
-        return self.areas[self.server.default_area]
+        return self._areas[self.server.default_area]
 
     def get_area_by_name(self, name: str) -> AreaManager.Area:
         """
@@ -1261,7 +1433,7 @@ class AreaManager:
             If no area has the given name.
         """
 
-        for area in self.areas:
+        for area in self._areas:
             if area.name == name:
                 return area
         raise AreaError('Area not found.')
@@ -1286,7 +1458,7 @@ class AreaManager:
             If no area has the given ID.
         """
 
-        for area in self.areas:
+        for area in self._areas:
             if area.id == area_id:
                 return area
         raise AreaError('Area not found.')
@@ -1308,10 +1480,22 @@ class AreaManager:
         Returns
         ------
         set of self.Area
-            All areas in `self.areas` that satisfy area1.id <= area.id <= area2.id
+            All areas in `self.get_areas()` that satisfy area1.id <= area.id <= area2.id
         """
 
         return {self.get_area_by_id(i) for i in range(area1.id, area2.id+1)}
+
+    def get_client_view(self, client: ClientManager.Client, from_area: Area) -> List[str]:
+        # Determine whether to filter the areas in the results
+        need_to_check = from_area is None or client.is_staff() or client.is_transient
+
+        # Now add areas
+        prepared_area_list = list()
+        for area in self.get_areas():
+            if need_to_check or area.name in from_area.visible_areas:
+                prepared_area_list.append("{}-{}".format(area.id, area.name))
+
+        return prepared_area_list
 
     def change_passage_lock(self, client: ClientManager.Client,
                             areas: List[AreaManager.Area],
@@ -1348,6 +1532,20 @@ class AreaManager:
                     areas[i].visible_areas.add(areas[1-i].name)
 
             for client in areas[i].clients:
-                client.reload_music_list()
+                client.send_music_list_view()
 
         return now_reachable
+
+    def _check_structure(self):
+        """
+        Assert that all invariants specified in the class description are maintained.
+
+        Raises
+        ------
+        AssertionError
+            If any of the invariants are not maintained.
+
+        """
+
+        # 1. At least one area.
+        assert self._areas

@@ -72,6 +72,18 @@ class Validate():
         contents : Iterable
             Contents of the YAML file.
 
+        Raises
+        ------
+        ServerError.FileInvalidNameError
+            If `file_name` includes relative directories.
+        ServerError.FileNotFoundError
+            If the file was not found.
+        ServerError.FileOSError
+            If there was an operating system error when opening the file.
+        ServerError.YAMLInvalidError
+            If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
+        ServerError.FileSyntaxError
+            If the file failed verification for its asset type.
         """
 
         with Constants.fopen(file_name, disallow_parent_folder=True, mode='r',

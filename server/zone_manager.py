@@ -25,7 +25,7 @@ as well as perform tasks only on the areas of the zone.
 
 from __future__ import annotations
 import typing
-from typing import Any, Set
+from typing import Any, Dict, Set
 if typing.TYPE_CHECKING:
     # Avoid circular referencing
     from server.area_manager import AreaManager
@@ -629,8 +629,6 @@ class ZoneManager:
             for watcher in self._watchers:
                 self._cleanup_removed_watcher(watcher)
 
-            return
-
         def is_deleted(self) -> bool:
             """
             Returns whether the zone was previously deleted.
@@ -815,7 +813,7 @@ class ZoneManager:
         self._check_structure()
         return zone_id
 
-    def get_zones(self) -> Set[ZoneManager.Zone]:
+    def get_zones(self) -> Dict[str, ZoneManager.Zone]:
         """
         Return all of the zones this manager is handling.
 
@@ -1040,7 +1038,7 @@ class ZoneManager:
                 watchers_so_far.add(watcher)
 
         # 7.
-        for area in self._server.area_manager.areas:
+        for area in self._server.area_manager.get_areas():
             if area in areas_so_far:
                 continue
             assert area.in_zone is None, (
