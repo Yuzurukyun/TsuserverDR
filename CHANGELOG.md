@@ -801,7 +801,7 @@
 * Fixed clients sending legitimate split packets being abnormally disconnected
 * Fixed character list reloads crashing when someone is in server select
 
-### (4.3.5)
+### 220912a (4.3.5)
 * Added client version and server version consistently to printed server error messages
 * Added support for loading custom background lists without changing `config/backgrounds.yaml` via the `config/background_lists` folder and commands
   - /bg_list
