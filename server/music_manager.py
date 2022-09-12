@@ -50,6 +50,9 @@ class MusicManager(AssetManager):
     def get_source_file(self) -> Union[str, None]:
         return self._source_file
 
+    def get_custom_folder(self) -> str:
+        return 'config/music_lists'
+
     def validate_file(self, source_file: Union[str, None] = None) -> List[Dict[str, Any]]:
         if source_file is None:
             source_file = self._source_file

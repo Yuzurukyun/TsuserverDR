@@ -1155,7 +1155,7 @@ class AreaManager(AssetManager):
         self._areas = []
         self._source_file = 'config/areas.yaml'
         self.area_names = set()
-        self.load_areas()
+        self.load_file()
 
     @property
     def areas(self) -> List[Area]:
@@ -1190,14 +1190,14 @@ class AreaManager(AssetManager):
 
     def get_loader(self) -> Callable[[str, ], str]:
         """
-        Return `self.server.load_areas`.
+        Return `self.server.load_file`.
 
         Returns
         -------
         Callable[[str, ], str]
-            `self.server.load_areas`.
+            `self.server.load_file`.
         """
-        return self.server.load_areas
+        return self.server.load_file
 
     def get_source_file(self) -> Union[str, None]:
         """
@@ -1210,6 +1210,18 @@ class AreaManager(AssetManager):
             Source file or None.
         """
         return self._source_file
+
+    def get_custom_folder(self) -> str:
+        """
+        Return `'config/area_lists'`.
+
+        Returns
+        -------
+        str
+            `'config/area_lists'`.
+        """
+
+        return 'config/area_lists'
 
     def get_areas(self) -> List[Area]:
         """
@@ -1224,6 +1236,12 @@ class AreaManager(AssetManager):
         return self._areas.copy()
 
     def load_areas(self, area_list_file: str = 'config/areas.yaml') -> List[Area]:
+        Constants.warn_deprecated('area_manager.load_areas',
+                                  'area_manager.load_file',
+                                  '4.4')
+        return self.load_file(source_file=area_list_file)
+
+    def load_file(self, source_file: str = 'config/areas.yaml') -> List:
         """
         Load an area list from a file.
 
@@ -1249,16 +1267,16 @@ class AreaManager(AssetManager):
             If the file failed verification for its asset type.
         """
 
-        areas = ValidateAreas().validate(area_list_file, extra_parameters={
+        areas = ValidateAreas().validate(source_file, extra_parameters={
             'server_character_list': self.server.character_manager.get_characters(),
             'server_default_area_description': self.server.config['default_area_description']
             })
-        areas = self._load_areas(areas, area_list_file)
+        areas = self._load_areas(areas, source_file)
         self._check_structure()
 
         return areas
 
-    def load_areas_raw(self, yaml_contents: Dict) -> List[Area]:
+    def load_raw(self, yaml_contents: Dict) -> List[Area]:
         """
         Load an area list from a YAML representation.
 

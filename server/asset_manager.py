@@ -29,7 +29,7 @@ import typing
 
 from abc import ABC, abstractmethod
 
-from typing import Any, Callable, Union
+from typing import Any, Callable, List, Union
 
 from server.exceptions import ServerError
 from server.subscriber import Publisher
@@ -112,7 +112,8 @@ class AssetManager(ABC):
 
         raise NotImplementedError
 
-    def get_default_custom_folder(self) -> str:
+    @abstractmethod
+    def get_custom_folder(self) -> str:
         """
         Return the location of the folder relative to the server root directory where custom assets
         will be loaded from.
@@ -122,7 +123,44 @@ class AssetManager(ABC):
         str
             Location.
         """
-        return f'config/{self.get_name().replace(" ", "_")}s'
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def load_file(source_file: str = 'config/assets.yaml') -> List:
+        """
+        Load assets from a file relative to the server root directory.
+
+        Parameters
+        ----------
+        source_file : str, optional
+            File to load, by default 'config/assets.yaml'
+
+        Returns
+        -------
+        List
+            List of generated assets.
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def load_raw(raw: Any) -> List:
+        """
+        Load assets from a Python representation.
+
+        Parameters
+        ----------
+        raw : Any
+            Assets to load
+
+        Returns
+        -------
+        List
+            List of generated assets.
+        """
+
+        raise NotImplementedError
 
     def command_list_load(self, client: ClientManager.Client, file: str,
                           notify_others: bool = True):
@@ -157,7 +195,7 @@ class AssetManager(ABC):
             source_file = self.get_default_file()
             msg = f'the default {self.get_name()} file'
         else:
-            source_file = f'{self.get_default_custom_folder()}/{file}.yaml'
+            source_file = f'{self.get_custom_folder()}/{file}.yaml'
             msg = f'the custom {self.get_name()} file `{source_file}`'
         fail_msg = f'Unable to load {msg}'
 
@@ -199,9 +237,9 @@ class AssetManager(ABC):
         raw_name = self.get_source_file()
         if raw_name is None:
             name = 'a non-standard list'
-        elif raw_name.startswith(self.get_default_custom_folder()):
+        elif raw_name.startswith(self.get_custom_folder()):
             name = (f'the custom list '
-                    f'`{raw_name[len(self.get_default_custom_folder())+1:-len(".yaml")]}`')
+                    f'`{raw_name[len(self.get_custom_folder())+1:-len(".yaml")]}`')
         else:
             name = 'the default list'
 

@@ -51,6 +51,9 @@ class BackgroundManager(AssetManager):
     def get_source_file(self) -> Union[str, None]:
         return self._source_file
 
+    def get_custom_folder(self) -> str:
+        return 'config/background_lists'
+
     def get_default_background(self) -> str:
         return self._default_background
 

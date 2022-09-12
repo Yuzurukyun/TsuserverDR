@@ -362,7 +362,7 @@ class TsuserverDR:
             If the file failed verification for its asset type.
         """
 
-        areas = self.area_manager.load_areas(area_list_file=source_file)
+        areas = self.area_manager.load_file(source_file=source_file)
         return areas.copy()
 
     def load_backgrounds(self, source_file: str = 'config/backgrounds.yaml') -> List[str]:
