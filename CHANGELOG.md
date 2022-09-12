@@ -803,7 +803,6 @@
 
 ### (4.3.5)
 * Added client version and server version consistently to printed server error messages
-* Fixed /lasterror providing duplicate error information
 * Added support for loading custom background lists without changing `config/backgrounds.yaml` via the `config/background_lists` folder and commands
   - /bg_list
   - /bg_list_info
@@ -812,3 +811,8 @@
   - /char_list_info
 * Updated wording of /area_list and /music_list so that it matches the wording of /bg_list and /char_list on success or failure
 * Added /area_list_info and /music_list_info, which returns the name of the current area list and music list respectively
+* Added support for changing backgrounds in an area associated with periods via commands
+  - /bg_period
+  - /bg_period_end
+* Fixed /lasterror providing duplicate error information
+* Fixed /clock_period erroring out if a non-numerical invalid hour start or hour length was given.
