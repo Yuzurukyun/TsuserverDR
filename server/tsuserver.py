@@ -53,10 +53,8 @@ from server.timer_manager import TimerManager
 from server.trial_manager import TrialManager
 from server.zone_manager import ZoneManager
 
-from server.validate.characters import ValidateCharacters
 from server.validate.config import ValidateConfig
 from server.validate.gimp import ValidateGimp
-from server.validate.music import ValidateMusic
 
 
 class TsuserverDR:
@@ -70,8 +68,8 @@ class TsuserverDR:
         self.release = 4
         self.major_version = 3
         self.minor_version = 5
-        self.segment_version = 'b2'
-        self.internal_version = 'm220911b'
+        self.segment_version = 'RC1'
+        self.internal_version = 'm220912a'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
