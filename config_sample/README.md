@@ -13,7 +13,7 @@ With your copy of this software, you should check that you have the following fi
 * `music.yaml`
 * `music_lists.yaml`
 
-As well as two folders:
+As well as these folders:
 
 * `area_lists`
 * `background_lists`

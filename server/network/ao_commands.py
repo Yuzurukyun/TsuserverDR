@@ -274,7 +274,7 @@ def net_cmd_rm(client: ClientManager.Client, pargs: Dict[str, Any]):
 
     # Force the server to rebuild the music list, so that clients who just join get the correct
     # music list (as well as every time they request an updated music list directly).
-    area_and_music_list = client.get_area_and_music_list()
+    area_and_music_list = client.get_area_and_music_list_view()
     client.send_command_dict('SM', {
         'music_ao2_list': area_and_music_list,
         })

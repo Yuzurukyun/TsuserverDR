@@ -920,7 +920,7 @@ class ClientManager:
         def reload_character(self):
             self.change_character(self.char_id, force=True)
 
-        def get_area_and_music_list(self):
+        def get_area_and_music_list_view(self):
             area_list = self.server.area_manager.get_client_view(self, from_area=self.area)
             music_list = self.music_manager.get_client_view()
 

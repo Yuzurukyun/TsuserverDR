@@ -323,7 +323,8 @@ class AreaManager(AssetManager):
         def change_background_tod(self, bg: str, tod: str, validate: bool = True,
                                   override_blind: bool = False):
             """
-            Change the background of the current period of the current area.
+            If `bg` is non-empty, change the background of the given period of the current area.
+            Otherwise, remove the background associated with the given period.
 
             Parameters
             ----------
@@ -341,7 +342,9 @@ class AreaManager(AssetManager):
             Raises
             ------
             AreaError
-                If the server attempted to validate the background name and failed.
+                If the background name is non-empty and the server attempted to validate the
+                background name and failed, or if the background name is empty and the area already
+                has no backgroudn associated with the given period.
             """
 
             if validate and not self.server.background_manager.is_background(bg):
