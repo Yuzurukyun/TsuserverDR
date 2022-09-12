@@ -38,6 +38,7 @@ if typing.TYPE_CHECKING:
     from client_manager import ClientManager
     from server.tsuserver import TsuserverDR
 
+
 class AssetManager(ABC):
     """
     A quasi-abstract base class for managers of assets.
@@ -106,7 +107,7 @@ class AssetManager(ABC):
         Returns
         -------
         Union[str, None]
-            Source file.
+            Source file or None.
         """
 
         raise NotImplementedError

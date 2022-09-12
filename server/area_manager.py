@@ -1165,23 +1165,67 @@ class AreaManager(AssetManager):
         return self.get_areas()
 
     def get_name(self) -> str:
+        """
+        Return `'area list'`.
+
+        Returns
+        -------
+        str
+            `'area list'`.
+        """
+
         return 'area list'
 
     def get_default_file(self) -> str:
+        """
+        Return `'config/areas.yaml'`.
+
+        Returns
+        -------
+        str
+            `'config/areas.yaml'`.
+        """
+
         return 'config/areas.yaml'
 
     def get_loader(self) -> Callable[[str, ], str]:
+        """
+        Return `self.server.load_areas`.
+
+        Returns
+        -------
+        Callable[[str, ], str]
+            `self.server.load_areas`.
+        """
         return self.server.load_areas
 
-    def get_areas(self) -> List[Area]:
-        return self._areas.copy()
-
     def get_source_file(self) -> Union[str, None]:
+        """
+        Return the source file of the last area list the manager successfully loaded relative to
+        the root directory of the server, or None if the latest loaded area list was loaded raw.
+
+        Returns
+        -------
+        Union[str, None]
+            Source file or None.
+        """
         return self._source_file
+
+    def get_areas(self) -> List[Area]:
+        """
+        Return a copy of the areas managed by this manager.
+
+        Returns
+        -------
+        List[Area]
+            Areas managed.
+        """
+
+        return self._areas.copy()
 
     def load_areas(self, area_list_file: str = 'config/areas.yaml') -> List[Area]:
         """
-        Load an area list.
+        Load an area list from a file.
 
         Parameters
         ----------
@@ -1215,6 +1259,31 @@ class AreaManager(AssetManager):
         return areas
 
     def load_areas_raw(self, yaml_contents: Dict) -> List[Area]:
+        """
+        Load an area list from a YAML representation.
+
+        Parameters
+        ----------
+        yaml_contents: Dict
+            YAML representation.
+
+        Returns
+        -------
+        List[AreaManager.Area]
+            Areas.
+
+        Raises
+        ------
+        ServerError.FileNotFoundError
+            If the file was not found.
+        ServerError.FileOSError
+            If there was an operating system error when opening the file.
+        ServerError.YAMLInvalidError
+            If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
+        ServerError.FileSyntaxError
+            If the file failed verification for its asset type.
+        """
+
         areas = ValidateAreas().validate_contents(yaml_contents, extra_parameters={
             'server_character_list': self.server.character_manager.get_characters(),
             'server_default_area_description': self.server.config['default_area_description']
@@ -1446,5 +1515,16 @@ class AreaManager(AssetManager):
 
         return now_reachable
 
-    def _check_structure(self) -> bool:
+    def _check_structure(self):
+        """
+        Assert that all invariants specified in the class description are maintained.
+
+        Raises
+        ------
+        AssertionError
+            If any of the invariants are not maintained.
+
+        """
+
+        # 1. At least one area.
         assert self._areas
