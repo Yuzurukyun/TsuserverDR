@@ -955,7 +955,7 @@ class ClientManager:
                                       '4.4',)
 
             if new_music_file:
-                self.music_manager.load_music(new_music_file)
+                self.music_manager.load_file(new_music_file)
 
             self.send_music_list_view()
 

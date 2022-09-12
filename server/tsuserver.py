@@ -53,10 +53,8 @@ from server.timer_manager import TimerManager
 from server.trial_manager import TrialManager
 from server.zone_manager import ZoneManager
 
-from server.validate.characters import ValidateCharacters
 from server.validate.config import ValidateConfig
 from server.validate.gimp import ValidateGimp
-from server.validate.music import ValidateMusic
 
 
 class TsuserverDR:
@@ -70,8 +68,8 @@ class TsuserverDR:
         self.release = 4
         self.major_version = 3
         self.minor_version = 5
-        self.segment_version = 'b2'
-        self.internal_version = 'm220911b'
+        self.segment_version = 'RC1'
+        self.internal_version = 'm220912a'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
@@ -362,7 +360,7 @@ class TsuserverDR:
             If the file failed verification for its asset type.
         """
 
-        areas = self.area_manager.load_areas(area_list_file=source_file)
+        areas = self.area_manager.load_file(source_file)
         return areas.copy()
 
     def load_backgrounds(self, source_file: str = 'config/backgrounds.yaml') -> List[str]:
@@ -393,7 +391,7 @@ class TsuserverDR:
         """
 
         old_backgrounds = self.background_manager.get_backgrounds()
-        backgrounds = self.background_manager.load_backgrounds(source_file)
+        backgrounds = self.background_manager.load_file(source_file)
 
         if old_backgrounds == backgrounds:
             # No change implies backgrounds still valid, do nothing more
@@ -522,7 +520,7 @@ class TsuserverDR:
                                 'is no longer synchronized. Please rejoin the server.')
 
         # Only now update internally. This is to allow `change_character` to work properly.
-        self.character_manager.load_characters(source_file)
+        self.character_manager.load_file(source_file)
         return characters.copy()
 
     def load_commandhelp(self):
@@ -662,7 +660,7 @@ class TsuserverDR:
             Constants.warn_deprecated('non-default value of server_music_list parameter',
                                       'server.music_manager.validate_file',
                                       '4.4')
-        music = self.music_manager.load_music(music_list_file)
+        music = self.music_manager.load_file(music_list_file)
         return music.copy()
 
     def load_gimp(self):
