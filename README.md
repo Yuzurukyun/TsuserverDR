@@ -357,6 +357,10 @@ GMs can:
     - Sets the current area to have bloodtrails leading to the listed areas. If no areas are given, the area is set to have an unconnected pool of blood.
 * **bloodtrail_smear** "area 1", "area 2", ...
     - Smears the blood trails in the given areas (or the current one if not given any areas).
+* **bg_period** "period name" "bg name"
+    - Sets the special background to be displayed in the area whenever there is a clock in the area with the given period.
+* **bg_period_end** "period name"
+    - Removes the special background to be displayed in the area whenever there is a clock in the area with the given period, so that it instead displays the normal background of the area.
 * **can_passagelock**
     - Changes the current area's setting to allow non-staff members to change passages starting in the area with /bilock or /unilock. By default area setting is indicated in the server's area list.
 * **can_rollp**

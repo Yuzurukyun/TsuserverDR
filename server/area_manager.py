@@ -135,12 +135,16 @@ class AreaManager(AssetManager):
 
             # Store the current description separately from the default description
             self.description = self.default_description
-            # Have a background backup in order to restore temporary background changes
-            self.background_backup = self.background
 
             self.default_reachable_areas = self.reachable_areas.copy()
 
             self.reachable_areas.add(self.name) # Area can always reach itself
+
+        def background_backup(self) -> str:
+            Constants.warn_deprecated('area.background_backup',
+                                      'area.background',
+                                      '4.4')
+            return self.background
 
         @property
         def clients(self) -> Set[ClientManager.Client]:
@@ -306,13 +310,55 @@ class AreaManager(AssetManager):
             if validate and not self.server.background_manager.is_background(bg):
                 raise AreaError('Invalid background name.')
 
-            if self.lights:
-                self.background = bg
-            else:
-                self.background = self.server.config['blackout_background']
-                self.background_backup = bg
+            self.background = bg
             for c in self.clients:
                 if c.is_blind and not override_blind:
+                    c.send_background(name=self.server.config['blackout_background'])
+                elif not c.area.lights:
+                    c.send_background(name=self.server.config['blackout_background'])
+                else:
+                    c.send_background(name=self.background,
+                                      tod_backgrounds=self.get_background_tod())
+
+        def change_background_tod(self, bg: str, tod: str, validate: bool = True,
+                                  override_blind: bool = False):
+            """
+            Change the background of the current period of the current area.
+
+            Parameters
+            ----------
+            bg: str
+                New background name.
+            tod: str
+                Time of day.
+            validate: bool, optional
+                Whether to first determine if background name is listed as a server background
+                before changing. Defaults to True.
+            override_blind: bool, optional
+                Whether to send the intended background to blind people as opposed to the server
+                blackout one. Defaults to False (send blackout).
+
+            Raises
+            ------
+            AreaError
+                If the server attempted to validate the background name and failed.
+            """
+
+            if validate and not self.server.background_manager.is_background(bg):
+                raise AreaError('Invalid background name.')
+
+            if tod not in self.background_tod and not bg:
+                raise AreaError(f'There already is no background associated with the period '
+                                f'`{tod}`.')
+            if bg:
+                self.background_tod[tod] = bg
+            else:
+                self.background_tod.pop(tod)
+
+            for c in self.clients:
+                if c.is_blind and not override_blind:
+                    c.send_background(name=self.server.config['blackout_background'])
+                elif not c.area.lights:
                     c.send_background(name=self.server.config['blackout_background'])
                 else:
                     c.send_background(name=self.background,
@@ -611,19 +657,9 @@ class AreaManager(AssetManager):
             if self.lights == new_lights:
                 raise AreaError('The lights are already turned {}.'.format(status[new_lights]))
 
-            # Change background to match new status
-            if new_lights:
-                if self.background == self.server.config['blackout_background']:
-                    intended_background = self.background_backup
-                else:
-                    intended_background = self.background
-            else:
-                if self.background != self.server.config['blackout_background']:
-                    self.background_backup = self.background
-                intended_background = self.background
-
             self.lights = new_lights
-            self.change_background(intended_background, validate=False) # Allow restoring custom bg.
+
+            self.change_background(self.background, validate=False)  # Allow restoring custom bg.
 
             # Announce light status change
             if initiator: # If a player initiated the change light sequence, send targeted messages
