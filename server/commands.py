@@ -11486,6 +11486,49 @@ def ooc_cmd_music_list_info(client: ClientManager.Client, arg: str):
     client.music_manager.command_list_info(client)
 
 
+def ooc_cmd_bg_period(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Changes the background of the current area associated with the given period, or removes it if
+    not given a background.
+    Returns an error if area background is locked and you are unathorized or if the sought
+    background does not exist.
+
+    SYNTAX
+    /bg_period <period_name> <background_name>
+
+    PARAMETERS
+    <period_name>: Period name
+    <background_name>: New background name, possibly with spaces (e.g. Principal's Room)
+
+    EXAMPLES
+    >>> /bg_period night Beach (night)
+    Changes background to Beach (night) whenever the area has a night period active.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='>0')
+    if not client.is_mod and client.area.bg_lock:
+        raise AreaError("This area's background is locked.")
+
+    args = arg.split()
+    tod_name = args[0]
+    bg_name = ' '.join(args[1:])   # Possibly empty
+
+    client.area.change_background_tod(bg_name, tod_name, validate=False)
+    if bg_name:
+        client.send_ooc(f'You changed the background associated with period `{tod_name}` to '
+                        f'`{bg_name}`.')
+        client.send_ooc_others(f'(X) {client.displayname} [{client.id}] changed the background '
+                               f'associated with period `{tod_name}` to `{bg_name}`.',
+                               is_zstaff_flex=True)
+    else:
+        client.send_ooc(f'You removed the background associated with period `{tod_name}`.')
+        client.send_ooc_others(f'(X) {client.displayname} [{client.id}] removed the background '
+                               f'associated with period `{tod_name}`.',
+                               is_zstaff_flex=True)
+    logger.log_server('[{}][{}]Changed background associated with period `{}` to {}'
+                      .format(client.area.id, client.get_char_name(), tod_name, bg_name), client)
+
+
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):
     """
     VERY DANGEROUS. SHOULD ONLY BE ENABLED FOR DEBUGGING.

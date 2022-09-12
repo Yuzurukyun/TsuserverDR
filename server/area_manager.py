@@ -320,6 +320,50 @@ class AreaManager(AssetManager):
                     c.send_background(name=self.background,
                                       tod_backgrounds=self.get_background_tod())
 
+        def change_background_tod(self, bg: str, tod: str, validate: bool = True,
+                                  override_blind: bool = False):
+            """
+            Change the background of the current period of the current area.
+
+            Parameters
+            ----------
+            bg: str
+                New background name.
+            tod: str
+                Time of day.
+            validate: bool, optional
+                Whether to first determine if background name is listed as a server background
+                before changing. Defaults to True.
+            override_blind: bool, optional
+                Whether to send the intended background to blind people as opposed to the server
+                blackout one. Defaults to False (send blackout).
+
+            Raises
+            ------
+            AreaError
+                If the server attempted to validate the background name and failed.
+            """
+
+            if validate and not self.server.background_manager.is_background(bg):
+                raise AreaError('Invalid background name.')
+
+            if tod not in self.background_tod and not bg:
+                raise AreaError(f'There already is no background associated with the period '
+                                f'`{tod}`.')
+            if bg:
+                self.background_tod[tod] = bg
+            else:
+                self.background_tod.pop(tod)
+
+            for c in self.clients:
+                if c.is_blind and not override_blind:
+                    c.send_background(name=self.server.config['blackout_background'])
+                elif not c.area.lights:
+                    c.send_background(name=self.server.config['blackout_background'])
+                else:
+                    c.send_background(name=self.background,
+                                      tod_backgrounds=self.get_background_tod())
+
         def get_chars_unusable(self, allow_restricted: bool = False,
                                more_unavail_chars: Set[int] = None) -> Set[int]:
             """
