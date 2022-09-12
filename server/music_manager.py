@@ -30,27 +30,96 @@ if typing.TYPE_CHECKING:
     from server.tsuserver import TsuserverDR
 
 class MusicManager(AssetManager):
+    """
+    A manager for music. Music managers store a list of music either from a
+    loaded file or an adequate Python representation.
+    """
+
     def __init__(self, server: TsuserverDR):
+        """
+        Create a music manager object.
+
+        Parameters
+        ----------
+        server: TsuserverDR
+            The server this music manager belongs to.
+        """
+
         super().__init__(server)
         self._music = []
         self._source_file = 'config/music.yaml'
 
     def get_name(self) -> str:
+        """
+        Return `'music list'`.
+
+        Returns
+        -------
+        str
+            `'music list'`.
+        """
+
         return 'music list'
 
     def get_default_file(self) -> str:
+        """
+        Return `'config/music.yaml'`.
+
+        Returns
+        -------
+        str
+            `'config/music.yaml'`.
+        """
+
         return 'config/music.yaml'
 
     def get_loader(self) -> Callable[[str, ], str]:
+        """
+        Return `self.server.load_characters`.
+
+        Returns
+        -------
+        Callable[[str, ], str]
+            `self.server.load_characters`.
+        """
+
         return self.load_file
 
     def get_music(self) -> List[Dict[str, Any]]:
+        """
+        Return a copy of the music managed by this manager.
+
+        Returns
+        -------
+        List[Dict[str, Any]]
+            Music managed.
+        """
+
         return self._music.copy()
 
     def get_source_file(self) -> Union[str, None]:
+        """
+        Return the source file of the last music list the manager successfully loaded relative to
+        the root directory of the server, or None if the latest loaded music list was loaded raw.
+
+        Returns
+        -------
+        Union[str, None]
+            Source file or None.
+        """
+
         return self._source_file
 
     def get_custom_folder(self) -> str:
+        """
+        Return `'config/music_lists'`.
+
+        Returns
+        -------
+        str
+            `'config/music_lists'`.
+        """
+
         return 'config/music_lists'
 
     def validate_file(self, source_file: Union[str, None] = None) -> List[Dict[str, Any]]:
@@ -94,7 +163,32 @@ class MusicManager(AssetManager):
 
         return output
 
-    def load_raw(self, yaml_contents: List) -> List[str]:
+    def load_raw(self, yaml_contents: List) -> List[Dict[str, Any]]:
+        """
+        Load a music list from a YAML representation.
+
+        Parameters
+        ----------
+        yaml_contents: Dict
+            YAML representation.
+
+        Returns
+        -------
+        List[Dict[str, Any]]:
+            Music.
+
+        Raises
+        ------
+        ServerError.FileNotFoundError
+            If the file was not found.
+        ServerError.FileOSError
+            If there was an operating system error when opening the file.
+        ServerError.YAMLInvalidError
+            If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
+        ServerError.FileSyntaxError
+            If the file failed verification for music.
+        """
+
         music = ValidateMusic().validate_contents(yaml_contents)
         output = self._load_music(music, None)
         self._check_structure()
@@ -146,7 +240,16 @@ class MusicManager(AssetManager):
 
         return prepared_music_list
 
-
     def _check_structure(self):
+        """
+        Assert that all invariants specified in the class description are maintained.
+
+        Raises
+        ------
+        AssertionError
+            If any of the invariants are not maintained.
+
+        """
+
         # At least one music track
         assert self._music

@@ -51,7 +51,7 @@ class AssetManager(ABC):
         Parameters
         ----------
         server : TsuserverDR
-            Server of the asset manager.
+            The server this asset manager belongs to.
         """
 
         self.server = server

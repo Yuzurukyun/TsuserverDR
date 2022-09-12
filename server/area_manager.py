@@ -48,8 +48,9 @@ from server.validate.areas import ValidateAreas
 
 class AreaManager(AssetManager):
     """
-    Create a new manager for the areas in a server.
-    Contains the Area object definition, as well as the server's area list.
+    A manager for areas. Area managers store a list of areas either from a
+    loaded file or an adequate Python representation.
+    It also contains the Area object definition.
     """
 
     class Area:
@@ -1148,7 +1149,7 @@ class AreaManager(AssetManager):
         Parameters
         ----------
         server: TsuserverDR
-            The server this area belongs to.
+            The server this area manager belongs to.
         """
 
         super().__init__(server)
@@ -1197,7 +1198,8 @@ class AreaManager(AssetManager):
         Callable[[str, ], str]
             `self.server.load_file`.
         """
-        return self.server.load_file
+
+        return self.server.load_areas
 
     def get_source_file(self) -> Union[str, None]:
         """
@@ -1209,6 +1211,7 @@ class AreaManager(AssetManager):
         Union[str, None]
             Source file or None.
         """
+
         return self._source_file
 
     def get_custom_folder(self) -> str:
@@ -1247,7 +1250,7 @@ class AreaManager(AssetManager):
 
         Parameters
         ----------
-        area_list_file: str, optional
+        source_file: str
             Location of the area list to load.
 
         Returns
@@ -1264,7 +1267,7 @@ class AreaManager(AssetManager):
         ServerError.YAMLInvalidError
             If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
         ServerError.FileSyntaxError
-            If the file failed verification for its asset type.
+            If the file failed verification for areas.
         """
 
         areas = ValidateAreas().validate(source_file, extra_parameters={

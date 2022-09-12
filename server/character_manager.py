@@ -30,27 +30,97 @@ if typing.TYPE_CHECKING:
     from server.tsuserver import TsuserverDR
 
 class CharacterManager(AssetManager):
+    """
+    A manager for characters. Character managers store a list of characters either from a
+    loaded file or an adequate Python representation.
+    """
+
     def __init__(self, server: TsuserverDR):
+        """
+        Create a character manager object.
+
+        Parameters
+        ----------
+        server: TsuserverDR
+            The server this character manager belongs to.
+        """
+
         super().__init__(server)
         self._characters = []
         self._source_file = 'config/characters.yaml'
 
     def get_name(self) -> str:
+        """
+        Return `'character list'`.
+
+        Returns
+        -------
+        str
+            `'character list'`.
+        """
+
         return 'character list'
 
     def get_default_file(self) -> str:
+        """
+        Return `'config/characters.yaml'`.
+
+        Returns
+        -------
+        str
+            `'config/characters.yaml'`.
+        """
+
         return 'config/characters.yaml'
 
     def get_loader(self) -> Callable[[str, ], str]:
+        """
+        Return `self.server.load_characters`.
+
+        Returns
+        -------
+        Callable[[str, ], str]
+            `self.server.load_characters`.
+        """
+
         return self.server.load_characters
 
     def get_characters(self) -> List[str]:
+        """
+        Return a copy of the characters managed by this manager.
+
+        Returns
+        -------
+        List[str]
+            Characters managed.
+        """
+
         return self._characters.copy()
 
     def get_source_file(self) -> Union[str, None]:
+        """
+        Return the source file of the last character list the manager successfully loaded relative
+        to the root directory of the server, or None if the latest loaded character list was loaded
+        raw.
+
+        Returns
+        -------
+        Union[str, None]
+            Source file or None.
+        """
+
         return self._source_file
 
     def get_custom_folder(self) -> str:
+        """
+        Return `'config/character_lists'`.
+
+        Returns
+        -------
+        str
+            `'config/character_lists'`.
+        """
+
         return 'config/character_lists'
 
     def validate_file(self, source_file: Union[str, None] = None) -> List[str]:
@@ -94,6 +164,31 @@ class CharacterManager(AssetManager):
         return output
 
     def load_raw(self, yaml_contents: List) -> List[str]:
+        """
+        Load a character list from a YAML representation.
+
+        Parameters
+        ----------
+        yaml_contents: Dict
+            YAML representation.
+
+        Returns
+        -------
+        List[str]
+            Characters.
+
+        Raises
+        ------
+        ServerError.FileNotFoundError
+            If the file was not found.
+        ServerError.FileOSError
+            If there was an operating system error when opening the file.
+        ServerError.YAMLInvalidError
+            If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
+        ServerError.FileSyntaxError
+            If the file failed verification for characters.
+        """
+
         characters = ValidateCharacters().validate_contents(yaml_contents)
         output = self._load_characters(characters, None)
         self._check_structure()
@@ -131,5 +226,15 @@ class CharacterManager(AssetManager):
         raise CharacterError.CharacterNotFoundError(f'Character {name} not found.')
 
     def _check_structure(self):
+        """
+        Assert that all invariants specified in the class description are maintained.
+
+        Raises
+        ------
+        AssertionError
+            If any of the invariants are not maintained.
+
+        """
+
         # At least one character
         assert self._characters
