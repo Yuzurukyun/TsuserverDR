@@ -127,14 +127,14 @@ class AssetManager(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def load_file(source_file: str = 'config/assets.yaml') -> List:
+    def load_file(source_file: str) -> List:
         """
         Load assets from a file relative to the server root directory.
 
         Parameters
         ----------
-        source_file : str, optional
-            File to load, by default 'config/assets.yaml'
+        source_file : str
+            File to load.
 
         Returns
         -------

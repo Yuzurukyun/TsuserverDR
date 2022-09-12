@@ -60,7 +60,7 @@ class CharacterManager(AssetManager):
         characters = ValidateCharacters().validate(source_file)
         return characters
 
-    def load_characters(self, source_file: str) -> List[str]:
+    def load_file(self, source_file: str) -> List[str]:
         """
         Set the character list from a given file.
 
@@ -93,7 +93,7 @@ class CharacterManager(AssetManager):
         self._check_structure()
         return output
 
-    def load_characters_raw(self, yaml_contents: List) -> List[str]:
+    def load_raw(self, yaml_contents: List) -> List[str]:
         characters = ValidateCharacters().validate_contents(yaml_contents)
         output = self._load_characters(characters, None)
         self._check_structure()

@@ -1155,7 +1155,7 @@ class AreaManager(AssetManager):
         self._areas = []
         self._source_file = 'config/areas.yaml'
         self.area_names = set()
-        self.load_file()
+        self.load_file(self._source_file)
 
     @property
     def areas(self) -> List[Area]:
@@ -1239,16 +1239,16 @@ class AreaManager(AssetManager):
         Constants.warn_deprecated('area_manager.load_areas',
                                   'area_manager.load_file',
                                   '4.4')
-        return self.load_file(source_file=area_list_file)
+        return self.load_file(area_list_file)
 
-    def load_file(self, source_file: str = 'config/areas.yaml') -> List:
+    def load_file(self, source_file: str) -> List:
         """
         Load an area list from a file.
 
         Parameters
         ----------
         area_list_file: str, optional
-            Location of the area list to load. Defaults to 'config/areas.yaml'.
+            Location of the area list to load.
 
         Returns
         -------

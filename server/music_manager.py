@@ -42,7 +42,7 @@ class MusicManager(AssetManager):
         return 'config/music.yaml'
 
     def get_loader(self) -> Callable[[str, ], str]:
-        return self.load_music
+        return self.load_file
 
     def get_music(self) -> List[Dict[str, Any]]:
         return self._music.copy()
@@ -60,7 +60,7 @@ class MusicManager(AssetManager):
         music = ValidateMusic().validate(source_file)
         return music
 
-    def load_music(self, source_file: str) -> List[Dict[str, Any]]:
+    def load_file(self, source_file: str) -> List[Dict[str, Any]]:
         """
         Set the music list from a given file.
 
@@ -94,7 +94,7 @@ class MusicManager(AssetManager):
 
         return output
 
-    def load_music_raw(self, yaml_contents: List) -> List[str]:
+    def load_raw(self, yaml_contents: List) -> List[str]:
         music = ValidateMusic().validate_contents(yaml_contents)
         output = self._load_music(music, None)
         self._check_structure()

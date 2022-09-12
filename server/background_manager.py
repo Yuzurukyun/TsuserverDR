@@ -71,7 +71,7 @@ class BackgroundManager(AssetManager):
         backgrounds = ValidateBackgrounds().validate(source_file)
         return backgrounds
 
-    def load_backgrounds(self, source_file: str) -> List[str]:
+    def load_file(self, source_file: str) -> List[str]:
         """
         Set the background list from a given file.
 
@@ -104,7 +104,7 @@ class BackgroundManager(AssetManager):
         self._check_structure()
         return output
 
-    def load_backgrounds_raw(self, yaml_contents: List) -> List[str]:
+    def load_raw(self, yaml_contents: List) -> List[str]:
         backgrounds = ValidateBackgrounds().validate_contents(yaml_contents)
         output = self._load_backgrounds(backgrounds, None)
         self._check_structure()
