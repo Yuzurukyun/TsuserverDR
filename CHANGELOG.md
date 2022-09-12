@@ -814,5 +814,6 @@
 * Added support for changing backgrounds in an area associated with periods via commands
   - /bg_period
   - /bg_period_end
+* Changed console message indicating server address and port to reflect DRO no longer using the old syntax
 * Fixed /lasterror providing duplicate error information
 * Fixed /clock_period erroring out if a non-numerical invalid hour start or hour length was given.

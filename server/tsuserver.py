@@ -68,8 +68,8 @@ class TsuserverDR:
         self.release = 4
         self.major_version = 3
         self.minor_version = 5
-        self.segment_version = 'RC1'
-        self.internal_version = 'm220912a'
+        self.segment_version = 'RC2'
+        self.internal_version = 'm220912b'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
@@ -213,12 +213,12 @@ class TsuserverDR:
                                   'Players may be unable to join.'
                                   .format(type(ex).__name__, ex.reason))
         if host_ip is not None:
-            logger.log_pdebug('Server should be now accessible from {}:{}:{}'
-                              .format(host_ip, self.config['port'], server_name))
+            logger.log_pdebug(f'Server should be now accessible from address {host_ip} and port '
+                              f'{self.config["port"]}.')
         if not self.config['local']:
-            logger.log_pdebug('If you want to join your server from this device, you may need to '
-                              'join with this IP instead: 127.0.0.1:{}:localhost'
-                              .format(self.config['port']))
+            logger.log_pdebug(f'If you want to join your server from this device, you may need to '
+                              f'join instead from address 127.0.0.1 and port '
+                              f'{self.config["port"]}.')
 
         if self.config['local']:
             self.local_connection = asyncio.create_task(self.tasker.do_nothing())
