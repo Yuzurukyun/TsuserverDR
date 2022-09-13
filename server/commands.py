@@ -2719,7 +2719,7 @@ def ooc_cmd_gimp(client: ClientManager.Client, arg: str):
     """ (MOD ONLY)
     Gimps all IC messages of a user by client ID (number in brackets) or IPID (number in
     parentheses). In particular, their message will be replaced by one of the messages listed in
-    Constants.gimp_message in Constants.py. If given IPID, it will affect all clients opened by the
+    config/gimp.yaml. If given IPID, it will affect all clients opened by the
     user. Otherwise, it will just affect the given client. Requires /ungimp to undo.
     Returns an error if the given identifier does not correspond to a user.
 

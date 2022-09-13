@@ -837,40 +837,6 @@ class Constants():
         return set(split_values)
 
     @staticmethod
-    def gimp_message():
-        Constants.warn_deprecated('Constants.gimp_message()',
-                                  'random.choice(server.gimp_list)',
-                                  '4.4')
-        message = ['ERP IS BAN',
-                   'I\'m fucking gimped because I\'m both autistic and a retard!',
-                   'HELP ME',
-                   'Boy, I sure do love Dia, the best admin, and the cutest!!!!!',
-                   'I\'M SEVERELY AUTISTIC!!!!',
-                   '[PEES FREELY]',
-                   'KILL ME',
-                   'I found this place on reddit XD',
-                   '(((((case????)))))',
-                   'Anyone else a fan of MLP?',
-                   'does this server have sans from undertale?',
-                   'what does call mod do',
-                   'does anyone have a miiverse account?',
-                   'Drop me a PM if you want to ERP',
-                   'Join my discord server please',
-                   'can I have mod pls?',
-                   'why is everyone a missingo?',
-                   'how 2 change areas?',
-                   'does anyone want to check out my tumblr? :3',
-                   '19 years of perfection, i don\'t play games to fucking lose',
-                   'nah... your taunts are fucking useless... only defeat angers me... by trying '
-                   'to taunt just earns you my pitty',
-                   'When do we remove dangits',
-                   'MODS STOP GIMPING ME',
-                   'Please don\'t say things like ni**er and f**k it\'s very rude and I don\'t '
-                   'like it',
-                   'PLAY NORMIES PLS']
-        return random.choice(message)
-
-    @staticmethod
     def gagged_message() -> str:
         length = random.randint(5, 9)
         letters = ['g', 'h', 'm', 'r']
@@ -989,13 +955,6 @@ class Constants():
                 return targets
 
         raise ArgumentError('No targets found.')
-
-    @staticmethod
-    def parse_passage_lock(client, areas, bilock=False):
-        Constants.warn_deprecated('Constants.parse_passage_lock()',
-                                  'Constants.change_passage_lock()',
-                                  '4.4')
-        client.server.area_manager.change_passage_lock(client, areas, bilock=bilock)
 
     @staticmethod
     def parse_time_length(time_length: str) -> float:

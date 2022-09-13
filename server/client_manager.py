@@ -158,13 +158,6 @@ class ClientManager:
             self.mflood_mutelength = self.server.config['music_change_floodguard']['mute_length']
             self.mflood_log = list()
 
-        @property
-        def music_list(self) -> List[Dict[str, Any]]:
-            Constants.warn_deprecated('client.music_list',
-                                      'client.music_manager.get_music',
-                                      '4.4')
-            return self.music_manager.get_music()
-
         def send_command(self, command: str, *args: List):
             self.protocol.data_send(command, *args)
 
@@ -943,21 +936,6 @@ class ClientManager:
                 self.send_command_dict('FM', {
                     'music_ao2_list': area_list+music_list,
                     })
-
-        def reload_music_list(self, new_music_file=None):
-            """
-            Rebuild the music list so that it only contains the target area's
-            reachable areas+music. Useful when moving areas/logging in or out.
-            """
-
-            Constants.warn_deprecated('client.reload_music_list',
-                                      'client.send_music_list_view',
-                                      '4.4',)
-
-            if new_music_file:
-                self.music_manager.load_file(new_music_file)
-
-            self.send_music_list_view()
 
         def check_change_area(self, area: AreaManager.Area,
                               override_passages: bool = False,
