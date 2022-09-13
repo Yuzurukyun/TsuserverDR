@@ -8,7 +8,6 @@ class _TestAuthorization(_TestSituation3):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.guardpass = cls.server.config['guardpass']
         cls.modpass = cls.server.config['modpass']
         cls.cmpass = cls.server.config['cmpass']
         cls.gmpass = cls.server.config['gmpass']
@@ -28,12 +27,10 @@ class _TestAuthorization(_TestSituation3):
                                   for x in range(1, 7) if x != current_day}
 
         cls.all_passwords = {cls.wrong,
-                             cls.wrong,
                              cls.gmpass,
                              cls.daily_gmpass,
                              cls.cmpass,
-                             cls.modpass,
-                             cls.guardpass}.union(cls.not_daily_gmpasses)
+                             cls.modpass}.union(cls.not_daily_gmpasses)
         cls.wrong_passwords = cls.all_passwords.copy()  # Set by child tests
 
     def test_01_NoClientLoggedinYet(self):

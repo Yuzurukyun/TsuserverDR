@@ -93,9 +93,9 @@ music_change_floodguard:
   interval_length: 20
   mute_length: 10
 
-# Currently unused
-# Changing them will do nothing
+# For debugging
 
 debug: false
-guardpass: Guard
-help_msg: TODO
+
+# Currently unused
+# Changing them will do nothing
