@@ -93,7 +93,6 @@ class AreaManager(AssetManager):
             self.owned = False
             self.ic_lock = False
             self.is_locked = False
-            self.is_gmlocked = False
             self.is_modlocked = False
             self.bleeds_to = set()
             self.blood_smeared = False
@@ -1060,16 +1059,6 @@ class AreaManager(AssetManager):
             """
 
             self.is_locked = False
-            if not self.is_gmlocked and not self.is_modlocked:
-                self.invite_list = {}
-
-        def gmunlock(self):
-            """
-            Unlock the area if it had a GM lock so that non-authorized players may now join.
-            """
-
-            self.is_gmlocked = False
-            self.is_locked = False
             if not self.is_modlocked:
                 self.invite_list = {}
 
@@ -1079,7 +1068,6 @@ class AreaManager(AssetManager):
             """
 
             self.is_modlocked = False
-            self.is_gmlocked = False
             self.is_locked = False
             self.invite_list = {}
 

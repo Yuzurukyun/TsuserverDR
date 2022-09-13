@@ -418,8 +418,6 @@ GMs can:
     - Sends subsequence IC messages to the area range described above. Can take either area IDs or area names.
 * **globalic_pre** "prefix"
     - Ensures only IC messages that start with the prefix are sent to the preestablished area range through /globalic (otherwise, just to the current area), or removes the need for a prefix if not given one.
-* **gmlock**
-    - Locks your area. Prevents CMs and normal users from entering. WARNING: Pending deprecation.
 * **gmself**
     - Logs all opened multiclients as GM.
 * **guide** "ID/char name/edited-to character/showname/char showname/OOC name" "message"
@@ -608,7 +606,7 @@ GMs can:
 * **uninvite** "ID/char name/edited-to character/showname/char showname/OOC name"
     - Removes a target from your locked area's invite list, so that if they leave, they will not be allowed back until the area is unlocked.
 * **unlock**
-    - Unlocks an area, provided the lock came as a result of /gmlock or /lock.
+    - Unlocks an area, provided the lock came as a result of /lock.
 * **whereis** "ID"
     - Obtains the area a target is.
 * **whois** "ID/char name/showname/OOC name"
@@ -794,7 +792,7 @@ GMs can:
 * **undisemvowel/undisemconsonant/ungimp/unremove_h** "ID/IPID"
     - Undoes correlating command.
 * **unlock**
-    - Unlocks an area, provided the lock came as a result of /gmlock, /lock or /modlock.
+    - Unlocks an area, provided the lock came as a result of /lock or /modlock.
 
 ### Debug commands
 

@@ -455,7 +455,7 @@ class PartyManager:
                     culprit = member.displayname if member != initiator else 'yourself'
                     raise ClientError('Unable to move the party due to {}.'.format(culprit))
 
-                if error.code in ['ChArLocked', 'ChArGMLocked', 'ChArModLocked',
+                if error.code in ['ChArLocked', 'ChArModLocked',
                                   'ChArRestrictedChar', 'ChArInArea']:
                     movers[False][member] = new_char_id
                 elif error.code is not None:
