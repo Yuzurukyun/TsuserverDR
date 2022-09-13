@@ -293,10 +293,7 @@ def net_cmd_rd(client: ClientManager.Client, pargs: Dict[str, Any]):
 
     client.send_done()
     if client.server.config['announce_areas']:
-        if client.server.config['rp_mode_enabled']:
-            client.send_limited_area_list()
-        else:
-            client.send_area_list()
+        client.send_limited_area_list()
     client.send_motd()
     client.can_askchaa = True  # Allow rejoining if left to lobby but did not dc.
 

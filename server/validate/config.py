@@ -49,8 +49,6 @@ class ValidateConfig(Validate):
             'announce_areas',
             'motd',
             'hostname',
-
-            'rp_mode_enabled',
             ]
 
         for field in mandatory_fields:
@@ -131,7 +129,6 @@ class ValidateConfig(Validate):
             'def_numfaces': int,
             'def_modifier': str,
 
-            'rp_mode_enabled': bool,
             'blackout_background': str,
             'default_area_description': str,
             'party_lights_timeout': (float, int),

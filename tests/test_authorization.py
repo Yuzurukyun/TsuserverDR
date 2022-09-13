@@ -44,7 +44,6 @@ class _TestAuthorization(_TestSituation3):
             self.assertFalse(c.is_mod)
             self.assertFalse(c.is_cm)
             self.assertFalse(c.is_gm)
-            # self.assertTrue(c.in_rp) # Assumes server starts with RP mode on
 
 
 class _TestAuthorizationSingleRank(_TestAuthorization):
@@ -64,7 +63,6 @@ class _TestAuthorizationSingleRank(_TestAuthorization):
             self.assertFalse(self.good_rank(c))
             self.assertFalse(self.bad_rank1(c))
             self.assertFalse(self.bad_rank2(c))
-            # self.assertTrue(c.in_rp) # Assumes server starts with RP mode on
 
     def test_03_RightLoginAndRelogin(self):
         """

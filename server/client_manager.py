@@ -94,7 +94,6 @@ class ClientManager:
             self.muted_global = False
             self.pm_mute = False
 
-            self.in_rp = False
             self.autopass = False
             self.disemvowel = False
             self.disemconsonant = False
@@ -1743,7 +1742,6 @@ class ClientManager:
                 self.is_mod = True
                 self.is_cm = False
                 self.is_gm = False
-                self.in_rp = False
             else:
                 if announce_to_officers:
                     self.send_ooc_others('{} [{}] failed to login as a moderator.'
@@ -1757,7 +1755,6 @@ class ClientManager:
                 self.is_cm = True
                 self.is_mod = False
                 self.is_gm = False
-                self.in_rp = False
             else:
                 if announce_to_officers:
                     self.send_ooc_others('{} [{}] failed to login as a community manager.'
@@ -1787,7 +1784,6 @@ class ClientManager:
                 self.is_gm = True
                 self.is_mod = False
                 self.is_cm = False
-                self.in_rp = False
             else:
                 if announce_to_officers:
                     self.send_ooc_others('{} [{}] failed to login as a game master.'
@@ -1800,8 +1796,6 @@ class ClientManager:
             self.is_cm = False
 
             # Clean-up operations
-            if self.server.rp_mode:
-                self.in_rp = True
             if self.area.evidence_mod == 'HiddenCM':
                 self.area.broadcast_evidence_list()
 

@@ -123,7 +123,6 @@ class TsuserverDR:
         self.load_gimp()
 
         self.ms_client = None
-        self.rp_mode = True
         self.user_auth_req = False
         self.showname_freeze = False
         self.commands = importlib.import_module('server.commands')
@@ -278,8 +277,6 @@ class TsuserverDR:
 
     def new_client(self, transport, protocol=None) -> Tuple[ClientManager.Client, bool]:
         c, valid = self.client_manager.new_client(transport, protocol=protocol)
-        if self.rp_mode:
-            c.in_rp = True
         c.server = self
         c.area = self.area_manager.default_area()
         c.area.new_client(c)
