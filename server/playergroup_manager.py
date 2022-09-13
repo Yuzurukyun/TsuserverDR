@@ -17,16 +17,25 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 """
-Module that contains the PlayerGroupManager class and the PlayerGroup subclass.
+Module that contains the PlayerGroupManager class and the _PlayerGroup subclass.
 
 """
 
+from __future__ import annotations
+
 import random
+import typing
+
+from typing import Callable, Dict, Tuple, Union, Set
 
 from server.constants import Constants
 from server.exceptions import PlayerGroupError
 
-class PlayerGroup:
+if typing.TYPE_CHECKING:
+    from server.client_manager import ClientManager
+    from server.tsuserver import TsuserverDR
+
+class _PlayerGroup:
     """
     A mutable data type for player groups.
 
@@ -85,10 +94,10 @@ class PlayerGroup:
     # ----------
     # 1. Each player is a client of the server.
     # 2. `self._unmanaged` is False if and only if `self` is in
-    #    `self._manager._id_to_group.values()`.
+    #    `self.manager.get_managees()`.
     # 3. If `self._unmanaged`, then `self._players`, `self._invitations`, `self._leaders` are
     #    all empty sets.
-    # 4. For every player `player` in `self._players`, `self._manager._user_to_groups[player]`
+    # 4. For every player `player` in `self._players`, `self.manager.get_managees_of_user()[player]`
     #    exists and contains `self`.
     # 5. If `self._player_limit` is not None, then `len(self._players) <= player_limit`.
     # 6. For every player in `self._leaders`, they also belong in `self._players`.
@@ -99,9 +108,17 @@ class PlayerGroup:
     # 10. `self._invitations` and `self._players` are disjoint sets.
     # 11. If `self._require_invitations` is False, then `self._invitations` is the empty set.
 
-    def __init__(self, server, manager, playergroup_id, player_limit=None,
-                 player_concurrent_limit=1, require_invitations=False, require_players=True,
-                 require_leaders=True):
+    def __init__(
+        self,
+        server: TsuserverDR,
+        manager: PlayerGroupManager,
+        playergroup_id: str,
+        player_limit: Union[int, None] = None,
+        player_concurrent_limit: Union[int, None] = 1,
+        require_invitations: bool = False,
+        require_players: bool = True,
+        require_leaders: bool = True
+        ):
         """
         Create a new player group. A player group should not be created outside some manager code.
 
@@ -137,8 +154,8 @@ class PlayerGroup:
 
         """
 
-        self._server = server
-        self._manager = manager
+        self.server = server
+        self.manager = manager
         self._playergroup_id = playergroup_id
         self._player_limit = player_limit
         self._player_concurrent_limit = player_concurrent_limit
@@ -152,7 +169,7 @@ class PlayerGroup:
         self._ever_had_players = False
         self._unmanaged = False
 
-    def get_id(self):
+    def get_id(self) -> str:
         """
         Return the ID of this player group.
 
@@ -165,33 +182,36 @@ class PlayerGroup:
 
         return self._playergroup_id
 
-    def get_player_concurrent_limit(self):
+    def get_player_concurrent_limit(self) -> Union[int, None]:
         """
         Return the concurrent player membership limit of this player group.
 
         Returns
         -------
-        int or None
+        Union[int, None]
             The concurrent player membership limit.
 
         """
 
         return self._player_concurrent_limit
 
-    def get_players(self, cond=None):
+    def get_players(
+        self,
+        cond: Callable[[ClientManager.Client, ], bool] = None
+        ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of players of this player group that satisfy a
         condition if given.
 
         Parameters
         ----------
-        cond : types.LambdaType: ClientManager.Client -> bool, optional
+        cond : Callable[[ClientManager.Client, ], bool], optional
             Condition that all players returned satisfy. Defaults to None (no checked
             conditions).
 
         Returns
         -------
-        set of ClientManager.Client
+        Set[ClientManager.Client]
             The (filtered) players of this player group.
 
         """
@@ -202,7 +222,7 @@ class PlayerGroup:
         filtered_players = {player for player in self._players if cond(player)}
         return filtered_players
 
-    def is_player(self, user):
+    def is_player(self, user: ClientManager.Client) -> bool:
         """
         Decide if a user is a player of the player group.
 
@@ -220,7 +240,7 @@ class PlayerGroup:
 
         return user in self._players
 
-    def add_player(self, user):
+    def add_player(self, user: ClientManager.Client):
         """
         Make a user a player of the player group. By default this player will not be a
         leader, unless the group has no leaders and the player group requires a leader.
@@ -258,24 +278,24 @@ class PlayerGroup:
             raise PlayerGroupError.UserAlreadyPlayerError
         if self._player_limit is not None and len(self._players) >= self._player_limit:
             raise PlayerGroupError.GroupIsFullError
-        if self._manager.find_player_concurrent_limiting_group(user):
+        if self.manager.find_player_concurrent_limiting_managee(user):
             raise PlayerGroupError.UserHitGroupConcurrentLimitError
-        groups_of_user = self._manager.get_groups_of_user(user)
+        groups_of_user = self.manager.get_managees_of_user(user)
         if len(groups_of_user) >= self._player_concurrent_limit:
             raise PlayerGroupError.UserHitGroupConcurrentLimitError
 
         self._ever_had_players = True
         self._players.add(user)
-        self._manager._add_user_to_mapping(user, self)
+        self.manager._add_user_to_mapping(user, self)
 
         if self._require_invitations:
             self._invitations.remove(user)
 
         self._choose_leader_if_needed()
 
-        self._manager._check_structure()
+        self.manager._check_structure()
 
-    def remove_player(self, user):
+    def remove_player(self, user: ClientManager.Client):
         """
         Make a user be no longer a player of this player group.
 
@@ -304,30 +324,33 @@ class PlayerGroup:
 
         self._players.remove(user)
         self._leaders.discard(user)
-        self._manager._remove_user_from_mapping(user, self)
+        self.manager._remove_user_from_mapping(user, self)
 
         # Check updated leadership requirement
         self._choose_leader_if_needed()
         # Check if no players, and disassemble if appropriate
         if self._require_players and not self._players:
-            self._manager.delete_group(self)
+            self.manager.delete_managee(self)
 
-        self._manager._check_structure()
+        self.manager._check_structure()
 
-    def get_invitations(self, cond=None):
+    def get_invitations(
+        self,
+        cond: Callable[[ClientManager.Client, ], bool] = None
+        ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of invited users of this player group that satisfy
         a condition if given.
 
         Parameters
         ----------
-        cond : types.LambdaType: ClientManager.Client -> bool, optional
+        cond : Callable[[ClientManager.Client, ], bool], optional
             Condition that all invited users returned satisfy. Defaults to None (no checked
             conditions).
 
         Returns
         -------
-        set of ClientManager.Client
+        Set[ClientManager.Client]
             The (filtered) invited users of this player group.
 
         """
@@ -338,7 +361,7 @@ class PlayerGroup:
         filtered_invited = {invited for invited in self._invitations if cond(invited)}
         return filtered_invited
 
-    def is_invited(self, user):
+    def is_invited(self, user: ClientManager.Client) -> bool:
         """
         Decide if a user is invited to the player group.
 
@@ -364,7 +387,7 @@ class PlayerGroup:
 
         return user in self._invitations
 
-    def add_invitation(self, user):
+    def add_invitation(self, user: ClientManager.Client) -> bool:
         """
         Mark a user as invited to this player group.
 
@@ -398,9 +421,9 @@ class PlayerGroup:
 
         self._invitations.add(user)
 
-        self._manager._check_structure()
+        self.manager._check_structure()
 
-    def remove_invitation(self, user):
+    def remove_invitation(self, user: ClientManager.Client) -> bool:
         """
         Mark a user as no longer invited to this player group (uninvite).
 
@@ -430,7 +453,7 @@ class PlayerGroup:
 
         self._invitations.remove(user)
 
-        self._manager._check_structure()
+        self.manager._check_structure()
 
     def requires_invitations(self) -> bool:
         """
@@ -446,20 +469,23 @@ class PlayerGroup:
 
         return self._require_invitations
 
-    def get_leaders(self, cond=None):
+    def get_leaders(
+        self,
+        cond: Callable[[ClientManager.Client, ], bool] = None
+        ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of leaders of this player group that satisfy a
         condition if given.
 
         Parameters
         ----------
-        cond : types.LambdaType: ClientManager.Client -> bool, optional
+        cond : Callable[[ClientManager.Client, ], bool], optional
             Condition that all leaders returned satisfy. Defaults to None (no checked
             conditions).
 
         Returns
         -------
-        set of ClientManager.Client
+        Set[ClientManager.Client]
             The (filtered) leaders of this player group.
 
         """
@@ -470,20 +496,23 @@ class PlayerGroup:
         filtered_leaders = {leader for leader in self._leaders if cond(leader)}
         return filtered_leaders
 
-    def get_regulars(self, cond=None):
+    def get_regulars(
+        self,
+        cond: Callable[[ClientManager.Client, ], bool] = None
+        ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of players of this player group that are not leaders
         (regulars) and satisfy a condition if given.
 
         Parameters
         ----------
-        cond : types.LambdaType: ClientManager.Client -> bool, optional
+        cond : Callable[[ClientManager.Client, ], bool], optional
             Condition that all regulars returned satisfy. Defaults to None (no checked
             conditions).
 
         Returns
         -------
-        set of ClientManager.Client
+        Set[ClientManager.Client]
             The (filtered) regulars of this player group.
 
         """
@@ -495,7 +524,7 @@ class PlayerGroup:
         filtered_regulars = {regular for regular in regulars if cond(regular)}
         return filtered_regulars
 
-    def is_leader(self, user):
+    def is_leader(self, user: ClientManager.Client) -> bool:
         """
         Decide if a user is a leader of the player group.
 
@@ -521,7 +550,7 @@ class PlayerGroup:
 
         return user in self._leaders
 
-    def add_leader(self, user):
+    def add_leader(self, user: ClientManager.Client):
         """
         Set a user as leader of this group (promote to leader).
 
@@ -550,9 +579,9 @@ class PlayerGroup:
             raise PlayerGroupError.UserAlreadyLeaderError
 
         self._leaders.add(user)
-        self._manager._check_structure()
+        self.manager._check_structure()
 
-    def remove_leader(self, user):
+    def remove_leader(self, user: ClientManager.Client) -> bool:
         """
         Make a user no longer leader of this group (demote).
 
@@ -583,9 +612,9 @@ class PlayerGroup:
         self._leaders.remove(user)
         # Check leadership requirement
         self._choose_leader_if_needed()
-        self._manager._check_structure()
+        self.manager._check_structure()
 
-    def is_unmanaged(self):
+    def is_unmanaged(self) -> bool:
         """
         Return True if this player group is unmanaged, False otherwise.
 
@@ -598,7 +627,7 @@ class PlayerGroup:
 
         return self._unmanaged
 
-    def has_ever_had_players(self):
+    def has_ever_had_players(self) -> bool:
         """
         Return True if a player has ever been added to this player group, False otherwise.
 
@@ -636,7 +665,7 @@ class PlayerGroup:
         self._unmanaged = True
 
         try:
-            self._manager.delete_group(self)
+            self.manager.delete_managee(self)
         except PlayerGroupError.ManagerDoesNotManageGroupError:
             pass
 
@@ -648,8 +677,6 @@ class PlayerGroup:
         self._players = set()
         self._invitations = set()
         self._leaders = set()
-
-        return
 
     def _choose_leader_if_needed(self):
         """
@@ -682,22 +709,22 @@ class PlayerGroup:
         # 1.
         for player in self._players:
             err = (f'For group {self._playergroup_id}, expected that player {player} was a '
-                   f'client of its server {self._server}, but found that was not the case. '
+                   f'client of its server {self.server}, but found that was not the case. '
                    f'|| {self}')
-            assert self._server.is_client(player), err
+            assert self.server.is_client(player), err
 
         # 2.
         err = (f'For group {self._playergroup_id} that is not unmanaged that also claims that '
-               f'it is managed by manager {self._manager}, expected that it recognized that '
+               f'it is managed by manager {self.manager}, expected that it recognized that '
                f'it managed it, but found it did not. || {self}')
         if not self._unmanaged:
-            assert self in self._manager.get_groups(), err
+            assert self in self.manager.get_managees(), err
 
         err = (f'For group {self._playergroup_id} that is unmanaged that also claims that it '
-               f'was managed by manager {self._manager}, expected that it recognized that '
+               f'was managed by manager {self.manager}, expected that it recognized that '
                f'it did not manage it, but found it did. || {self}')
         if self._unmanaged:
-            assert self not in self._manager.get_groups(), err
+            assert self not in self.manager.get_managees(), err
 
         # 3.
         if self._unmanaged:
@@ -718,9 +745,9 @@ class PlayerGroup:
         for player in self._players:
             err = (f'For group {self._playergroup_id}, expected that its player {player} is '
                    f'properly recognized in the player to group mapping of the manager of the '
-                   f'group {self._manager}, but found that was not the case. || {self}')
-            assert (player in self._manager.get_users_in_groups()
-                    and self in self._manager.get_groups_of_user(player)), err
+                   f'group {self.manager}, but found that was not the case. || {self}')
+            assert (player in self.manager.get_users_in_managees()
+                    and self in self.manager.get_managees_of_user(player)), err
 
         # 5.
         if self._player_limit is not None:
@@ -766,7 +793,7 @@ class PlayerGroup:
                f'were in the invitation list: {self._invitations}. || {self}')
         assert self._require_invitations or not self._invitations
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Return a representation of this player group.
 
@@ -777,7 +804,7 @@ class PlayerGroup:
 
         """
 
-        return (f"PlayerGroup(server, {self._manager.get_id()}, '{self._playergroup_id}', "
+        return (f"PlayerGroup(server, {self.manager.get_id()}, '{self._playergroup_id}', "
                 f"player_limit={self._player_limit}, "
                 f"player_concurrent_limit={self._player_concurrent_limit}, "
                 f"require_players={self._require_players}, "
@@ -805,39 +832,43 @@ class PlayerGroupManager:
     # --------------------
     # _server : TsuserverDR
     #     Server the player group manager belongs to.
-    # _playergroup_limit : int or None
+    # _managee_limit : int or None
     #     If an int, it is the maximum number of player groups this manager supports. If None, the
     #     manager may manage an arbitrary number of groups.
-    # _default_playergroup_type : PlayerGroup or functools.partial
+    # _default_managee_type : _PlayerGroup or functools.partial
     #     The type of player groups this player group manager will create by default when ordered
     #     to create a new one.
-    # _user_to_groups : dict of ClientManager.Client to set of PlayerGroup
+    # _user_to_managees : dict of ClientManager.Client to set of _PlayerGroup
     #     Mapping of users to the player groups managed by this manager they belong to.
-    # _id_to_group : dict of str to PlayerGroup
+    # _id_to_managee : dict of str to _PlayerGroup
     #     Mapping of player group IDs to player groups that this manager manages.
 
     # Invariants
     # ----------
-    # 1. If `self._playergroup_limit` is an int, then `len(self._id_to_group) <=
-    #    self._playergroup_limit`.
-    # 2. For every player group `(playergroup_id, playergroup)` in `self._id_to_group.items()`:
+    # 1. If `self._managee_limit` is an int, then `len(self._id_to_managee) <=
+    #    self._managee_limit`.
+    # 2. For every player group `(playergroup_id, _PlayerGroup)` in `self._id_to_managee.items()`:
     #     a. `playergroup._playergroup_id == playergroup_id`.
-    #     b. `playergroup._players` is a subset of `self._user_to_groups.keys()`.
+    #     b. `playergroup._players` is a subset of `self._user_to_managees.keys()`.
     #     c. `playergroup.is_unmanaged()` is False.
-    # 3. For all pairs of distinct groups `group1` and `group2` in `self._id_to_group.values()`:
+    # 3. For all pairs of distinct groups `group1` and `group2` in `self._id_to_managee.values()`:
     #     a. `group1._playergroup_id != group2._playergroup_id`.
-    # 4. For every player `player` in `self._user_to_groups.keys()`:
-    #     a. `self._user_to_groups[player]` is a non-empty set.
-    #     b. `self._user_to_groups[player]` is a subset of `self._id_to_group.values()`.
-    #     c. For every group `group` in `self._user_to_groups[player]`, `player` belongs to `group`.
-    # 5. For every player `player` in `self._user_to_groups.keys()`:
-    #     a. For every group `group` in `self._user_to_groups[player]`:
+    # 4. For every player `player` in `self._user_to_managees.keys()`:
+    #     a. `self._user_to_managees[player]` is a non-empty set.
+    #     b. `self._user_to_managees[player]` is a subset of `self._id_to_managee.values()`.
+    #     c. For every group `group` in `self._user_to_managees[player]`, `player` belongs to `group`.
+    # 5. For every player `player` in `self._user_to_managees.keys()`:
+    #     a. For every group `group` in `self._user_to_managees[player]`:
     #           1. `group` has no player concurrent membership limit, or it is at least the length
-    #               of `self._user_to_groups[player]`.
+    #               of `self._user_to_managees[player]`.
     # 6. Each player group it manages also satisfies its structural invariants.
 
-    def __init__(self, server, playergroup_limit=None, default_playergroup_type=None,
-                 available_id_producer=None):
+    def __init__(
+        self,
+        server: TsuserverDR,
+        managee_limit: Union[int, None] = None,
+        default_managee_type: _PlayerGroup = None
+        ):
         """
         Create a player group manager object.
 
@@ -845,41 +876,43 @@ class PlayerGroupManager:
         ----------
         server : TsuserverDR
             The server this player group manager belongs to.
-        playergroup_limit : int, optional
+        managee_limit : int, optional
             The maximum number of groups this manager can handle. Defaults to None (no limit).
-        playergroup_type : PlayerGroup, optional
+        default_managee_type : _PlayerGroup, optional
             The default type of player group this manager will create. Defaults to None (and then
-            converted to PlayerGroup).
-        available_id_producer : typing.types.FunctionType, optional
-            Function to produce available group IDs. It will override the built-in class method
-            get_available_group_id. Defaults to None (and then converted to the built-in
-            get_available_group_id).
+            converted to _PlayerGroup).
 
         """
 
-        if default_playergroup_type is None:
-            default_playergroup_type = PlayerGroup
-        if available_id_producer is None:
-            available_id_producer = self.get_available_group_id
-        self.get_available_group_id = available_id_producer
+        self._id = hex(id(self))
 
-        self._server = server
-        self._default_playergroup_type = default_playergroup_type
-        self._playergroup_limit = playergroup_limit
-        self._id_to_group = dict()
-        self._user_to_groups = dict()
+        if default_managee_type is None:
+            default_managee_type = _PlayerGroup
+
+        self.server = server
+        self._default_group_type = default_managee_type
+        self._group_limit = managee_limit
+        self._id_to_group: Dict[str, _PlayerGroup] = dict()
+        self._user_to_groups: Dict[ClientManager.Client, Set[_PlayerGroup]] = dict()
 
         self._check_structure()
 
-    def new_group(self, playergroup_type=None, creator=None, player_limit=None,
-                  player_concurrent_limit=1, require_invitations=False, require_players=True,
-                  require_leaders=True):
+    def new_managee(
+        self,
+        managee_type: _PlayerGroup = None,
+        creator: ClientManager.Client = None,
+        player_limit: Union[int, None] = None,
+        player_concurrent_limit: Union[int, None] = 1,
+        require_invitations: bool = False,
+        require_players: bool = True,
+        require_leaders: bool = True
+        ) -> _PlayerGroup:
         """
         Create a new player group managed by this manager.
 
         Parameters
         ----------
-        playergroup_type : PlayerGroup
+        managee_type : _PlayerGroup
             Class of player group that will be produced. Defaults to None (and converted to the
             default player group created by this player group manager).
         creator : ClientManager.Client, optional
@@ -907,7 +940,7 @@ class PlayerGroupManager:
 
         Returns
         -------
-        PlayerGroup
+        _PlayerGroup
             The created player group.
 
         Raises
@@ -921,25 +954,25 @@ class PlayerGroupManager:
 
         """
 
-        if self._playergroup_limit is not None:
-            if len(self._id_to_group) >= self._playergroup_limit:
+        if self._group_limit is not None:
+            if len(self._id_to_group) >= self._group_limit:
                 raise PlayerGroupError.ManagerTooManyGroupsError
         if creator:
             # Check if adding the creator to this new group would cause any concurrent
             # membership limits being reached.
-            if self.find_player_concurrent_limiting_group(creator):
+            if self.find_player_concurrent_limiting_managee(creator):
                 raise PlayerGroupError.UserHitGroupConcurrentLimitError
             groups_of_user = self._user_to_groups.get(creator, None)
             if groups_of_user is not None and len(groups_of_user) >= player_concurrent_limit:
                 raise PlayerGroupError.UserHitGroupConcurrentLimitError
 
         # At this point, we are committed to creating this player group.
-        # Generate a playergroup ID and the new group
+        # Generate a _PlayerGroup ID and the new group
 
         def_args = (
-            self._server,
+            self.server,
             self,
-            self.get_available_group_id(),
+            self.get_available_managee_id(),
             )
         def_kwargs = {
             'player_limit': player_limit,
@@ -949,10 +982,10 @@ class PlayerGroupManager:
             'require_leaders': require_leaders,
             }
 
-        new_playergroup_type = Constants.make_partial_from(playergroup_type,
-                                                           self._default_playergroup_type,
-                                                           *def_args, **def_kwargs)
-        playergroup = new_playergroup_type()
+        new_managee_type = Constants.make_partial_from(
+            managee_type, self._default_group_type, *def_args, **def_kwargs)
+
+        playergroup: _PlayerGroup = new_managee_type()
         playergroup_id = playergroup.get_id()
         self._id_to_group[playergroup_id] = playergroup
 
@@ -962,14 +995,14 @@ class PlayerGroupManager:
         self._check_structure()
         return playergroup
 
-    def delete_group(self, playergroup):
+    def delete_managee(self, managee: _PlayerGroup) -> Tuple[str, Set[ClientManager.Client]]:
         """
         Delete a player group managed by this manager, so all its players no longer belong to this
         player group.
 
         Parameters
         ----------
-        playergroup : PlayerGroup
+        managee : _PlayerGroup
             The player group to delete.
 
         Returns
@@ -984,31 +1017,31 @@ class PlayerGroupManager:
 
         """
 
-        if not self.manages_group(playergroup):
+        if not self.manages_managee(managee):
             raise PlayerGroupError.ManagerDoesNotManageGroupError
 
-        playergroup_id = playergroup.get_id()
+        playergroup_id = managee.get_id()
         self._id_to_group.pop(playergroup_id)
 
-        former_players = playergroup.get_players()
+        former_players = managee.get_players()
 
         for player in former_players:
-            self._user_to_groups[player].remove(playergroup)
+            self._user_to_groups[player].remove(managee)
             if not self._user_to_groups[player]:
                 self._user_to_groups.pop(player)
 
-        playergroup.destroy()
+        managee.destroy()
 
         self._check_structure()
         return playergroup_id, former_players
 
-    def manages_group(self, playergroup):
+    def manages_managee(self, managee: _PlayerGroup) -> bool:
         """
         Return True if the player group is managed by this manager, False otherwise.
 
         Parameters
         ----------
-        playergroup : PlayerGroup
+        managee : _PlayerGroup
             The player group to check.
 
         Returns
@@ -1018,74 +1051,74 @@ class PlayerGroupManager:
 
         """
 
-        return playergroup in self._id_to_group.values()
+        return managee in self._id_to_group.values()
 
-    def get_groups(self):
+    def get_managees(self) -> Set[_PlayerGroup]:
         """
-        Return (a shallow copy of) the groups this manager manages.
+        Return (a shallow copy of) the player groups this manager manages.
 
         Returns
         -------
-        set of PlayerGroup
+        set of _PlayerGroup
             Player groups this manager manages.
 
         """
 
         return set(self._id_to_group.values())
 
-    def get_group_by_id(self, playergroup_id):
+    def get_managee_by_id(self, managee_id) -> _PlayerGroup:
         """
-        If `playergroup_id` is the ID of a player group managed by this manager, return the group.
+        If `managee_id` is the ID of a player group managed by this manager, return the group.
 
         Parameters
         ----------
-        playergroup_id : str
+        managee_id : str
             ID of the player group this manager manages.
 
         Returns
         -------
-        PlayerGroup
+        _PlayerGroup
             The player group that matches the given tag.
 
         Raises
         ------
         PlayerGroupError.ManagerInvalidGroupIDError:
-            If `playergroup_id` is not the ID of a group this manager manages.
+            If `managee_id` is not the ID of a player group this manager manages.
 
         """
 
         try:
-            return self._id_to_group[playergroup_id]
+            return self._id_to_group[managee_id]
         except KeyError:
             raise PlayerGroupError.ManagerInvalidGroupIDError
 
-    def get_group_limit(self):
+    def get_managee_limit(self) -> Union[int, None]:
         """
         Return the player group limit of this manager.
 
         Returns
         -------
-        int
+        Union[int, None]
             Player group limit.
 
         """
 
-        return self._playergroup_limit
+        return self._group_limit
 
-    def get_group_ids(self):
+    def get_managee_ids(self) -> Set[str]:
         """
         Return (a shallow copy of) the IDs of all player groups managed by this manager.
 
         Returns
         -------
-        set of str
-            The IDs of all managed player groups.
+        Set[str]
+            The IDs of all player groups this manager manages.
 
         """
 
         return set(self._id_to_group.keys())
 
-    def get_groups_of_user(self, user):
+    def get_managees_of_user(self, user: ClientManager.Client) -> Set[_PlayerGroup]:
         """
         Return (a shallow copy of) the player groups managed by this manager user `user` is a
         player of. If the user is part of no such player group, an empty set is returned.
@@ -1097,7 +1130,7 @@ class PlayerGroupManager:
 
         Returns
         -------
-        set of PlayerGroup
+        Set[_PlayerGroup]
             Player groups the player belongs to.
 
         """
@@ -1107,21 +1140,21 @@ class PlayerGroupManager:
         except KeyError:
             return set()
 
-    def get_users_in_groups(self):
+    def get_users_in_managees(self) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) all the users that are part of some player group managed by
         this manager.
 
         Returns
         -------
-        set of ClientManager.Client
+        Set[ClientManager.Client]
             Users in some managed player group.
 
         """
 
         return set(self._user_to_groups.keys())
 
-    def get_available_group_id(self):
+    def get_available_managee_id(self) -> str:
         """
         Get a player group ID that no other player group managed by this manager has.
 
@@ -1138,14 +1171,14 @@ class PlayerGroupManager:
         """
 
         group_number = 0
-        while self.get_group_limit() is None or group_number < self.get_group_limit():
-            new_group_id = "pg{}".format(group_number)
-            if new_group_id not in self._id_to_group.keys():
-                return new_group_id
+        while self.get_managee_limit() is None or group_number < self.get_managee_limit():
+            new_managee_id = "pg{}".format(group_number)
+            if new_managee_id not in self._id_to_group.keys():
+                return new_managee_id
             group_number += 1
         raise PlayerGroupError.ManagerTooManyGroupsError
 
-    def get_id(self):
+    def get_id(self) -> str:
         """
         Return the ID of this manager. This ID is guaranteed to be unique among
         simultaneously existing managers.
@@ -1157,9 +1190,12 @@ class PlayerGroupManager:
 
         """
 
-        return hex(id(self))
+        return self._id
 
-    def find_player_concurrent_limiting_group(self, user):
+    def find_player_concurrent_limiting_managee(
+        self,
+        user: ClientManager.Client
+        ) -> Union[_PlayerGroup, None]:
         """
         For user `user`, find a player group `most_restrictive_group` managed by this manager such
         that, if `user` were to join another player group managed by this manager, they would
@@ -1175,12 +1211,12 @@ class PlayerGroupManager:
 
         Returns
         -------
-        PlayerGroup or None
+        _PlayerGroup or None
             Limiting player group as previously described if it exists, None otherwise.
 
         """
 
-        groups = self.get_groups_of_user(user)
+        groups = self.get_managees_of_user(user)
         if not groups:
             return None
 
@@ -1200,7 +1236,7 @@ class PlayerGroupManager:
             return None
         return most_restrictive_group
 
-    def _add_user_to_mapping(self, user, group):
+    def _add_user_to_mapping(self, user: ClientManager.Client, group: _PlayerGroup):
         """
         Update the user to player groups mapping with the information that `user` was added to
         `group`.
@@ -1209,7 +1245,7 @@ class PlayerGroupManager:
         ----------
         user : ClientManager.Client
             User that was added.
-        group : PlayerGroup
+        group : _PlayerGroup
             Player group that `user` was added to.
 
         Returns
@@ -1223,7 +1259,7 @@ class PlayerGroupManager:
         except KeyError:
             self._user_to_groups[user] = {group}
 
-    def _remove_user_from_mapping(self, user, group):
+    def _remove_user_from_mapping(self, user: ClientManager.Client, group: _PlayerGroup):
         """
         Update the user to player groups mapping with the information that `user` was removed from
         `group`.
@@ -1232,7 +1268,7 @@ class PlayerGroupManager:
         ----------
         user : ClientManager.Client
             User that was removed.
-        group : PlayerGroup
+        group : _PlayerGroup
             Player group that `user` was removed from.
 
         Returns
@@ -1256,11 +1292,11 @@ class PlayerGroupManager:
         """
 
         # 1.
-        if self._playergroup_limit is not None:
+        if self._group_limit is not None:
             err = (f'For player group manager {self}, expected that it managed at most '
-                   f'{self._playergroup_limit} player groups, but found it managed '
+                   f'{self._group_limit} player groups, but found it managed '
                    f'{len(self._id_to_group)} player groups. || {self}')
-            assert len(self._id_to_group) <= self._playergroup_limit, err
+            assert len(self._id_to_group) <= self._group_limit, err
 
         # 2.
         for (playergroup_id, playergroup) in self._id_to_group.items():
@@ -1351,9 +1387,9 @@ class PlayerGroupManager:
 
         """
 
-        return (f"PlayerGroupManager(server, playergroup_limit={self._playergroup_limit}, "
-                f"default_playergroup_type={self._default_playergroup_type}, "
+        return (f"PlayerGroupManager(server, managee_limit={self._group_limit}, "
+                f"default_managee_type={self._default_group_type}, "
                 f"|| "
-                f"_user_to_groups={self._user_to_groups}, "
-                f"_id_to_group={self._id_to_group}, "
+                f"_user_to_managees={self._user_to_groups}, "
+                f"_id_to_managee={self._id_to_group}, "
                 f"id={hex(id(self))})")

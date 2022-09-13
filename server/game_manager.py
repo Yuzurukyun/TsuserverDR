@@ -36,12 +36,12 @@ same game manager.
 
 from server.constants import Constants
 from server.exceptions import GameError, PlayerGroupError, TimerError
-from server.playergroup_manager import PlayerGroup, PlayerGroupManager
+from server.playergroup_manager import _PlayerGroup, PlayerGroupManager
 from server.timer_manager import TimerManager
 from server.subscriber import Listener, Publisher
 
 
-class _Team(PlayerGroup):
+class _Team(_PlayerGroup):
     """
     Teams are player groups with a fixed concurrent player membership limit of 1.
     """
@@ -1012,7 +1012,7 @@ class _Game():
 
         """
 
-        return self._team_manager.get_groups().copy()
+        return self._team_manager.get_managees().copy()
 
     def get_team_by_id(self, team_id):
         """
@@ -1036,7 +1036,7 @@ class _Game():
         """
 
         try:
-            return self._team_manager.get_group_by_id(team_id)
+            return self._team_manager.get_managee_by_id(team_id)
         except PlayerGroupError.ManagerInvalidGroupIDError:
             raise GameError.GameInvalidTeamIDError
 
@@ -1051,7 +1051,7 @@ class _Game():
 
         """
 
-        return self._team_manager.get_group_limit()
+        return self._team_manager.get_managee_limit()
 
     def get_team_ids(self):
         """
@@ -1064,7 +1064,7 @@ class _Game():
 
         """
 
-        return self._team_manager.get_group_ids().copy()
+        return self._team_manager.get_managee_ids().copy()
 
     def get_teams_of_user(self, user):
         """
@@ -1083,7 +1083,7 @@ class _Game():
 
         """
 
-        return self._team_manager.get_groups_of_user(user).copy()
+        return self._team_manager.get_managees_of_user(user).copy()
 
     def get_users_in_team(self):
         """
@@ -1097,7 +1097,7 @@ class _Game():
 
         """
 
-        return self._team_manager.get_users_in_groups().copy()
+        return self._team_manager.get_users_in_managees().copy()
 
     def get_available_team_id(self):
         """
@@ -1116,7 +1116,7 @@ class _Game():
         """
 
         try:
-            return self._team_manager.get_available_group_id()
+            return self._team_manager.get_available_managee_id()
         except PlayerGroupError.ManagerTooManyGroupsError:
             return GameError.GameTooManyTeamsError
 
@@ -1154,7 +1154,7 @@ class _Game():
 
         for timer in self._timer_manager.get_timers():
             self._timer_manager.delete_timer(timer)
-        for team in self._team_manager.get_groups():
+        for team in self._team_manager.get_managees():
             team.destroy()
 
         # Players (and subscriptions to them) are handled in the manager's delete code.
@@ -1296,7 +1296,7 @@ class _Game():
         """
 
         # 1.
-        team_players = self._team_manager.get_users_in_groups()
+        team_players = self._team_manager.get_users_in_managees()
         game_players = self._playergroup.get_players()
         team_not_in_game = {player for player in team_players if player not in game_players}
         err = (f'For game {self}, expected that every player in the set {team_players} of all '
@@ -1368,7 +1368,7 @@ class _Game():
                 f'require_invitations={self._playergroup._require_invitations}, '
                 f'require_leaders={self._playergroup._require_leaders}, '
                 f'require_character={self._require_character}, '
-                f'team_limit={self._team_manager.get_group_limit()}, '
+                f'team_limit={self._team_manager.get_managee_limit()}, '
                 f'timer_limit={self._timer_manager.get_timer_limit()} || '
                 f'players={self.get_players()}, '
                 f'invitations={self.get_invitations()}, '
@@ -1575,7 +1575,7 @@ class GameManager:
         game.destroy()
 
         try:
-            playergroup = self._playergroup_manager.get_group_by_id(game_id)
+            playergroup = self._playergroup_manager.get_managee_by_id(game_id)
             playergroup_id, players = self._playergroup_manager.delete_group(playergroup)
         except PlayerGroupError.ManagerInvalidGroupIDError:
             # This code will only run if this code came as a result of .destroy() on the
@@ -1672,7 +1672,7 @@ class GameManager:
 
         """
 
-        return self._playergroup_manager.get_group_limit()
+        return self._playergroup_manager.get_managee_limit()
 
     def get_game_ids(self):
         """
@@ -1704,7 +1704,7 @@ class GameManager:
 
         """
 
-        playergroups = self._playergroup_manager.get_groups_of_user(user)
+        playergroups = self._playergroup_manager.get_managees_of_user(user)
         playergroup_ids = {playergroup.get_id() for playergroup in playergroups}
         games = {self._id_to_game[playergroup_id] for playergroup_id in playergroup_ids}
         return games
@@ -1721,7 +1721,7 @@ class GameManager:
 
         """
 
-        return self._playergroup_manager.get_users_in_groups().copy()
+        return self._playergroup_manager.get_users_in_managees().copy()
 
     def get_available_game_id(self):
         """
@@ -1774,7 +1774,7 @@ class GameManager:
         """
 
         # 1.
-        proper_ids = self._playergroup_manager.get_group_ids()
+        proper_ids = self._playergroup_manager.get_managee_ids()
         my_ids = set(self._id_to_game.keys())
 
         err = (f'For game manager {self}, expected the set of proper game IDs {proper_ids} and '
