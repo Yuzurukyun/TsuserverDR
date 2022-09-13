@@ -824,7 +824,6 @@ Commands without (D) are aliases to commands and can be freely used (subject to 
 * **yell**: Same as /scream.
 * **zg**: Same as /zone_global.
 * **zi**: Same as /zone_info.
-* **timer_cancel**: Same as /timer_end. (D) (Deprecated July 5, 2021)
 * **fa**: Same as /files_area.
 * **l**: Same as /look.
 * **forcepos**: Same as /pos_force.
@@ -838,10 +837,6 @@ Commands without (D) are aliases to commands and can be freely used (subject to 
 * **loginrp**: Same as /logingm.
 * **slit**: Same as /bloodtrail.
 * **unsneak**: Same as /reveal.
-* **clock_cancel**: Same as /clock_end. (D) (Deprecated July 5, 2021)
-* **lurk_cancel**: Same as /lurk_end. (D) (Deprecated July 5, 2021)
-* **zone_delete**: Same as /zone_end. (D) (Deprecated July 5, 2021)
-* **rpmode**: (D) (Deprecated May 20, 2022)
 
 ### Notes
 
