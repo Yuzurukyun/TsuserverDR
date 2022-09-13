@@ -8,7 +8,6 @@ class _TestAuthorization(_TestSituation3):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.guardpass = cls.server.config['guardpass']
         cls.modpass = cls.server.config['modpass']
         cls.cmpass = cls.server.config['cmpass']
         cls.gmpass = cls.server.config['gmpass']
@@ -28,12 +27,10 @@ class _TestAuthorization(_TestSituation3):
                                   for x in range(1, 7) if x != current_day}
 
         cls.all_passwords = {cls.wrong,
-                             cls.wrong,
                              cls.gmpass,
                              cls.daily_gmpass,
                              cls.cmpass,
-                             cls.modpass,
-                             cls.guardpass}.union(cls.not_daily_gmpasses)
+                             cls.modpass}.union(cls.not_daily_gmpasses)
         cls.wrong_passwords = cls.all_passwords.copy()  # Set by child tests
 
     def test_01_NoClientLoggedinYet(self):
@@ -44,7 +41,6 @@ class _TestAuthorization(_TestSituation3):
             self.assertFalse(c.is_mod)
             self.assertFalse(c.is_cm)
             self.assertFalse(c.is_gm)
-            # self.assertTrue(c.in_rp) # Assumes server starts with RP mode on
 
 
 class _TestAuthorizationSingleRank(_TestAuthorization):
@@ -64,7 +60,6 @@ class _TestAuthorizationSingleRank(_TestAuthorization):
             self.assertFalse(self.good_rank(c))
             self.assertFalse(self.bad_rank1(c))
             self.assertFalse(self.bad_rank2(c))
-            # self.assertTrue(c.in_rp) # Assumes server starts with RP mode on
 
     def test_03_RightLoginAndRelogin(self):
         """

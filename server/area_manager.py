@@ -93,7 +93,6 @@ class AreaManager(AssetManager):
             self.owned = False
             self.ic_lock = False
             self.is_locked = False
-            self.is_gmlocked = False
             self.is_modlocked = False
             self.bleeds_to = set()
             self.blood_smeared = False
@@ -141,12 +140,6 @@ class AreaManager(AssetManager):
 
             self.reachable_areas.add(self.name) # Area can always reach itself
 
-        def background_backup(self) -> str:
-            Constants.warn_deprecated('area.background_backup',
-                                      'area.background',
-                                      '4.4')
-            return self.background
-
         @property
         def clients(self) -> Set[ClientManager.Client]:
             """
@@ -156,9 +149,9 @@ class AreaManager(AssetManager):
             return self._clients
 
         @clients.setter
-        def clients(self, new_clients) -> Set[ClientManager.Client]:
+        def clients(self, new_clients: Set[ClientManager.Client]):
             """
-            Set the clients parameter to the given one.
+            Set the clients parameter to a copy of the given one.
 
             Parameters
             ----------
@@ -1066,16 +1059,6 @@ class AreaManager(AssetManager):
             """
 
             self.is_locked = False
-            if not self.is_gmlocked and not self.is_modlocked:
-                self.invite_list = {}
-
-        def gmunlock(self):
-            """
-            Unlock the area if it had a GM lock so that non-authorized players may now join.
-            """
-
-            self.is_gmlocked = False
-            self.is_locked = False
             if not self.is_modlocked:
                 self.invite_list = {}
 
@@ -1085,7 +1068,6 @@ class AreaManager(AssetManager):
             """
 
             self.is_modlocked = False
-            self.is_gmlocked = False
             self.is_locked = False
             self.invite_list = {}
 
@@ -1157,13 +1139,6 @@ class AreaManager(AssetManager):
         self._source_file = 'config/areas.yaml'
         self.area_names = set()
         self.load_file(self._source_file)
-
-    @property
-    def areas(self) -> List[Area]:
-        Constants.warn_deprecated('AreaManager.areas',
-                                  'AreaManager.get_areas()',
-                                  '4.4')
-        return self.get_areas()
 
     def get_name(self) -> str:
         """
@@ -1237,12 +1212,6 @@ class AreaManager(AssetManager):
         """
 
         return self._areas.copy()
-
-    def load_areas(self, area_list_file: str = 'config/areas.yaml') -> List[Area]:
-        Constants.warn_deprecated('area_manager.load_areas',
-                                  'area_manager.load_file',
-                                  '4.4')
-        return self.load_file(area_list_file)
 
     def load_file(self, source_file: str) -> List:
         """

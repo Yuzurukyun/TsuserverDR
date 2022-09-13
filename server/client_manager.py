@@ -94,7 +94,6 @@ class ClientManager:
             self.muted_global = False
             self.pm_mute = False
 
-            self.in_rp = False
             self.autopass = False
             self.disemvowel = False
             self.disemconsonant = False
@@ -157,13 +156,6 @@ class ClientManager:
             self.mflood_times = self.server.config['music_change_floodguard']['times_per_interval']
             self.mflood_mutelength = self.server.config['music_change_floodguard']['mute_length']
             self.mflood_log = list()
-
-        @property
-        def music_list(self) -> List[Dict[str, Any]]:
-            Constants.warn_deprecated('client.music_list',
-                                      'client.music_manager.get_music',
-                                      '4.4')
-            return self.music_manager.get_music()
 
         def send_command(self, command: str, *args: List):
             self.protocol.data_send(command, *args)
@@ -944,21 +936,6 @@ class ClientManager:
                     'music_ao2_list': area_list+music_list,
                     })
 
-        def reload_music_list(self, new_music_file=None):
-            """
-            Rebuild the music list so that it only contains the target area's
-            reachable areas+music. Useful when moving areas/logging in or out.
-            """
-
-            Constants.warn_deprecated('client.reload_music_list',
-                                      'client.send_music_list_view',
-                                      '4.4',)
-
-            if new_music_file:
-                self.music_manager.load_file(new_music_file)
-
-            self.send_music_list_view()
-
         def check_change_area(self, area: AreaManager.Area,
                               override_passages: bool = False,
                               override_effects: bool = False,
@@ -1418,7 +1395,7 @@ class ClientManager:
                     for client in [x for x in area.clients if x.is_cm]:
                         owner = 'MASTER: {}'.format(client.get_char_name())
                         break
-                locked = area.is_gmlocked or area.is_modlocked or area.is_locked
+                locked = area.is_modlocked or area.is_locked
 
                 if self.is_staff():
                     n_clt = len([c for c in area.clients if c.char_id is not None])
@@ -1765,7 +1742,6 @@ class ClientManager:
                 self.is_mod = True
                 self.is_cm = False
                 self.is_gm = False
-                self.in_rp = False
             else:
                 if announce_to_officers:
                     self.send_ooc_others('{} [{}] failed to login as a moderator.'
@@ -1779,7 +1755,6 @@ class ClientManager:
                 self.is_cm = True
                 self.is_mod = False
                 self.is_gm = False
-                self.in_rp = False
             else:
                 if announce_to_officers:
                     self.send_ooc_others('{} [{}] failed to login as a community manager.'
@@ -1809,7 +1784,6 @@ class ClientManager:
                 self.is_gm = True
                 self.is_mod = False
                 self.is_cm = False
-                self.in_rp = False
             else:
                 if announce_to_officers:
                     self.send_ooc_others('{} [{}] failed to login as a game master.'
@@ -1822,8 +1796,6 @@ class ClientManager:
             self.is_cm = False
 
             # Clean-up operations
-            if self.server.rp_mode:
-                self.in_rp = True
             if self.area.evidence_mod == 'HiddenCM':
                 self.area.broadcast_evidence_list()
 

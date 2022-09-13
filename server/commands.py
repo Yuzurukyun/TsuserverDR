@@ -100,10 +100,7 @@ def ooc_cmd_area(client: ClientManager.Client, arg: str):
         if not client.server.config['announce_areas'] and not client.is_staff():
             raise ClientError('You must be authorized to use the no-parameter version of this '
                               'command.')
-        if client.in_rp:
-            client.send_limited_area_list()
-        else:
-            client.send_area_list()
+        client.send_limited_area_list()
 
     # Switch to new area
     else:
@@ -2719,7 +2716,7 @@ def ooc_cmd_gimp(client: ClientManager.Client, arg: str):
     """ (MOD ONLY)
     Gimps all IC messages of a user by client ID (number in brackets) or IPID (number in
     parentheses). In particular, their message will be replaced by one of the messages listed in
-    Constants.gimp_message in Constants.py. If given IPID, it will affect all clients opened by the
+    config/gimp.yaml. If given IPID, it will affect all clients opened by the
     user. Otherwise, it will just affect the given client. Requires /ungimp to undo.
     Returns an error if the given identifier does not correspond to a user.
 
@@ -2889,37 +2886,6 @@ def ooc_cmd_gm(client: ClientManager.Client, arg: str):
     client.server.broadcast_global(client, arg, as_mod=True)
     logger.log_server('[{}][{}][GLOBAL-MOD]{}.'
                       .format(client.area.id, client.get_char_name(), arg), client)
-
-
-def ooc_cmd_gmlock(client: ClientManager.Client, arg: str):
-    """ (STAFF ONLY)
-    Sets the current area as accessible only to staff members. Players in the area at the time of
-    the lock will be able to leave and return to the area, regardless of authorization.
-    Requires /unlock to undo.
-    Returns an error if the area is already gm-locked or if the area is set to be unlockable.
-
-    SYNTAX
-    /gmlock
-
-    PARAMETERS
-    None
-
-    EXAMPLE
-    >>> /gmlock
-    Sets the current area as accessible only to staff members.
-    """
-
-    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
-
-    if not client.area.locking_allowed:
-        raise ClientError('Area locking is disabled in this area.')
-    if client.area.is_gmlocked:
-        raise ClientError('Area is already gm-locked.')
-
-    client.area.is_gmlocked = True
-    client.area.broadcast_ooc('Area gm-locked.')
-    for i in client.area.clients:
-        client.area.invite_list[i.ipid] = None
 
 
 def ooc_cmd_gmself(client: ClientManager.Client, arg: str):
@@ -3425,7 +3391,7 @@ def ooc_cmd_invite(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, parameters='>0')
 
-    if not client.area.is_locked and not client.area.is_modlocked and not client.area.is_gmlocked:
+    if not client.area.is_locked and not client.area.is_modlocked:
         raise ClientError('Area is not locked.')
 
     targets = list()  # Start with empty list
@@ -7134,50 +7100,6 @@ def ooc_cmd_rplay(client: ClientManager.Client, arg: str):
                         f'not loop it.')
 
 
-def ooc_cmd_rpmode(client: ClientManager.Client, arg: str):
-    """ (STAFF ONLY)
-    Toggles RP mode on/off in the server. If turned on, all non-logged in users will be subject to
-    RP rules. Some effects include: unable to use /getarea and /getareas in areas that disable it.
-
-    This command is deprecated and pending removal in 4.4.
-
-    SYNTAX
-    /rpmode <new_status>
-
-    PARAMETERS
-    <new_status>: 'on' or 'off'
-
-    EXAMPLES
-    >>> /rpmode on
-    Turns on RP mode.
-    >>> /rpmode off
-    Turns off RP mode.
-    """
-
-    client.send_ooc('This command is deprecated and pending removal in 4.4.')
-
-    try:
-        Constants.assert_command(client, arg, is_staff=True, parameters='=1')
-    except ArgumentError:
-        raise ArgumentError('You must specify either on or off.')
-    if not client.server.config['rp_mode_enabled']:
-        raise ClientError("RP mode is disabled in this server.")
-
-    if arg == 'on':
-        client.server.rp_mode = True
-        for c in client.server.get_clients():
-            c.send_ooc('RP mode enabled.')
-            if not c.is_staff():
-                c.in_rp = True
-    elif arg == 'off':
-        client.server.rp_mode = False
-        for c in client.server.get_clients():
-            c.send_ooc('RP mode disabled.')
-            c.in_rp = False
-    else:
-        client.send_ooc('Expected on or off.')
-
-
 def ooc_cmd_scream(client: ClientManager.Client, arg: str):
     """
     Sends a message in the OOC chat visible to all staff members and non-deaf users that are in an
@@ -9533,7 +9455,7 @@ def ooc_cmd_uninvite(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, parameters='=1')
 
-    if not client.area.is_locked and not client.area.is_modlocked and not client.area.is_gmlocked:
+    if not client.area.is_locked and not client.area.is_modlocked:
         raise ClientError('Area is not locked.')
 
     targets = list()  # Start with empty list
@@ -9588,14 +9510,12 @@ def ooc_cmd_unlock(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, parameters='=0')
 
-    if not client.area.is_locked and not client.area.is_modlocked and not client.area.is_gmlocked:
+    if not client.area.is_locked and not client.area.is_modlocked:
         raise ClientError('Area is already open.')
 
     if client.is_mod and client.area.is_modlocked:
         client.area.modunlock()
-    elif client.is_staff() and not client.area.is_modlocked:
-        client.area.gmunlock()
-    elif not client.area.is_gmlocked and not client.area.is_modlocked:
+    elif not client.area.is_modlocked:
         client.area.unlock()
     else:
         raise ClientError('You must be authorized to do that.')

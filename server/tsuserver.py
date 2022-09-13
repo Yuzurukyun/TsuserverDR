@@ -68,8 +68,8 @@ class TsuserverDR:
         self.release = 4
         self.major_version = 4
         self.minor_version = 0
-        self.segment_version = 'a1'
-        self.internal_version = 'M220912a'
+        self.segment_version = 'a2'
+        self.internal_version = 'M220912b'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
@@ -123,7 +123,6 @@ class TsuserverDR:
         self.load_gimp()
 
         self.ms_client = None
-        self.rp_mode = True
         self.user_auth_req = False
         self.showname_freeze = False
         self.commands = importlib.import_module('server.commands')
@@ -138,39 +137,16 @@ class TsuserverDR:
 
         self._server = None
 
-    @property
-    def backgrounds(self):
-        Constants.warn_deprecated('server.backgrounds',
-                                  'server.background_manager.get_backgrounds()',
-                                  '4.4')
-        return self.background_manager.get_backgrounds()
-
-    @property
-    def music_list(self):
-        Constants.warn_deprecated('server.music_list',
-                                  'server.music_manager.get_music()',
-                                  '4.4')
-        return self.music_manager.get_music()
-
-    @property
-    def area_list(self):
-        Constants.warn_deprecated('server.area_list',
-                                  'server.area_manager.get_source_file()',
-                                  '4.4')
-        return self.area_manager.get_source_file()
-
     async def start(self):
         self.loop = asyncio.get_event_loop()
         self.error_queue = asyncio.Queue()
 
         self.tasker = Tasker(self)
-        bound_ip = '0.0.0.0'
         if self.config['local']:
             bound_ip = '127.0.0.1'
-            server_name = 'localhost'
             logger.log_print('Starting a local server...')
         else:
-            server_name = self.config['masterserver_name']
+            bound_ip = '0.0.0.0'
             logger.log_print('Starting a nonlocal server...')
 
         # Check if port is available
@@ -301,8 +277,6 @@ class TsuserverDR:
 
     def new_client(self, transport, protocol=None) -> Tuple[ClientManager.Client, bool]:
         c, valid = self.client_manager.new_client(transport, protocol=protocol)
-        if self.rp_mode:
-            c.in_rp = True
         c.server = self
         c.area = self.area_manager.default_area()
         c.area.new_client(c)
@@ -654,12 +628,7 @@ class TsuserverDR:
 
             logger.log_pdebug(message)
 
-    def load_music(self, music_list_file: str = 'config/music.yaml',
-                   server_music_list: bool = True) -> List[Dict[str, Any]]:
-        if server_music_list is not True:
-            Constants.warn_deprecated('non-default value of server_music_list parameter',
-                                      'server.music_manager.validate_file',
-                                      '4.4')
+    def load_music(self, music_list_file: str = 'config/music.yaml') -> List[Dict[str, Any]]:
         music = self.music_manager.load_file(music_list_file)
         return music.copy()
 
@@ -714,108 +683,6 @@ class TsuserverDR:
             self.ipid_list[ip] = ipid
             self.dump_ipids()
         return self.ipid_list[ip]
-
-    def build_music_list(self, from_area: AreaManager.Area = None, c: ClientManager.Client = None,
-                         music_list: List[Dict[str, Any]] = None, include_areas: bool = True,
-                         include_music: bool = True) -> List[str]:
-        Constants.warn_deprecated('server.build_music_list',
-                                  'client.get_area_and_music_list_view',
-                                  '4.4')
-        built_music_list = list()
-
-        # add areas first, if needed
-        if include_areas:
-            built_music_list.extend(self.prepare_area_list(c=c, from_area=from_area))
-
-        # then add music, if needed
-        if include_music:
-            built_music_list.extend(self.prepare_music_list(c=c, specific_music_list=music_list))
-
-        return built_music_list
-
-    def prepare_area_list(self, c: ClientManager.Client = None,
-                          from_area: AreaManager.Area = None) -> List[str]:
-        """
-        Return the area list of the server. If given c and from_area, it will send an area list
-        that matches the perspective of client `c` as if they were in area `from_area`.
-
-        Parameters
-        ----------
-        c: ClientManager.Client
-            Client whose perspective will be taken into account, by default None
-        from_area: AreaManager.Area
-            Area from which the perspective will be considered, by default None
-
-        Returns
-        -------
-        list of str
-            Area list that matches intended perspective.
-        """
-
-        Constants.warn_deprecated('server.prepare_area_list',
-                                  'area_manager.get_client_view',
-                                  '4.4')
-        return self.area_manager.get_client_view(c, from_area=from_area)
-
-    def prepare_music_list(self, c: ClientManager.Client = None,
-                           specific_music_list: List[Dict[str, Any]] = None) -> List[str]:
-        """
-        If `specific_music_list` is not None, return a client-ready version of that music list.
-        Else, return their latest music list.
-
-        Parameters
-        ----------
-        c: ClientManager.Client
-            Client whose current music list if it exists will be considered if `specific_music_list`
-            is None
-        specific_music_list: list of dictionaries with key sets {'category', 'songs'}
-            Music list to use if given
-
-        Returns
-        -------
-        list of str
-            Music list ready to be sent to clients
-        """
-
-        Constants.warn_deprecated('server.prepare_music_list',
-                                  'client.music_manager.get_client_view',
-                                  '4.4')
-
-        if not specific_music_list:
-            return c.music_manager.get_client_view()
-
-        prepared_music_list = list()
-        for item in specific_music_list:
-            category = item['category']
-            songs = item['songs']
-            prepared_music_list.append(category)
-            for song in songs:
-                name = song['name']
-                prepared_music_list.append(name)
-
-        return prepared_music_list
-
-    def is_valid_char_id(self, char_id: int) -> bool:
-        Constants.warn_deprecated('server.is_valid_char_id()',
-                                  'server.character_manager.is_valid_character_id()',
-                                  '4.4')
-        return self.character_manager.is_valid_character_id(char_id)
-
-    def get_char_id_by_name(self, name: str) -> int:
-        Constants.warn_deprecated('server.get_char_id_by_name()',
-                                  'server.character_manager.get_character_id_by_name()',
-                                  '4.4')
-        return self.character_manager.get_character_id_by_name(name)
-
-    def get_song_data(self, music: str, c: ClientManager.Client = None) -> Tuple[str, int, str]:
-        Constants.warn_deprecated('server.get_song_data',
-                                  'client.music_manager.get_music_data',
-                                  '4.4')
-
-        try:
-            return c.music_manager.get_music_data(music)
-        except MusicError.MusicNotFoundError:
-            raise ServerError.MusicNotFoundError('Music not found.')
 
     def make_all_clients_do(self, function: str, *args: List[str],
                             pred: Callable[[ClientManager.Client], bool] = lambda x: True,

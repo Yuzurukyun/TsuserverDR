@@ -85,8 +85,6 @@ class ClientChangeArea:
         if client.ipid not in area.invite_list:
             if area.is_locked and not client.is_staff():
                 raise ClientError('That area is locked.', code='ChArLocked')
-            if area.is_gmlocked and not client.is_mod and not client.is_gm:
-                raise ClientError('That area is gm-locked.', code='ChArGMLocked')
             if area.is_modlocked and not client.is_mod:
                 raise ClientError('That area is mod-locked.', code='ChArModLocked')
 

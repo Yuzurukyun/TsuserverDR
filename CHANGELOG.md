@@ -817,3 +817,16 @@
 * Changed console message indicating server address and port to reflect DRO no longer using the old syntax
 * Fixed /lasterror providing duplicate error information
 * Fixed /clock_period erroring out if a non-numerical invalid hour start or hour length was given.
+
+## (4.4.0)
+* Increased minimum Python version required to 3.9
+* Removed unused `server/area_manager_revamp.py` and `server/steptimer_manager.py`
+* Removed the old names of the following commands. Please use the new ones:
+  - /clock_cancel: /clock_end
+  - /lurk_cancel: /lurk_end
+  - /party_disband: /party_end
+  - /timer_cancel: /timer_end
+  - /zone_delete: /zone_end
+* Removed RP mode: It is now assumed always on
+* Removed /gmlock and /gmunlock (different from /lock and /unlock)
+* Removed unused configuration settings from `config/config.yaml`

@@ -62,19 +62,4 @@ command_aliases = {
     'gas': 'getareas',
 }
 
-command_deprecated = {
-    'clock_cancel': 'clock_end',
-    'lurk_cancel': 'lurk_end',
-    'party_disband': 'party_end',
-    'party_members': 'party_info',
-    'timer_cancel': 'timer_end',
-    'zone_delete': 'zone_end',
-    'area_list': 'map',
-    'area_lists': 'map_list',
-    'cleardoc': 'doc_clear',
-    'reload': 'char_reload',
-    'charselect': 'char_select',
-    'defaultarea': 'area_default',
-    'currentmusic': 'play_info',
-    'randommusic': 'play_random',
-}
+command_deprecated = dict()
