@@ -34,10 +34,10 @@ from server.tsuserver import TsuserverDR
 def _mandatory_python_version_check():
     current_python_tuple = sys.version_info
     current_python_simple = 'Python {}.{}.{}'.format(*current_python_tuple[:3])
-    if current_python_tuple < (3, 7):
+    if current_python_tuple < (3, 9):
         # This deliberately uses .format() because f-strings were not available prior to
-        # Python 3.7
-        msg = ('This version of TsuserverDR requires at least Python 3.7. You currently have '
+        # Python 3.7, and 3.7 < 3.9
+        msg = ('This version of TsuserverDR requires at least Python 3.9. You currently have '
                 '{}. Please refer to README.md for instructions on updating.'
                 .format(current_python_simple))
         raise RuntimeError(msg)

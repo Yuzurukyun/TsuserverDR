@@ -240,12 +240,8 @@ class FileValidity:
         if not FileValidity.is_path_exists_or_creatable(pathname):
             return False
 
-        try:
-            if pathlib.Path(pathname).is_file():
-                return True
-        except OSError:
-            # 3.7 in Windows raises an OSError for stuff like `con.yaml` here
-            return False
+        if pathlib.Path(pathname).is_file():
+            return True
 
         # If execution makes it here, we are in one of two situations
         # pathname exists but is not a file
@@ -1098,11 +1094,9 @@ class Constants():
 
             if not exception:
                 return
-            if isinstance(exception, (KeyboardInterrupt, asyncio.CancelledError)):
-                # exception may only be asyncio.CancelledError in Python 3.7 or lower
-                # In Python 3.8 it would be raised as an exception and caught in the
-                # earlier try except.
+            if isinstance(exception, (KeyboardInterrupt, )):
                 return
+
             try:
                 if not (_client and isinstance(exception, TsuserverException)):
                     raise exception
