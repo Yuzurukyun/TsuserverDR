@@ -20,6 +20,10 @@
 Module that implements a simple publisher-listener model.
 """
 
+from __future__ import annotations
+
+from typing import List
+
 
 class Listener:
     """
@@ -137,7 +141,7 @@ class Listener:
         publisher = self._get_publisher(unsubscribing_from)
         publisher.discard(self._parent)
 
-    def get_subscriptions(self):
+    def get_subscriptions(self) -> List[Publisher]:
         """
         Return (a shallow copy of) the publishers this listener is subscribed to.
 

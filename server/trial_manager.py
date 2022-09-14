@@ -338,7 +338,7 @@ class _Trial(GameWithAreas):
 
         self._player_to_influence.pop(user.id)
         self._player_to_focus.pop(user.id)
-        for game in self._minigame_manager.get_games():
+        for game in self._minigame_manager.get_managees():
             if user in game.get_players():
                 game.remove_player(user)
 
@@ -798,7 +798,7 @@ class _Trial(GameWithAreas):
                 nsd.add_player(creator)
         except GameError as ex:
             # Discard game
-            self._minigame_manager.delete_game(nsd)
+            self._minigame_manager.delete_managee(nsd)
             raise ex
 
         if add_players:
@@ -838,7 +838,7 @@ class _Trial(GameWithAreas):
 
         """
 
-        games = self._minigame_manager.get_games_of_user(user)
+        games = self._minigame_manager.get_managees_of_user(user)
         nsds = {game for game in games if isinstance(game, NonStopDebate)}
         if not nsds:
             raise TrialError.UserNotInMinigameError
@@ -857,7 +857,7 @@ class _Trial(GameWithAreas):
 
         """
 
-        return self._minigame_manager.get_games().copy()
+        return self._minigame_manager.get_managees().copy()
 
     def get_minigame_by_id(self, minigame_id) -> TrialMinigame:
         """
@@ -880,7 +880,7 @@ class _Trial(GameWithAreas):
 
         """
 
-        return self._minigame_manager.get_game_by_id(minigame_id)
+        return self._minigame_manager.get_managee_by_id(minigame_id)
 
     def get_nsd_by_id(self, nsd_id) -> NonStopDebate:
         """
@@ -927,10 +927,10 @@ class _Trial(GameWithAreas):
         """
 
         game_number = 0
-        game_limit = self._minigame_manager.get_game_limit()
+        game_limit = self._minigame_manager.get_managee_limit()
         while game_limit is None or game_number < game_limit:
             new_game_id = "{}g{}".format(self.get_id(), game_number)
-            if new_game_id not in self._minigame_manager.get_game_ids():
+            if new_game_id not in self._minigame_manager.get_managee_ids():
                 return new_game_id
             game_number += 1
         raise GameError.ManagerTooManyGamesError
@@ -999,7 +999,7 @@ class _Trial(GameWithAreas):
 
         # Remove minigames first. This is done first so as to enforce explicit destruction
         # (rather than rely on other methods).
-        for game in self._minigame_manager.get_games():
+        for game in self._minigame_manager.get_managees():
             game.destroy()
 
         super().destroy()  # Also calls _check_structure()
@@ -1358,8 +1358,8 @@ class _Trial(GameWithAreas):
                 f'require_invitations={self._playergroup._require_invitations}, '
                 f'require_leaders={self._playergroup._require_leaders}, '
                 f'require_character={self._require_character}, '
-                f'team_limit={self._team_manager.get_managee_limit()}, '
-                f'timer_limit={self._timer_manager.get_timer_limit()}, || '
+                f'team_limit={self.team_manager.get_managee_limit()}, '
+                f'timer_limit={self.timer_manager.get_timer_limit()}, || '
                 f'players={self.get_players()}, '
                 f'invitations={self.get_invitations()}, '
                 f'leaders={self.get_leaders()}, '
@@ -1592,7 +1592,7 @@ class TrialManager(GameWithAreasManager):
 
         """
 
-        games = self.get_games_of_user(user)
+        games = self.get_managees_of_user(user)
         trials = {game for game in games if isinstance(game, _Trial)}
         if not trials:
             raise GameError.UserNotPlayerError
@@ -1600,7 +1600,7 @@ class TrialManager(GameWithAreasManager):
             raise RuntimeError(trials)
         return next(iter(trials))
 
-    def get_available_game_id(self):
+    def get_available_managee_id(self):
         """
         Get a trial ID that no other trial managed by this manager has.
 
@@ -1617,10 +1617,10 @@ class TrialManager(GameWithAreasManager):
         """
 
         game_number = 0
-        game_limit = self.get_game_limit()
+        game_limit = self.get_managee_limit()
         while game_limit is None or game_number < game_limit:
             new_game_id = "trial{}".format(game_number)
-            if new_game_id not in self.get_game_ids():
+            if new_game_id not in self.get_managee_ids():
                 return new_game_id
             game_number += 1
         raise GameError.ManagerTooManyGamesError
@@ -1636,7 +1636,7 @@ class TrialManager(GameWithAreasManager):
 
         """
 
-        return (f"TrialManager(server, game_limit={self.get_game_limit()}, "
+        return (f"TrialManager(server, game_limit={self.get_managee_limit()}, "
                 f"|| "
-                f"_trials={self.get_games()}, "
+                f"_trials={self.get_managees()}, "
                 f"id={hex(id(self))})")

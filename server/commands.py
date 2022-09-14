@@ -8813,7 +8813,7 @@ def ooc_cmd_trial_join(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='>0')
 
     try:
-        trial = client.server.trial_manager.get_game_by_id(arg)
+        trial = client.server.trial_manager.get_managee_by_id(arg)
     except TrialError.ManagerInvalidGameIDError:
         raise ClientError(f'Unrecognized trial ID `{arg}`.')
 

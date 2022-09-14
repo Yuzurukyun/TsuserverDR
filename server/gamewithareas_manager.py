@@ -498,8 +498,8 @@ class GameWithAreas(_Game):
                 f'require_invitations={self._playergroup._require_invitations}, '
                 f'require_leaders={self._playergroup._require_leaders}, '
                 f'require_character={self._require_character}, '
-                f'team_limit={self._team_manager.get_managee_limit()}, '
-                f'timer_limit={self._timer_manager.get_timer_limit()}, '
+                f'team_limit={self.team_manager.get_managee_limit()}, '
+                f'timer_limit={self.timer_manager.get_timer_limit()}, '
                 f'areas={self.get_areas()}) || '
                 f'players={self.get_players()}, '
                 f'invitations={self.get_invitations()}, '
@@ -814,7 +814,7 @@ class GameWithAreasManager(GameManager):
                 game.add_area(area)
         except GameError as ex:
             # Discard game
-            self.delete_game(game)
+            self.delete_managee(game)
             raise ex
 
         # Add creator manually. This is because adding it via .new_game will yield errors because
@@ -824,7 +824,7 @@ class GameWithAreasManager(GameManager):
                 game.add_player(creator)
         except GameError as ex:
             # Discard game
-            self.delete_game(game)
+            self.delete_managee(game)
             raise ex
 
         return game
@@ -981,7 +981,7 @@ class GameWithAreasManager(GameManager):
                        f'that appears in the area to game with areas mapping for area {area} '
                        f'also appears in the game with areas ID to game with areas mapping, but '
                        f'found it did not. || {self}')
-                assert game in self.get_games(), err
+                assert game in self.get_managees(), err
 
                 # c.
                 err = (f'For game with areas manager {self}, expected that area {area} in the area '
@@ -1019,7 +1019,7 @@ class GameWithAreasManager(GameManager):
 
         """
 
-        return (f"GameWithAreasManager(server, game_limit={self.get_game_limit()}, "
+        return (f"GameWithAreasManager(server, game_limit={self.get_managee_limit()}, "
                 f"|| "
                 f"_area_to_games={self._area_to_games}, "
                 f"id={hex(id(self))})")

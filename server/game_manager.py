@@ -35,15 +35,16 @@ same game manager.
 """
 
 from __future__ import annotations
+from multiprocessing.connection import Client
 
 import typing
 
-from typing import Type, Union
+from typing import Any, Callable, Dict, Set, Tuple, Type, Union
 
 from server.constants import Constants
 from server.exceptions import GameError, PlayerGroupError, TimerError
 from server.playergroup_manager import _PlayerGroup, PlayerGroupManager
-from server.timer_manager import TimerManager
+from server.timer_manager import Timer, TimerManager
 from server.subscriber import Listener, Publisher
 
 if typing.TYPE_CHECKING:
@@ -53,7 +54,8 @@ if typing.TYPE_CHECKING:
 
 class _Team(_PlayerGroup):
     """
-    Teams are player groups with a fixed concurrent player membership limit of 1.
+    Teams are player groups that have a game associated with them. Users may only be added as
+    players of the team if they are a player of the game.
     """
 
     # (Private) Attributes
@@ -63,7 +65,7 @@ class _Team(_PlayerGroup):
 
     def __init__(self, server, manager, playergroup_id, player_limit=None,
                  player_concurrent_limit=None, require_invitations=False, require_players=True,
-                 require_leaders=True):
+                 require_leaders=True, game: _Game = None):
         """
         Create a new player group.
 
@@ -102,10 +104,10 @@ class _Team(_PlayerGroup):
         """
 
         super().__init__(server, manager, playergroup_id, player_limit=player_limit,
-                         player_concurrent_limit=1, # Teams allow 1 concurrent player membership
+                         player_concurrent_limit=player_concurrent_limit,
                          require_invitations=require_invitations,
                          require_players=require_players, require_leaders=require_leaders)
-        self._game = None
+        self._game = game
 
     def add_player(self, user):
         """
@@ -143,7 +145,7 @@ class _Team(_PlayerGroup):
         super().add_player(user)
 
 
-class _Game():
+class _Game(_PlayerGroup):
     """
     A mutable data type for games.
 
@@ -211,15 +213,24 @@ class _Game():
     # Invariants
     # ----------
     # 1. All players part of a team managed by this game are players of the game.
-    # 2. `self._unmanaged == self._playergroup._unmanaged`.
-    # 3. For each player of the game, the game is subscribed to it.
-    # 4. If the game requires its players have characters, all its players do have characters.
-    # 5. Each internal structure satisfies its invariants.
+    # 2. For each player of the game, the game is subscribed to it.
+    # 3. If the game requires its players have characters, all its players do have characters.
+    # 4. Each internal structure satisfies its invariants.
 
-    def __init__(self, server, manager, game_id, player_limit=None,
-                 player_concurrent_limit=None, require_invitations=False, require_players=True,
-                 require_leaders=True, require_character=False, team_limit=None,
-                 timer_limit=None, playergroup_manager=None):
+    def __init__(
+        self,
+        server: TsuserverDR,
+        manager: GameManager,
+        game_id: str,
+        player_limit: Union[int, None] = None,
+        player_concurrent_limit: Union[int, None] = None,
+        require_invitations: bool = False,
+        require_players: bool = True,
+        require_leaders: bool = True,
+        require_character: bool = False,
+        team_limit: Union[int, None] = None,
+        timer_limit: Union[int, None] = None,
+    ):
         """
         Create a new game. A game should not be fully initialized anywhere else other than
         some manager code, as otherwise the manager will not recognize the game.
@@ -264,39 +275,24 @@ class _Game():
         timer_limit : int or None, optional
             If an int, it is the maximum number of timers the game supports. If None, it
             indicates the game has no timer limit. Defaults to None.
-        playergroup_manager : PlayerGroupManager, optional
-            The internal playergroup manager of the game manager. Access to this value is
-            limited exclusively to this __init__, and is only to initialize the internal
-            player group of the game.
-
-        Raises
-        ------
-        GameError.ManagerTooManyGamesError
-            If the manager is already managing its maximum number of games.
 
         """
 
-        self._server = server
-        self._manager = manager
-        self._game_id = game_id
-        self._require_character = require_character
-        self._unmanaged = False
+        super().__init__(
+            server,
+            manager,
+            game_id,
+            player_limit=player_limit,
+            player_concurrent_limit=player_concurrent_limit,
+            require_invitations=require_invitations,
+            require_players=require_players,
+            require_leaders=require_leaders,
+        )
 
-        self._team_manager = PlayerGroupManager(server, playergroup_limit=team_limit,
+        self.team_manager = PlayerGroupManager(server, playergroup_limit=team_limit,
                                                 default_playergroup_type=_Team)
-        self._timer_manager = TimerManager(server, timer_limit=timer_limit)
-        # Creator is to be added in the manager
-        try:
-            group = playergroup_manager.new_group(creator=None,
-                                                  player_limit=player_limit,
-                                                  player_concurrent_limit=player_concurrent_limit,
-                                                  require_invitations=require_invitations,
-                                                  require_players=require_players,
-                                                  require_leaders=require_leaders)
-        except PlayerGroupError.ManagerTooManyGroupsError:
-            raise GameError.ManagerTooManyGamesError
-
-        self._playergroup = group
+        self.timer_manager = TimerManager(server, timer_limit=timer_limit)
+        self._require_character = require_character
 
         self.publisher = Publisher(self)
         # Implementation detail: the callbacks of the internal objects of the game are (to be)
@@ -319,9 +315,7 @@ class _Game():
 
         """
 
-        # Development note: This is NOT the ID of the internal player group, but the ID of the
-        # game itself. To facilitate your life, these two should be made the same.
-        return self._game_id
+        return super().get_id()
 
     def get_name(self) -> str:
         """
@@ -337,40 +331,56 @@ class _Game():
 
         return "game"
 
-    def get_player_concurrent_limit(self):
+    def get_player_limit(self) -> Union[int, None]:
+        """
+        Return the player membership limit of this game.
+
+        Returns
+        -------
+        Union[int, None]
+            The player membership limit.
+
+        """
+
+        return self._player_concurrent_limit
+
+    def get_player_concurrent_limit(self) -> Union[int, None]:
         """
         Return the concurrent player membership limit of this game.
 
         Returns
         -------
-        int or None
+        Union[int, None]
             The concurrent player membership limit.
 
         """
 
-        return self._playergroup.get_player_concurrent_limit()
+        return super().get_player_concurrent_limit()
 
-    def get_players(self, cond=None):
+    def get_players(
+        self,
+        cond: Callable[[ClientManager.Client, ], bool] = None
+        ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of players of this game that satisfy a condition
         if given.
 
         Parameters
         ----------
-        cond : types.LambdaType: ClientManager.Client -> bool, optional
+        cond : Callable[[ClientManager.Client, ], bool], optional
             Condition that all players returned satisfy. Defaults to None (no checked
             conditions).
 
         Returns
         -------
-        set of ClientManager.Client
+        Set[ClientManager.Client]
             The (filtered) players of this game.
 
         """
 
-        return self._playergroup.get_players(cond=cond)
+        return super().get_players(cond=cond)
 
-    def is_player(self, user):
+    def is_player(self, user: ClientManager.Client) -> bool:
         """
         Decide if a user is a player of the game.
 
@@ -386,12 +396,13 @@ class _Game():
 
         """
 
-        return self._playergroup.is_player(user)
+        return super().is_player(user)
 
-    def add_player(self, user):
+    def add_player(self, user: ClientManager.Client):
         """
-        Make a user a player of the game. By default this player will not be a leader. It will
-        also subscribe the game to the player so it can listen to its updates.
+        Make a user a player of the game. By default this player will not be a leader, unless the
+        game has no leaders and the game requires a leader.
+        It will also subscribe the game to the player so it can listen to its updates.
 
         Parameters
         ----------
@@ -418,14 +429,11 @@ class _Game():
 
         """
 
-        if self.is_unmanaged():
-            raise GameError.GameIsUnmanagedError
-        # If the game demands the player has a character, check that too
         if self._require_character and not user.has_character():
             raise GameError.UserHasNoCharacterError
 
         try:
-            self._playergroup.add_player(user)
+            super().add_player(user)
         except PlayerGroupError.UserNotInvitedError:
             raise GameError.UserNotInvitedError
         except PlayerGroupError.UserAlreadyPlayerError:
@@ -436,9 +444,9 @@ class _Game():
             raise GameError.GameIsFullError
 
         self.listener.subscribe(user)
-        self._manager._check_structure()
+        self._check_structure()
 
-    def remove_player(self, user):
+    def remove_player(self, user: ClientManager.Client):
         """
         Make a user be no longer a player of this game. If they were part of a team managed by
         this game, they will also be removed from said team. It will also unsubscribe the game
@@ -463,9 +471,8 @@ class _Game():
         """
 
         if self.is_unmanaged():
-            raise GameError.GameIsUnmanagedError
-
-        if not self._playergroup.is_player(user):
+           raise GameError.GameIsUnmanagedError
+        if not self.is_player(user):
             raise GameError.UserNotPlayerError
 
         user_teams = self.get_teams_of_user(user)
@@ -473,40 +480,54 @@ class _Game():
             team.remove_player(user)
 
         try:
-            self._playergroup.remove_player(user)
+            super().remove_player(user)
+        except PlayerGroupError.GroupIsUnmanagedError:
+            # Should not have made it here as we already asserted the game is not unmmanaged
+            raise RuntimeError(self, user)
         except PlayerGroupError.UserNotPlayerError:
             # Should not have made it here as we already asserted the user is a player
-            raise RuntimeError(self)
+            raise RuntimeError(self, user)
 
         self.listener.unsubscribe(user)
 
-        # Detect if the internal player group was scheduled for deletion
-        if self._playergroup.is_unmanaged():
-            self.destroy()
+        self.manager._check_structure()
 
-        self._manager._check_structure()
+    def requires_players(self) -> bool:
+        """
+        Return whether the game requires players at all times.
 
-    def get_invitations(self, cond=None):
+        Returns
+        -------
+        bool
+            Whether the game requires players at all times.
+        """
+
+        return super().requires_players()
+
+    def get_invitations(
+        self,
+        cond: Callable[[ClientManager.Client, ], bool] = None
+        ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of invited users of this game that satisfy a
         condition if given.
 
         Parameters
         ----------
-        cond : types.LambdaType: ClientManager.Client -> bool, optional
+        cond : Callable[[ClientManager.Client, ], bool], optional
             Condition that all invited users returned satisfy. Defaults to None (no checked
             conditions).
 
         Returns
         -------
-        set of ClientManager.Client
+        Set[ClientManager.Client]
             The (filtered) invited users of this game.
 
         """
 
-        return self._playergroup.get_invitations(cond=cond)
+        return super().get_invitations(cond=cond)
 
-    def is_invited(self, user):
+    def is_invited(self, user: ClientManager.Client) -> bool:
         """
         Decide if a user is invited to the game.
 
@@ -528,11 +549,11 @@ class _Game():
         """
 
         try:
-            return self._playergroup.is_invited(user)
+            return super().is_invited(user)
         except PlayerGroupError.UserAlreadyPlayerError:
             raise GameError.UserAlreadyPlayerError
 
-    def add_invitation(self, user):
+    def add_invitation(self, user: ClientManager.Client):
         """
         Mark a user as invited to this game.
 
@@ -559,7 +580,10 @@ class _Game():
             raise GameError.GameIsUnmanagedError
 
         try:
-            self._playergroup.add_invitation(user)
+            super().add_invitation(user)
+        except PlayerGroupError.GroupIsUnmanagedError:
+            # Should not have made it here as we already asserted the game is not unmmanaged
+            raise RuntimeError(self, user)
         except PlayerGroupError.GroupDoesNotTakeInvitationsError:
             raise GameError.GameDoesNotTakeInvitationsError
         except PlayerGroupError.UserAlreadyInvitedError:
@@ -567,9 +591,9 @@ class _Game():
         except PlayerGroupError.UserAlreadyPlayerError:
             raise GameError.UserAlreadyPlayerError
 
-        self._manager._check_structure()
+        self.manager._check_structure()
 
-    def remove_invitation(self, user):
+    def remove_invitation(self, user: ClientManager.Client):
         """
         Mark a user as no longer invited to this game (uninvite).
 
@@ -594,13 +618,16 @@ class _Game():
             raise GameError.GameIsUnmanagedError
 
         try:
-            self._playergroup.remove_invitation(user)
+            super().remove_invitation(user)
+        except PlayerGroupError.GroupIsUnmanagedError:
+            # Should not have made it here as we already asserted the game is not unmmanaged
+            raise RuntimeError(self, user)
         except PlayerGroupError.GroupDoesNotTakeInvitationsError:
             raise GameError.GameDoesNotTakeInvitationsError
         except PlayerGroupError.UserNotInvitedError:
             raise GameError.UserNotInvitedError
 
-        self._manager._check_structure()
+        self.manager._check_structure()
 
     def requires_invitations(self):
         """
@@ -614,48 +641,54 @@ class _Game():
             the game, False otherwise.
         """
 
-        return self._playergroup.requires_invitations()
+        return super().requires_invitations()
 
-    def get_leaders(self, cond=None):
+    def get_leaders(
+        self,
+        cond: Callable[[ClientManager.Client, ], bool] = None
+        ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of leaders of this game that satisfy a condition
         if given.
 
         Parameters
         ----------
-        cond : types.LambdaType: ClientManager.Client -> bool, optional
+        cond : Callable[[ClientManager.Client, ], bool], optional
             Condition that all leaders returned satisfy. Defaults to None (no checked
             conditions).
 
         Returns
         -------
-        set of ClientManager.Client
+        Set[ClientManager.Client]
             The (filtered) leaders of this game.
 
         """
 
-        return self._playergroup.get_leaders(cond=cond)
+        return super().get_leaders(cond=cond)
 
-    def get_regulars(self, cond=None):
+    def get_regulars(
+        self,
+        cond: Callable[[ClientManager.Client, ], bool] = None
+        ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of players of this game that are regulars and satisfy
         a condition if given.
 
         Parameters
         ----------
-        cond : types.LambdaType: ClientManager.Client -> bool, optional
+        cond : Callable[[ClientManager.Client, ], bool], optional
             Condition that all regulars returned satisfy. Defaults to None (no checked
             conditions).
 
         Returns
         -------
-        set of ClientManager.Client
+        Set[ClientManager.Client]
             The (filtered) regulars of this game.
 
         """
-        return self._playergroup.get_regulars(cond=cond)
+        return super().get_regulars(cond=cond)
 
-    def is_leader(self, user):
+    def is_leader(self, user: ClientManager.Client) -> bool:
         """
         Decide if a user is a leader of the game.
 
@@ -677,11 +710,11 @@ class _Game():
         """
 
         try:
-            return self._playergroup.is_leader(user)
+            return super().is_leader(user)
         except PlayerGroupError.UserNotPlayerError:
             raise GameError.UserNotPlayerError
 
-    def add_leader(self, user):
+    def add_leader(self, user: ClientManager.Client):
         """
         Set a user as leader of this game (promote to leader).
 
@@ -706,15 +739,18 @@ class _Game():
             raise GameError.GameIsUnmanagedError
 
         try:
-            self._playergroup.add_leader(user)
+            super().add_leader(user)
+        except PlayerGroupError.GroupIsUnmanagedError:
+            # Should not have made it here as we already asserted the game is not unmmanaged
+            raise RuntimeError(self, user)
         except PlayerGroupError.UserNotPlayerError:
             raise GameError.UserNotPlayerError
         except PlayerGroupError.UserAlreadyLeaderError:
             raise GameError.UserAlreadyLeaderError
 
-        self._manager._check_structure()
+        self.manager._check_structure()
 
-    def remove_leader(self, user):
+    def remove_leader(self, user: ClientManager.Client):
         """
         Make a user no longer leader of this game (demote).
 
@@ -739,30 +775,77 @@ class _Game():
             raise GameError.GameIsUnmanagedError
 
         try:
-            self._playergroup.remove_leader(user)
+            super().remove_leader(user)
+        except PlayerGroupError.GroupIsUnmanagedError:
+            # Should not have made it here as we already asserted the game is not unmmanaged
+            raise RuntimeError(self, user)
         except PlayerGroupError.UserNotPlayerError:
             raise GameError.UserNotPlayerError
         except PlayerGroupError.UserNotLeaderError:
             raise GameError.UserNotLeaderError
 
-        self._manager._check_structure()
+        self.manager._check_structure()
 
-    def new_timer(self, timer_type=None, start_value=None, tick_rate=1,
-                  min_value=None, max_value=None, auto_restart=False, auto_destroy=True):
+    def has_ever_had_players(self) -> bool:
         """
-        Create a new timer with given parameters managed by this game.
+        Return True if a player has ever been added to this game, False otherwise.
+
+        Returns
+        -------
+        bool
+            True if the game has ever had a player added, False otherwise.
+
+        """
+
+        return super().has_ever_had_players()
+
+    def requires_leaders(self) -> bool:
+        """
+        Return whether the game requires leaders at all times.
+
+        Returns
+        -------
+        bool
+            Whether the game requires leaders at all times.
+        """
+
+        return super().requires_leaders()
+
+    def requires_characters(self) -> bool:
+        """
+        Return whether the game requires players have a character at all times.
+
+        Returns
+        -------
+        bool
+            Whether the game requires players have a character at all times.
+        """
+
+        return self._require_players
+
+    def new_timer(
+        self,
+        timer_type: Type[Timer],
+        start_value: Union[float, None] = None,
+        tick_rate: float = 1,
+        min_value: Union[float, None] = None,
+        max_value: Union[float, None] = None,
+        auto_restart: bool = False,
+        auto_destroy: bool = True
+        ) -> Timer:
+        """
+        Create a new timer managed by this game with given parameters.
 
         Parameters
         ----------
-        timer_type : TimerManager.Timer, optional
+        timer_type : Type[Timer], optional
             Class of timer that will be produced. Defaults to None (and converted to
             TimerManager.Timer)
         start_value : float, optional
             Number of seconds the apparent timer the timer will initially have. Defaults
             to None (will use the default from `timer_type`).
         tick_rate : float, optional
-            Starting rate in timer seconds/IRL seconds at which the timer will tick. Defaults to
-            None (will use the default from `timer_type`).
+            Starting rate in timer seconds/IRL seconds at which the timer will tick. Defaults to 1.
         min_value : float, optional
             Minimum value the apparent timer may take. If the timer ticks below this, it will
             end automatically. It must be a non-negative number. Defaults to None (will use the
@@ -800,7 +883,7 @@ class _Game():
             raise GameError.GameIsUnmanagedError
 
         try:
-            timer = self._timer_manager.new_timer(timer_type=timer_type,
+            timer = self.timer_manager.new_timer(timer_type=timer_type,
                                                   start_value=start_value,
                                                   tick_rate=tick_rate,
                                                   min_value=min_value,
@@ -810,16 +893,16 @@ class _Game():
         except TimerError.ManagerTooManyTimersError:
             raise GameError.GameTooManyTimersError
 
-        self._manager._check_structure()
+        self.manager._check_structure()
         return timer
 
-    def delete_timer(self, timer):
+    def delete_timer(self, timer: Timer) -> str:
         """
         Delete a timer managed by this game, terminating it first if needed.
 
         Parameters
         ----------
-        timer : TimerManager.Timer
+        timer : Timer
             The timer to delete.
 
         Returns
@@ -829,6 +912,9 @@ class _Game():
 
         Raises
         ------
+        GameError.GameIsUnmanagedError
+            If the game was scheduled for deletion and thus does not accept any mutator
+            public method calls.
         GameError.GameDoesNotManageTimerError
             If the game does not manage the target timer.
 
@@ -838,27 +924,27 @@ class _Game():
             raise GameError.GameIsUnmanagedError
 
         try:
-            timer_id = self._timer_manager.delete_timer(timer)
+            timer_id = self.timer_manager.delete_timer(timer)
         except TimerError.ManagerDoesNotManageTimerError:
             raise GameError.GameDoesNotManageTimerError
 
-        self._manager._check_structure()
+        self.manager._check_structure()
         return timer_id
 
-    def get_timers(self):
+    def get_timers(self) -> Set[Timer]:
         """
         Return (a shallow copy of) the timers this game manages.
 
         Returns
         -------
-        set of TimerManager.Timer
+        Set[Timer]
             Timers this game manages.
 
         """
 
-        return self._timer_manager.get_timers()
+        return self.timer_manager.get_timers()
 
-    def get_timer_by_id(self, timer_id):
+    def get_timer_by_id(self, timer_id: str) -> Timer:
         """
         If `timer_tag` is the ID of a timer managed by this game, return that timer.
 
@@ -869,7 +955,7 @@ class _Game():
 
         Returns
         -------
-        TimerManager.Timer
+        Timer
             The timer whose ID matches the given ID.
 
         Raises
@@ -880,25 +966,32 @@ class _Game():
         """
 
         try:
-            return self._timer_manager.get_timer_by_id(timer_id)
+            return self.timer_manager.get_timer_by_id(timer_id)
         except TimerError.ManagerInvalidTimerIDError:
             raise GameError.GameInvalidTimerIDError
 
-    def get_timer_ids(self):
+    def get_timer_ids(self) -> Set[str]:
         """
         Return (a shallow copy of) the IDs of all timers managed by this game.
 
         Returns
         -------
-        set of str
-            The ID of the timer that matches the given tag.
+        Set[str]
+            The IDs of all managed timers.
 
         """
 
-        return self._timer_manager.get_timer_ids()
+        return self.timer_manager.get_timer_ids()
 
-    def new_team(self, team_type=None, creator=None, player_limit=None,
-                 require_invitations=False, require_players=True, require_leaders=True):
+    def new_team(
+        self,
+        team_type: Type[_Team],
+        creator: ClientManager.Client = None,
+        player_limit: Union[int, None] = None,
+        require_invitations: bool = False,
+        require_players: bool = True,
+        require_leaders: bool = True
+        ) -> _Team:
         """
         Create a new team managed by this game.
 
@@ -948,20 +1041,23 @@ class _Game():
             team_type = _Team
 
         try:
-            team = self._team_manager.new_group(playergroup_type=team_type, creator=creator,
-                                                player_limit=player_limit,
-                                                player_concurrent_limit=1,
-                                                require_invitations=require_invitations,
-                                                require_players=require_players,
-                                                require_leaders=require_leaders)
+            team = self.team_manager.new_managee(
+                managee_type=team_type,
+                creator=creator,
+                player_limit=player_limit,
+                player_concurrent_limit=1,
+                require_invitations=require_invitations,
+                require_players=require_players,
+                require_leaders=require_leaders,
+                game=self,
+            )
         except PlayerGroupError.ManagerTooManyGroupsError:
             raise GameError.GameTooManyTeamsError
         except PlayerGroupError.UserHitGroupConcurrentLimitError:
             raise GameError.UserInAnotherTeamError
-        team._game = self._playergroup
         return team
 
-    def delete_team(self, team):
+    def delete_team(self, team: _Team) -> Tuple[str, Set[ClientManager.Client]]:
         """
         Delete a team managed by this game.
 
@@ -972,7 +1068,7 @@ class _Game():
 
         Returns
         -------
-        (str, set of ClientManager.Client)
+        Tuple[str, Set[ClientManager.Client]]
             The ID and players of the team that was deleted.
 
         Raises
@@ -989,11 +1085,11 @@ class _Game():
             raise GameError.GameIsUnmanagedError
 
         try:
-            self._team_manager.delete_group(team)
+            self.team_manager.delete_managee(team)
         except PlayerGroupError.ManagerDoesNotManageGroupError:
             raise GameError.GameDoesNotManageTeamError
 
-    def manages_team(self, team):
+    def manages_team(self, team: _Team) -> bool:
         """
         Return True if the team is managed by this game, False otherwise.
 
@@ -1009,24 +1105,24 @@ class _Game():
 
         """
 
-        return self._team_manager.manages_group(team)
+        return self.team_manager.manages_managee(team)
 
-    def get_teams(self):
+    def get_teams(self) -> Set[_Team]:
         """
         Return (a shallow copy of) the teams this game manages.
 
         Returns
         -------
-        set of _Team
+        Set[_Team]
             Teams this game manages.
 
         """
 
-        return self._team_manager.get_managees().copy()
+        return self.team_manager.get_managees()
 
-    def get_team_by_id(self, team_id):
+    def get_team_by_id(self, team_id: str) -> _Team:
         """
-        If `team_id` is the ID of a team managed by this manager, return the team.
+        If `team_id` is the ID of a team managed by this game, return the team.
 
         Parameters
         ----------
@@ -1046,40 +1142,40 @@ class _Game():
         """
 
         try:
-            return self._team_manager.get_managee_by_id(team_id)
+            return self.team_manager.get_managee_by_id(team_id)
         except PlayerGroupError.ManagerInvalidGroupIDError:
             raise GameError.GameInvalidTeamIDError
 
-    def get_team_limit(self):
+    def get_team_limit(self) -> Union[int, None]:
         """
         Return the team limit of this game.
 
         Returns
         -------
-        int
+        Union[int, None]
             Team limit.
 
         """
 
-        return self._team_manager.get_managee_limit()
+        return self.team_manager.get_managee_limit()
 
-    def get_team_ids(self):
+    def get_team_ids(self) -> Set[str]:
         """
         Return (a shallow copy of) the IDs of all teams managed by this game.
 
         Returns
         -------
-        set of str
+        Set[str]
             The IDs of all managed teams.
 
         """
 
-        return self._team_manager.get_managee_ids().copy()
+        return self.team_manager.get_managee_ids()
 
-    def get_teams_of_user(self, user):
+    def get_teams_of_user(self, user: ClientManager.Client) -> Set[_Team]:
         """
-        Return (a shallow copy of) the teams managed by this game user `user` is a
-        player of. If the user is part of no such team, an empty set is returned.
+        Return (a shallow copy of) the teams managed by this game user `user` is a player of.
+        If the user is part of no such team, an empty set is returned.
 
         Parameters
         ----------
@@ -1088,28 +1184,27 @@ class _Game():
 
         Returns
         -------
-        set of _Team
+        Set[_Team]
             Teams the player belongs to.
 
         """
 
-        return self._team_manager.get_managees_of_user(user).copy()
+        return self.team_manager.get_managees_of_user(user)
 
     def get_users_in_team(self):
         """
-        Return (a shallow copy of) all the users that are part of some team managed by
-        this manager.
+        Return (a shallow copy of) all the users that are part of some team managed by this game.
 
         Returns
         -------
-        set of ClientManager.Client
+        Set[ClientManager.Client]
             Users in some managed team.
 
         """
 
-        return self._team_manager.get_users_in_managees().copy()
+        return self.team_manager.get_users_in_managees()
 
-    def get_available_team_id(self):
+    def get_available_team_id(self) -> str:
         """
         Get a team ID that no other team managed by this team has.
 
@@ -1126,7 +1221,7 @@ class _Game():
         """
 
         try:
-            return self._team_manager.get_available_managee_id()
+            return self.team_manager.get_available_managee_id()
         except PlayerGroupError.ManagerTooManyGroupsError:
             return GameError.GameTooManyTeamsError
 
@@ -1141,7 +1236,7 @@ class _Game():
 
         """
 
-        return self._playergroup.is_unmanaged()
+        return super().is_unmanaged()
 
     def destroy(self):
         """
@@ -1162,19 +1257,14 @@ class _Game():
             return
         self._unmanaged = True
 
-        for timer in self._timer_manager.get_timers():
-            self._timer_manager.delete_timer(timer)
-        for team in self._team_manager.get_managees():
+        for timer in self.timer_manager.get_timers():
+            self.timer_manager.delete_timer(timer)
+        for team in self.team_manager.get_managees():
             team.destroy()
+        for player in self.get_players():
+            self.listener.unsubscribe(player)
 
-        # Players (and subscriptions to them) are handled in the manager's delete code.
-        try:
-            self._manager.delete_game(self)
-        except GameError.ManagerDoesNotManageGameError:
-            # Should only happen if .destroy() was called from a delete_game
-            # At this point it is safe not to call delete_game
-            pass
-
+        super().destroy()
         self._check_structure()
 
     def has_ever_had_players(self):
@@ -1188,9 +1278,13 @@ class _Game():
 
         """
 
-        return self._playergroup.has_ever_had_players()
+        return super().has_ever_had_players()
 
-    def _on_client_inbound_ms_check(self, player, contents=None):
+    def _on_client_inbound_ms_check(
+        self,
+        player: ClientManager.Client,
+        contents: Dict[str, Any] = None
+        ):
         """
         Default callback for game player signaling it wants to check if sending an IC message
         is appropriate. The IC arguments can be passed by reference, so this also serves as an
@@ -1203,7 +1297,7 @@ class _Game():
         ----------
         player : ClientManager.Client
             Player that wants to send the IC message.
-        contents : dict of str to Any
+        contents : Dict[str, Any], optional
             Arguments of the IC message as indicated in AOProtocol.
 
         Returns
@@ -1214,7 +1308,11 @@ class _Game():
 
         # print('Player', player, 'wants to check sent', contents)
 
-    def _on_client_inbound_ms_final(self, player, contents=None):
+    def _on_client_inbound_ms_final(
+        self,
+        player: ClientManager.Client,
+        contents: Dict[str, Any] = None
+        ):
         """
         Default callback for game player signaling it has sent an IC message.
         This callback is executed after the server is done making all modifications to the MS packet
@@ -1226,7 +1324,7 @@ class _Game():
         ----------
         player : ClientManager.Client
             Player that signaled it has sent an IC message.
-        contents : dict of str to Any
+        contents : Dict[str, Any], optional
             Arguments of the IC message as indicated in AOProtocol.
 
         Returns
@@ -1237,7 +1335,12 @@ class _Game():
 
         # print('Player', player, 'sent', contents)
 
-    def _on_client_change_character(self, player, old_char_id=None, new_char_id=None):
+    def _on_client_change_character(
+        self,
+        player: ClientManager.Client,
+        old_char_id: Union[int, None] = None,
+        new_char_id: Union[int, None] = None
+        ):
         """
         Default callback for game player signaling it has changed character.
 
@@ -1266,7 +1369,10 @@ class _Game():
 
         self._check_structure()
 
-    def _on_client_destroyed(self, player):
+    def _on_client_destroyed(
+        self,
+        player: ClientManager.Client
+        ):
         """
         Default callback for game player signaling it was destroyed, for example, as a result
         of a disconnection.
@@ -1306,8 +1412,8 @@ class _Game():
         """
 
         # 1.
-        team_players = self._team_manager.get_users_in_managees()
-        game_players = self._playergroup.get_players()
+        team_players = self.team_manager.get_users_in_managees()
+        game_players = self.get_players()
         team_not_in_game = {player for player in team_players if player not in game_players}
         err = (f'For game {self}, expected that every player in the set {team_players} of all '
                f'players in a team managed by the game is in the set {game_players} of players '
@@ -1316,23 +1422,13 @@ class _Game():
         assert team_players.issubset(game_players), err
 
         # 2.
-        internal_unmanaged = self._playergroup.is_unmanaged()
-        self_unmanaged = self.is_unmanaged()
-
-        err = (f'For game {self}, expected that both itself and its internal player group '
-               f'were either both unmanaged or both not unmanaged, found that itself was '
-               f'{"" if self_unmanaged else "not"}unmanaged but its playergroup was '
-               f'{"" if internal_unmanaged else "not"}unmanaged.')
-        assert internal_unmanaged == self_unmanaged, err
-
-        # 3.
         listener_parents = {obj.get_parent() for obj in self.listener.get_subscriptions()}
         for player in self.get_players():
             err = (f'For game {self}, expected that its player {player} was among its '
                    f'subscriptions {listener_parents} found it was not.')
             assert player in listener_parents, err
 
-        # 4.
+        # 3.
         if self._require_character:
             for player in self.get_players():
                 err = (f'For game with areas {self} that expected all its players had '
@@ -1340,9 +1436,8 @@ class _Game():
                 assert player.has_character(), err
 
         # 4.
-        self._playergroup._check_structure()
-        self._timer_manager._check_structure()
-        self._team_manager._check_structure()
+        self.timer_manager._check_structure()
+        self.team_manager._check_structure()
 
     def __str__(self):
         """
@@ -1359,7 +1454,6 @@ class _Game():
                 f"{self.get_players()}:{self.get_leaders()}:{self.get_invitations()}"
                 f"{self.get_timers()}:"
                 f"{self.get_teams()}")
-
     def __repr__(self):
         """
         Return a representation of this game.
@@ -1371,20 +1465,21 @@ class _Game():
 
         """
 
-        return (f'_Game(server, {self._manager.get_id()}, "{self.get_id()}", '
-                f'player_limit={self._playergroup._player_limit}, '
+        return (f'_Game(server, {self.get_id()}, "{self.get_id()}", '
+                f'player_limit={self.get_player_limit()}, '
                 f'player_concurrent_limit={self.get_player_concurrent_limit()}, '
-                f'require_players={self._playergroup._require_players}, '
-                f'require_invitations={self._playergroup._require_invitations}, '
-                f'require_leaders={self._playergroup._require_leaders}, '
-                f'require_character={self._require_character}, '
-                f'team_limit={self._team_manager.get_managee_limit()}, '
-                f'timer_limit={self._timer_manager.get_timer_limit()} || '
+                f'require_players={self.requires_players()}, '
+                f'require_invitations={self.requires_invitations()}, '
+                f'require_leaders={self.requires_leaders()}, '
+                f'require_character={self.requires_characters()}, '
+                f'team_limit={self.team_manager.get_managee_limit()}, '
+                f'timer_limit={self.timer_manager.get_timer_limit()} || '
                 f'players={self.get_players()}, '
                 f'invitations={self.get_invitations()}, '
                 f'leaders={self.get_leaders()}, '
                 f'timers={self.get_timers()}, '
-                f'teams={self.get_teams()})')
+                f'teams={self.get_teams()}), '
+                f'unmanaged={self.is_unmanaged()})')
 
 class GameManager(PlayerGroupManager):
     """
@@ -1402,7 +1497,7 @@ class GameManager(PlayerGroupManager):
     # --------------------
     # _server : TsuserverDR
     #     Server the game manager belongs to.
-    # _default_game_type : _Game or functools.partial
+    # _default_game_type : _Game
     #     The type of game this game manager will create by default when ordered to create a new
     #     one.
     # _playergroup_manager : PlayerGroupManager
@@ -1412,9 +1507,7 @@ class GameManager(PlayerGroupManager):
 
     # Invariants
     # ----------
-    # 1. `self._playergroup_manager.get_group_ids()` and `self._id_to_game.keys()` are equal.
-    # 2. For each pair `(game_id, game)` in `self._id_to_game.items()`:
-    #     a. `game.get_id() == game_id`.
+    # 1. The invariants of the parent class are maintained.
 
 
     def __init__(
@@ -1539,20 +1632,19 @@ class GameManager(PlayerGroupManager):
                 require_invitations=require_invitations,
                 require_players=require_players,
                 require_leaders=require_leaders,
-                kwargs={
-                    'require_character': require_character,
-                    'team_limit': team_limit,
-                    'timer_limit': timer_limit,
-                })
+                # kwargs
+                require_character=require_character,
+                team_limit=team_limit,
+                timer_limit=timer_limit,
+                )
         except PlayerGroupError.ManagerTooManyGroupsError:
             raise GameError.ManagerTooManyGamesError
 
         return game
 
-    def delete_game(self, game):
+    def delete_managee(self, game: _Game) -> Tuple[str, Set[ClientManager.Client]]:
         """
-        Delete a game managed by this manager, so all its players no longer belong to this game,
-        and return the ID and set of players of the former game.
+        Delete a game managed by this manager, so all its players no longer belong to this game.
 
         Parameters
         ----------
@@ -1561,7 +1653,7 @@ class GameManager(PlayerGroupManager):
 
         Returns
         -------
-        (str, set of ClientManager.Client)
+        Tuple[str, Set[ClientManager.Client]]
             The ID and players of the game that was deleted.
 
         Raises
@@ -1571,42 +1663,19 @@ class GameManager(PlayerGroupManager):
 
         """
 
-        # We have to retrieve the internal playergroup of the game
-        # We can take advantage of the fact the internal playergroup and the game itself both
-        # have the same ID by design.
-
-        game_id = game.get_id()
-        if game_id not in self._id_to_game:
-            raise GameError.ManagerDoesNotManageGameError
-
-        game = self._id_to_game.pop(game_id)
-        game.destroy()
-
-        try:
-            playergroup = self._playergroup_manager.get_managee_by_id(game_id)
-            playergroup_id, players = self._playergroup_manager.delete_group(playergroup)
-        except PlayerGroupError.ManagerInvalidGroupIDError:
-            # This code will only run if this code came as a result of .destroy() on the
-            # original game doing some work already (namely updating the playergroup manager) and
-            # a previous call to destroy the playergroup (say, by it losing all its players
-            # automatically). In this case, the group ID is trivial and there are no players
-            # (as the group was already destroyed).
-            playergroup_id, players = game_id, set()
-
-        for player in players:
-            game.listener.unsubscribe(player)
+        game_id, game = super().delete_managee(game)
 
         self._check_structure()
-        return playergroup_id, players
+        return game_id, game
 
-    def manages_game(self, game):
+    def manages_managee(self, game: _Game):
         """
         Return True if the game is managed by this manager, False otherwise.
 
         Parameters
         ----------
         game : _Game
-            The player group to check.
+            The game to check.
 
         Returns
         -------
@@ -1615,28 +1684,28 @@ class GameManager(PlayerGroupManager):
 
         """
 
-        return game in self._id_to_game.values()
+        return super().manages_managee(game)
 
-    def get_games(self):
+    def get_managees(self):
         """
         Return (a shallow copy of) the games this manager manages.
 
         Returns
         -------
-        set of _Game
+        Set[_Game]
             Games this manager manages.
 
         """
 
-        return set(self._id_to_game.values())
+        return super().get_managees()
 
-    def get_game_by_id(self, game_id) -> _Game:
+    def get_managee_by_id(self, managee_id: str) -> _Game:
         """
-        If `game_id` is the ID of a game managed by this manager, return that.
+        If `managee_id` is the ID of a game managed by this manager, return that.
 
         Parameters
         ----------
-        game_id : str
+        managee_id : str
             ID of the game this manager manages.
 
         Returns
@@ -1652,37 +1721,37 @@ class GameManager(PlayerGroupManager):
         """
 
         try:
-            return self._id_to_game[game_id]
-        except KeyError:
+            return super().get_managee_by_id(managee_id)
+        except PlayerGroupError.ManagerInvalidGroupIDError:
             raise GameError.ManagerInvalidGameIDError
 
-    def get_game_limit(self):
+    def get_managee_limit(self) -> Union[int, None]:
         """
         Return the game limit of this manager.
 
         Returns
         -------
-        int
+        Union[int, None]
             Game limit.
 
         """
 
-        return self._playergroup_manager.get_managee_limit()
+        return super().get_managee_limit()
 
-    def get_game_ids(self):
+    def get_managee_ids(self) -> Set[str]:
         """
         Return (a shallow copy of) the IDs of all games managed by this manager.
 
         Returns
         -------
-        set of str
+        Set[str]
             The IDs of all managed games.
 
         """
 
-        return set(self._id_to_game.keys())
+        return super().get_managee_ids()
 
-    def get_games_of_user(self, user):
+    def get_managees_of_user(self, user: ClientManager.Client):
         """
         Return (a shallow copy of) the games managed by this manager user `user` is a
         player of. If the user is part of no such game, an empty set is returned.
@@ -1694,31 +1763,43 @@ class GameManager(PlayerGroupManager):
 
         Returns
         -------
-        set of _Game
+        Set[_Game]
             Games the player belongs to.
 
         """
 
-        playergroups = self._playergroup_manager.get_managees_of_user(user)
-        playergroup_ids = {playergroup.get_id() for playergroup in playergroups}
-        games = {self._id_to_game[playergroup_id] for playergroup_id in playergroup_ids}
-        return games
+        return super().get_managees_of_user(user)
 
-    def get_users_in_games(self):
+    def get_users_in_managees(self) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) all the users that are part of some game managed by this
         manager.
 
         Returns
         -------
-        set of ClientManager.Client
+        Set[ClientManager.Client]
             Users in some managed game.
 
         """
 
-        return self._playergroup_manager.get_users_in_managees().copy()
+        return super().get_users_in_managees()
 
-    def get_available_game_id(self):
+    def is_managee_creatable(self) -> bool:
+        """
+        Return whether a new game can currently be created without creating one.
+
+        Returns
+        -------
+        bool
+            True if a game can be currently created, False otherwise.
+        """
+
+        limit = self.get_managee_limit()
+        if limit is None:
+            return True
+        return len(self._id_to_group) < limit
+
+    def get_available_managee_id(self):
         """
         Get a game ID that no other game managed by this manager has.
 
@@ -1735,18 +1816,18 @@ class GameManager(PlayerGroupManager):
         """
 
         game_number = 0
-        game_limit = self.get_game_limit()
+        game_limit = self.get_managee_limit()
         while game_limit is None or game_number < game_limit:
             new_game_id = "g{}".format(game_number)
-            if new_game_id not in self.get_game_ids():
+            if new_game_id not in self.get_managee_ids():
                 return new_game_id
             game_number += 1
         raise GameError.ManagerTooManyGamesError
 
-    def get_id(self):
+    def get_id(self) -> str:
         """
         Return the ID of this manager. This ID is guaranteed to be unique among
-        simultaneously existing managers.
+        simultaneously existing Python objects.
 
         Returns
         -------
@@ -1755,7 +1836,33 @@ class GameManager(PlayerGroupManager):
 
         """
 
-        return hex(id(self))
+        return super().get_id()
+
+    def find_player_concurrent_limiting_managee(
+        self,
+        user: ClientManager.Client
+        ) -> Union[_Game, None]:
+        """
+        For user `user`, find a game `most_restrictive_game` managed by this manager such
+        that, if `user` were to join another game managed by this manager, they would
+        violate `most_restrictive_game`'s concurrent player membership limit.
+        If no such game exists (or the player is not member of any game managed by this
+        manager), return None.
+        If multiple such games exist, any one of them may be returned.
+
+        Parameters
+        ----------
+        user : ClientManager.Client
+            User to test.
+
+        Returns
+        -------
+        _Game or None
+            Limiting game as previously described if it exists, None otherwise.
+
+        """
+
+        return super().find_player_concurrent_limiting_managee(user)
 
     def _check_structure(self):
         """
@@ -1768,25 +1875,7 @@ class GameManager(PlayerGroupManager):
 
         """
 
-        # 1.
-        proper_ids = self._playergroup_manager.get_managee_ids()
-        my_ids = set(self._id_to_game.keys())
-
-        err = (f'For game manager {self}, expected the set of proper game IDs {proper_ids} and '
-               f'its game IDs {my_ids} to be the same, found they were not.')
-        assert proper_ids == my_ids, err
-
-        # 2.
-        for (my_id, game) in self._id_to_game.items():
-            proper_id = game.get_id()
-            err = (f'For game manager {self}, expected the proper game ID {proper_id} of game '
-                   f'{game} and the one the manager appointed for it to be the same, found they '
-                   f'were not.')
-            assert proper_id == my_id, err
-
-        # 3.
-        for game in self._id_to_game.values():
-            game._check_structure()
+        super()._check_structure()
 
     def __repr__(self):
         """
@@ -1799,7 +1888,7 @@ class GameManager(PlayerGroupManager):
 
         """
 
-        return (f"GameManager(server, game_limit={self.get_game_limit()}, "
+        return (f"GameManager(server, game_limit={self.get_managee_limit()}, "
                 f"default_game_type={self._default_game_type}, "
                 f"|| "
                 f"_id_to_game={self._id_to_game}, "
