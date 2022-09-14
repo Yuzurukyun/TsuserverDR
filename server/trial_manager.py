@@ -780,7 +780,7 @@ class _Trial(GameWithAreas):
             autoadd_on_trial_player_add=autoadd_on_trial_player_add,
             timer_start_value=timer_start_value)
 
-        nsd = self._minigame_manager.new_game(game_type=nsd_factory,
+        nsd = self._minigame_manager.new_managee(game_type=nsd_factory,
                                               player_limit=player_limit,
                                               player_concurrent_limit=1,
                                               require_invitations=require_invitations,
@@ -1543,7 +1543,7 @@ class TrialManager(GameWithAreasManager):
             _Trial,
             autoadd_minigame_on_player_added=autoadd_minigame_on_player_added
             )
-        trial = self.new_game(game_type=trial_factory, creator=creator,
+        trial = self.new_managee(game_type=trial_factory, creator=creator,
                               player_limit=player_limit,
                               player_concurrent_limit=player_concurrent_limit,
                               require_invitations=require_invitations,

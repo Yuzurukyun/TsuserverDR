@@ -34,11 +34,21 @@ same game manager.
 
 """
 
+from __future__ import annotations
+
+import typing
+
+from typing import Type, Union
+
 from server.constants import Constants
 from server.exceptions import GameError, PlayerGroupError, TimerError
 from server.playergroup_manager import _PlayerGroup, PlayerGroupManager
 from server.timer_manager import TimerManager
 from server.subscriber import Listener, Publisher
+
+if typing.TYPE_CHECKING:
+    from server.client_manager import ClientManager
+    from server.tsuserver import TsuserverDR
 
 
 class _Team(_PlayerGroup):
@@ -1376,7 +1386,7 @@ class _Game():
                 f'timers={self.get_timers()}, '
                 f'teams={self.get_teams()})')
 
-class GameManager:
+class GameManager(PlayerGroupManager):
     """
     A mutable data type for a manager for games.
 
@@ -1407,8 +1417,12 @@ class GameManager:
     #     a. `game.get_id() == game_id`.
 
 
-    def __init__(self, server, game_limit=None, default_game_type=None,
-                 available_id_producer=None):
+    def __init__(
+        self,
+        server: TsuserverDR,
+        managee_limit: Union[int, None] = None,
+        default_managee_type: _Game = None,
+        ):
         """
         Create a game manager object.
 
@@ -1416,33 +1430,50 @@ class GameManager:
         ----------
         server : TsuserverDR
             The server this game manager belongs to.
-        game_limit : int, optional
+        managee_limit : int, optional
             The maximum number of games this manager can handle. Defaults to None (no limit).
-        default_game_type : _Game, optional
+        default_managee_type : _Game, optional
             The default type of game this manager will create. Defaults to None (and then
-            converted to Game).
-        available_id_producer : typing.types.FunctionType, optional
-            Function to produce available game IDs. It will override the built-in class method
-            get_available_game_id. Defaults to None (and then converted to the built-in
-            get_available_game_id).
+            converted to _Game).
 
         """
 
-        if default_game_type is None:
-            default_game_type = _Game
-        if available_id_producer is None:
-            available_id_producer = self.get_available_game_id
-        self.get_available_game_id = available_id_producer
+        if default_managee_type is None:
+            default_managee_type = _Game
 
-        self._server = server
-        self._playergroup_manager = PlayerGroupManager(server, playergroup_limit=game_limit,
-                                                       available_id_producer=available_id_producer)
-        self._default_game_type = default_game_type
-        self._id_to_game = dict()
+        super().__init__(
+            server,
+            managee_limit=managee_limit,
+            default_managee_type=default_managee_type
+        )
 
-    def new_game(self, game_type=None, creator=None, player_limit=None,
-                 player_concurrent_limit=1, require_invitations=False, require_players=True,
-                 require_leaders=True, require_character=False, team_limit=None, timer_limit=None):
+    def get_managee_type(self) -> Type[_Game]:
+        """
+        Return the type of the game that will be constructed by default with a call of
+        `new_managee`.
+
+        Returns
+        -------
+        Type[_Game]
+            Type of the game.
+
+        """
+
+        return super().get_managee_type()
+
+    def new_managee(
+        self,
+        managee_type: _Game = None,
+        creator: ClientManager.Client = None,
+        player_limit: Union[int, None] = None,
+        player_concurrent_limit: Union[int, None] = 1,
+        require_invitations: bool = False,
+        require_players: bool = True,
+        require_leaders: bool = True,
+        require_character: bool = False,
+        team_limit: Union[int, None] = None,
+        timer_limit: Union[int, None] = None,
+        ):
         """
         Create a new game managed by this manager.
 
@@ -1499,46 +1530,23 @@ class GameManager:
 
         """
 
-        game_id = self.get_available_game_id()
-        def_args = (
-            self._server,
-            self,
-            game_id,
-            )
-
-        def_kwargs = {
-            'player_limit': player_limit,
-            'player_concurrent_limit': player_concurrent_limit,
-            'require_invitations': require_invitations,
-            'require_players': require_players,
-            'require_leaders': require_leaders,
-            'require_character': require_character,
-            'team_limit': team_limit,
-            'timer_limit': timer_limit,
-            'playergroup_manager': self._playergroup_manager,
-            }
-
-        new_game_type = Constants.make_partial_from(game_type, self._default_game_type,
-                                                    *def_args, **def_kwargs)
-
-        # Implementation detail
-        # PlayerGroupError.ManagerTooManyGroupsError cannot be thrown as we overrode the only
-        # method in there that could have thrown that with something that throws
-        # GameError.ManagerTooManyGamesError
-        game = new_game_type()
-        self._id_to_game[game_id] = game
-
-        # Add creator manually. This is because adding it via .new_group will not make it run
-        # the add_player code of the game, but only of the internal player group.
         try:
-            if creator:
-                game.add_player(creator)
-        except GameError as ex:
-            # Discard game
-            self.delete_game(game)
-            raise ex
+            game = super().new_managee(
+                managee_type=managee_type,
+                creator=creator,
+                player_limit=player_limit,
+                player_concurrent_limit=player_concurrent_limit,
+                require_invitations=require_invitations,
+                require_players=require_players,
+                require_leaders=require_leaders,
+                kwargs={
+                    'require_character': require_character,
+                    'team_limit': team_limit,
+                    'timer_limit': timer_limit,
+                })
+        except PlayerGroupError.ManagerTooManyGroupsError:
+            raise GameError.ManagerTooManyGamesError
 
-        self._check_structure()
         return game
 
     def delete_game(self, game):
@@ -1608,19 +1616,6 @@ class GameManager:
         """
 
         return game in self._id_to_game.values()
-
-    def get_default_game_type(self) -> type:
-        """
-        Return the default game the game manager will create with a call of new_game.
-
-        Returns
-        -------
-        type
-            Default game type.
-
-        """
-
-        return self._default_game_type
 
     def get_games(self):
         """

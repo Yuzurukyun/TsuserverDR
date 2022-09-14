@@ -717,10 +717,10 @@ class GameWithAreasManager(GameManager):
             default_game_type = GameWithAreas
         self._area_to_games = dict()
 
-        super().__init__(server, game_limit=game_limit, default_game_type=default_game_type,
+        super().__init__(server, managee_limit=game_limit, default_managee_type=default_game_type,
                          available_id_producer=available_id_producer)
 
-    def new_game(self, game_type=None, creator=None, player_limit=None,
+    def new_managee(self, game_type=None, creator=None, player_limit=None,
                  player_concurrent_limit=1, require_invitations=False, require_players=True,
                  require_leaders=True, require_character=False, team_limit=None, timer_limit=None,
                  areas=None, area_concurrent_limit=None,
@@ -794,13 +794,13 @@ class GameWithAreasManager(GameManager):
         """
 
         if game_type is None:
-            game_type = self.get_default_game_type()
+            game_type = self.get_managee_type()
 
         new_game_type = functools.partial(game_type,
                                           area_concurrent_limit=area_concurrent_limit,
                                           autoadd_on_client_enter=autoadd_on_client_enter)
 
-        game = super().new_game(game_type=new_game_type, creator=None, player_limit=player_limit,
+        game = super().new_managee(managee_type=new_game_type, creator=None, player_limit=player_limit,
                                 player_concurrent_limit=player_concurrent_limit,
                                 require_invitations=require_invitations,
                                 require_players=require_players,
