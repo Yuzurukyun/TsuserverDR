@@ -80,10 +80,10 @@ class _Team(_PlayerGroup):
             Identifier of the team.
         game : _Game
             Game of this team.
-        player_limit : int or None, optional
+        player_limit : Union[int, None], optional
             If an int, it is the maximum number of players the team supports. If None,
             it indicates the team has no player limit. Defaults to None.
-        player_concurrent_limit : int or None, optional
+        player_concurrent_limit : Union[int, None], optional
             If an int, it is the maximum number of teams managed by `manager` that any
             player of this team may belong to, including this team. If None, it indicates
             that this team does not care about how many other teams managed by
@@ -675,7 +675,7 @@ class _GameTrivialInherited(_PlayerGroup):
             raise GameError.GameIsUnmanagedError
 
         try:
-            super().remove_leader(user)
+            super().unchecked_remove_leader(user)
         except PlayerGroupError.GroupIsUnmanagedError:
             # Should not have made it here as we already asserted the game is not unmmanaged
             raise RuntimeError(self, user)
@@ -789,10 +789,6 @@ class _Game(_GameTrivialInherited):
         Server the game belongs to.
     manager : GameManager
         Manager for this game.
-    team_manager : PlayerGroupManager
-        Internal manager that handles the teams of the game.
-    timer_manager: TimerManager
-        Internal manager that handles the timers of the game.
     listener : Listener
         Standard listener of the game.
 
@@ -815,6 +811,10 @@ class _Game(_GameTrivialInherited):
     #   If False, players without a character will not be allowed to join the game, and players
     #   that switch to something other than a character will be automatically removed from the
     #   game. If False, no such checks are made.
+    # _team_manager : PlayerGroupManager
+    #   Internal manager that handles the teams of the game.
+    # _timer_manager: TimerManager
+    #   Internal manager that handles the timers of the game.
 
     # Invariants
     # ----------
@@ -850,10 +850,10 @@ class _Game(_GameTrivialInherited):
             Manager for this game.
         game_id : str
             Identifier of the game.
-        player_limit : int or None, optional
+        player_limit : Union[int, None], optional
             If an int, it is the maximum number of players the game supports. If None, it
             indicates the game has no player limit. Defaults to None.
-        player_concurrent_limit : int or None, optional
+        player_concurrent_limit : Union[int, None], optional
             If an int, it is the maximum number of games managed by `manager` that any
             player of this game may belong to, including this game. If None, it indicates
             that this game does not care about how many other games managed by `manager` each
@@ -876,10 +876,10 @@ class _Game(_GameTrivialInherited):
             removed from the game. If False, no such checks are made. A player without a
             character is considered one where player.has_character() returns False. Defaults to
             False.
-        team_limit : int or None, optional
+        team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the game supports. If None, it
             indicates the game has no team limit. Defaults to None.
-        timer_limit : int or None, optional
+        timer_limit : Union[int, None], optional
             If an int, it is the maximum number of timers the game supports. If None, it
             indicates the game has no timer limit. Defaults to None.
 
@@ -896,12 +896,12 @@ class _Game(_GameTrivialInherited):
             require_leaders=require_leaders,
         )
 
-        self.team_manager = PlayerGroupManager(
+        self._team_manager = PlayerGroupManager(
             server,
             managee_limit=team_limit,
             default_managee_type=_Team
         )
-        self.timer_manager = TimerManager(
+        self._timer_manager = TimerManager(
             server,
             timer_limit=timer_limit
         )
@@ -1030,7 +1030,6 @@ class _Game(_GameTrivialInherited):
 
         self.listener.unsubscribe(user)
 
-
     def requires_characters(self) -> bool:
         """
         Return whether the game requires players have a character at all times.
@@ -1045,7 +1044,7 @@ class _Game(_GameTrivialInherited):
 
     def new_timer(
         self,
-        timer_type: Type[Timer],
+        timer_type: Type[Timer] = None,
         start_value: Union[float, None] = None,
         tick_rate: float = 1,
         min_value: Union[float, None] = None,
@@ -1059,8 +1058,7 @@ class _Game(_GameTrivialInherited):
         Parameters
         ----------
         timer_type : Type[Timer], optional
-            Class of timer that will be produced. Defaults to None (and converted to
-            TimerManager.Timer)
+            Class of timer that will be produced. Defaults to None (and converted to Timer).
         start_value : float, optional
             Number of seconds the apparent timer the timer will initially have. Defaults
             to None (will use the default from `timer_type`).
@@ -1113,7 +1111,7 @@ class _Game(_GameTrivialInherited):
 
     def unchecked_new_timer(
         self,
-        timer_type: Type[Timer],
+        timer_type: Type[Timer] = None,
         start_value: Union[float, None] = None,
         tick_rate: float = 1,
         min_value: Union[float, None] = None,
@@ -1129,8 +1127,7 @@ class _Game(_GameTrivialInherited):
         Parameters
         ----------
         timer_type : Type[Timer], optional
-            Class of timer that will be produced. Defaults to None (and converted to
-            TimerManager.Timer)
+            Class of timer that will be produced. Defaults to None (and converted to Timer).
         start_value : float, optional
             Number of seconds the apparent timer the timer will initially have. Defaults
             to None (will use the default from `timer_type`).
@@ -1173,7 +1170,7 @@ class _Game(_GameTrivialInherited):
             raise GameError.GameIsUnmanagedError
 
         try:
-            timer = self.timer_manager.new_timer(
+            timer = self._timer_manager.new_timer(
                 timer_type=timer_type,
                 start_value=start_value,
                 tick_rate=tick_rate,
@@ -1245,7 +1242,7 @@ class _Game(_GameTrivialInherited):
             raise GameError.GameIsUnmanagedError
 
         try:
-            timer_id = self.timer_manager.delete_timer(timer)
+            timer_id = self._timer_manager.delete_timer(timer)
         except TimerError.ManagerDoesNotManageTimerError:
             raise GameError.GameDoesNotManageTimerError
 
@@ -1262,7 +1259,7 @@ class _Game(_GameTrivialInherited):
 
         """
 
-        return self.timer_manager.get_timers()
+        return self._timer_manager.get_timers()
 
     def get_timer_by_id(self, timer_id: str) -> Timer:
         """
@@ -1286,7 +1283,7 @@ class _Game(_GameTrivialInherited):
         """
 
         try:
-            return self.timer_manager.get_timer_by_id(timer_id)
+            return self._timer_manager.get_timer_by_id(timer_id)
         except TimerError.ManagerInvalidTimerIDError:
             raise GameError.GameInvalidTimerIDError
 
@@ -1301,7 +1298,7 @@ class _Game(_GameTrivialInherited):
 
         """
 
-        return self.timer_manager.get_timer_ids()
+        return self._timer_manager.get_timer_ids()
 
     def new_team(
         self,
@@ -1425,7 +1422,7 @@ class _Game(_GameTrivialInherited):
             team_type = _Team
 
         try:
-            team = self.team_manager.new_managee(
+            team = self._team_manager.new_managee(
                 managee_type=team_type,
                 creator=creator,
                 player_limit=player_limit,
@@ -1499,7 +1496,7 @@ class _Game(_GameTrivialInherited):
             raise GameError.GameIsUnmanagedError
 
         try:
-            return self.team_manager.delete_managee(team)
+            return self._team_manager.delete_managee(team)
         except PlayerGroupError.ManagerDoesNotManageGroupError:
             raise GameError.GameDoesNotManageTeamError
 
@@ -1519,7 +1516,7 @@ class _Game(_GameTrivialInherited):
 
         """
 
-        return self.team_manager.manages_managee(team)
+        return self._team_manager.manages_managee(team)
 
     def get_teams(self) -> Set[_Team]:
         """
@@ -1532,7 +1529,7 @@ class _Game(_GameTrivialInherited):
 
         """
 
-        return self.team_manager.get_managees()
+        return self._team_manager.get_managees()
 
     def get_team_by_id(self, team_id: str) -> _Team:
         """
@@ -1556,7 +1553,7 @@ class _Game(_GameTrivialInherited):
         """
 
         try:
-            return self.team_manager.get_managee_by_id(team_id)
+            return self._team_manager.get_managee_by_id(team_id)
         except PlayerGroupError.ManagerInvalidGroupIDError:
             raise GameError.GameInvalidTeamIDError
 
@@ -1571,7 +1568,7 @@ class _Game(_GameTrivialInherited):
 
         """
 
-        return self.team_manager.get_managee_limit()
+        return self._team_manager.get_managee_limit()
 
     def get_team_ids(self) -> Set[str]:
         """
@@ -1584,7 +1581,7 @@ class _Game(_GameTrivialInherited):
 
         """
 
-        return self.team_manager.get_managee_ids()
+        return self._team_manager.get_managee_ids()
 
     def get_teams_of_user(self, user: ClientManager.Client) -> Set[_Team]:
         """
@@ -1603,9 +1600,9 @@ class _Game(_GameTrivialInherited):
 
         """
 
-        return self.team_manager.get_managees_of_user(user)
+        return self._team_manager.get_managees_of_user(user)
 
-    def get_users_in_team(self):
+    def get_users_in_some_team(self):
         """
         Return (a shallow copy of) all the users that are part of some team managed by this game.
 
@@ -1616,7 +1613,7 @@ class _Game(_GameTrivialInherited):
 
         """
 
-        return self.team_manager.get_users_in_managees()
+        return self._team_manager.get_users_in_some_managee()
 
     def get_available_team_id(self) -> str:
         """
@@ -1635,7 +1632,7 @@ class _Game(_GameTrivialInherited):
         """
 
         try:
-            return self.team_manager.get_available_managee_id()
+            return self._team_manager.get_available_managee_id()
         except PlayerGroupError.ManagerTooManyGroupsError:
             return GameError.GameTooManyTeamsError
 
@@ -1658,9 +1655,9 @@ class _Game(_GameTrivialInherited):
             return
         self._unmanaged = True
 
-        for timer in self.timer_manager.get_timers():
-            self.timer_manager.delete_timer(timer)
-        for team in self.team_manager.get_managees():
+        for timer in self._timer_manager.get_timers():
+            self._timer_manager.delete_timer(timer)
+        for team in self._team_manager.get_managees():
             team.unchecked_destroy()
         for player in self.get_players():
             self.listener.unsubscribe(player)
@@ -1756,10 +1753,7 @@ class _Game(_GameTrivialInherited):
 
         self._check_structure()
 
-    def _on_client_destroyed(
-        self,
-        player: ClientManager.Client
-        ):
+    def _on_client_destroyed(self, player: ClientManager.Client):
         """
         Default callback for game player signaling it was destroyed, for example, as a result
         of a disconnection.
@@ -1799,7 +1793,7 @@ class _Game(_GameTrivialInherited):
         """
 
         # 1.
-        team_players = self.team_manager.get_users_in_managees()
+        team_players = self._team_manager.get_users_in_some_managee()
         game_players = self.get_players()
         team_not_in_game = {player for player in team_players if player not in game_players}
         err = (f'For game {self}, expected that every player in the set {team_players} of all '
@@ -1823,8 +1817,8 @@ class _Game(_GameTrivialInherited):
                 assert player.has_character(), err
 
         # 4.
-        self.timer_manager._check_structure()
-        self.team_manager._check_structure()
+        self._timer_manager._check_structure()
+        self._team_manager._check_structure()
 
     def __str__(self):
         """
@@ -1860,8 +1854,8 @@ class _Game(_GameTrivialInherited):
                 f'require_invitations={self.requires_invitations()}, '
                 f'require_leaders={self.requires_leaders()}, '
                 f'require_character={self.requires_characters()}, '
-                f'team_limit={self.team_manager.get_managee_limit()}, '
-                f'timer_limit={self.timer_manager.get_timer_limit()} || '
+                f'team_limit={self._team_manager.get_managee_limit()}, '
+                f'timer_limit={self._timer_manager.get_timer_limit()} || '
                 f'players={self.get_players()}, '
                 f'invitations={self.get_invitations()}, '
                 f'leaders={self.get_leaders()}, '
@@ -1881,7 +1875,7 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
         self,
         server: TsuserverDR,
         managee_limit: Union[int, None] = None,
-        default_managee_type: _Game = None,
+        default_managee_type: Type[_Game] = None,
         ):
         """
         Create a game manager object.
@@ -1892,7 +1886,7 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
             The server this game manager belongs to.
         managee_limit : int, optional
             The maximum number of games this manager can handle. Defaults to None (no limit).
-        default_managee_type : _Game, optional
+        default_managee_type : Type[_Game], optional
             The default type of game this manager will create. Defaults to None (and then
             converted to _Game).
 
@@ -1923,8 +1917,8 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
 
     def new_managee(
         self,
-        managee_type: _Game = None,
-        creator: ClientManager.Client = None,
+        managee_type: Type[_Game] = None,
+        creator: Union[ClientManager.Client, None] = None,
         player_limit: Union[int, None] = None,
         player_concurrent_limit: Union[int, None] = 1,
         require_invitations: bool = False,
@@ -1933,22 +1927,23 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
         require_character: bool = False,
         team_limit: Union[int, None] = None,
         timer_limit: Union[int, None] = None,
+        **kwargs,
         ) -> _Game:
         """
         Create a new game managed by this manager.
 
         Parameters
         ----------
-        game_type : type or functools.partial
+        managee_type : Type[_Game], optional
             Class of game that will be produced. Defaults to None (and converted to the default
             game created by this game manager).
-        creator : ClientManager.Client, optional
+        creator : Union[ClientManager.Client, None], optional
             The player who created this game. If set, they will also be added to the game.
             Defaults to None.
-        player_limit : int or None, optional
+        player_limit : Union[int, None], optional
             If an int, it is the maximum number of players the game supports. If None, it
             indicates the game has no player limit. Defaults to None.
-        player_concurrent_limit : int or None, optional
+        player_concurrent_limit : Union[int, None], optional
             If an int, it is the maximum number of games managed by `self` that any player
             of this game to create may belong to, including this game to create. If None, it
             indicates that this game does not care about how many other games managed by `self`
@@ -1969,12 +1964,14 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
             that switch to something other than a character will be automatically removed from the
             game. If False, no such checks are made. A player without a character is considered
             one where player.has_character() returns False. Defaults to False.
-        team_limit : int or None, optional
+        team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the game will support. If None, it
             indicates the game will have no team limit. Defaults to None.
-        timer_limit : int or None, optional
+        timer_limit : Union[int, None], optional
             If an int, it is the maximum number of timers the game will support. If None, it
             indicates the game will have no timer limit. Defaults to None.
+        **kwargs : Any
+            Additional arguments to consider when producing the game.
 
         Returns
         -------
@@ -2008,8 +2005,8 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
 
     def unchecked_new_managee(
         self,
-        managee_type: _Game = None,
-        creator: ClientManager.Client = None,
+        managee_type: Type[_Game] = None,
+        creator: Union[ClientManager.Client, None] = None,
         player_limit: Union[int, None] = None,
         player_concurrent_limit: Union[int, None] = 1,
         require_invitations: bool = False,
@@ -2018,6 +2015,7 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
         require_character: bool = False,
         team_limit: Union[int, None] = None,
         timer_limit: Union[int, None] = None,
+        **kwargs,
         ) -> _Game:
         """
         Create a new game managed by this manager.
@@ -2026,16 +2024,16 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
 
         Parameters
         ----------
-        game_type : type or functools.partial
+        managee_type : Type[_Game], optional
             Class of game that will be produced. Defaults to None (and converted to the default
             game created by this game manager).
-        creator : ClientManager.Client, optional
+        creator : Union[ClientManager.Client, None], optional
             The player who created this game. If set, they will also be added to the game.
             Defaults to None.
-        player_limit : int or None, optional
+        player_limit : Union[int, None], optional
             If an int, it is the maximum number of players the game supports. If None, it
             indicates the game has no player limit. Defaults to None.
-        player_concurrent_limit : int or None, optional
+        player_concurrent_limit : Union[int, None], optional
             If an int, it is the maximum number of games managed by `self` that any player
             of this game to create may belong to, including this game to create. If None, it
             indicates that this game does not care about how many other games managed by `self`
@@ -2056,12 +2054,14 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
             that switch to something other than a character will be automatically removed from the
             game. If False, no such checks are made. A player without a character is considered
             one where player.has_character() returns False. Defaults to False.
-        team_limit : int or None, optional
+        team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the game will support. If None, it
             indicates the game will have no team limit. Defaults to None.
-        timer_limit : int or None, optional
+        timer_limit : Union[int, None], optional
             If an int, it is the maximum number of timers the game will support. If None, it
             indicates the game will have no timer limit. Defaults to None.
+        **kwargs : Any
+            Additional arguments to consider when producing the game.
 
         Returns
         -------
@@ -2276,7 +2276,7 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
 
         return super().get_managees_of_players()
 
-    def get_users_in_managees(self) -> Set[ClientManager.Client]:
+    def get_users_in_some_managee(self) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) all the users that are part of some game managed by this
         manager.
@@ -2288,7 +2288,7 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
 
         """
 
-        return super().get_users_in_managees()
+        return super().get_users_in_some_managee()
 
     def is_managee_creatable(self) -> bool:
         """
@@ -2335,7 +2335,7 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
 
         Returns
         -------
-        _Game or None
+        Union[_Game, None]
             Limiting game as previously described if it exists, None otherwise.
 
         """
@@ -2344,14 +2344,12 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
 
 class GameManager(_GameManagerTrivialInherited):
     """
-    A mutable data type for a manager for games.
+    A game manager is a player group manager.
 
-    Each game is managed by a game manager. Only this manager is allowed to execute any public
-    methods on them. Each manager may also have a game limit (beyond which it will not manage any
-    more groups).
-
-    Contains methods for creating and deleting games, as well as some observer methods.
-
+    Attributes
+    ----------
+    server : TsuserverDR
+        Server the game manager belongs to.
     """
 
     # Invariants
@@ -2409,7 +2407,8 @@ class GameManager(_GameManagerTrivialInherited):
         return (f"GameManager(server, managee_limit={self.get_managee_limit()}, "
                 f"default_managee_type={self.get_managee_type()}, "
                 f"|| "
-                f"_id_to_managee={self._id_to_group}, "
+                f"_user_to_managees={self.get_managees_of_players()}, "
+                f"_id_to_managee={self.get_managee_ids_to_managees()}, "
                 f"id={self.get_id()})")
 
 

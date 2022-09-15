@@ -69,10 +69,10 @@ class _PlayerGroup:
     # --------------------
     # _playergroup_id : str
     #     Identifier for this player group.
-    # _player_limit : int or None.
+    # _player_limit : Union[int, None].
     #     If an int, it is the maximum number of players the player group supports. If None, the
     #     player group may have an arbitrary number of players.
-    # _player_concurrent_limit : int or None.
+    # _player_concurrent_limit : Union[int, None].
     #     If an int, it is the maximum number of player groups managed by the same manager as
     #     this player group that any player part of this player group may belong to, including this
     #     player group. If None, no such restriction is considered.
@@ -135,10 +135,10 @@ class _PlayerGroup:
             Manager for this player group.
         playergroup_id : str
             Identifier of the player group.
-        player_limit : int or None, optional
+        player_limit : Union[int, None], optional
             If an int, it is the maximum number of players the player group supports. If None,
             it indicates the player group has no player limit. Defaults to None.
-        player_concurrent_limit : int or None, optional
+        player_concurrent_limit : Union[int, None], optional
             If an int, it is the maximum number of player groups managed by `manager` that any
             player of this player group may belong to, including this player group. If None, it
             indicates that this player group does not care about how many other player groups
@@ -983,7 +983,7 @@ class _PlayerGroup:
             err = (f'For player group {self._playergroup_id}, expected that its player {player} is '
                    f'properly recognized in the player to player group mapping of the manager of '
                    f'the player group {self.manager}, but found that was not the case. || {self}')
-            assert (player in self.manager.get_users_in_managees()
+            assert (player in self.manager.get_users_in_some_managee()
                     and self in self.manager.get_managees_of_user(player)), err
 
         # 5.
@@ -1065,13 +1065,16 @@ class PlayerGroupManager:
     Contains the player group object definition, methods for creating and deleting them, as well as
     some observer methods.
 
+    Attributes
+    ----------
+    server : TsuserverDR
+        Server the player group manager belongs to.
+
     """
 
     # (Private) Attributes
     # --------------------
-    # _server : TsuserverDR
-    #     Server the player group manager belongs to.
-    # _managee_limit : int or None
+    # _managee_limit : Union[int, None]
     #     If an int, it is the maximum number of player groups this manager supports. If None, the
     #     manager may manage an arbitrary number of player groups.
     # _default_managee_type : _PlayerGroup
@@ -1090,12 +1093,14 @@ class PlayerGroupManager:
     #     a. `playergroup._playergroup_id == playergroup_id`.
     #     b. `playergroup._players` is a subset of `self._user_to_managees.keys()`.
     #     c. `playergroup.is_unmanaged()` is False.
-    # 3. For all pairs of distinct player groups `group1` and `group2` in `self._id_to_managee.values()`:
+    # 3. For all pairs of distinct player groups `group1` and `group2` in
+    #    `self._id_to_managee.values()`:
     #     a. `group1._playergroup_id != group2._playergroup_id`.
     # 4. For every player `player` in `self._user_to_managees.keys()`:
     #     a. `self._user_to_managees[player]` is a non-empty set.
     #     b. `self._user_to_managees[player]` is a subset of `self._id_to_managee.values()`.
-    #     c. For every player group `group` in `self._user_to_managees[player]`, `player` belongs to `group`.
+    #     c. For every player group `group` in `self._user_to_managees[player]`, `player` belongs to
+    #        `group`.
     # 5. For every player `player` in `self._user_to_managees.keys()`:
     #     a. For every player group `group` in `self._user_to_managees[player]`:
     #           1. `group` has no player concurrent membership limit, or it is at least the length
@@ -1106,7 +1111,7 @@ class PlayerGroupManager:
         self,
         server: TsuserverDR,
         managee_limit: Union[int, None] = None,
-        default_managee_type: _PlayerGroup = None,
+        default_managee_type: Type[_PlayerGroup] = None,
         ):
         """
         Create a player group manager object.
@@ -1118,7 +1123,7 @@ class PlayerGroupManager:
         managee_limit : int, optional
             The maximum number of player groups this manager can handle. Defaults to None (no
             limit).
-        default_managee_type : _PlayerGroup, optional
+        default_managee_type : Type[_PlayerGroup], optional
             The default type of player group this manager will create. Defaults to None (and then
             converted to _PlayerGroup).
 
@@ -1151,7 +1156,7 @@ class PlayerGroupManager:
     def new_managee(
         self,
         managee_type: Type[_PlayerGroup] = None,
-        creator: ClientManager.Client = None,
+        creator: Union[ClientManager.Client, None] = None,
         player_limit: Union[int, None] = None,
         player_concurrent_limit: Union[int, None] = 1,
         require_invitations: bool = False,
@@ -1164,16 +1169,16 @@ class PlayerGroupManager:
 
         Parameters
         ----------
-        managee_type : Type[_PlayerGroup]
+        managee_type : Type[_PlayerGroup], optional
             Class of player group that will be produced. Defaults to None (and converted to the
             default player group created by this player group manager).
-        creator : ClientManager.Client, optional
+        creator : Union[ClientManager.Client, None], optional
             The player who created this player group. If set, they will also be added to the player
             group. Defaults to None.
-        player_limit : int or None, optional
+        player_limit : Union[int, None], optional
             If an int, it is the maximum number of players the player group supports. If None, it
             indicates the player group has no player limit. Defaults to None.
-        player_concurrent_limit : int or None, optional
+        player_concurrent_limit : Union[int, None], optional
             If an int, it is the maximum number of player groups managed by `self` that any player
             of this player group to create may belong to, including this player group to create. If
             None, it indicates that this player group does not care about how many other player
@@ -1225,7 +1230,7 @@ class PlayerGroupManager:
     def unchecked_new_managee(
         self,
         managee_type: Type[_PlayerGroup] = None,
-        creator: ClientManager.Client = None,
+        creator: Union[ClientManager.Client, None] = None,
         player_limit: Union[int, None] = None,
         player_concurrent_limit: Union[int, None] = 1,
         require_invitations: bool = False,
@@ -1238,16 +1243,16 @@ class PlayerGroupManager:
 
         Parameters
         ----------
-        managee_type : Type[_PlayerGroup]
+        managee_type : Type[_PlayerGroup], optional
             Class of player group that will be produced. Defaults to None (and converted to the
             default player group created by this player group manager).
-        creator : ClientManager.Client, optional
+        creator : Union[ClientManager.Client, None], optional
             The player who created this player group. If set, they will also be added to the player
             group. Defaults to None.
-        player_limit : int or None, optional
+        player_limit : Union[int, None], optional
             If an int, it is the maximum number of players the player group supports. If None, it
             indicates the player group has no player limit. Defaults to None.
-        player_concurrent_limit : int or None, optional
+        player_concurrent_limit : Union[int, None], optional
             If an int, it is the maximum number of player groups managed by `self` that any player
             of this player group to create may belong to, including this player group to create. If
             None, it indicates that this player group does not care about how many other player
@@ -1532,7 +1537,7 @@ class PlayerGroupManager:
 
         return output
 
-    def get_users_in_managees(self) -> Set[ClientManager.Client]:
+    def get_users_in_some_managee(self) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) all the users that are part of some player group managed by
         this manager.
@@ -1619,7 +1624,7 @@ class PlayerGroupManager:
 
         Returns
         -------
-        _PlayerGroup or None
+        Union[_PlayerGroup, None]
             Limiting player group as previously described if it exists, None otherwise.
 
         """
