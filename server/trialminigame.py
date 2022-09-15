@@ -24,7 +24,7 @@ Module that contains the trial minigame class.
 import enum
 
 from server.exceptions import GameError, GameWithAreasError
-from server.gamewithareas_manager import GameWithAreas
+from server.gamewithareas_manager import _GameWithAreas
 
 
 class TRIALMINIGAMES(enum.Enum):
@@ -35,7 +35,7 @@ class TRIALMINIGAMES(enum.Enum):
     NONSTOP_DEBATE = enum.auto()
 
 
-class TrialMinigame(GameWithAreas):
+class TrialMinigame(_GameWithAreas):
     """
     A trial minigame is a game with areas that is part of a trial. Any players of the minigame
     must be players of the trial, and any areas of the minigame must be areas of the trial.

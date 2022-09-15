@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import functools
 import typing
-from typing import Dict, Set, Any
+from typing import Callable, Dict, Set, Any, Union
 
 from server.exceptions import GameWithAreasError, GameError
 from server.game_manager import _Game, GameManager
@@ -33,129 +33,780 @@ if typing.TYPE_CHECKING:
     # Avoid circular referencing
     from server.area_manager import AreaManager
     from server.client_manager import ClientManager
+    from server.tsuserver import TsuserverDR
 
 
-class GameWithAreas(_Game):
+class _GameWithAreasTrivialInherited(_Game):
+    """
+    This class should not be instantiated.
+    """
+
+    def get_id(self) -> str:
+        """
+        Return the ID of this game with areas.
+
+        Returns
+        -------
+        str
+            The ID.
+
+        """
+
+        return super().get_id()
+
+    def get_player_limit(self) -> Union[int, None]:
+        """
+        Return the player membership limit of this game with areas.
+
+        Returns
+        -------
+        Union[int, None]
+            The player membership limit.
+
+        """
+
+        return super().get_player_limit()
+
+    def get_player_concurrent_limit(self) -> Union[int, None]:
+        """
+        Return the concurrent player membership limit of this game with areas.
+
+        Returns
+        -------
+        Union[int, None]
+            The concurrent player membership limit.
+
+        """
+
+        return super().get_player_concurrent_limit()
+
+    def get_players(
+        self,
+        cond: Callable[[ClientManager.Client, ], bool] = None
+        ) -> Set[ClientManager.Client]:
+        """
+        Return (a shallow copy of) the set of players of this game with areas that satisfy a
+        condition if given.
+
+        Parameters
+        ----------
+        cond : Callable[[ClientManager.Client, ], bool], optional
+            Condition that all players returned satisfy. Defaults to None (no checked
+            conditions).
+
+        Returns
+        -------
+        Set[ClientManager.Client]
+            The (filtered) players of this game with areas.
+
+        """
+
+        return super().get_players(cond=cond)
+
+    def is_player(self, user: ClientManager.Client) -> bool:
+        """
+        Decide if a user is a player of the game with areas.
+
+        Parameters
+        ----------
+        user : ClientManager.Client
+            User to test.
+
+        Returns
+        -------
+        bool
+            True if the user is a player, False otherwise.
+
+        """
+
+        return super().is_player(user)
+
+    def add_player(self, user: ClientManager.Client):
+        """
+        Make a user a player of the game with areas. By default this player will not be a leader,
+        unless the game with areas has no leaders and it requires a leader.
+        It will also subscribe the game with areas to the player so it can listen to its updates.
+
+        Parameters
+        ----------
+        user : ClientManager.Client
+            User to add to the game with areas. They must be in an area part of the game with areas.
+
+        Raises
+        ------
+        GameWithAreasError.GameIsUnmanagedError
+            If the game with areaswas scheduled for deletion and thus does not accept any mutator
+            public method calls.
+        GameWithAreasError.UserNotInAreaError
+            If the user is not in an area part of the game with areas.
+        GameWithAreasError.UserHasNoCharacterError
+            If the user has no character but the game with areas requires that all players have
+            characters.
+        GameWithAreasError.UserNotInvitedError
+            If the game with areasrequires players be invited to be added and the user is not
+            invited.
+        GameWithAreasError.UserAlreadyPlayerError
+            If the user to add is already a user of the game with areas.
+        GameWithAreasError.UserHitGameConcurrentLimitError
+            If the player has reached the concurrent player membership of any of the game with areas
+            managed by the manager of this game with area, or by virtue of joining this game with
+            areas they would violate this game with areas's concurrent player membership limit.
+        GameWithAreasError.GameIsFullError
+            If the game with areas reached its player limit.
+
+        """
+
+        super().unchecked_add_player(user)
+        self._check_structure()
+
+    def remove_player(self, user: ClientManager.Client):
+        """
+        Make a user be no longer a player of this game with areas. If they were part of a team
+        managed by this game with areas, they will also be removed from said team. It will also
+        unsubscribe the game with areas from the player so it will no longer listen to its updates.
+
+        If the game with areas required that there it always had players and by calling this method
+        the game with areas had no more players, the game will automatically be scheduled for
+        deletion.
+
+        Parameters
+        ----------
+        user : ClientManager.Client
+            User to remove.
+
+        Raises
+        ------
+        GameWithAreasError.GameIsUnmanagedError
+            If the game with areas was scheduled for deletion and thus does not accept any mutator
+            public method calls.
+        GameWithAreasError.UserNotPlayerError
+            If the user to remove is already not a player of this game with areas.
+
+        """
+
+        self.unchecked_remove_player(user)
+        self.manager._check_structure()
+
+    def unchecked_remove_player(self, user: ClientManager.Client):
+        """
+        Make a user be no longer a player of this game with areas. If they were part of a team
+        managed by this game with areas, they will also be removed from said team. It will also
+        unsubscribe the game with areas from the player so it will no longer listen to its updates.
+
+        If the game with areas required that there it always had players and by calling this method
+        the game with areas had no more players, the game will automatically be scheduled for
+        deletion.
+
+        This method does not assert structural integrity.
+
+        Parameters
+        ----------
+        user : ClientManager.Client
+            User to remove.
+
+        Raises
+        ------
+        GameWithAreasError.GameIsUnmanagedError
+            If the game with areas was scheduled for deletion and thus does not accept any mutator
+            public method calls.
+        GameWithAreasError.UserNotPlayerError
+            If the user to remove is already not a player of this game with areas.
+
+        """
+
+        if self.is_unmanaged():
+           raise GameWithAreasError.GameIsUnmanagedError
+
+        try:
+            super().unchecked_remove_player(user)
+        except GameError.GameIsUnmanagedError:
+            # Should not have made it here as we already asserted the game is not unmmanaged
+            raise RuntimeError(self, user)
+        except GameError.UserNotPlayerError:
+            raise GameWithAreasError.UserNotPlayerError
+
+    def requires_players(self) -> bool:
+        """
+        Return whether the game with areas requires players at all times.
+
+        Returns
+        -------
+        bool
+            Whether the game with areas requires players at all times.
+        """
+
+        return super().requires_players()
+
+    def get_invitations(
+        self,
+        cond: Callable[[ClientManager.Client, ], bool] = None
+        ) -> Set[ClientManager.Client]:
+        """
+        Return (a shallow copy of) the set of invited users of this game with areas that satisfy a
+        condition if given.
+
+        Parameters
+        ----------
+        cond : Callable[[ClientManager.Client, ], bool], optional
+            Condition that all invited users returned satisfy. Defaults to None (no checked
+            conditions).
+
+        Returns
+        -------
+        Set[ClientManager.Client]
+            The (filtered) invited users of this game with areas.
+
+        """
+
+        return super().get_invitations(cond=cond)
+
+    def is_invited(self, user: ClientManager.Client) -> bool:
+        """
+        Decide if a user is invited to the game with areas.
+
+        Parameters
+        ----------
+        user : ClientManager.Client
+            User to test.
+
+        Raises
+        ------
+        GameWithAreasError.UserAlreadyPlayerError
+            If the user is a player of this game with areas.
+
+        Returns
+        -------
+        bool
+            True if the user is invited, False otherwise.
+
+        """
+
+        try:
+            return super().is_invited(user)
+        except GameError.UserAlreadyPlayerError:
+            raise GameWithAreasError.UserAlreadyPlayerError
+
+    def add_invitation(self, user: ClientManager.Client):
+        """
+        Mark a user as invited to this game with areas.
+
+        Parameters
+        ----------
+        user : ClientManager.Client
+            User to invite to the game with areas.
+
+        Raises
+        ------
+        GameWithAreasError.GameIsUnmanagedError
+            If the game with areas was scheduled for deletion and thus does not accept any mutator
+            public method calls.
+        GameWithAreasError.GameDoesNotTakeInvitationsError
+            If the game with areas does not require users be invited to the game with areas.
+        GameWithAreasError.UserAlreadyInvitedError
+            If the player to invite is already invited to the game with areas.
+        GameWithAreasError.UserAlreadyPlayerError
+            If the player to invite is already a player of the game with areas.
+
+        """
+
+        self.unchecked_add_invitation(user)
+        self.manager._check_structure()
+
+    def unchecked_add_invitation(self, user: ClientManager.Client):
+        """
+        Mark a user as invited to this game with areas.
+
+        This method does not assert structural integrity.
+
+        Parameters
+        ----------
+        user : ClientManager.Client
+            User to invite to the game with areas.
+
+        Raises
+        ------
+        GameWithAreasError.GameIsUnmanagedError
+            If the game with areas was scheduled for deletion and thus does not accept any mutator
+            public method calls.
+        GameWithAreasError.GameDoesNotTakeInvitationsError
+            If the game with areas does not require users be invited to the game with areas.
+        GameWithAreasError.UserAlreadyInvitedError
+            If the player to invite is already invited to the game with areas.
+        GameWithAreasError.UserAlreadyPlayerError
+            If the player to invite is already a player of the game with areas.
+
+        """
+
+        if self.is_unmanaged():
+            raise GameWithAreasError.GameIsUnmanagedError
+
+        try:
+            super().unchecked_add_invitation(user)
+        except GameError.GameIsUnmanagedError:
+            # Should not have made it here as we already asserted the game is not unmmanaged
+            raise RuntimeError(self, user)
+        except GameError.GameDoesNotTakeInvitationsError:
+            raise GameWithAreasError.GameDoesNotTakeInvitationsError
+        except GameError.UserAlreadyInvitedError:
+            raise GameWithAreasError.UserAlreadyInvitedError
+        except GameError.UserAlreadyPlayerError:
+            raise GameWithAreasError.UserAlreadyPlayerError
+
+    def remove_invitation(self, user: ClientManager.Client):
+        """
+        Mark a user as no longer invited to this game with areas (uninvite).
+
+        Parameters
+        ----------
+        user : ClientManager.Client
+            User to uninvite.
+
+        Raises
+        ------
+        GameWithAreasError.GameIsUnmanagedError
+            If the game with areas was scheduled for deletion and thus does not accept any mutator
+            public method calls.
+        GameWithAreasError.GameDoesNotTakeInvitationsError
+            If the game with areas does not require users be invited to the game with areas.
+        GameWithAreasError.UserNotInvitedError
+            If the user to uninvite is already not invited to this game with areas.
+
+        """
+
+        self.unchecked_remove_invitation(user)
+        self.manager._check_structure()
+
+    def unchecked_remove_invitation(self, user: ClientManager.Client):
+        """
+        Mark a user as no longer invited to this game (uninvite).
+
+        This method does not assert structural integrity.
+
+        Parameters
+        ----------
+        user : ClientManager.Client
+            User to uninvite.
+
+        Raises
+        ------
+        GameWithAreasError.GameIsUnmanagedError
+            If the game with areas was scheduled for deletion and thus does not accept any mutator
+            public method calls.
+        GameWithAreasError.GameDoesNotTakeInvitationsError
+            If the game with areas does not require users be invited to the game with areas.
+        GameWithAreasError.UserNotInvitedError
+            If the user to uninvite is already not invited to this game with areas.
+
+        """
+
+        if self.is_unmanaged():
+            raise GameWithAreasError.GameIsUnmanagedError
+
+        try:
+            super().unchecked_remove_invitation(user)
+        except GameError.GameIsUnmanagedError:
+            # Should not have made it here as we already asserted the game is not unmmanaged
+            raise RuntimeError(self, user)
+        except GameError.GameDoesNotTakeInvitationsError:
+            raise GameWithAreasError.GameDoesNotTakeInvitationsError
+        except GameError.UserNotInvitedError:
+            raise GameWithAreasError.UserNotInvitedError
+
+    def requires_invitations(self):
+        """
+        Return True if the game with areas requires players be invited before being allowed to join
+        the game, False otherwise.
+
+        Returns
+        -------
+        bool
+            True if the game with areas requires players be invited before being allowed to join
+            the game, False otherwise.
+        """
+
+        return super().requires_invitations()
+
+    def get_leaders(
+        self,
+        cond: Callable[[ClientManager.Client, ], bool] = None
+        ) -> Set[ClientManager.Client]:
+        """
+        Return (a shallow copy of) the set of leaders of this game with areas that satisfy a condition
+        if given.
+
+        Parameters
+        ----------
+        cond : Callable[[ClientManager.Client, ], bool], optional
+            Condition that all leaders returned satisfy. Defaults to None (no checked
+            conditions).
+
+        Returns
+        -------
+        Set[ClientManager.Client]
+            The (filtered) leaders of this game with areas.
+
+        """
+
+        return super().get_leaders(cond=cond)
+
+    def get_regulars(
+        self,
+        cond: Callable[[ClientManager.Client, ], bool] = None
+        ) -> Set[ClientManager.Client]:
+        """
+        Return (a shallow copy of) the set of players of this game with areas that are regulars and
+        satisfy a condition if given.
+
+        Parameters
+        ----------
+        cond : Callable[[ClientManager.Client, ], bool], optional
+            Condition that all regulars returned satisfy. Defaults to None (no checked
+            conditions).
+
+        Returns
+        -------
+        Set[ClientManager.Client]
+            The (filtered) regulars of this game with areas.
+
+        """
+
+        return super().get_regulars(cond=cond)
+
+    def is_leader(self, user: ClientManager.Client) -> bool:
+        """
+        Decide if a user is a leader of the game with areas.
+
+        Parameters
+        ----------
+        user : ClientManager.Client
+            User to test.
+
+        Raises
+        ------
+        GameWithAreasError.UserNotPlayerError
+            If the player to test is not a player of this game with areas.
+
+        Returns
+        -------
+        bool
+            True if the player is a user, False otherwise.
+
+        """
+
+        try:
+            return super().is_leader(user)
+        except GameError.UserNotPlayerError:
+            raise GameWithAreasError.UserNotPlayerError
+
+    def add_leader(self, user: ClientManager.Client):
+        """
+        Set a user as leader of this game with areas (promote to leader).
+
+        Parameters
+        ----------
+        user : ClientManager.Client
+            Player to promote to leader.
+
+        Raises
+        ------
+        GameWithAreasError.GameIsUnmanagedError
+            If the game with areas was scheduled for deletion and thus does not accept any mutator
+            public method calls.
+        GameWithAreasError.UserNotPlayerError
+            If the player to promote is not a player of this game with areas.
+        GameWithAreasError.UserAlreadyLeaderError
+            If the player to promote is already a leader of this game with areas.
+
+        """
+
+        self.unchecked_add_leader(user)
+        self.manager._check_structure()
+
+    def unchecked_add_leader(self, user: ClientManager.Client):
+        """
+        Set a user as leader of this game with areas (promote to leader).
+
+        This method does not assert structural integrity.
+
+        Parameters
+        ----------
+        user : ClientManager.Client
+            Player to promote to leader.
+
+        Raises
+        ------
+        GameWithAreasError.GameIsUnmanagedError
+            If the game with areas was scheduled for deletion and thus does not accept any mutator
+            public method calls.
+        GameWithAreasError.UserNotPlayerError
+            If the player to promote is not a player of this gamewith areas .
+        GameWithAreasError.UserAlreadyLeaderError
+            If the player to promote is already a leader of this gamewith areas .
+
+        """
+
+        if self.is_unmanaged():
+            raise GameWithAreasError.GameIsUnmanagedError
+
+        try:
+            super().unchecked_add_leader(user)
+        except GameError.GameIsUnmanagedError:
+            # Should not have made it here as we already asserted the game with areas is not
+            # unmmanaged
+            raise RuntimeError(self, user)
+        except GameError.UserNotPlayerError:
+            raise GameWithAreasError.UserNotPlayerError
+        except GameError.UserAlreadyLeaderError:
+            raise GameWithAreasError.UserAlreadyLeaderError
+
+    def remove_leader(self, user: ClientManager.Client):
+        """
+        Make a user no longer leader of this game with areas (demote).
+
+        Parameters
+        ----------
+        user : ClientManager.Client
+            User to demote.
+
+        Raises
+        ------
+        GameWithAreasError.GameIsUnmanagedError
+            If the game with areas was scheduled for deletion and thus does not accept any mutator
+            public method calls.
+        GameWithAreasError.UserNotPlayerError
+            If the player to demote is not a player of this game with areas.
+        GameWithAreasError.UserNotLeaderError
+            If the player to demote is already not a leader of this game with areas.
+
+        """
+
+        self.unchecked_remove_leader(user)
+        self.manager._check_structure()
+
+    def unchecked_remove_leader(self, user: ClientManager.Client):
+        """
+        Make a user no longer leader of this game with areas (demote).
+
+        This method does not assert structural integrity.
+
+        Parameters
+        ----------
+        user : ClientManager.Client
+            User to demote.
+
+        Raises
+        ------
+        GameWithAreasError.GameIsUnmanagedError
+            If the game with areas was scheduled for deletion and thus does not accept any mutator
+            public method calls.
+        GameWithAreasError.UserNotPlayerError
+            If the player to demote is not a player of this game with areas.
+        GameWithAreasError.UserNotLeaderError
+            If the player to demote is already not a leader of this game with areas.
+
+        """
+
+        if self.is_unmanaged():
+            raise GameWithAreasError.GameIsUnmanagedError
+
+        try:
+            super().unchecked_remove_leader(user)
+        except GameError.GameIsUnmanagedError:
+            # Should not have made it here as we already asserted the game is not unmmanaged
+            raise RuntimeError(self, user)
+        except GameError.UserNotPlayerError:
+            raise GameWithAreasError.UserNotPlayerError
+        except GameError.UserNotLeaderError:
+            raise GameWithAreasError.UserNotLeaderError
+
+    def has_ever_had_players(self) -> bool:
+        """
+        Return True if a player has ever been added to this game with areas, False otherwise.
+
+        Returns
+        -------
+        bool
+            True if the game with areas has ever had a player added, False otherwise.
+
+        """
+
+        return super().has_ever_had_players()
+
+    def requires_leaders(self) -> bool:
+        """
+        Return whether the game with areas requires leaders at all times.
+
+        Returns
+        -------
+        bool
+            Whether the game with areas requires leaders at all times.
+        """
+
+        return super().requires_leaders()
+
+    def has_ever_had_players(self):
+        """
+        Return True if a player has ever been added to this game with areas, False otherwise.
+
+        Returns
+        -------
+        bool
+            True if the game with areas has ever had a player added, False otherwise.
+
+        """
+
+        return super().has_ever_had_players()
+
+    def is_unmanaged(self):
+        """
+        Return True if this game with areas is unmanaged, False otherwise.
+
+        Returns
+        -------
+        bool
+            True if unmanaged, False otherwise.
+
+        """
+
+        return super().is_unmanaged()
+
+
+class _GameWithAreas(_GameWithAreasTrivialInherited):
     """
     A game with areas is a game that manages and subscribes to its areas' updates.
-    Any player of such a game must be in an area of the game. If a player of the game goes to an
-    area not part of the game, they are removed automatically from the game. If an area is removed
-    from the set of areas of the game, all players in that area are removed in some unspecified
-    order.
-    Each of these games may also impose a concurrent area membership limit, so that every area
-    part of a game with areas is at most an area of that many games with areas managed by this
-    games's manager.
-    Each of these games may also set an autoadd on client enter flag. If set, nonplayer clients
-    who enter an area part of the game will be added to the game if possible; if this fails,
-    no action is taken and no errors are propagated.
+    Any player of such a game with areas must be in an area of the game with areas. If a player of
+    the game with areas goes to an area not part of the game with areas, they are removed
+    automatically from the game with areas.
+    If an area is removed from the set of areas of the game with areas, all players in that area
+    are removed in some unspecified order.
+    Each of these games with areas may also impose a concurrent area membership limit, so that
+    every area part of a game with areas is at most an area of that many games with areas managed
+    by this games's manager.
+    Each of these games with areas may also set an autoadd on client enter flag. If set, nonplayer
+    clients who enter an area part of the game with areas will be added to the game with areas if
+    possible; if this fails, no action is taken and no errors are propagated.
 
     Attributes
     ----------
+    server : TsuserverDR
+        Server the game with areas belongs to.
+    manager : GameWithAreasManager
+        Manager for this game with areas.
+    team_manager : PlayerGroupManager
+        Internal manager that handles the teams of the game with areas.
+    timer_manager: TimerManager
+        Internal manager that handles the timers of the game with areas.
     listener : Listener
-        Standard listener of the game.
+        Standard listener of the game with areas.
 
     Callback Methods
     ----------------
     _on_area_client_left_final
-        Method to perform once a client left an area of the game.
+        Method to perform once a client left an area of the game with areas.
     _on_area_client_entered_final
-        Method to perform once a client entered an area of the game.
+        Method to perform once a client entered an area of the game with areas.
     _on_area_destroyed
-        Method to perform once an area of the game is marked for destruction.
+        Method to perform once an area of the game with areas is marked for destruction.
     _on_client_inbound_ms_check
-        Method to perform once a player of the game wants to send an IC message.
+        Method to perform once a player of the game with areas wants to send an IC message.
     _on_client_inbound_ms_final
-        Method to perform once a player of the game sends an IC message.
+        Method to perform once a player of the game with areas sends an IC message.
     _on_client_change_character
-        Method to perform once a player of the game has changed character.
+        Method to perform once a player of the game with areas has changed character.
     _on_client_destroyed
-        Method to perform once a player of the game is destroyed.
+        Method to perform once a player of the game with areas is destroyed.
 
     """
 
     # (Private) Attributes
     # --------------------
-    # _areas : set of AreaManager.Area
-    #   Areas of the game.
+    # _areas : Set[AreaManager.Area]
+    #   Areas of the game with areas.
+    # _area_concurrent_limit : Union[int, None]
+    #   The maximum number of games with areas managed by `manager` that any
+    #   area of this game with areas may belong to, including this game with areas.
+    # _autoadd_on_client_enter : bool
+    #   Whether nonplayer users that enter an area part of the game with areas will be
+    #   automatically added if permitted by the conditions of the game with areas.
     #
     # Invariants
     # ----------
-    # 1. For each player of the game, they are in an area part of the game.
-    # 2. It is not true that the game requires invitations and automatically adds users that join
-    # an area part of the game.
-    # 3. The invariants from the parent class Game are satisfied.
+    # 1. For each player of the game with areas, they are in an area part of the game with areas.
+    # 2. It is not true that the game with areas requires invitations and automatically adds users
+    #    that join an area part of the game with areas.
+    # 3. The invariants from the parent class _Game are satisfied.
 
-    def __init__(self, server, manager, game_id, player_limit=None,
-                 player_concurrent_limit=None, require_invitations=False, require_players=True,
-                 require_leaders=True, require_character=False, team_limit=None,
-                 timer_limit=None, area_concurrent_limit=None, autoadd_on_client_enter=False,
-                 playergroup_manager=None):
+    def __init__(
+        self,
+        server: TsuserverDR,
+        manager: GameWithAreasManager,
+        game_id: str,
+        player_limit: Union[int, None] = None,
+        player_concurrent_limit: Union[int, None] = None,
+        require_invitations: bool = False,
+        require_players: bool = True,
+        require_leaders: bool = True,
+        require_character: bool = False,
+        team_limit: Union[int, None] = None,
+        timer_limit: Union[int, None] = None,
+        area_concurrent_limit: Union[int, None] = None,
+        autoadd_on_client_enter: bool = False,
+    ):
         """
-        Create a new game. A game should not be fully initialized anywhere else other than
-        some manager code, as otherwise the manager will not recognize the game.
+        Create a new game with areas. A game with areas should not be fully initialized anywhere
+        else other than some manager code, as otherwise the manager will not recognize the game with
+        areas.
 
         Parameters
         ----------
         server : TsuserverDR
-            Server the game belongs to.
-        manager : GameManager
-            Manager for this game.
+            Server the game with areas belongs to.
+        manager : GameWithAreasManager
+            Manager for this game with areas.
         game_id : str
-            Identifier of the game.
+            Identifier of the game with areas.
         player_limit : int or None, optional
-            If an int, it is the maximum number of players the game supports. If None, it
-            indicates the game has no player limit. Defaults to None.
+            If an int, it is the maximum number of players the game with areas supports. If None, it
+            indicates the game with areas has no player limit. Defaults to None.
         player_concurrent_limit : int or None, optional
-            If an int, it is the maximum number of games managed by `manager` that any
-            player of this game may belong to, including this game. If None, it indicates
-            that this game does not care about how many other games managed by `manager` each
-            of its players belongs to. Defaults to None.
+            If an int, it is the maximum number of games with areas managed by `manager` that any
+            player of this game with areas may belong to, including this game with areas. If None,
+            it indicates that this game with areas does not care about how many other games with
+            areas managed by `manager` each of its players belongs to. Defaults to None.
         require_invitation : bool, optional
-            If True, players can only be added to the game if they were previously invited. If
-            False, no checking for invitations is performed. Defaults to False.
+            If True, players can only be added to the game with areas if they were previously
+            invited. If False, no checking for invitations is performed. Defaults to False.
         require_players : bool, optional
-            If True, if at any point the game has no players left, the game will
-            automatically be deleted. If False, no such automatic deletion will happen.
+            If True, if at any point the game with areas has no players left, the game with areas
+            will automatically be deleted. If False, no such automatic deletion will happen.
             Defaults to True.
         require_leaders : bool, optional
-            If True, if at any point the game has no leaders left, the game will choose a
-            leader among any remaining players left; if no players are left, the next player
-            added will be made leader. If False, no such automatic assignment will happen.
+            If True, if at any point the game with areas has no leaders left, the game with areas
+            will choose a leader among any remaining players left; if no players are left, the next
+            player added will be made leader. If False, no such automatic assignment will happen.
             Defaults to True.
         require_character : bool, optional
-            If False, players without a character will not be allowed to join the game, and players
-            that switch to something other than a character will be automatically removed from the
-            game. If False, no such checks are made. A player without a character is considered
-            one where player.has_character() returns False. Defaults to False.
+            If False, players without a character will not be allowed to join the game with areas,
+            and players that switch to something other than a character will be automatically
+            removed from the game with areas. If False, no such checks are made. A player without a
+            character is considered one where player.has_character() returns False. Defaults to
+            False.
         team_limit : int or None, optional
-            If an int, it is the maximum number of teams the game supports. If None, it
-            indicates the game has no team limit. Defaults to None.
+            If an int, it is the maximum number of teams the game with areas supports. If None, it
+            indicates the game with areas has no team limit. Defaults to None.
         timer_limit : int or None, optional
-            If an int, it is the maximum number of timers the game supports. If None, it
-            indicates the game has no timer limit. Defaults to None.
+            If an int, it is the maximum number of timers the game with areas supports. If None, it
+            indicates the game with areas has no timer limit. Defaults to None.
         area_concurrent_limit : int or None, optional
             If an int, it is the maximum number of games with areas managed by `manager` that any
-            area of this game may belong to, including this game. If None, it indicates
-            that this game does not care about how many other game with areas managed by
-            `manager` each of its areas belongs to. Defaults to 1 (an area may not be a part of
-            another game managed by `manager` while being an area of this game).
+            area of this game with areas may belong to, including this game with areas. If None, it
+            indicates that this game with areas does not care about how many other game with areas
+            managed by `manager` each of its areas belongs to. Defaults to 1 (an area may not be a
+            part of another game with areas managed by `manager` while being an area of this game).
         autoadd_on_client_enter : bool, optional
-            If True, nonplayer users that enter an area part of the game will be automatically
-            added if permitted by the conditions of the game. If False, no such adding will take
-            place. Defaults to False.
-        playergroup_manager : PlayerGroupManager, optional
-            The internal playergroup manager of the game manager. Access to this value is
-            limited exclusively to this __init__, and is only to initialize the internal
-            player group of the game.
-
-        Raises
-        ------
-        GameError.ManagerTooManyGamesError
-            If the manager is already managing its maximum number of games.
-        GameWithAreasError.AreaHitGameConcurrentLimitError.
-            If an area in `areas` has reached the concurrent area membership limit of any of the
-            games it belongs to managed by this manager, or by virtue of adding this area it will
-            violate this game's concurrent area membership limit.
+            If True, nonplayer users that enter an area part of the game with areas will be
+            automatically added if permitted by the conditions of the game with areas. If False, no
+            such adding will take place. Defaults to False.
 
         """
 
@@ -163,15 +814,21 @@ class GameWithAreas(_Game):
         self._area_concurrent_limit = area_concurrent_limit
         self._autoadd_on_client_enter = autoadd_on_client_enter
 
-        super().__init__(server, manager, game_id, player_limit=player_limit,
-                         player_concurrent_limit=player_concurrent_limit,
-                         require_invitations=require_invitations,
-                         require_players=require_players, require_leaders=require_leaders,
-                         require_character=require_character,
-                         team_limit=team_limit, timer_limit=timer_limit,
-                         playergroup_manager=playergroup_manager)
+        super().__init__(
+            server,
+            manager,
+            game_id,
+            player_limit=player_limit,
+            player_concurrent_limit=player_concurrent_limit,
+            require_invitations=require_invitations,
+            require_players=require_players,
+            require_leaders=require_leaders,
+            require_character=require_character,
+            team_limit=team_limit,
+            timer_limit=timer_limit
+        )
 
-        self.listener.subscribe(self._server.area_manager)
+        self.listener.subscribe(self.server.area_manager)
         self.listener.update_events({
             'area_client_left_final': self._on_area_client_left_final,
             'area_client_entered_final': self._on_area_client_entered_final,
@@ -182,13 +839,14 @@ class GameWithAreas(_Game):
 
     def get_name(self) -> str:
         """
-        Return the name of the game. Names are fully lowercase.
-        Implementations of the class should replace this with a human readable name of the trial.
+        Return the name of the game with areas. Names are fully lowercase.
+        Implementations of the class should replace this with a human readable name of the game
+        with areas.
 
         Returns
         -------
         str
-            Name of the game.
+            Name of the game with areas.
 
         """
 
@@ -196,14 +854,14 @@ class GameWithAreas(_Game):
 
     def get_autoadd_on_client_enter(self) -> bool:
         """
-        Return True if the game will always attempt to add nonplayer users who enter an area
-        part of the game, False otherwise.
+        Return True if the game with areas will always attempt to add nonplayer users who enter an
+        area part of the game with areas, False otherwise.
 
         Returns
         -------
         bool
-            True if the game will always attempt to add nonplayer users who enter an area
-            part of the game, False otherwise.
+            True if the game with areas will always attempt to add nonplayer users who enter an area
+            part of the game with areas, False otherwise.
         """
 
         return self._autoadd_on_client_enter
@@ -217,53 +875,79 @@ class GameWithAreas(_Game):
         new_value : bool
             New value.
 
-        Returns
-        -------
-        None.
+        """
+
+        self.unchecked_set_autoadd_on_client_enter(new_value)
+        self.manager._check_structure()
+
+    def unchecked_set_autoadd_on_client_enter(self, new_value: bool):
+        """
+        Set the new status of the autoadd on client enter flag.
+
+        This method does not assert structural integrity.
+
+        Parameters
+        ----------
+        new_value : bool
+            New value.
 
         """
 
         self._autoadd_on_client_enter = new_value
 
-    def add_player(self, user: ClientManager.Client):
+    def unchecked_add_player(self, user: ClientManager.Client):
         """
-        Make a user a player of the game. By default this player will not be a leader. It will
-        also subscribe the game to the player so it can listen to its updates.
+        Make a user a player of the game with areas. By default this player will not be a leader,
+        unless the game with areas has no leaders and it requires a leader.
+        It will also subscribe the game with areas to the player so it can listen to its updates.
 
         Parameters
         ----------
         user : ClientManager.Client
-            User to add to the game. They must be in an area part of the game.
+            User to add to the game with areas. They must be in an area part of the game with areas.
 
         Raises
         ------
-        GameError.GameIsUnmanagedError
-            If the game was scheduled for deletion and thus does not accept any mutator
+        GameWithAreasError.GameIsUnmanagedError
+            If the game with areaswas scheduled for deletion and thus does not accept any mutator
             public method calls.
         GameWithAreasError.UserNotInAreaError
-            If the user is not in an area part of the game.
-        GameError.UserHasNoCharacterError
-            If the user has no character but the game requires that all players have characters.
-        GameError.UserNotInvitedError
-            If the game requires players be invited to be added and the user is not invited.
-        GameError.UserAlreadyPlayerError
-            If the user to add is already a user of the game.
-        GameError.UserHitGameConcurrentLimitError
-            If the player has reached any of the games it belongs to managed by this game's
-            manager concurrent player membership limit, or by virtue of joining this game they
-            will violate this game's concurrent player membership limit.
-        GameError.GameIsFullError
-            If the game reached its player limit.
+            If the user is not in an area part of the game with areas.
+        GameWithAreasError.UserHasNoCharacterError
+            If the user has no character but the game with areas requires that all players have
+            characters.
+        GameWithAreasError.UserNotInvitedError
+            If the game with areasrequires players be invited to be added and the user is not
+            invited.
+        GameWithAreasError.UserAlreadyPlayerError
+            If the user to add is already a user of the game with areas.
+        GameWithAreasError.UserHitGameConcurrentLimitError
+            If the player has reached the concurrent player membership of any of the game with areas
+            managed by the manager of this game with area, or by virtue of joining this game with
+            areas they would violate this game with areas's concurrent player membership limit.
+        GameWithAreasError.GameIsFullError
+            If the game with areas reached its player limit.
 
         """
 
         if self.is_unmanaged():
-            raise GameError.GameIsUnmanagedError
+            raise GameWithAreasError.GameIsUnmanagedError
         # Check user in area before doing the rest of the add player code.
         if user.area not in self._areas:
             raise GameWithAreasError.UserNotInAreaError
 
-        super().add_player(user)  # Also calls _check_structure()
+        try:
+            super().unchecked_add_player(user)
+        except GameError.GameIsUnmanagedError:
+            raise RuntimeError(self)
+        except GameError.UserNotInvitedError:
+            raise GameWithAreasError.UserNotInvitedError
+        except GameError.UserAlreadyPlayerError:
+            raise GameWithAreasError.UserAlreadyPlayerError
+        except GameError.UserHitGameConcurrentLimitError:
+            raise GameWithAreasError.UserHitGameConcurrentLimitError
+        except GameError.GameIsFullError:
+            raise GameWithAreasError.GameIsFullError
 
     def add_area(self, area: AreaManager.Area):
         """
@@ -276,31 +960,27 @@ class GameWithAreas(_Game):
 
         Raises
         ------
-        GameError.GameIsUnmanagedError
-            If the game was scheduled for deletion and thus does not accept any mutator
+        GameWithAreasError.GameIsUnmanagedError
+            If the game with areas was scheduled for deletion and thus does not accept any mutator
             public method calls.
         GameWithAreasError.AreaAlreadyInGameError
-            If the area is already part of the game.
+            If the area is already part of the game with areas.
         GameWithAreasError.AreaHitGameConcurrentLimitError.
-            If `area` has reached the concurrent area membership limit of any of the games it
+            If `area` has reached the concurrent area membership limit of any of the games with areas it
             belongs to managed by this manager, or by virtue of adding this area it will violate
             this game's concurrent area membership limit.
-
-        Returns
-        -------
-        None.
 
         """
 
         if self.is_unmanaged():
-            raise GameError.GameIsUnmanagedError
+            raise GameWithAreasError.GameIsUnmanagedError
         if area in self._areas:
             raise GameWithAreasError.AreaAlreadyInGameError
 
         self._areas.add(area)
         self.listener.subscribe(area)
         try:
-            self._manager._add_area_to_mapping(area, self)
+            self.manager._add_area_to_mapping(area, self)
         except GameWithAreasError.AreaHitGameConcurrentLimitError as ex:
             self._areas.discard(area)
             self.listener.unsubscribe(area)
@@ -310,9 +990,11 @@ class GameWithAreas(_Game):
 
     def remove_area(self, area: AreaManager.Area):
         """
-        Remove an area from this game's set of areas. If the area is already a part of the game, do
-        nothing. If any player of the game is in this area, they are removed from the game. If the
-        game has no areas remaining, it will be automatically destroyed.
+        Remove an area from this game's set of areas.
+        If the area is already a part of the game with areas, do nothing.
+        If any player of the game with areas is in this area, they are removed from the game with
+        areas.
+        If the game with areas has no areas remaining, it will be automatically destroyed.
 
         Parameters
         ----------
@@ -321,18 +1003,16 @@ class GameWithAreas(_Game):
 
         Raises
         ------
+        GameWithAreasError.GameIsUnmanagedError
+            If the game with areas was scheduled for deletion and thus does not accept any mutator
+            public method calls.
         GameWithAreasError.AreaNotInGameError
-            If the area is already not part of the game.
-
-        Returns
-        -------
-        None.
+            If the area is already not part of the game with areas.
 
         """
 
-        # No legitimate call of remove_area can happen if the game is unmanaged as it has no areas
-        # if self.is_unmanaged():
-        #     raise GameError.GameIsUnmanagedError
+        if self.is_unmanaged():
+            raise GameWithAreasError.GameIsUnmanagedError
         if area not in self._areas:
             raise GameWithAreasError.AreaNotInGameError
 
@@ -341,8 +1021,8 @@ class GameWithAreas(_Game):
         # of the events that triggers this method. Moreover, as the change_area code in area reloads
         # does not trigger the publishers, we cannot necessarily assume that _on_area_client_left
         # will do our checks.
-        # However, we can check ourselves manually: if a player of the game is in an area not
-        # part of the game, remove them.
+        # However, we can check ourselves manually: if a player of the game with areas is in an
+        # area not part of the game with areas, remove them.
         # As area is in self._areas (by earlier check), we do not need to check
         faulty_players = self.get_players(cond=lambda client: client.area == area)
         for player in faulty_players:
@@ -350,13 +1030,13 @@ class GameWithAreas(_Game):
         # Remove area only after removing all players to prevent structural checks failing
         self._areas.discard(area)
         self.listener.unsubscribe(area)
-        self._manager._remove_area_from_mapping(area, self)
+        self.manager._remove_area_from_mapping(area, self)
         if not self._areas:
             self.destroy()
 
         self._check_structure()
 
-    def has_area(self, area: AreaManager.Area):
+    def has_area(self, area: AreaManager.Area) -> bool:
         """
         If the area is part of this game's set of areas, return True; otherwise, return False.
 
@@ -376,24 +1056,24 @@ class GameWithAreas(_Game):
 
     def get_areas(self) -> Set[AreaManager.Area]:
         """
-        Return (a shallow copy of) the set of areas of this game.
+        Return (a shallow copy of) the set of areas of this game with areas.
 
         Returns
         -------
-        set of AreaManager.Area
-            Set of areas of the game.
+        Set[AreaManager.Area]
+            Set of areas of the game with areas.
 
         """
 
         return self._areas.copy()
 
-    def get_area_concurrent_limit(self):
+    def get_area_concurrent_limit(self) -> Union[int, None]:
         """
-        Return the concurrent area membership limit of this game.
+        Return the concurrent area membership limit of this game with areas.
 
         Returns
         -------
-        int or None
+        Union[int, None]
             The concurrent area membership limit.
 
         """
@@ -402,12 +1082,13 @@ class GameWithAreas(_Game):
 
     def get_users_in_areas(self) -> Set[ClientManager.Client]:
         """
-        Return all users in areas part of the game, even those that are not players of the game.
+        Return all users in areas part of the game with areas, even those that are not players of
+        the game with areas.
 
         Returns
         -------
-        users : set of ClientManager.Client
-            All users in areas part of the game.
+        Set[ClientManager.Client]
+            All users in areas part of the game with areas.
 
         """
 
@@ -418,13 +1099,13 @@ class GameWithAreas(_Game):
 
     def get_nonleader_users_in_areas(self) -> Set[ClientManager.Client]:
         """
-        Return all users in areas part of the game, even those that are not players of the game,
-        such that they are not leaders of the game.
+        Return all users in areas part of the game with areas, even those that are not players of
+        the game with areas, such that they are not leaders of the game with areas.
 
         Returns
         -------
-        users : set of ClientManager.Client
-            All users in areas part of the game that are not leaders of the game.
+        Set[ClientManager.Client]
+            All users in areas part of the game with areas that are not leaders of the game with areas.
 
         """
 
@@ -433,12 +1114,14 @@ class GameWithAreas(_Game):
 
     def get_nonplayer_users_in_areas(self) -> Set[ClientManager.Client]:
         """
-        Return all users in areas part of the game that are not players of the game.
+        Return all users in areas part of the game with areas that are not players of the game
+        with areas.
 
         Returns
         -------
-        users : set of ClientManager.Client
-            All users in areas part of the game that are not players of the game.
+        Set[ClientManager.Client]
+            All users in areas part of the game with areas that are not players of the game with
+            areas.
 
         """
 
@@ -446,8 +1129,8 @@ class GameWithAreas(_Game):
 
     def destroy(self):
         """
-        Mark this game as destroyed and notify its manager so that it is deleted.
-        If the game is already destroyed, this function does nothing.
+        Mark this game with areas as destroyed and notify its manager so that it is deleted.
+        If the game with areas is already destroyed, this function does nothing.
 
         This method is reentrant (it will do nothing though).
 
@@ -465,7 +1148,7 @@ class GameWithAreas(_Game):
 
     def __str__(self) -> str:
         """
-        Return a string representation of this game.
+        Return a string representation of this game with areas.
 
         Returns
         -------
@@ -482,7 +1165,7 @@ class GameWithAreas(_Game):
 
     def __repr__(self) -> str:
         """
-        Return a representation of this game.
+        Return a representation of this game with areas.
 
         Returns
         -------
@@ -491,13 +1174,13 @@ class GameWithAreas(_Game):
 
         """
 
-        return (f'GameWithAreas(server, {self._manager.get_id()}, "{self.get_id()}", '
-                f'player_limit={self._playergroup._player_limit}, '
+        return (f'GameWithAreas(server, {self.manager.get_id()}, "{self.get_id()}", '
+                f'player_limit={self.get_player_limit()}, '
                 f'player_concurrent_limit={self.get_player_concurrent_limit()}, '
-                f'require_players={self._playergroup._require_players}, '
-                f'require_invitations={self._playergroup._require_invitations}, '
-                f'require_leaders={self._playergroup._require_leaders}, '
-                f'require_character={self._require_character}, '
+                f'require_players={self.requires_players()}, '
+                f'require_invitations={self.requires_invitations()}, '
+                f'require_leaders={self.requires_leaders()}, '
+                f'require_character={self.requires_characters()}, '
                 f'team_limit={self.team_manager.get_managee_limit()}, '
                 f'timer_limit={self.timer_manager.get_timer_limit()}, '
                 f'areas={self.get_areas()}) || '
@@ -510,11 +1193,12 @@ class GameWithAreas(_Game):
     def _on_area_client_left_final(self, area, client=None, old_displayname=None,
                                    ignore_bleeding=False, ignore_autopass=False):
         """
-        Default callback for game area signaling a client left. This is executed after all other
-        actions related to moving the player to a new area have been executed: in particular,
-        client.area holds the new area of the client.
+        Default callback for game with areas area signaling a client left. This is executed after
+        all other actions related to moving the player to a new area have been executed:
+        in particular, client.area holds the new area of the client.
 
-        By default it removes the player from the game if their new area is not part of the game.
+        By default it removes the player from the game with areas if their new area is not part of
+        the game with areas.
 
         Parameters
         ----------
@@ -551,10 +1235,10 @@ class GameWithAreas(_Game):
                                       ignore_bleeding: bool = False,
                                       ignore_autopass: bool = False):
         """
-        Default callback for game area signaling a client entered.
+        Default callback for game with areas area signaling a client entered.
 
-        By default adds a user to the game if the game is meant to automatically add users that
-        enter an area part of the game.
+        By default adds a user to the game with areas if the game with areas is meant to
+        automatically add users that enter an area part of the game with areas.
 
         Parameters
         ----------
@@ -588,10 +1272,10 @@ class GameWithAreas(_Game):
                                          client: ClientManager.Client = None,
                                          contents: Dict[str, Any] = None):
         """
-        Default callback for game area signaling a client in the area sent an IC message. Unlike
-        the ClientManager.Client callback for send_ic_check, this one is triggered regardless of
-        whether the sender is part of the game or not. This is useful for example, to filter
-        out messages sent by non-players.
+        Default callback for game with areas area signaling a client in the area sent an IC message.
+        Unlike the ClientManager.Client callback for send_ic_check, this one is triggered
+        regardless of whether the sender is part of the game with areas or not. This is useful for
+        example, to filter out messages sent by non-players.
 
         By default does nothing.
 
@@ -616,7 +1300,7 @@ class GameWithAreas(_Game):
 
     def _on_area_destroyed(self, area: AreaManager.Area):
         """
-        Default callback for game area signaling it was destroyed.
+        Default callback for game with areas area signaling it was destroyed.
 
         By default it calls self.remove_area(area).
 
@@ -669,14 +1353,14 @@ class GameWithAreas(_Game):
         # 1.
         for player in self.get_players():
             err = (f'For game with areas {self}, expected that its player {player} was in an area '
-                   f'part of the game, found they were in area {player.area} instead.')
+                   f'part of the game with areas, found they were in area {player.area} instead.')
             assert player.area in self._areas, err
 
         # 2.
         if self._autoadd_on_client_enter and self.requires_invitations():
             err = (f'For game with areas {self}, expected that it did not simultaneously require '
                    f'invitations for users to join while mandating users be automatically added '
-                   f'if they enter an area of the game, found it did.')
+                   f'if they enter an area of the game with areas, found it did.')
             raise AssertionError(err)
 
         # 2.
@@ -689,8 +1373,8 @@ class GameWithAreasManager(GameManager):
 
     """
 
-    # TODO: Enforce GameWithAreasManager to only take game with areas as games when calling
-    # new_game, or when initialized. Also do it in check_structure()
+    # TODO: Enforce GameWithAreasManager to only take game with areas when calling
+    # new_game with areas, or when initialized. Also do it in check_structure()
 
     def __init__(self, server, game_limit=None, default_game_type=None,
                  available_id_producer=None):
@@ -702,19 +1386,19 @@ class GameWithAreasManager(GameManager):
         server : TsuserverDR
             The server this game with areas manager belongs to.
         game_limit : int, optional
-            The maximum number of games this manager can handle. Defaults to None (no limit).
+            The maximum number of games with areas this manager can handle. Defaults to None (no limit).
         default_game_type : GameWithAreas, optional
-            The default type of game this manager will create. Defaults to None (and then
+            The default type of game with areas this manager will create. Defaults to None (and then
             converted to GameWithAreas).
         available_id_producer : typing.types.FunctionType, optional
-            Function to produce available game IDs. It will override the built-in class method
+            Function to produce available game with areas IDs. It will override the built-in class method
             get_available_game_id. Defaults to None (and then converted to the built-in
             get_available_game_id).
 
         """
 
         if default_game_type is None:
-            default_game_type = GameWithAreas
+            default_game_type = _GameWithAreas
         self._area_to_games = dict()
 
         super().__init__(server, managee_limit=game_limit, default_managee_type=default_game_type,
@@ -724,72 +1408,72 @@ class GameWithAreasManager(GameManager):
                  player_concurrent_limit=1, require_invitations=False, require_players=True,
                  require_leaders=True, require_character=False, team_limit=None, timer_limit=None,
                  areas=None, area_concurrent_limit=None,
-                 autoadd_on_client_enter=False) -> GameWithAreas:
+                 autoadd_on_client_enter=False) -> _GameWithAreas:
         """
         Create a new game with areas managed by this manager.
 
         Parameters
         ----------
         game_type : _Game or functools.partial
-            Class of game that will be produced. Defaults to None (and converted to the default
-            game created by this game manager).
+            Class of game with areas that will be produced. Defaults to None (and converted to the default
+            game with areas created by this game with areas manager).
         creator : ClientManager.Client, optional
-            The player who created this game. If set, they will also be added to the game.
+            The player who created this game with areas. If set, they will also be added to the game with areas.
             Defaults to None.
         player_limit : int or None, optional
-            If an int, it is the maximum number of players the game supports. If None, it
-            indicates the game has no player limit. Defaults to None.
+            If an int, it is the maximum number of players the game with areas supports. If None, it
+            indicates the game with areas has no player limit. Defaults to None.
         player_concurrent_limit : int or None, optional
-            If an int, it is the maximum number of games managed by `self` that any player
-            of this game to create may belong to, including this game to create. If None, it
-            indicates that this game does not care about how many other games managed by `self`
+            If an int, it is the maximum number of games with areas managed by `self` that any player
+            of this game with areas to create may belong to, including this game with areas to create. If None, it
+            indicates that this game with areas does not care about how many other games with areas managed by `self`
             each of its players belongs to. Defaults to 1 (a player may not be in another game
             managed by `self` while in this game).
         require_invitations : bool, optional
-            If True, users can only be added to the game if they were previously invited. If
+            If True, users can only be added to the game with areas if they were previously invited. If
             False, no checking for invitations is performed. Defaults to False.
         require_players : bool, optional
-            If True, if at any point the game loses all its players, the game will automatically
+            If True, if at any point the game with areas loses all its players, the game with areas will automatically
             be deleted. If False, no such automatic deletion will happen. Defaults to True.
         require_leaders : bool, optional
-            If True, if at any point the game has no leaders left, the game will choose a leader
+            If True, if at any point the game with areas has no leaders left, the game with areas will choose a leader
             among any remaining players left; if no players are left, the next player added will
             be made leader. If False, no such automatic assignment will happen. Defaults to True.
         require_character : bool, optional
-            If False, players without a character will not be allowed to join the game, and players
+            If False, players without a character will not be allowed to join the game with areas, and players
             that switch to something other than a character will be automatically removed from the
-            game. If False, no such checks are made. A player without a character is considered
+            game with areas. If False, no such checks are made. A player without a character is considered
             one where player.has_character() returns False. Defaults to False.
         team_limit : int or None, optional
-            If an int, it is the maximum number of teams the game will support. If None, it
-            indicates the game will have no team limit. Defaults to None.
+            If an int, it is the maximum number of teams the game with areas will support. If None, it
+            indicates the game with areas will have no team limit. Defaults to None.
         timer_limit : int or None, optional
-            If an int, it is the maximum number of timers the game will support. If None, it
-            indicates the game will have no timer limit. Defaults to None.
+            If an int, it is the maximum number of timers the game with areas will support. If None, it
+            indicates the game with areas will have no timer limit. Defaults to None.
         areas : set of AreaManager.Area, optional
-            Areas the game starts with. Defaults to None (and converted to an empty set).
+            Areas the game with areas starts with. Defaults to None (and converted to an empty set).
         area_concurrent_limit : int or None, optional
             If an int, it is the maximum number of games with areas managed by `manager` that any
-            area of this game may belong to, including this game. If None, it indicates
-            that this game does not care about how many other game with areas managed by
+            area of this game with areas may belong to, including this game with areas. If None, it indicates
+            that this game with areas does not care about how many other game with areas managed by
             `manager` each of its areas belongs to. Defaults to 1 (an area may not be a part of
-            another game managed by `manager` while being an area of this game).
+            another game with areas managed by `manager` while being an area of this game).
         autoadd_on_client_enter : bool, optional
-            If True, nonplayer users that enter an area part of the game will be automatically
-            added if permitted by the conditions of the game. If False, no such adding will take
+            If True, nonplayer users that enter an area part of the game with areas will be automatically
+            added if permitted by the conditions of the game with areas. If False, no such adding will take
             place. Defaults to False.
 
         Returns
         -------
         GameWithAreas
-            The created game.
+            The created game with areas.
 
         Raises
         ------
         GameError.ManagerTooManyGamesError
             If the manager is already managing its maximum number of games.
         Any error from the created game's add_player(creator)
-            If the game cannot add `creator` as a player if given one.
+            If the game with areas cannot add `creator` as a player if given one.
 
         """
 
@@ -829,15 +1513,15 @@ class GameWithAreasManager(GameManager):
 
         return game
 
-    def get_games_in_area(self, area) -> Set[GameWithAreas]:
+    def get_games_in_area(self, area) -> Set[_GameWithAreas]:
         """
-        Return (a shallow copy of) the all games managed by this manager that contain the given
+        Return (a shallow copy of) the all games with areas managed by this manager that contain the given
         area.
 
         Parameters
         ----------
         area : AreaManager.Area
-            Area that all returned games must contain.
+            Area that all returned games with areas must contain.
 
         Returns
         -------
@@ -854,11 +1538,11 @@ class GameWithAreasManager(GameManager):
     def _find_area_concurrent_limiting_game(self, area: AreaManager.Area):
         """
         For area `area`, find a game with areas `most_restrictive_game` managed by this manager
-        such that, if `area` were to be added to another game managed by this manager, they would
+        such that, if `area` were to be added to another game with areas managed by this manager, they would
         violate `most_restrictive_game`'s concurrent area membership limit.
-        If no such game exists (or the area is not an area of any game with areas managed by this
+        If no such game with areas exists (or the area is not an area of any game with areas managed by this
         manager), return None.
-        If multiple such games exist, any one of them may be returned.
+        If multiple such games with areas exist, any one of them may be returned.
 
         Parameters
         ----------
@@ -883,16 +1567,16 @@ class GameWithAreasManager(GameManager):
             return None
 
         # It just suffices to analyze the game with the smallest limit, because:
-        # 1. If the area is part of at least as many games as this game's limit, this game
+        # 1. If the area is part of at least as many games with areas as this game's limit, this game
         # is an example game that can be returned.
-        # 2. Otherwise, no other games exist due to the minimality condition.
+        # 2. Otherwise, no other games with areas exist due to the minimality condition.
         most_restrictive_game = min(games_with_limit,
                                     key=lambda game: game.get_area_concurrent_limit())
         if len(games) < most_restrictive_game.get_area_concurrent_limit():
             return None
         return most_restrictive_game
 
-    def _add_area_to_mapping(self, area: AreaManager.Area, game: GameWithAreas):
+    def _add_area_to_mapping(self, area: AreaManager.Area, game: _GameWithAreas):
         """
         Update the area to game with areas mapping with the information that `area` was added to
         `game`.
@@ -907,7 +1591,7 @@ class GameWithAreasManager(GameManager):
         Raises
         ------
         GameWithAreasError.AreaHitGameConcurrentLimitError.
-            If `area` has reached the concurrent area membership limit of any of the games it
+            If `area` has reached the concurrent area membership limit of any of the games with areas it
             belongs to managed by this manager, or by virtue of adding this area to `game` it
             will violate this game's concurrent area membership limit.
 
@@ -925,11 +1609,11 @@ class GameWithAreasManager(GameManager):
         except KeyError:
             self._area_to_games[area] = {game}
 
-    def _remove_area_from_mapping(self, area: AreaManager.Area, game: GameWithAreas):
+    def _remove_area_from_mapping(self, area: AreaManager.Area, game: _GameWithAreas):
         """
         Update the area to game with areas mapping with the information that `area` was removed
         from `game`.
-        If the area is already not associated with that game, or is not part of the mapping,
+        If the area is already not associated with that game with areas, or is not part of the mapping,
         this method will not do anything.
 
         Parameters
@@ -970,8 +1654,8 @@ class GameWithAreasManager(GameManager):
 
             # a.
             err = (f'For game with areas manager {self}, expected that area {area} to only appear '
-                   f'in the area to game with areas mapping if it was a area of any area '
-                   f'game managed by this manager, but found it appeared while not belonging to '
+                   f'in the area to game with areas mapping if it was a area of any game with '
+                   f'areas managed by this manager, but found it appeared while not belonging to '
                    f'any game with areas. || {self}')
             assert games, err
 
@@ -985,7 +1669,7 @@ class GameWithAreasManager(GameManager):
 
                 # c.
                 err = (f'For game with areas manager {self}, expected that area {area} in the area '
-                       f'to game mapping be a area of its associated game {game}, but '
+                       f'to game with areas mapping be a area of its associated game with areas {game}, but '
                        f'found that was not the case. || {self}')
                 assert area in game.get_areas(), err
 
@@ -1003,7 +1687,7 @@ class GameWithAreasManager(GameManager):
                        f'{game} belonged to at most the concurrent area membership limit of '
                        f'that game of {limit} game{"s" if limit != 1 else ""}, found it '
                        f'belonged to {membership} game{"s" if membership != 1 else ""}. || {self}')
-                assert membership <= limit
+                assert membership <= limit, err
 
         # Last
         super()._check_structure()

@@ -24,12 +24,12 @@ Module that contains the trial manager and trial modules.
 import functools
 
 from server.exceptions import TrialError, GameError
-from server.gamewithareas_manager import GameWithAreas, GameWithAreasManager
+from server.gamewithareas_manager import _GameWithAreas, GameWithAreasManager
 from server.trialminigame import TrialMinigame, TRIALMINIGAMES
 from server.nonstopdebate import NonStopDebate
 
 
-class _Trial(GameWithAreas):
+class _Trial(_GameWithAreas):
     """
     A trial is a game with areas that can manage 'trial minigames', which are the following
     trial games (server.trialminigame):

@@ -56,14 +56,17 @@ class _PlayerGroup:
     player group it is managing (it will unmanage it), so no further mutator public method calls
     would be allowed on the player group.
 
+    Attributes
+    ----------
+    server : TsuserverDR
+        Server the player group belongs to.
+    manager : PlayerGroupManager
+        Manager for this player group.
+
     """
 
     # (Private) Attributes
     # --------------------
-    # _server : TsuserverDR
-    #     Server the player group belongs to.
-    # _manager : PlayerGroupManager
-    #     Manager for this player group.
     # _playergroup_id : str
     #     Identifier for this player group.
     # _player_limit : int or None.
@@ -73,11 +76,11 @@ class _PlayerGroup:
     #     If an int, it is the maximum number of player groups managed by the same manager as
     #     this player group that any player part of this player group may belong to, including this
     #     player group. If None, no such restriction is considered.
-    # _players : set of ClientManager.Client
+    # _players : Set[ClientManager.Client]
     #     Players of the player group.
-    # _leaders : set of ClientManager.Client
+    # _leaders : Set[ClientManager.Client]
     #     Leaders of the player group.
-    # _invitations : set of clientManager.Client
+    # _invitations : Set[ClientManager.Client]
     #     Users invited to (but not part of of) the player group.
     # _require_players : bool
     #     If True, the player group will be destroyed automatically if it loses all its players (but
@@ -291,10 +294,10 @@ class _PlayerGroup:
             If the user to add is already a user of the player group.
         PlayerGroupError.UserInAnotherGroupError
             If the player is already in another player group managed by this manager.
-        PlayerGroupError.UserHitGroupConcurrentLimitError.
-            If the player has reached any of the player groups it belongs to managed by this player
-            group's manager concurrent player membership limit, or by virtue of joining this player
-            group they will violate this player group's concurrent player membership limit.
+        PlayerGroupError.UserHitGroupConcurrentLimitError
+            If the player has reached the concurrent player membership of any of the player groups
+            managed by the manager of this player group, or by virtue of joining this player group
+            they would violate this player group's concurrent player membership limit.
         PlayerGroupError.GroupIsFullError
             If the player group reached its player limit.
 
@@ -326,10 +329,10 @@ class _PlayerGroup:
             If the user to add is already a user of the player group.
         PlayerGroupError.UserInAnotherGroupError
             If the player is already in another player group managed by this manager.
-        PlayerGroupError.UserHitGroupConcurrentLimitError.
-            If the player has reached any of the player groups it belongs to managed by this player
-            group's manager concurrent player membership limit, or by virtue of joining this player
-            group they will violate this player group's concurrent player membership limit.
+        PlayerGroupError.UserHitGroupConcurrentLimitError
+            If the player has reached the concurrent player membership of any of the player groups
+            managed by the manager of this player group, or by virtue of joining this player group
+            they would violate this player group's concurrent player membership limit.
         PlayerGroupError.GroupIsFullError
             If the player group reached its player limit.
 
@@ -1474,6 +1477,19 @@ class PlayerGroupManager:
 
         return set(self._id_to_group.keys())
 
+    def get_managee_ids_to_managees(self) -> Dict[str, _PlayerGroup]:
+        """
+        Return a mapping of the IDs of all player groups managed by this manager to their associated
+        player group.
+
+        Returns
+        -------
+        Dict[str, _PlayerGroup]
+            Mapping.
+        """
+
+        return self._id_to_group.copy()
+
     def get_managees_of_user(self, user: ClientManager.Client) -> Set[_PlayerGroup]:
         """
         Return (a shallow copy of) the player groups managed by this manager user `user` is a
@@ -1495,6 +1511,26 @@ class PlayerGroupManager:
             return self._user_to_groups[user].copy()
         except KeyError:
             return set()
+
+    def get_managees_of_players(self) -> Dict[ClientManager.Client, Set[_PlayerGroup]]:
+        """
+        Return a mapping of the players part of any player group managed by this manager to the
+        player groups managed by this manager such players belong to.
+
+        Returns
+        -------
+        Dict[ClientManager.Client, Set[_PlayerGroup]]
+            Mapping.
+        """
+
+        # Implementation detail
+        # This is essentially a public view of self._user_to_groups
+
+        output = dict()
+        for (player, groups) in self._user_to_groups.items():
+            output[player] = groups.copy()
+
+        return output
 
     def get_users_in_managees(self) -> Set[ClientManager.Client]:
         """
@@ -1763,11 +1799,11 @@ class PlayerGroupManager:
 
         """
 
-        return (f"PlayerGroupManager(server, managee_limit={self._group_limit}, "
-                f"default_managee_type={self._default_group_type}, "
+        return (f"PlayerGroupManager(server, managee_limit={self.get_managee_limit()}, "
+                f"default_managee_type={self.get_managee_type()}, "
                 f"|| "
-                f"_user_to_managees={self._user_to_groups}, "
-                f"_id_to_managee={self._id_to_group}, "
+                f"_user_to_managees={self.get_managees_of_players()}, "
+                f"_id_to_managee={self.get_managee_ids_to_managees()}, "
                 f"id={self.get_id()}")
 
 if __name__ == '__main__':
