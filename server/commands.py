@@ -4790,7 +4790,7 @@ def ooc_cmd_nsd(client: ClientManager.Client, arg: str):
             seconds = Constants.parse_time_length(arg)  # Also internally validates
 
     try:
-        trial = client.server.trial_manager.get_trial_of_user(client)
+        trial = client.server.trial_manager.get_managee_of_user(client)
     except TrialError.UserNotPlayerError:
         raise ClientError('You are not part of a trial. You must start a trial with /trial before '
                           'starting a nonstop debate.')
@@ -4872,7 +4872,7 @@ def ooc_cmd_nsd_accept(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
     try:
-        trial = client.server.trial_manager.get_trial_of_user(client)
+        trial = client.server.trial_manager.get_managee_of_user(client)
     except TrialError.UserNotPlayerError:
         raise ClientError('You are not part of a trial.')
     try:
@@ -4935,7 +4935,7 @@ def ooc_cmd_nsd_add(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='>0')
 
     try:
-        trial = client.server.trial_manager.get_trial_of_user(client)
+        trial = client.server.trial_manager.get_managee_of_user(client)
     except TrialError.UserNotPlayerError:
         raise ClientError('You are not part of a trial.')
 
@@ -4992,7 +4992,7 @@ def ooc_cmd_nsd_autoadd(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
     try:
-        trial = client.server.trial_manager.get_trial_of_user(client)
+        trial = client.server.trial_manager.get_managee_of_user(client)
     except TrialError.UserNotPlayerError:
         raise ClientError('You are not part of a trial.')
     try:
@@ -5033,7 +5033,7 @@ def ooc_cmd_nsd_end(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, parameters='=0')
 
     try:
-        trial = client.server.trial_manager.get_trial_of_user(client)
+        trial = client.server.trial_manager.get_managee_of_user(client)
     except TrialError.UserNotPlayerError:
         raise ClientError('You are not part of a trial.')
     try:
@@ -5077,7 +5077,7 @@ def ooc_cmd_nsd_info(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, parameters='=0')
 
     try:
-        trial = client.server.trial_manager.get_trial_of_user(client)
+        trial = client.server.trial_manager.get_managee_of_user(client)
     except TrialError.UserNotPlayerError:
         raise ClientError('You are not part of a trial.')
     try:
@@ -5119,7 +5119,7 @@ def ooc_cmd_nsd_join(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='>0')
 
     try:
-        trial = client.server.trial_manager.get_trial_of_user(client)
+        trial = client.server.trial_manager.get_managee_of_user(client)
     except TrialError.UserNotPlayerError:
         raise ClientError('You are not part of a trial.')
 
@@ -5166,7 +5166,7 @@ def ooc_cmd_nsd_kick(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='>0')
 
     try:
-        trial = client.server.trial_manager.get_trial_of_user(client)
+        trial = client.server.trial_manager.get_managee_of_user(client)
     except TrialError.UserNotPlayerError:
         raise ClientError('You are not part of a trial.')
     try:
@@ -5213,7 +5213,7 @@ def ooc_cmd_nsd_lead(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
     try:
-        trial = client.server.trial_manager.get_trial_of_user(client)
+        trial = client.server.trial_manager.get_managee_of_user(client)
     except TrialError.UserNotPlayerError:
         raise ClientError('You are not part of a trial.')
     try:
@@ -5252,7 +5252,7 @@ def ooc_cmd_nsd_leave(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, parameters='=0')
 
     try:
-        trial = client.server.trial_manager.get_trial_of_user(client)
+        trial = client.server.trial_manager.get_managee_of_user(client)
     except TrialError.UserNotPlayerError:
         raise ClientError('You are not part of a trial.')
 
@@ -5302,7 +5302,7 @@ def ooc_cmd_nsd_loop(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
     try:
-        trial = client.server.trial_manager.get_trial_of_user(client)
+        trial = client.server.trial_manager.get_managee_of_user(client)
     except TrialError.UserNotPlayerError:
         raise ClientError('You are not part of a trial.')
     try:
@@ -5349,7 +5349,7 @@ def ooc_cmd_nsd_pause(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
     try:
-        trial = client.server.trial_manager.get_trial_of_user(client)
+        trial = client.server.trial_manager.get_managee_of_user(client)
     except TrialError.UserNotPlayerError:
         raise ClientError('You are not part of a trial.')
     try:
@@ -5395,7 +5395,7 @@ def ooc_cmd_nsd_resume(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
     try:
-        trial = client.server.trial_manager.get_trial_of_user(client)
+        trial = client.server.trial_manager.get_managee_of_user(client)
     except TrialError.UserNotPlayerError:
         raise ClientError('You are not part of a trial.')
     try:
@@ -5445,7 +5445,7 @@ def ooc_cmd_nsd_reject(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
     try:
-        trial = client.server.trial_manager.get_trial_of_user(client)
+        trial = client.server.trial_manager.get_managee_of_user(client)
     except TrialError.UserNotPlayerError:
         raise ClientError('You are not part of a trial.')
     try:
@@ -5500,7 +5500,7 @@ def ooc_cmd_nsd_unlead(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
     try:
-        trial = client.server.trial_manager.get_trial_of_user(client)
+        trial = client.server.trial_manager.get_managee_of_user(client)
     except TrialError.UserNotPlayerError:
         raise ClientError('You are not part of a trial.')
     try:
@@ -8482,7 +8482,7 @@ def ooc_cmd_trial(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
     try:
-        trial = client.server.trial_manager.new_trial(creator=client, add_players=False,
+        trial = client.server.trial_manager.new_managee(creator=client, add_players=False,
                                                       require_character=True,
                                                       autoadd_on_client_enter=False,
                                                       autoadd_minigame_on_player_added=False)
@@ -8550,7 +8550,7 @@ def ooc_cmd_trial_add(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='>0')
 
     try:
-        trial = client.server.trial_manager.get_trial_of_user(client)
+        trial = client.server.trial_manager.get_managee_of_user(client)
     except TrialError.UserNotPlayerError:
         raise ClientError('You are not part of a trial.')
     if not trial.is_leader(client):
@@ -8600,7 +8600,7 @@ def ooc_cmd_trial_autoadd(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
     try:
-        trial = client.server.trial_manager.get_trial_of_user(client)
+        trial = client.server.trial_manager.get_managee_of_user(client)
     except TrialError.UserNotPlayerError:
         raise ClientError('You are not part of a trial.')
     if not trial.is_leader(client):
@@ -8637,7 +8637,7 @@ def ooc_cmd_trial_end(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
     try:
-        trial = client.server.trial_manager.get_trial_of_user(client)
+        trial = client.server.trial_manager.get_managee_of_user(client)
     except TrialError.UserNotPlayerError:
         raise ClientError('You are not part of a trial.')
     if not trial.is_leader(client):
@@ -8682,7 +8682,7 @@ def ooc_cmd_trial_focus(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='>1')
 
     try:
-        trial = client.server.trial_manager.get_trial_of_user(client)
+        trial = client.server.trial_manager.get_managee_of_user(client)
     except TrialError.UserNotPlayerError:
         raise ClientError('You are not part of a trial.')
     if not trial.is_leader(client):
@@ -8735,7 +8735,7 @@ def ooc_cmd_trial_influence(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='>1')
 
     try:
-        trial = client.server.trial_manager.get_trial_of_user(client)
+        trial = client.server.trial_manager.get_managee_of_user(client)
     except TrialError.UserNotPlayerError:
         raise ClientError('You are not part of a trial.')
     if not trial.is_leader(client):
@@ -8784,7 +8784,7 @@ def ooc_cmd_trial_info(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, parameters='=0')
 
     try:
-        trial = client.server.trial_manager.get_trial_of_user(client)
+        trial = client.server.trial_manager.get_managee_of_user(client)
     except TrialError.UserNotPlayerError:
         raise ClientError('You are not part of a trial.')
 
@@ -8855,7 +8855,7 @@ def ooc_cmd_trial_kick(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='>0')
 
     try:
-        trial = client.server.trial_manager.get_trial_of_user(client)
+        trial = client.server.trial_manager.get_managee_of_user(client)
     except TrialError.UserNotPlayerError:
         raise ClientError('You are not part of a trial.')
     if not trial.is_leader(client):
@@ -8897,7 +8897,7 @@ def ooc_cmd_trial_lead(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
     try:
-        trial = client.server.trial_manager.get_trial_of_user(client)
+        trial = client.server.trial_manager.get_managee_of_user(client)
     except TrialError.UserNotPlayerError:
         raise ClientError('You are not part of a trial.')
 
@@ -8932,7 +8932,7 @@ def ooc_cmd_trial_leave(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, parameters='=0')
 
     try:
-        trial = client.server.trial_manager.get_trial_of_user(client)
+        trial = client.server.trial_manager.get_managee_of_user(client)
     except TrialError.UserNotPlayerError:
         raise ClientError('You are not part of a trial.')
 
@@ -8974,7 +8974,7 @@ def ooc_cmd_trial_unlead(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
     try:
-        trial = client.server.trial_manager.get_trial_of_user(client)
+        trial = client.server.trial_manager.get_managee_of_user(client)
     except TrialError.UserNotPlayerError:
         raise ClientError('You are not part of a trial.')
 

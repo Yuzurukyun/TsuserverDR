@@ -26,7 +26,7 @@ from __future__ import annotations
 import functools
 import typing
 
-from server.exceptions import TrialError, GameWithAreasError
+from server.exceptions import NonStopDebateError, TrialError, GameWithAreasError
 from server.gamewithareas_manager import _GameWithAreas, GameWithAreasManager
 from server.trialminigame import TrialMinigame, TRIALMINIGAMES
 from server.nonstopdebate import NonStopDebate
@@ -2538,7 +2538,7 @@ class _Trial(_TrialTrivialInherited):
         try:
             if creator:
                 nsd.add_player(creator)
-        except GameWithAreasError as ex:
+        except NonStopDebateError as ex:
             # Discard game
             self._minigame_manager.delete_managee(nsd)
             raise ex
@@ -3232,22 +3232,36 @@ class _Trial(_TrialTrivialInherited):
         # 5.
         super()._check_structure()
 
-
-class TrialManager(GameWithAreasManager):
+class _TrialManagerTrivialInherited(GameWithAreasManager):
     """
-    A trial manager is a game with areas manager with dedicated trial management functions.
-
+    This class should not be instantiated.
     """
 
-    def new_trial(self, creator=None, player_limit=None, player_concurrent_limit=1,
-                  add_players=False, require_invitations=False, require_players=True,
-                  require_character=False, team_limit=None, timer_limit=None,
-                  area_concurrent_limit=1, autoadd_on_client_enter=False,
-                  autoadd_minigame_on_player_added=False) -> _Trial:
+    def new_managee(
+        self,
+        managee_type: Type[_Trial] = None,
+        creator: Union[ClientManager.Client, None] = None,
+        player_limit: Union[int, None] = None,
+        player_concurrent_limit: Union[int, None] = 1,
+        require_invitations: bool = False,
+        require_players: bool = True,
+        require_leaders: bool = False,  # Overriden from parent
+        require_character: bool = False,
+        team_limit: Union[int, None] = None,
+        timer_limit: Union[int, None] = None,
+        areas: Set[AreaManager.Area] = None,
+        area_concurrent_limit: Union[int, None] = 1,  # Overriden from parent
+        autoadd_on_client_enter: bool = False,
+        autoadd_on_creation_existing_users: bool = False,
+        autoadd_minigame_on_player_added: bool = False,
+        **kwargs: Any,
+        ) -> _Trial:
         """
         Create a new trial managed by this manager. Overriden default parameters include:
         * A trial does not require leaders.
-        * A trial adds only the creator's area if given a creator, or no area otherwise.
+        * An area cannot belong to two or more trials at the same time.
+
+        This method does not assert structural integrity.
 
         Parameters
         ----------
@@ -3285,6 +3299,9 @@ class TrialManager(GameWithAreasManager):
             If True, nonplayer users that enter an area part of the game will be automatically
             added if permitted by the conditions of the game. If False, no such adding will take
             place. Defaults to False.
+        autoadd_on_creation_existing_users : bool
+            If the trial will attempt to add nonplayer users who were in an area added
+            to the trial on creation. Defaults to False.
         autoadd_minigame_on_player_added : bool, optional
             If True, nonplayer users that are added to the trial will also be automatically added
             to the minigame if permitted by its conditions. If False, no such adding will take
@@ -3299,40 +3316,484 @@ class TrialManager(GameWithAreasManager):
         ------
         TrialError.AreaDisallowsBulletsError
             If `creator` is given and the area of the creator disallows bullets.
-        GameWithAreasError.ManagerTooManyGamesError
+        TrialError.ManagerTooManyGamesError
             If the manager is already managing its maximum number of minigames.
         Any error from the created trial's add_player(creator)
             If the trial cannot add `creator` to the trial if given one.
 
         """
 
-        areas = {creator.area} if creator else set()
-
-        trial_factory = functools.partial(
-            _Trial,
-            autoadd_minigame_on_player_added=autoadd_minigame_on_player_added
+        trial = super().unchecked_new_managee(
+            managee_type=managee_type,
+            creator=creator,
+            player_limit=player_limit,
+            player_concurrent_limit=player_concurrent_limit,
+            require_invitations=require_invitations,
+            require_players=require_players,
+            require_leaders=require_leaders,
+            require_character=require_character,
+            team_limit=team_limit,
+            timer_limit=timer_limit,
+            areas=areas,
+            area_concurrent_limit=area_concurrent_limit,
+            autoadd_on_client_enter=autoadd_on_client_enter,
+            autoadd_on_creation_existing_users=autoadd_on_creation_existing_users,
+            autoadd_minigame_on_player_added=autoadd_minigame_on_player_added,
+            **kwargs,
             )
-        trial = self.new_managee(game_type=trial_factory, creator=creator,
-                              player_limit=player_limit,
-                              player_concurrent_limit=player_concurrent_limit,
-                              require_invitations=require_invitations,
-                              require_players=require_players,
-                              require_leaders=False,
-                              require_character=require_character,
-                              team_limit=team_limit, timer_limit=timer_limit,
-                              areas=areas, area_concurrent_limit=area_concurrent_limit,
-                              autoadd_on_client_enter=autoadd_on_client_enter)
+        self._check_structure()
 
-        if add_players:
-            clients_to_add = {client for area in areas for client in area.clients}
-            if creator:
-                clients_to_add.discard(creator)
-            for client in clients_to_add:
-                try:
-                    trial.add_player(client)
-                except TrialError as ex:
-                    trial.destroy()
-                    raise ex
+        return trial
+
+    def get_managee_type(self) -> Type[_Trial]:
+        """
+        Return the type of the trial that will be constructed by default with a call of
+        `new_managee`.
+
+        Returns
+        -------
+        Type[_Trial]
+            Type of the trial.
+
+        """
+
+        return super().get_managee_type()
+
+    def delete_managee(self, managee: _Trial) -> Tuple[str, Set[ClientManager.Client]]:
+        """
+        Delete a trial managed by this manager, so all its players no longer belong to
+        this trial.
+
+        Parameters
+        ----------
+        managee : _Trial
+            The trial to delete.
+
+        Returns
+        -------
+        Tuple[str, Set[ClientManager.Client]]
+            The ID and players of the trial that was deleted.
+
+        Raises
+        ------
+        TrialError.ManagerDoesNotManageGameError
+            If the manager does not manage the target trial.
+
+        """
+
+        game_id, game_players = self.unchecked_delete_managee(managee)
+        self._check_structure()
+        return game_id, game_players
+
+    def unchecked_delete_managee(
+        self,
+        managee: _Trial
+        ) -> Tuple[str, Set[ClientManager.Client]]:
+        """
+        Delete a trial managed by this manager, so all its players no longer belong to
+        this trial.
+
+        Parameters
+        ----------
+        managee : _Trial
+            The trial to delete.
+
+        Returns
+        -------
+        Tuple[str, Set[ClientManager.Client]]
+            The ID and players of the trial that was deleted.
+
+        Raises
+        ------
+        TrialError.ManagerDoesNotManageGameError
+            If the manager does not manage the target trial.
+
+        """
+
+        try:
+            return super().unchecked_delete_managee(managee)
+        except GameWithAreasError.ManagerDoesNotManageGameError:
+            raise TrialError.ManagerDoesNotManageGameError
+
+    def manages_managee(self, game: _Trial):
+        """
+        Return True if the trial is managed by this manager, False otherwise.
+
+        Parameters
+        ----------
+        game : _Trial
+            The game to check.
+
+        Returns
+        -------
+        bool
+            True if the manager manages this trial, False otherwise.
+
+        """
+
+        return super().manages_managee(game)
+
+    def get_managees(self):
+        """
+        Return (a shallow copy of) the games with areas this manager manages.
+
+        Returns
+        -------
+        Set[_Trial]
+            Games with areas this manager manages.
+
+        """
+
+        return super().get_managees()
+
+    def get_managee_by_id(self, managee_id: str) -> _Trial:
+        """
+        If `managee_id` is the ID of a trial managed by this manager, return that.
+
+        Parameters
+        ----------
+        managee_id : str
+            ID of the trial this manager manages.
+
+        Returns
+        -------
+        _Trial
+            The trial with that ID.
+
+        Raises
+        ------
+        TrialError.ManagerInvalidGameIDError
+            If `game_id` is not the ID of a trial this manager manages.
+
+        """
+
+        try:
+            return super().get_managee_by_id(managee_id)
+        except GameWithAreasError.ManagerInvalidGameIDError:
+            raise TrialError.ManagerInvalidGameIDError
+
+    def get_managee_limit(self) -> Union[int, None]:
+        """
+        Return the trial limit of this manager.
+
+        Returns
+        -------
+        Union[int, None]
+            Game with areas limit.
+
+        """
+
+        return super().get_managee_limit()
+
+    def get_managee_ids(self) -> Set[str]:
+        """
+        Return (a shallow copy of) the IDs of all games with areas managed by this manager.
+
+        Returns
+        -------
+        Set[str]
+            The IDs of all managed games with areas.
+
+        """
+
+        return super().get_managee_ids()
+
+    def get_managee_ids_to_managees(self) -> Dict[str, _Trial]:
+        """
+        Return a mapping of the IDs of all games with areas managed by this manager to their
+        associated trial.
+
+        Returns
+        -------
+        Dict[str, _Trial]
+            Mapping.
+        """
+
+        return super().get_managee_ids_to_managees()
+
+    def get_managees_of_user(self, user: ClientManager.Client):
+        """
+        Return (a shallow copy of) the games with areas managed by this manager user `user` is a
+        player of. If the user is part of no such trial, an empty set is returned.
+
+        Parameters
+        ----------
+        user : ClientManager.Client
+            User whose games with areas will be returned.
+
+        Returns
+        -------
+        Set[_Trial]
+            Games with areas the player belongs to.
+
+        """
+
+        return super().get_managees_of_user(user)
+
+    def get_managees_of_players(self) -> Dict[ClientManager.Client, Set[_Trial]]:
+        """
+        Return a mapping of the players part of any trial managed by this manager to the
+        trial managed by this manager such players belong to.
+
+        Returns
+        -------
+        Dict[ClientManager.Client, Set[_Trial]]
+            Mapping.
+        """
+
+        return super().get_managees_of_players()
+
+    def get_users_in_some_managee(self) -> Set[ClientManager.Client]:
+        """
+        Return (a shallow copy of) all the users that are part of some trial managed by
+        this manager.
+
+        Returns
+        -------
+        Set[ClientManager.Client]
+            Users in some managed trial.
+
+        """
+
+        return super().get_users_in_some_managee()
+
+    def is_managee_creatable(self) -> bool:
+        """
+        Return whether a new trial can currently be created without creating one.
+
+        Returns
+        -------
+        bool
+            True if a trial can be currently created, False otherwise.
+        """
+
+        return super().is_managee_creatable()
+
+    def get_managees_in_area(self, area: AreaManager.Area) -> Set[_Trial]:
+        """
+        Return (a shallow copy of) all trials managed by this manager that contain
+        the given area.
+
+        Parameters
+        ----------
+        area : AreaManager.Area
+            Area that all returned games with areas must contain.
+
+        Returns
+        -------
+        Set[_Trial]
+            Trials that contain the given area.
+
+        """
+
+        return super().get_managees_in_area(area)
+
+    def find_area_concurrent_limiting_managee(
+        self,
+        area: AreaManager.Area
+        ) -> Union[_Trial, None]:
+        """
+        For area `area`, find a trial `most_restrictive_game` managed by this manager
+        such that, if `area` were to be added to another trial managed by this manager,
+        they would violate `most_restrictive_game`'s concurrent area membership limit.
+        If no such trial exists (or the area is not an area of any trial
+        managed by this  manager), return None.
+        If multiple such games with areas exist, any one of them may be returned.
+
+        Parameters
+        ----------
+        area : AreaManager.Area
+            Area to test.
+
+        Returns
+        -------
+        Union[_Trial, None]
+            Limiting trial as previously described if it exists, None otherwise.
+
+        """
+
+        return super().find_area_concurrent_limiting_managee(area)
+
+    def get_managees_of_areas(self) -> Dict[ClientManager.Client, Set[_Trial]]:
+        """
+        Return a mapping of the areas part of any trial managed by this manager to the
+        trial managed by this manager such players belong to.
+
+        Returns
+        -------
+        Dict[ClientManager.Client, Set[_Trial]]
+            Mapping.
+        """
+
+        return super().get_managees_of_areas()
+
+    def get_id(self) -> str:
+        """
+        Return the ID of this manager. This ID is guaranteed to be unique among
+        simultaneously existing Python objects.
+
+        Returns
+        -------
+        str
+            ID.
+
+        """
+
+        return super().get_id()
+
+    def find_player_concurrent_limiting_managee(
+        self,
+        user: ClientManager.Client
+        ) -> Union[_Trial, None]:
+        """
+        For user `user`, find a trial `most_restrictive_game` managed by this manager such
+        that, if `user` were to join another trial managed by this manager, they would
+        violate `most_restrictive_game`'s concurrent player membership limit.
+        If no such trial exists (or the player is not member of any trial
+        managed by this manager), return None.
+        If multiple such games with areas exist, any one of them may be returned.
+
+        Parameters
+        ----------
+        user : ClientManager.Client
+            User to test.
+
+        Returns
+        -------
+        Union[_Trial, None]
+            Limiting trial as previously described if it exists, None otherwise.
+
+        """
+
+        return super().find_player_concurrent_limiting_managee(user)
+
+
+class TrialManager(_TrialManagerTrivialInherited):
+    """
+    A trial manager is a game with areas manager with dedicated trial management functions.
+
+    Attributes
+    ----------
+    server : TsuserverDR
+        Server the game manager belongs to.
+
+    """
+
+    # Invariants
+    # ----------
+    # 1. The invariants of the parent class are maintained.
+
+    def unchecked_new_managee(
+        self,
+        managee_type: Type[_Trial] = None,
+        creator: Union[ClientManager.Client, None] = None,
+        player_limit: Union[int, None] = None,
+        player_concurrent_limit: Union[int, None] = 1,
+        require_invitations: bool = False,
+        require_players: bool = True,
+        require_leaders: bool = False,  # Overriden from parent
+        require_character: bool = False,
+        team_limit: Union[int, None] = None,
+        timer_limit: Union[int, None] = None,
+        areas: Set[AreaManager.Area] = None,
+        area_concurrent_limit: Union[int, None] = 1,  # Overriden from parent
+        autoadd_on_client_enter: bool = False,
+        autoadd_on_creation_existing_users: bool = False,
+        autoadd_minigame_on_player_added: bool = False,
+        **kwargs: Any,
+        ) -> _Trial:
+        """
+        Create a new trial managed by this manager. Overriden default parameters include:
+        * A trial does not require leaders.
+        * An area cannot belong to two or more trials at the same time.
+
+        This method does not assert structural integrity.
+
+        Parameters
+        ----------
+        creator : ClientManager.Client, optional
+            The player who created this trial. If set, they will also be added to the trial.
+            Defaults to None.
+        player_limit : Union[int, None], optional
+            If an int, it is the maximum number of players the trial supports. If None, it
+            indicates the trial has no player limit. Defaults to None.
+        require_invitations : bool, optional
+            If True, users can only be added to the trial if they were previously invited. If
+            False, no checking for invitations is performed. Defaults to False.
+        require_players : bool, optional
+            If True, if at any point the trial loses all its players, the trial will automatically
+            be deleted. If False, no such automatic deletion will happen. Defaults to True.
+        require_character : bool, optional
+            If False, players without a character will not be allowed to join the trial, and
+            players that switch to something other than a character will be automatically
+            removed from the trial. If False, no such checks are made. A player without a
+            character is considered one where player.has_character() returns False. Defaults
+            to False.
+        team_limit : Union[int, None], optional
+            If an int, it is the maximum number of teams the trial will support. If None, it
+            indicates the trial will have no team limit. Defaults to None.
+        timer_limit : Union[int, None], optional
+            If an int, it is the maximum number of timers the trial will support. If None, it
+            indicates the trial will have no timer limit. Defaults to None.
+        area_concurrent_limit : Union[int, None], optional
+            If an int, it is the maximum number of trials managed by `manager` that any
+            area of the created trial may belong to, including the created trial. If None, it
+            indicates that this trial does not care about how many other trials managed by
+            `manager` each of its areas belongs to. Defaults to 1 (an area may not be a part of
+            another trial managed by `manager` while being an area of this trials).
+        autoadd_on_client_enter : bool, optional
+            If True, nonplayer users that enter an area part of the game will be automatically
+            added if permitted by the conditions of the game. If False, no such adding will take
+            place. Defaults to False.
+        autoadd_on_creation_existing_users : bool
+            If the trial will attempt to add nonplayer users who were in an area added
+            to the trial on creation. Defaults to False.
+        autoadd_minigame_on_player_added : bool, optional
+            If True, nonplayer users that are added to the trial will also be automatically added
+            to the minigame if permitted by its conditions. If False, no such adding will take
+            place. Defaults to False.
+
+        Returns
+        -------
+        _Trial
+            The created trial.
+
+        Raises
+        ------
+        TrialError.AreaDisallowsBulletsError
+            If `creator` is given and the area of the creator disallows bullets.
+        TrialError.ManagerTooManyGamesError
+            If the manager is already managing its maximum number of minigames.
+        Any error from the created trial's add_player(creator)
+            If the trial cannot add `creator` to the trial if given one.
+
+        """
+
+        if managee_type is None:
+            managee_type = self.get_managee_type()
+
+        try:
+            trial: _Trial = super().unchecked_new_managee(
+                managee_type=managee_type,
+                creator=creator,
+                player_limit=player_limit,
+                player_concurrent_limit=player_concurrent_limit,
+                require_invitations=require_invitations,
+                require_players=require_players,
+                require_leaders=require_leaders,
+                require_character=require_character,
+                team_limit=team_limit,
+                timer_limit=timer_limit,
+                areas=areas,
+                area_concurrent_limit=area_concurrent_limit,
+                autoadd_on_client_enter=autoadd_on_client_enter,
+                autoadd_on_creation_existing_users=autoadd_on_creation_existing_users,
+                # kwargs
+                autoadd_minigame_on_player_added=autoadd_minigame_on_player_added,
+                **kwargs,
+                )
+        except GameWithAreasError.ManagerTooManyGamesError:
+            raise TrialError.ManagerTooManyGamesError
 
         # Manually give packets to nonplayers
         for nonplayer in trial.get_nonplayer_users_in_areas():
@@ -3340,7 +3801,7 @@ class TrialManager(GameWithAreasManager):
 
         return trial
 
-    def get_trial_of_user(self, user) -> _Trial:
+    def get_managee_of_user(self, user: ClientManager.Client) -> _Trial:
         """
         Get the trial the user is in.
 
@@ -3351,7 +3812,7 @@ class TrialManager(GameWithAreasManager):
 
         Raises
         ------
-        GameWithAreasError.UserNotPlayerError
+        TrialError.UserNotPlayerError
             If the user is not in a trial managed by this manager.
 
         Returns
@@ -3364,7 +3825,7 @@ class TrialManager(GameWithAreasManager):
         games = self.get_managees_of_user(user)
         trials = {game for game in games if isinstance(game, _Trial)}
         if not trials:
-            raise GameWithAreasError.UserNotPlayerError
+            raise TrialError.UserNotPlayerError
         if len(trials) > 1:
             raise RuntimeError(trials)
         return next(iter(trials))
@@ -3380,7 +3841,7 @@ class TrialManager(GameWithAreasManager):
 
         Raises
         ------
-        GameWithAreasError.ManagerTooManyGamesError
+        TrialError.ManagerTooManyGamesError
             If the manager is already managing its maximum number of games.
 
         """
@@ -3392,7 +3853,20 @@ class TrialManager(GameWithAreasManager):
             if new_game_id not in self.get_managee_ids():
                 return new_game_id
             game_number += 1
-        raise GameWithAreasError.ManagerTooManyGamesError
+        raise TrialError.ManagerTooManyGamesError
+
+    def _check_structure(self):
+        """
+        Assert that all invariants specified in the class description are maintained.
+
+        Raises
+        ------
+        AssertionError
+            If any of the invariants are not maintained.
+
+        """
+
+        super()._check_structure()
 
     def __repr__(self):
         """
@@ -3405,7 +3879,10 @@ class TrialManager(GameWithAreasManager):
 
         """
 
-        return (f"TrialManager(server, game_limit={self.get_managee_limit()}, "
+        return (f"TrialManager(server, managee_limit={self.get_managee_limit()}, "
+                f"default_managee_type={self.get_managee_type()}, "
                 f"|| "
-                f"_trials={self.get_managees()}, "
-                f"id={hex(id(self))})")
+                f"_id_to_managee={self.get_managee_ids_to_managees()}, "
+                f"_user_to_managees={self.get_managees_of_players()}, "
+                f"_area_to_managees={self.get_managees_of_areas()}, "
+                f"id={self.get_id()})")
