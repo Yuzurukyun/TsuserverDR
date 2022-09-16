@@ -1287,6 +1287,19 @@ class _Game(_GameTrivialInherited):
         except TimerError.ManagerInvalidTimerIDError:
             raise GameError.GameInvalidTimerIDError
 
+    def get_timer_limit(self) -> Union[int, None]:
+        """
+        Return the timer limit of this game.
+
+        Returns
+        -------
+        Union[int, None]
+            Timer limit.
+
+        """
+
+        return self._timer_manager.get_timer_limit()
+
     def get_timer_ids(self) -> Set[str]:
         """
         Return (a shallow copy of) the IDs of all timers managed by this game.
@@ -1749,7 +1762,7 @@ class _Game(_GameTrivialInherited):
 
         # print('Player', player, 'changed character from', old_char_id, 'to', new_char_id)
         if self._require_character and not player.has_character():
-            self.remove_player(player)
+            self.unchecked_remove_player(player)
 
         self._check_structure()
 
@@ -1777,7 +1790,7 @@ class _Game(_GameTrivialInherited):
             return
         if player not in self.get_players():
             return
-        self.remove_player(player)
+        self.unchecked_remove_player(player)
 
         self._check_structure()
 
@@ -1854,8 +1867,8 @@ class _Game(_GameTrivialInherited):
                 f'require_invitations={self.requires_invitations()}, '
                 f'require_leaders={self.requires_leaders()}, '
                 f'require_character={self.requires_characters()}, '
-                f'team_limit={self._team_manager.get_managee_limit()}, '
-                f'timer_limit={self._timer_manager.get_timer_limit()} || '
+                f'team_limit={self.get_team_limit()}, '
+                f'timer_limit={self.get_timer_limit()} || '
                 f'players={self.get_players()}, '
                 f'invitations={self.get_invitations()}, '
                 f'leaders={self.get_leaders()}, '
@@ -1999,6 +2012,7 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
             require_character=require_character,
             team_limit=team_limit,
             timer_limit=timer_limit,
+            **kwargs,
             )
         self._check_structure()
         return game
@@ -2090,6 +2104,7 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
                 require_character=require_character,
                 team_limit=team_limit,
                 timer_limit=timer_limit,
+                **kwargs,
                 )
         except PlayerGroupError.ManagerTooManyGroupsError:
             raise GameError.ManagerTooManyGamesError

@@ -136,7 +136,7 @@ class _GameWithAreasTrivialInherited(_Game):
         Raises
         ------
         GameWithAreasError.GameIsUnmanagedError
-            If the game with areaswas scheduled for deletion and thus does not accept any mutator
+            If the game with areas was scheduled for deletion and thus does not accept any mutator
             public method calls.
         GameWithAreasError.UserNotInAreaError
             If the user is not in an area part of the game with areas.
@@ -144,14 +144,15 @@ class _GameWithAreasTrivialInherited(_Game):
             If the user has no character but the game with areas requires that all players have
             characters.
         GameWithAreasError.UserNotInvitedError
-            If the game with areasrequires players be invited to be added and the user is not
+            If the game with areas requires players be invited to be added and the user is not
             invited.
         GameWithAreasError.UserAlreadyPlayerError
             If the user to add is already a user of the game with areas.
         GameWithAreasError.UserHitGameConcurrentLimitError
             If the player has reached the concurrent player membership of any of the game with areas
-            managed by the manager of this game with area, or by virtue of joining this game with
-            areas they would violate this game with areas's concurrent player membership limit.
+            managed by the manager of this game with areas, or by virtue of joining this
+            game with areas they would violate this game with areas's concurrent player membership
+            limit.
         GameWithAreasError.GameIsFullError
             If the game with areas reached its player limit.
 
@@ -167,8 +168,8 @@ class _GameWithAreasTrivialInherited(_Game):
         unsubscribe the game with areas from the player so it will no longer listen to its updates.
 
         If the game with areas required that there it always had players and by calling this method
-        the game with areas had no more players, the game will automatically be scheduled for
-        deletion.
+        the game with areas had no more players, the game with areas will automatically be scheduled
+        for deletion.
 
         Parameters
         ----------
@@ -195,8 +196,8 @@ class _GameWithAreasTrivialInherited(_Game):
         unsubscribe the game with areas from the player so it will no longer listen to its updates.
 
         If the game with areas required that there it always had players and by calling this method
-        the game with areas had no more players, the game will automatically be scheduled for
-        deletion.
+        the game with areas had no more players, the game with areas will automatically be scheduled
+        for deletion.
 
         This method does not assert structural integrity.
 
@@ -379,7 +380,7 @@ class _GameWithAreasTrivialInherited(_Game):
 
     def unchecked_remove_invitation(self, user: ClientManager.Client):
         """
-        Mark a user as no longer invited to this game (uninvite).
+        Mark a user as no longer invited to this game with areas (uninvite).
 
         This method does not assert structural integrity.
 
@@ -540,9 +541,9 @@ class _GameWithAreasTrivialInherited(_Game):
             If the game with areas was scheduled for deletion and thus does not accept any mutator
             public method calls.
         GameWithAreasError.UserNotPlayerError
-            If the player to promote is not a player of this gamewith areas .
+            If the player to promote is not a player of this game with areas.
         GameWithAreasError.UserAlreadyLeaderError
-            If the player to promote is already a leader of this gamewith areas .
+            If the player to promote is already a leader of this game with areas.
 
         """
 
@@ -706,9 +707,9 @@ class _GameWithAreasTrivialInherited(_Game):
             timer will terminate once either of the two conditions is satisfied without restarting.
             Defaults to False.
         auto_destroy : bool, optional
-            If True, the game will automatically delete the timer once it is terminated by it
-            ticking out or manual termination. If False, no such automatic deletion will take place.
-            Defaults to True.
+            If True, the game with areas will automatically delete the timer once it is terminated
+            by it ticking out or manual termination. If False, no such automatic deletion will take
+            place. Defaults to True.
 
         Returns
         -------
@@ -775,9 +776,9 @@ class _GameWithAreasTrivialInherited(_Game):
             timer will terminate once either of the two conditions is satisfied without restarting.
             Defaults to False.
         auto_destroy : bool, optional
-            If True, the game will automatically delete the timer once it is terminated by it
-            ticking out or manual termination. If False, no such automatic deletion will take place.
-            Defaults to True.
+            If True, the game with areas will automatically delete the timer once it is terminated
+            by it ticking out or manual termination. If False, no such automatic deletion will take
+            place. Defaults to True.
 
         Returns
         -------
@@ -906,7 +907,7 @@ class _GameWithAreasTrivialInherited(_Game):
         Raises
         ------
         GameWithAreasError.GameInvalidTimerIDError:
-            If `timer_tag` is a str and it is not the ID of a timer this game manages.
+            If `timer_tag` is a str and it is not the ID of a timer this game with areas manages.
 
         """
 
@@ -914,6 +915,19 @@ class _GameWithAreasTrivialInherited(_Game):
             return super().get_timer_by_id(timer_id)
         except GameError.GameInvalidTimerIDError:
             raise GameWithAreasError.GameInvalidTimerIDError
+
+    def get_timer_limit(self) -> Union[int, None]:
+        """
+        Return the timer limit of this game with areas.
+
+        Returns
+        -------
+        Union[int, None]
+            Timer limit.
+
+        """
+
+        return super().get_timer_limit()
 
     def get_timer_ids(self) -> Set[str]:
         """
@@ -1174,7 +1188,7 @@ class _GameWithAreasTrivialInherited(_Game):
         Raises
         ------
         GameWithAreasError.GameInvalidTeamIDError:
-            If `team_id` is not the ID of a team this game manages.
+            If `team_id` is not the ID of a team this game with areas manages.
 
         """
 
@@ -1253,8 +1267,8 @@ class _GameWithAreasTrivialInherited(_Game):
 
         Raises
         ------
-        GameError.GameTooManyTeamsError
-            If the game is already managing its maximum number of teams.
+        GameWithAreasError.GameTooManyTeamsError
+            If the game with areas is already managing its maximum number of teams.
 
         """
 
@@ -1279,9 +1293,9 @@ class _GameWithAreasTrivialInherited(_Game):
     def destroy(self):
         """
         Mark this game with areas as destroyed and notify its manager so that it is deleted.
-        If the game is already destroyed, this function does nothing.
-        A game marked for destruction will delete all of its timers, teams, remove all its
-        players and unsubscribe it from updates of its former players.
+        If the game with areas is already destroyed, this function does nothing.
+        A game with areas marked for destruction will delete all of its timers, teams, remove all
+        its players and unsubscribe it from updates of its former players.
 
         This method is reentrant (it will do nothing though).
 
@@ -1484,8 +1498,8 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
     ):
         """
         Create a new game with areas. A game with areas should not be fully initialized anywhere
-        else other than some manager code, as otherwise the manager will not recognize the game with
-        areas.
+        else other than some manager code, as otherwise the manager will not recognize the
+        game with areas.
 
         Parameters
         ----------
@@ -1639,7 +1653,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
         Raises
         ------
         GameWithAreasError.GameIsUnmanagedError
-            If the game with areaswas scheduled for deletion and thus does not accept any mutator
+            If the game with areas was scheduled for deletion and thus does not accept any mutator
             public method calls.
         GameWithAreasError.UserNotInAreaError
             If the user is not in an area part of the game with areas.
@@ -1647,14 +1661,14 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
             If the user has no character but the game with areas requires that all players have
             characters.
         GameWithAreasError.UserNotInvitedError
-            If the game with areasrequires players be invited to be added and the user is not
+            If the game with areas requires players be invited to be added and the user is not
             invited.
         GameWithAreasError.UserAlreadyPlayerError
             If the user to add is already a user of the game with areas.
         GameWithAreasError.UserHitGameConcurrentLimitError
             If the player has reached the concurrent player membership of any of the game with areas
-            managed by the manager of this game with area, or by virtue of joining this game with
-            areas they would violate this game with areas's concurrent player membership limit.
+            managed by the manager of this game with areas, or by virtue of joining this
+            game with areas they would violate this game with areas's concurrent player membership limit.
         GameWithAreasError.GameIsFullError
             If the game with areas reached its player limit.
 
@@ -1681,7 +1695,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
 
     def add_area(self, area: AreaManager.Area):
         """
-        Add an area to this game's set of areas.
+        Add an area to this game with areas's set of areas.
 
         Parameters
         ----------
@@ -1707,7 +1721,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
 
     def unchecked_add_area(self, area: AreaManager.Area):
         """
-        Add an area to this game's set of areas.
+        Add an area to this game with area's set of areas.
 
         This method does not assert structural integrity.
 
@@ -1746,10 +1760,10 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
 
     def remove_area(self, area: AreaManager.Area):
         """
-        Remove an area from this game's set of areas.
+        Remove an area from this game with area's set of areas.
         If the area is already a part of the game with areas, do nothing.
-        If any player of the game with areas is in this area, they are removed from the game with
-        areas.
+        If any player of the game with areas is in this area, they are removed from the
+        game with areas.
         If the game with areas has no areas remaining, it will be automatically destroyed.
 
         Parameters
@@ -1772,10 +1786,10 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
 
     def unchecked_remove_area(self, area: AreaManager.Area):
         """
-        Remove an area from this game's set of areas.
+        Remove an area from this game with area's set of areas.
         If the area is already a part of the game with areas, do nothing.
-        If any player of the game with areas is in this area, they are removed from the game with
-        areas.
+        If any player of the game with areas is in this area, they are removed from the
+        game with areas.
         If the game with areas has no areas remaining, it will be automatically destroyed.
 
         This method does not assert structural integrity.
@@ -1817,8 +1831,6 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
         self.manager._remove_area_from_mapping(area, self)
         if not self._areas:
             self.unchecked_destroy()
-
-        self._check_structure()
 
     def has_area(self, area: AreaManager.Area) -> bool:
         """
@@ -1899,14 +1911,14 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
 
     def get_nonplayer_users_in_areas(self) -> Set[ClientManager.Client]:
         """
-        Return all users in areas part of the game with areas that are not players of the game
-        with areas.
+        Return all users in areas part of the game with areas that are not players of the
+        game with areas.
 
         Returns
         -------
         Set[ClientManager.Client]
-            All users in areas part of the game with areas that are not players of the game with
-            areas.
+            All users in areas part of the game with areas that are not players of the
+            game with areas.
 
         """
 
@@ -1928,7 +1940,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
         # Remove areas too. This is done first so that structural checks can take place after
         # areas are removed.
         for area in self.get_areas():
-            self.remove_area(area)
+            self.unchecked_remove_area(area)
         super().unchecked_destroy()
 
     def __str__(self) -> str:
@@ -1966,8 +1978,8 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
                 f'require_invitations={self.requires_invitations()}, '
                 f'require_leaders={self.requires_leaders()}, '
                 f'require_character={self.requires_characters()}, '
-                f'team_limit={self._team_manager.get_managee_limit()}, '
-                f'timer_limit={self._timer_manager.get_timer_limit()}, '
+                f'team_limit={self.get_team_limit()}, '
+                f'timer_limit={self.get_timer_limit()}, '
                 f'areas={self.get_areas()}) || '
                 f'players={self.get_players()}, '
                 f'invitations={self.get_invitations()}, '
@@ -2015,12 +2027,13 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
 
         # print('Received LEFT', area, client, client.area, old_displayname, ignore_bleeding)
         if client in self.get_players() and client.area not in self._areas:
-            self.remove_player(client)
+            self.unchecked_remove_player(client)
 
         self._check_structure()
 
     def _on_area_client_entered_final(
-        self, area: AreaManager.Area,
+        self,
+        area: AreaManager.Area,
         client: ClientManager.Client = None,
         old_area: AreaManager.Area = None,
         old_displayname: str = None,
@@ -2057,7 +2070,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
 
         # print('Received ENTERED', area, client, old_area, old_displayname, ignore_bleeding)
         if client not in self.get_players() and self.get_autoadd_on_client_enter():
-            self.add_player(client)
+            self.unchecked_add_player(client)
 
         self._check_structure()
 
@@ -2081,7 +2094,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
             Area that signaled a client has entered.
         client : ClientManager.Client, optional
             The client that has send the IC message. The default is None.
-        contents : dict of str to Any
+        contents : Dict[str, Any]
             Arguments of the IC message as indicated in AOProtocol.
 
         Returns
@@ -2098,7 +2111,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
         """
         Default callback for game with areas area signaling it was destroyed.
 
-        By default it calls self.remove_area(area).
+        By default it calls self.unchecked_remove_area(area).
 
         Parameters
         ----------
@@ -2112,7 +2125,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
         """
 
         # print('Received DESTRUCTION', area)
-        self.remove_area(area)
+        self.unchecked_remove_area(area)
 
         self._check_structure()
 
@@ -2518,8 +2531,8 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
             Class of game with areas that will be produced. Defaults to None (and converted to the
             default game with areas created by this game with areas manager).
         creator : Union[ClientManager.Client, None], optional
-            The player who created this game with areas. If set, they will also be added to the game
-            with areas. Defaults to None.
+            The player who created this game with areas. If set, they will also be added to the
+            game with areas. Defaults to None.
         player_limit : Union[int, None], optional
             If an int, it is the maximum number of players the game with areas supports. If None, it
             indicates the game with areas has no player limit. Defaults to None.
@@ -2542,9 +2555,9 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
             player added will be made leader. If False, no such automatic assignment will happen.
             Defaults to True.
         require_character : bool, optional
-            If False, players without a character will not be allowed to join the  with areas, and
-            players that switch to something other than a character will be automatically removed
-            from the game with areas. If False, no such checks are made. A player without a
+            If False, players without a character will not be allowed to join the game with areas,
+            and players that switch to something other than a character will be automatically
+            removed from the game with areas. If False, no such checks are made. A player without a
             character is considered one where player.has_character() returns False. Defaults to
             False.
         team_limit : Union[int, None], optional
@@ -2553,6 +2566,14 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
         timer_limit : Union[int, None], optional
             If an int, it is the maximum number of timers the game with areas will support. If None,
             it indicates the game with areas will have no timer limit. Defaults to None.
+        areas : Set[AreaManager.Area], optional
+            The areas to add to the game with areas when creating it. Defaults to None (and
+            converted to an empty set).
+        area_concurrent_limit : Union[int, None]
+            The concurrent area membership limit of this game with areas. Defaults to None.
+        autoadd_on_client_enter: bool
+            If the game with areas will always attempt to add nonplayer users who enter an area
+            part of the game with areas. Defaults to False.
         **kwargs : Any
             Additional arguments to consider when producing the game with areas.
 
@@ -2585,6 +2606,7 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
             areas=areas,
             area_concurrent_limit=area_concurrent_limit,
             autoadd_on_client_enter=autoadd_on_client_enter,
+            **kwargs,
             )
         self._check_structure()
         return game
@@ -2616,8 +2638,8 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
             Class of game with areas that will be produced. Defaults to None (and converted to the
             default game with areas created by this game with areas manager).
         creator : Union[ClientManager.Client, None], optional
-            The player who created this game with areas. If set, they will also be added to the game
-            with areas. Defaults to None.
+            The player who created this game with areas. If set, they will also be added to the
+            game with areas. Defaults to None.
         player_limit : Union[int, None], optional
             If an int, it is the maximum number of players the game with areas supports. If None, it
             indicates the game with areas has no player limit. Defaults to None.
@@ -2640,9 +2662,9 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
             player added will be made leader. If False, no such automatic assignment will happen.
             Defaults to True.
         require_character : bool, optional
-            If False, players without a character will not be allowed to join the  with areas, and
-            players that switch to something other than a character will be automatically removed
-            from the game with areas. If False, no such checks are made. A player without a
+            If False, players without a character will not be allowed to join the game with areas,
+            and players that switch to something other than a character will be automatically
+            removed from the game with areas. If False, no such checks are made. A player without a
             character is considered one where player.has_character() returns False. Defaults to
             False.
         team_limit : Union[int, None], optional
@@ -2651,6 +2673,14 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
         timer_limit : Union[int, None], optional
             If an int, it is the maximum number of timers the game with areas will support. If None,
             it indicates the game with areas will have no timer limit. Defaults to None.
+        areas : Set[AreaManager.Area], optional
+            The areas to add to the game with areas when creating it. Defaults to None (and
+            converted to an empty set).
+        area_concurrent_limit : Union[int, None]
+            The concurrent area membership limit of this game with areas. Defaults to None.
+        autoadd_on_client_enter: bool
+            If the game with areas will always attempt to add nonplayer users who enter an area
+            part of the game with areas. Defaults to False.
         **kwargs : Any
             Additional arguments to consider when producing the game with areas.
 
@@ -2688,6 +2718,7 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
             # kwargs
             area_concurrent_limit=area_concurrent_limit,
             autoadd_on_client_enter=autoadd_on_client_enter,
+            **kwargs,
         )
 
         try:
@@ -2838,7 +2869,7 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
         GameWithAreasError.AreaHitGameConcurrentLimitError.
             If `area` has reached the concurrent area membership limit of any of the games with areas it
             belongs to managed by this manager, or by virtue of adding this area to `game` it
-            will violate this game's concurrent area membership limit.
+            will violate this game with area's concurrent area membership limit.
 
         """
 

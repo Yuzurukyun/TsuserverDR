@@ -1223,6 +1223,7 @@ class PlayerGroupManager:
             require_invitations=require_invitations,
             require_players=require_players,
             require_leaders=require_leaders,
+            **kwargs,
         )
         self._check_structure()
         return playergroup
