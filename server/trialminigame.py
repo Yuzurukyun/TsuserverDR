@@ -171,7 +171,7 @@ class _TrialMinigameTrivialInherited(_GameWithAreas):
 
         """
 
-        super().unchecked_add_player(user)
+        self.unchecked_add_player(user)
         self.manager._check_structure()
 
     def remove_player(self, user: ClientManager.Client):
@@ -2223,13 +2223,12 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
                 f'team_limit={self._team_manager.get_managee_limit()}, '
                 f'timer_limit={self._timer_manager.get_timer_limit()}, '
                 f'areas={self.get_areas()}, '
-                f'trial={self.get_trial()}), '
+                f'trial_id={self.get_trial().get_id()}), '
                 f'|| '
                 f'players={self.get_players()}, '
                 f'invitations={self.get_invitations()}, '
                 f'leaders={self.get_leaders()}, '
                 f'timers={self.get_timers()}, '
                 f'teams={self.get_teams()}, '
-                f'areas={self.get_areas()}), '
                 f'unmanaged={self.is_unmanaged()}), '
                 f')')

@@ -181,7 +181,7 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
 
         """
 
-        super().unchecked_add_player(user)
+        self.unchecked_add_player(user)
         self.manager._check_structure()
 
     def remove_player(self, user: ClientManager.Client):
@@ -1621,7 +1621,7 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
         super()._on_trial_player_added()
 
 
-class NonStopDebate(_NonStopDebateTrivialInherited):
+class _NonStopDebate(_NonStopDebateTrivialInherited):
     """
     A nonstop debate is a trial game based in its Danganronpa counterpart.
 
@@ -2973,7 +2973,7 @@ class NonStopDebate(_NonStopDebateTrivialInherited):
                 f'team_limit={self._team_manager.get_managee_limit()}, '
                 f'timer_limit={self._timer_manager.get_timer_limit()}, '
                 f'areas={self.get_areas()}, '
-                f'trial={self.get_trial()}), '
+                f'trial_id={self.get_trial().get_id()}), '
                 f'mode={self._mode}'
                 f'|| '
                 f'players={self.get_players()}, '
@@ -2981,6 +2981,5 @@ class NonStopDebate(_NonStopDebateTrivialInherited):
                 f'leaders={self.get_leaders()}, '
                 f'timers={self.get_timers()}, '
                 f'teams={self.get_teams()}, '
-                f'areas={self.get_areas()}), '
                 f'unmanaged={self.is_unmanaged()}), '
                 f')')

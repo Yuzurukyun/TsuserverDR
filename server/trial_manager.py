@@ -28,7 +28,7 @@ import typing
 from server.exceptions import NonStopDebateError, TrialError, GameWithAreasError
 from server.gamewithareas_manager import _GameWithAreas, GameWithAreasManager
 from server.trialminigame import _TrialMinigame, TRIALMINIGAMES
-from server.nonstopdebate import NonStopDebate
+from server.nonstopdebate import _NonStopDebate
 
 from typing import Callable, Dict, Set, Any, Tuple, Type, Union
 
@@ -161,7 +161,7 @@ class _TrialTrivialInherited(_GameWithAreas):
 
         """
 
-        super().unchecked_add_player(user)
+        self.unchecked_add_player(user)
         self.manager._check_structure()
 
     def remove_player(self, user: ClientManager.Client):
@@ -2418,10 +2418,10 @@ class _Trial(_TrialTrivialInherited):
         team_limit: Union[int, None] = None,
         timer_limit: Union[int, None] = None,
         #
-        add_players: bool = False,
+        autoadd_on_creation_existing_users: bool = False,
         autoadd_on_trial_player_add: Union[bool, None] = None,
         timer_start_value: float = 300,
-        ) -> NonStopDebate:
+        ) -> _NonStopDebate:
         """
         Create a new NSD managed by this trial. Overriden default parameters include:
         * An NSD does not require leaders.
@@ -2452,7 +2452,7 @@ class _Trial(_TrialTrivialInherited):
         timer_limit : Union[int, None], optional
             If an int, it is the maximum number of timers the NSD will support. If None, it
             indicates the NSD will have no timer limit. Defaults to None.
-        add_players : bool, optional
+        autoadd_on_creation_existing_users : bool, optional
             If True, all players of the trial that are in the same area of the creator (if given a
             creator) will be automatically added to the NSD. If False, no such check is performed.
             Defaults to None.
@@ -2483,8 +2483,8 @@ class _Trial(_TrialTrivialInherited):
 
         areas = {creator.area} if creator else set()
 
-        nsd: NonStopDebate = self._minigame_manager.new_managee(
-            managee_type=NonStopDebate,
+        nsd: _NonStopDebate = self._minigame_manager.new_managee(
+            managee_type=_NonStopDebate,
             creator=creator,
             player_limit=player_limit,
             player_concurrent_limit=1,
@@ -2498,6 +2498,7 @@ class _Trial(_TrialTrivialInherited):
             area_concurrent_limit=1,
             autoadd_on_client_enter=False,
             # kwargs
+            trial=self,
             autoadd_on_trial_player_add=autoadd_on_trial_player_add,
             timer_start_value=timer_start_value,
         )
@@ -2513,7 +2514,7 @@ class _Trial(_TrialTrivialInherited):
             self._minigame_manager.delete_managee(nsd)
             raise ex
 
-        if add_players:
+        if autoadd_on_creation_existing_users:
             clients_to_add = {client for area in areas for client in area.clients}
             if creator:
                 clients_to_add.discard(creator)
@@ -2529,7 +2530,7 @@ class _Trial(_TrialTrivialInherited):
 
         return nsd
 
-    def get_nsd_of_user(self, user: ClientManager.Client) -> NonStopDebate:
+    def get_nsd_of_user(self, user: ClientManager.Client) -> _NonStopDebate:
         """
         Get the NSD the user is in.
 
@@ -2551,7 +2552,7 @@ class _Trial(_TrialTrivialInherited):
         """
 
         games = self._minigame_manager.get_managees_of_user(user)
-        nsds = {game for game in games if isinstance(game, NonStopDebate)}
+        nsds = {game for game in games if isinstance(game, _NonStopDebate)}
         if not nsds:
             raise TrialError.UserNotInMinigameError
         if len(nsds) > 1:
@@ -2597,7 +2598,7 @@ class _Trial(_TrialTrivialInherited):
         except GameWithAreasError.ManagerInvalidGameIDError:
             return TrialError.ManagerInvalidGameIDError
 
-    def get_nsd_by_id(self, nsd_id: str) -> NonStopDebate:
+    def get_nsd_by_id(self, nsd_id: str) -> _NonStopDebate:
         """
         If `nsd_id` is the ID of a nonstop debate managed by this trial, return that.
 
@@ -3297,7 +3298,10 @@ class _TrialManagerTrivialInherited(GameWithAreasManager):
 
         """
 
-        trial = super().unchecked_new_managee(
+        if managee_type is None:
+            managee_type = self.get_managee_type()
+
+        trial = self.unchecked_new_managee(
             managee_type=managee_type,
             creator=creator,
             player_limit=player_limit,
@@ -3656,6 +3660,37 @@ class TrialManager(_TrialManagerTrivialInherited):
     # Invariants
     # ----------
     # 1. The invariants of the parent class are maintained.
+
+    def __init__(
+        self,
+        server: TsuserverDR,
+        managee_limit: Union[int, None] = None,
+        default_managee_type: Type[_Trial] = None,
+        ):
+        """
+        Create a game with areas manager object.
+
+        Parameters
+        ----------
+        server : TsuserverDR
+            The server this trial manager belongs to.
+        managee_limit : int, optional
+            The maximum number of trial this manager can handle. Defaults to None
+            (no limit).
+        default_managee_type : Type[_Trial], optional
+            The default type of trial this manager will create. Defaults to None (and then
+            converted to _Trial).
+
+        """
+
+        if default_managee_type is None:
+            default_managee_type = _Trial
+
+        super().__init__(
+            server,
+            managee_limit=managee_limit,
+            default_managee_type=default_managee_type
+        )
 
     def unchecked_new_managee(
         self,

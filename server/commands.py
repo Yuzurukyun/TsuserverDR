@@ -4798,9 +4798,13 @@ def ooc_cmd_nsd(client: ClientManager.Client, arg: str):
         raise ClientError('You are not a leader of your trial.')
 
     try:
-        nsd = trial.new_nsd(creator=client, add_players=False, timer_start_value=seconds,
-                            require_character=True,
-                            autoadd_on_trial_player_add=trial.get_autoadd_on_client_enter())
+        nsd = trial.new_nsd(
+            creator=client,
+            autoadd_on_creation_existing_users=False,
+            timer_start_value=seconds,
+            require_character=True,
+            autoadd_on_trial_player_add=trial.get_autoadd_on_client_enter()
+            )
     except TrialError.ManagerTooManyGamesError:
         raise ClientError('The trial already has an active nonstop debate. End the previous one '
                           'with /nsd_end.')
@@ -8482,10 +8486,13 @@ def ooc_cmd_trial(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
     try:
-        trial = client.server.trial_manager.new_managee(creator=client, add_players=False,
-                                                      require_character=True,
-                                                      autoadd_on_client_enter=False,
-                                                      autoadd_minigame_on_player_added=False)
+        trial = client.server.trial_manager.new_managee(
+            creator=client,
+            autoadd_on_creation_existing_users=False,
+            require_character=True,
+            autoadd_on_client_enter=False,
+            autoadd_minigame_on_player_added=False
+            )
     except TrialError.AreaDisallowsBulletsError:
         raise ClientError('This area disallows bullets.')
     except TrialError.AreaHitGameConcurrentLimitError:

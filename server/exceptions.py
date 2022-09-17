@@ -47,7 +47,15 @@ def recreate_subexceptions(cls):
     than TsuserverException.
 
     """
-    subexceptions = [item for item in cls.__dict__.keys() if not item.startswith('__')]
+    #subexceptions = [item for item in cls.__dict__.keys() if not item.startswith('__')]
+
+    current_class = cls
+    subexceptions = set()
+    while current_class != TsuserverException:
+        subexceptions |= {item for item in current_class.__dict__.keys()
+                          if not item.startswith('__')}
+        current_class = current_class.__bases__[0]
+
     for subexception_name in subexceptions:
         fullname = '{}.{}'.format(cls.__name__, subexception_name)
         setattr(cls, subexception_name, type(fullname, (cls, ), dict()))
@@ -360,14 +368,14 @@ class TrialMinigameError(GameWithAreasError):
 
 @recreate_subexceptions
 class NonStopDebateError(TrialMinigameError):
-    class NSDAlreadyInModeError(GameWithAreasError):
+    class NSDAlreadyInModeError(TrialMinigameError):
         pass
 
-    class NSDNotInModeError(GameWithAreasError):
+    class NSDNotInModeError(TrialMinigameError):
         pass
 
-    class NSDNoMessagesError(GameWithAreasError):
+    class NSDNoMessagesError(TrialMinigameError):
         pass
 
-    class TimersAlreadySetupError(GameWithAreasError):
+    class TimersAlreadySetupError(TrialMinigameError):
         pass

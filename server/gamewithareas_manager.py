@@ -159,7 +159,7 @@ class _GameWithAreasTrivialInherited(_Game):
 
         """
 
-        super().unchecked_add_player(user)
+        self.unchecked_add_player(user)
         self.manager._check_structure()
 
     def remove_player(self, user: ClientManager.Client):
@@ -2562,7 +2562,7 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
         Parameters
         ----------
         server : TsuserverDR
-            The server this game manager belongs to.
+            The server this game with areas manager belongs to.
         managee_limit : int, optional
             The maximum number of games with areas this manager can handle. Defaults to None
             (no limit).
@@ -2682,7 +2682,7 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
         if not self.is_managee_creatable():
             raise GameWithAreasError.ManagerTooManyGamesError
 
-        game: _GameWithAreas = super().new_managee(
+        game: _GameWithAreas = super().unchecked_new_managee(
             managee_type=managee_type,
             creator=None,  # Manually none
             player_limit=player_limit,
