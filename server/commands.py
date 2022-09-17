@@ -5246,7 +5246,7 @@ def ooc_cmd_nsd_leave(client: ClientManager.Client, arg: str):
 
     EXAMPLES
     >>> /nsd_leave
-    Makes you leave your current nonstop debate.
+    Makes you leave your current NSD.
     """
 
     Constants.assert_command(client, arg, parameters='=0')
@@ -5296,7 +5296,7 @@ def ooc_cmd_nsd_loop(client: ClientManager.Client, arg: str):
 
     EXAMPLE
     >>> /nsd_loop
-    Loops your NSD
+    Loops your NSD.
     """
 
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
@@ -5343,7 +5343,7 @@ def ooc_cmd_nsd_pause(client: ClientManager.Client, arg: str):
 
     EXAMPLE
     >>> /nsd_pause
-    Pauses your NSD
+    Pauses your NSD.
     """
 
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
@@ -5511,11 +5511,11 @@ def ooc_cmd_nsd_unlead(client: ClientManager.Client, arg: str):
     try:
         nsd.remove_leader(client)
     except TrialError.UserNotLeaderError:
-        raise ClientError('You are already not a leader of this NSD.')
+        raise ClientError('You are already not a leader of this nonstop debate.')
 
-    client.send_ooc('You are no longer a leader of your NSD.')
+    client.send_ooc('You are no longer a leader of your nonstop debate.')
     client.send_ooc_others(f'(X) {client.displayname} [{client.id}] is no longer a leader of your '
-                           f'NSD.', pred=lambda c: c in nsd.get_leaders())
+                           f'nonstop debate.', pred=lambda c: c in nsd.get_leaders())
 
 
 def ooc_cmd_online(client: ClientManager.Client, arg: str):

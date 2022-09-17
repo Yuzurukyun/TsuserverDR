@@ -1325,10 +1325,10 @@ class _TrialTrivialInherited(_GameWithAreas):
 
         Raises
         ------
-        GameWithAreasError.GameIsUnmanagedError
+        TrialError.GameIsUnmanagedError
             If the trial was scheduled for deletion and thus does not accept any mutator
             public method calls.
-        GameWithAreasError.AreaNotInGameError
+        TrialError.AreaNotInGameError
             If the area is already not part of the trial.
 
         """
@@ -1598,7 +1598,7 @@ class _Trial(_TrialTrivialInherited):
     """
     A trial is a game with areas that can manage 'trial minigames', which are the following
     trial games (server.trialminigame):
-    * Non-Stop Debates (server.nonstopdebate).
+    * Nonstop Debates (server.nonstopdebate).
 
     While multiple minigames may be going on at the same time, no player may be part of two
     minigames simultaneously.
@@ -2489,7 +2489,7 @@ class _Trial(_TrialTrivialInherited):
             by the conditions of the game. If False, no such adding will take place. Defaults to
             None (use self.autoadd_minigame_on_player_added).
         timer_start_value : float, optional
-            In seconds, the length of time the main timer of this non-stop debate will have at the
+            In seconds, the length of time the main timer of this nonstop debate will have at the
             start. It must be a positive number. Defaults to 300 (5 minutes).
 
         Returns
@@ -2499,7 +2499,7 @@ class _Trial(_TrialTrivialInherited):
 
         Raises
         ------
-        GameWithAreasError.ManagerTooManyGamesError
+        TrialError.ManagerTooManyGamesError
             If the manager is already managing its maximum number of minigames.
         Any error from the created NSD's add_player(creator)
             If the NSD cannot add `creator` to the NSD if given one.
@@ -2615,7 +2615,7 @@ class _Trial(_TrialTrivialInherited):
 
         Raises
         ------
-        GameWithAreasError.ManagerInvalidGameIDError
+        TrialError.ManagerInvalidGameIDError
             If `minigame_id` is not the ID of a minigame this game manages.
 
         """
@@ -2641,7 +2641,7 @@ class _Trial(_TrialTrivialInherited):
 
         Raises
         ------
-        GameWithAreasError.ManagerInvalidGameIDError
+        TrialError.ManagerInvalidGameIDError
             If `nsd_id` is not the ID of a nonstop debate this game manages.
 
         """
@@ -2761,6 +2761,7 @@ class _Trial(_TrialTrivialInherited):
         """
 
         self.unchecked_end()
+        self.manager._check_structure()
         self._check_structure()
 
     def unchecked_end(self):

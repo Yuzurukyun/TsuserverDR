@@ -28,15 +28,16 @@ from typing import Callable, Dict, Set, Any, Tuple, Type, Union
 
 import enum
 
-from server.exceptions import GameError, GameWithAreasError, TrialMinigameError
-from server.game_manager import _Team
-from server.gamewithareas_manager import _GameWithAreas, GameWithAreasManager
-from server.timer_manager import Timer
+from server.exceptions import GameWithAreasError, TrialMinigameError
+from server.gamewithareas_manager import _GameWithAreas
 
 if typing.TYPE_CHECKING:
     # Avoid circular referencing
     from server.area_manager import AreaManager
     from server.client_manager import ClientManager
+    from server.game_manager import _Team
+    from server.gamewithareas_manager import GameWithAreasManager
+    from server.timer_manager import Timer
     from server.trial_manager import _Trial
     from server.tsuserver import TsuserverDR
 
@@ -200,6 +201,43 @@ class _TrialMinigameTrivialInherited(_GameWithAreas):
 
         self.unchecked_remove_player(user)
         self.manager._check_structure()
+
+    def unchecked_remove_player(self, user: ClientManager.Client):
+        """
+        Make a user be no longer a player of this trial minigame. If they were part of a team
+        managed by this trial minigame, they will also be removed from said team. It will also
+        unsubscribe the trial minigame from the player so it will no longer listen to its updates.
+
+        If the trial minigame required that there it always had players and by calling this method
+        the trial minigame had no more players, the trial minigame will automatically be scheduled
+        for deletion.
+
+        This method does not assert structural integrity.
+
+        Parameters
+        ----------
+        user : ClientManager.Client
+            User to remove.
+
+        Raises
+        ------
+        TrialMinigameError.GameIsUnmanagedError
+            If the trial minigame was scheduled for deletion and thus does not accept any mutator
+            public method calls.
+        TrialMinigameError.UserNotPlayerError
+            If the user to remove is already not a player of this trial minigame.
+
+        """
+
+        if self.is_unmanaged():
+            raise TrialMinigameError.GameIsUnmanagedError
+
+        try:
+            super().unchecked_remove_player(user)
+        except GameWithAreasError.GameIsUnmanagedError:
+            raise RuntimeError(self, user)
+        except GameWithAreasError.UserNotPlayerError:
+            raise TrialMinigameError.UserNotPlayerError
 
     def requires_players(self) -> bool:
         """
@@ -767,7 +805,7 @@ class _TrialMinigameTrivialInherited(_GameWithAreas):
         """
 
         if self.is_unmanaged():
-            raise GameWithAreasError.GameIsUnmanagedError
+            raise TrialMinigameError.GameIsUnmanagedError
 
         try:
             return super().unchecked_new_timer(
@@ -1371,7 +1409,7 @@ class _TrialMinigameTrivialInherited(_GameWithAreas):
         """
 
         if self.is_unmanaged():
-            raise GameWithAreasError.GameIsUnmanagedError
+            raise TrialMinigameError.GameIsUnmanagedError
         try:
             super().unchecked_remove_area(area)
         except GameWithAreasError.GameIsUnmanagedError:
@@ -1697,12 +1735,6 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
 
     Callback Methods
     ----------------
-    _on_area_client_left_final
-        Method to perform once a client left an area of the trial minigame.
-    _on_area_client_entered_final
-        Method to perform once a client entered an area of the trial minigame.
-    _on_area_destroyed
-        Method to perform once an area of the trial minigame is marked for destruction.
     _on_client_inbound_ms_check
         Method to perform once a player of the trial minigame wants to send an IC message.
     _on_client_inbound_ms_final
@@ -1711,6 +1743,12 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
         Method to perform once a player of the trial minigame has changed character.
     _on_client_destroyed
         Method to perform once a player of the trial minigame is destroyed.
+    _on_area_client_left_final
+        Method to perform once a client left an area of the trial minigame.
+    _on_area_client_entered_final
+        Method to perform once a client entered an area of the trial minigame.
+    _on_area_destroyed
+        Method to perform once an area of the trial minigame is marked for destruction.
 
     """
 
@@ -1718,7 +1756,10 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
     # --------------------
     # _trial : _Trial
     #   Trial of the trial minigame
-    #
+    # __autoadd_on_trial_player_add : bool
+    #   Whether players that are added to the trial minigame will be automatically added if
+    #   permitted by the conditions of the trial minigame.
+
     # Invariants
     # ----------
     # 1. The invariants from the parent class TrialMinigame are satisfied.
@@ -1797,7 +1838,7 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
             If True, nonplayer users that enter an area part of the trial minigame will be
             automatically added if permitted by the conditions of the trial minigame. If False, no
             such adding will take place. Defaults to False.
-        trial : TrialManager.Trial, optional
+        trial : _Trial, optional
             Trial the trial minigame is a part of.
         autoadd_on_trial_player_add : bool, optional
             If True, players that are added to the trial minigame will be automatically added if
@@ -1809,17 +1850,23 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
         self._trial = trial
         self._autoadd_on_trial_player_add = autoadd_on_trial_player_add
 
-        super().__init__(server, manager, minigame_id, player_limit=player_limit,
-                         player_concurrent_limit=player_concurrent_limit,
-                         require_invitations=require_invitations,
-                         require_players=require_players,
-                         require_leaders=require_leaders,
-                         require_character=require_character,
-                         team_limit=team_limit, timer_limit=timer_limit,
-                         area_concurrent_limit=area_concurrent_limit,
-                         autoadd_on_client_enter=autoadd_on_client_enter,)
-        self.listener.subscribe(trial)
+        super().__init__(
+            server,
+            manager,
+            minigame_id,
+            player_limit=player_limit,
+            player_concurrent_limit=player_concurrent_limit,
+            require_invitations=require_invitations,
+            require_players=require_players,
+            require_leaders=require_leaders,
+            require_character=require_character,
+            team_limit=team_limit,
+            timer_limit=timer_limit,
+            area_concurrent_limit=area_concurrent_limit,
+            autoadd_on_client_enter=autoadd_on_client_enter,
+        )
 
+        self.listener.subscribe(trial)
         self.listener.update_events({
             'trial_player_added': self._on_trial_player_added,
             })
@@ -1840,8 +1887,9 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
 
     def unchecked_add_player(self, user: ClientManager.Client):
         """
-        Make a user a player of the trial minigame. By default this player will not be a leader.
-        It will also subscribe the trial minigameto the player so it can listen to its updates.
+        Make a user a player of the trial minigame. By default this player will not be a leader,
+        unless the trial minigame has no leaders and it requires a leader.
+        It will also subscribe the trial minigame to the player so it can listen to its updates.
 
         This method does not assert structural integrity.
 
@@ -1927,7 +1975,7 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
         if self.is_unmanaged():
             raise TrialMinigameError.GameIsUnmanagedError
         if not self._trial.has_area(area):
-            raise GameWithAreasError.AreaNotInGameError
+            raise TrialMinigameError.AreaNotInGameError
 
         try:
             super().unchecked_add_area(area)
@@ -2094,8 +2142,6 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
                                    f'({area.id}->{client.area.id}).',
                                    pred=lambda c: c in self.get_leaders())
 
-        self._check_structure()
-
     def _on_area_client_entered_final(
         self,
         area: AreaManager.Area,
@@ -2154,7 +2200,7 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
         Parameters
         ----------
         trial : TrialManager._Trial
-            Trial that generated the callback. Typically is self._trial
+            Trial that generated the callback. Typically is self.get_trial().
         player : ClientManager.Client, optional
             Player that was added to the trial.
 

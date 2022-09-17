@@ -26,13 +26,15 @@ import typing
 from typing import Callable, Dict, Set, Any, Tuple, Type, Union
 
 from server.exceptions import GameWithAreasError, GameError
-from server.game_manager import _Game, _Team, GameManager
+from server.game_manager import _Game, GameManager
 from server.timer_manager import Timer
 
 if typing.TYPE_CHECKING:
     # Avoid circular referencing
     from server.area_manager import AreaManager
     from server.client_manager import ClientManager
+    from server.game_manager import _Team
+    from server.timer_manager import Timer
     from server.tsuserver import TsuserverDR
 
 
@@ -158,7 +160,7 @@ class _GameWithAreasTrivialInherited(_Game):
         """
 
         super().unchecked_add_player(user)
-        self._check_structure()
+        self.manager._check_structure()
 
     def remove_player(self, user: ClientManager.Client):
         """
@@ -1720,7 +1722,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
         """
 
         self.unchecked_add_area(area)
-        self._check_structure()
+        self.manager._check_structure()
 
     def unchecked_add_area(self, area: AreaManager.Area):
         """
@@ -1785,7 +1787,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
         """
 
         self.unchecked_remove_area(area)
-        self._check_structure()
+        self.manager._check_structure()
 
     def unchecked_remove_area(self, area: AreaManager.Area):
         """
@@ -1986,9 +1988,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
 
         # print('Received LEFT', area, client, client.area, old_displayname, ignore_bleeding)
         if client in self.get_players() and client.area not in self._areas:
-            self.unchecked_remove_player(client)
-
-        self._check_structure()
+            self.remove_player(client)
 
     def _on_area_client_entered_final(
         self,
@@ -2029,9 +2029,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
 
         # print('Received ENTERED', area, client, old_area, old_displayname, ignore_bleeding)
         if client not in self.get_players() and self.get_autoadd_on_client_enter():
-            self.unchecked_add_player(client)
-
-        self._check_structure()
+            self.add_player(client)
 
     def _on_area_client_inbound_ms_check(
         self,
@@ -2064,8 +2062,6 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
 
         # print('User', client, 'in area', area, 'wants to check sent', contents)
 
-        self._check_structure()
-
     def _on_area_destroyed(self, area: AreaManager.Area):
         """
         Default callback for game with areas area signaling it was destroyed.
@@ -2084,9 +2080,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
         """
 
         # print('Received DESTRUCTION', area)
-        self.unchecked_remove_area(area)
-
-        self._check_structure()
+        self.remove_area(area)
 
     def _on_areas_loaded(self, area_manager: AreaManager):
         """

@@ -1762,9 +1762,7 @@ class _Game(_GameTrivialInherited):
 
         # print('Player', player, 'changed character from', old_char_id, 'to', new_char_id)
         if self._require_character and not player.has_character():
-            self.unchecked_remove_player(player)
-
-        self._check_structure()
+            self.remove_player(player)
 
     def _on_client_destroyed(self, player: ClientManager.Client):
         """
@@ -1790,9 +1788,7 @@ class _Game(_GameTrivialInherited):
             return
         if player not in self.get_players():
             return
-        self.unchecked_remove_player(player)
-
-        self._check_structure()
+        self.remove_player(player)
 
     def _check_structure(self):
         """
