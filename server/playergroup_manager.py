@@ -1046,12 +1046,13 @@ class _PlayerGroup:
                 f'player_concurrent_limit={self.get_player_concurrent_limit()}, '
                 f'require_players={self.requires_players()}, '
                 f'require_invitations={self.requires_invitations()}, '
-                f'require_leaders={self.requires_leaders()}, || '
+                f'require_leaders={self.requires_leaders()}, '
+                f'|| '
                 f'players={self.get_players()}, '
                 f'invitations={self.get_invitations()}, '
                 f'leaders={self.get_leaders()}, '
-                f'unmanaged={self.is_unmanaged()})'
-                )
+                f'unmanaged={self.is_unmanaged()}), '
+                f')')
 
 
 class PlayerGroupManager:
@@ -1810,7 +1811,8 @@ class PlayerGroupManager:
                 f"|| "
                 f"_user_to_managees={self.get_managees_of_players()}, "
                 f"_id_to_managee={self.get_managee_ids_to_managees()}, "
-                f"id={self.get_id()}")
+                f"id={self.get_id()}, "
+                f')')
 
 if __name__ == '__main__':
     import sys

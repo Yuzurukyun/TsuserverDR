@@ -1868,13 +1868,15 @@ class _Game(_GameTrivialInherited):
                 f'require_leaders={self.requires_leaders()}, '
                 f'require_character={self.requires_characters()}, '
                 f'team_limit={self.get_team_limit()}, '
-                f'timer_limit={self.get_timer_limit()} || '
+                f'timer_limit={self.get_timer_limit()}, '
+                f'|| '
                 f'players={self.get_players()}, '
                 f'invitations={self.get_invitations()}, '
                 f'leaders={self.get_leaders()}, '
                 f'timers={self.get_timers()}, '
                 f'teams={self.get_teams()}), '
-                f'unmanaged={self.is_unmanaged()})')
+                f'unmanaged={self.is_unmanaged()}), '
+                f')')
 
 
 class _GameManagerTrivialInherited(PlayerGroupManager):
@@ -2424,7 +2426,8 @@ class GameManager(_GameManagerTrivialInherited):
                 f"|| "
                 f"_user_to_managees={self.get_managees_of_players()}, "
                 f"_id_to_managee={self.get_managee_ids_to_managees()}, "
-                f"id={self.get_id()})")
+                f"id={self.get_id()}), ",
+                f')')
 
 
 if __name__ == '__main__':

@@ -22,7 +22,6 @@ Module that contains the base game with areas class.
 
 from __future__ import annotations
 
-import functools
 import typing
 from typing import Callable, Dict, Set, Any, Tuple, Type, Union
 
@@ -1943,50 +1942,6 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
             self.unchecked_remove_area(area)
         super().unchecked_destroy()
 
-    def __str__(self) -> str:
-        """
-        Return a string representation of this game with areas.
-
-        Returns
-        -------
-        str
-            Representation.
-
-        """
-
-        return (f"GameWithAreas::{self.get_id()}:"
-                f"{self.get_players()}:{self.get_leaders()}:{self.get_invitations()}"
-                f"{self.get_timers()}:"
-                f"{self.get_teams()}:"
-                f"{self.get_areas()}")
-
-    def __repr__(self) -> str:
-        """
-        Return a representation of this game with areas.
-
-        Returns
-        -------
-        str
-            Printable representation.
-
-        """
-
-        return (f'GameWithAreas(server, {self.manager.get_id()}, "{self.get_id()}", '
-                f'player_limit={self.get_player_limit()}, '
-                f'player_concurrent_limit={self.get_player_concurrent_limit()}, '
-                f'require_players={self.requires_players()}, '
-                f'require_invitations={self.requires_invitations()}, '
-                f'require_leaders={self.requires_leaders()}, '
-                f'require_character={self.requires_characters()}, '
-                f'team_limit={self.get_team_limit()}, '
-                f'timer_limit={self.get_timer_limit()}, '
-                f'areas={self.get_areas()}) || '
-                f'players={self.get_players()}, '
-                f'invitations={self.get_invitations()}, '
-                f'leaders={self.get_leaders()}, '
-                f'timers={self.get_timers()}, '
-                f'teams={self.get_teams()}')
-
     def _on_area_client_left_final(
         self,
         area: AreaManager.Area,
@@ -2175,6 +2130,52 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
         # 2.
         super()._check_structure()
 
+    def __str__(self) -> str:
+        """
+        Return a string representation of this game with areas.
+
+        Returns
+        -------
+        str
+            Representation.
+
+        """
+
+        return (f"GameWithAreas::{self.get_id()}:"
+                f"{self.get_players()}:{self.get_leaders()}:{self.get_invitations()}"
+                f"{self.get_timers()}:"
+                f"{self.get_teams()}:"
+                f"{self.get_areas()}")
+
+    def __repr__(self) -> str:
+        """
+        Return a representation of this game with areas.
+
+        Returns
+        -------
+        str
+            Printable representation.
+
+        """
+
+        return (f'GameWithAreas(server, {self.manager.get_id()}, "{self.get_id()}", '
+                f'player_limit={self.get_player_limit()}, '
+                f'player_concurrent_limit={self.get_player_concurrent_limit()}, '
+                f'require_players={self.requires_players()}, '
+                f'require_invitations={self.requires_invitations()}, '
+                f'require_leaders={self.requires_leaders()}, '
+                f'require_character={self.requires_characters()}, '
+                f'team_limit={self.get_team_limit()}, '
+                f'timer_limit={self.get_timer_limit()}, '
+                f'areas={self.get_areas()}), '
+                f'|| '
+                f'players={self.get_players()}, '
+                f'invitations={self.get_invitations()}, '
+                f'leaders={self.get_leaders()}, '
+                f'timers={self.get_timers()}, '
+                f'teams={self.get_teams()}, '
+                f'unmanaged={self.is_unmanaged()}), '
+                f')')
 
 class _GameWithAreasManagerTrivialInherited(GameManager):
     """
@@ -3000,7 +3001,8 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
         return (f"GameWithAreasManager(server, managee_limit={self.get_managee_limit()}, "
                 f"default_managee_type={self.get_managee_type()}, "
                 f"|| "
-                f"_user_to_managees={self.get_managees_of_players()}, "
                 f"_id_to_managee={self.get_managee_ids_to_managees()}, "
-                f"_area_to_games={self.get_managees_of_areas()}, "
-                f"id={self.get_id()}")
+                f"_user_to_managees={self.get_managees_of_players()}, "
+                f"_area_to_managees={self.get_managees_of_areas()}, "
+                f"id={self.get_id()}, "
+                f')')

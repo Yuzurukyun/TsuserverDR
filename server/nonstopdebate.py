@@ -31,7 +31,7 @@ from typing import Any, Dict, Set
 
 from server import logger
 from server.exceptions import ClientError, NonStopDebateError, GameError, TimerError
-from server.trialminigame import TrialMinigame, TRIALMINIGAMES
+from server.trialminigame import _TrialMinigame, TRIALMINIGAMES
 
 if typing.TYPE_CHECKING:
     # Avoid circular referencing
@@ -52,7 +52,7 @@ class NSDMode(Enum):
     INTERMISSION_TIMERANOUT = auto()
 
 
-class NonStopDebate(TrialMinigame):
+class NonStopDebate(_TrialMinigame):
     """
     A nonstop debate is a trial game based in its Danganronpa counterpart.
 

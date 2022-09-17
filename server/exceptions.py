@@ -354,9 +354,12 @@ class TrialError(GameWithAreasError):
     class FocusIsInvalidError(GameWithAreasError):
         pass
 
+@recreate_subexceptions
+class TrialMinigameError(GameWithAreasError):
+    pass
 
 @recreate_subexceptions
-class NonStopDebateError(GameWithAreasError):
+class NonStopDebateError(TrialMinigameError):
     class NSDAlreadyInModeError(GameWithAreasError):
         pass
 

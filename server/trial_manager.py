@@ -23,12 +23,11 @@ Module that contains the trial manager and trial modules.
 
 from __future__ import annotations
 
-import functools
 import typing
 
 from server.exceptions import NonStopDebateError, TrialError, GameWithAreasError
 from server.gamewithareas_manager import _GameWithAreas, GameWithAreasManager
-from server.trialminigame import TrialMinigame, TRIALMINIGAMES
+from server.trialminigame import _TrialMinigame, TRIALMINIGAMES
 from server.nonstopdebate import NonStopDebate
 
 from typing import Callable, Dict, Set, Any, Tuple, Type, Union
@@ -1765,7 +1764,7 @@ class _Trial(_TrialTrivialInherited):
         self._minigame_manager = GameWithAreasManager(
             server,
             managee_limit=minigame_limit,
-            default_managee_type=TrialMinigame,
+            default_managee_type=_TrialMinigame,
         )
         super().__init__(
             server,
@@ -1883,9 +1882,10 @@ class _Trial(_TrialTrivialInherited):
         TrialError.UserAlreadyPlayerError
             If the user to add is already a user of the trial.
         TrialError.UserHitGameConcurrentLimitError
-            If the player has reached the concurrent player membership of any of the trial
+            If the player has reached the concurrent player membership of any of the trials
             managed by the manager of this trial, or by virtue of joining this
-            trial they would violate this trial's concurrent player membership limit.
+            trial they would violate this trial's concurrent player membership
+            limit.
         TrialError.GameIsFullError
             If the trial reached its player limit.
 
@@ -1898,6 +1898,8 @@ class _Trial(_TrialTrivialInherited):
             super().unchecked_add_player(user)
         except GameWithAreasError.GameIsUnmanagedError:
             raise RuntimeError(self)
+        except GameWithAreasError.UserNotInAreaError:
+            raise TrialError.UserNotInAreaError
         except GameWithAreasError.UserNotInvitedError:
             raise TrialError.UserNotInvitedError
         except GameWithAreasError.UserAlreadyPlayerError:
@@ -2588,7 +2590,7 @@ class _Trial(_TrialTrivialInherited):
             raise RuntimeError(nsds)
         return next(iter(nsds))
 
-    def get_minigames(self) -> Set[TrialMinigame]:
+    def get_minigames(self) -> Set[_TrialMinigame]:
         """
         Return the minigames of this trial.
 
@@ -2601,7 +2603,7 @@ class _Trial(_TrialTrivialInherited):
 
         return self._minigame_manager.get_managees()
 
-    def get_minigame_by_id(self, minigame_id: str) -> TrialMinigame:
+    def get_minigame_by_id(self, minigame_id: str) -> _TrialMinigame:
         """
         If `minigame_id` is the ID of a minigame managed by this trial, return that.
 
@@ -3093,53 +3095,6 @@ class _Trial(_TrialTrivialInherited):
 
         self.destroy()
 
-    def __str__(self):
-        """
-        Return a string representation of this trial.
-
-        Returns
-        -------
-        str
-            Representation.
-
-        """
-
-        return (f"Trial::{self.get_id()}:"
-                f"{self.get_players()}:{self.get_leaders()}:{self.get_invitations()}"
-                f"{self.get_timers()}:"
-                f"{self.get_teams()}:"
-                f"{self.get_areas()}:"
-                f"{self.get_minigames()}")
-
-    def __repr__(self):
-        """
-        Return a representation of this trial.
-
-        Returns
-        -------
-        str
-            Printable representation.
-
-        """
-
-        return (f'Trial(server, {self.manager.get_id()}, "{self.get_id()}", '
-                f'player_limit={self.get_player_limit()}, '
-                f'player_concurrent_limit={self.get_player_concurrent_limit()}, '
-                f'require_players={self.requires_players()}, '
-                f'require_invitations={self.requires_invitations()}, '
-                f'require_leaders={self.requires_leaders()}, '
-                f'require_character={self.requires_characters()}, '
-                f'team_limit={self.get_team_limit()}, '
-                f'timer_limit={self.get_timer_limit()}, '
-                f'areas={self.get_areas()}) || '
-                f'players={self.get_players()}, '
-                f'invitations={self.get_invitations()}, '
-                f'leaders={self.get_leaders()}, '
-                f'timers={self.get_timers()}, '
-                f'teams={self.get_teams()}, '
-                f'areas={self.get_areas()}), '
-                f'minigames={self.get_minigames()}')
-
     def _check_structure(self):
         """
         Assert that all invariants specified in the class description are maintained.
@@ -3231,6 +3186,56 @@ class _Trial(_TrialTrivialInherited):
 
         # 5.
         super()._check_structure()
+
+    def __str__(self):
+        """
+        Return a string representation of this trial.
+
+        Returns
+        -------
+        str
+            Representation.
+
+        """
+
+        return (f"Trial::{self.get_id()}:"
+                f"{self.get_players()}:{self.get_leaders()}:{self.get_invitations()}"
+                f"{self.get_timers()}:"
+                f"{self.get_teams()}:"
+                f"{self.get_areas()}:"
+                f"{self.get_minigames()}")
+
+    def __repr__(self):
+        """
+        Return a representation of this trial.
+
+        Returns
+        -------
+        str
+            Printable representation.
+
+        """
+
+        return (f'Trial(server, {self.manager.get_id()}, "{self.get_id()}", '
+                f'player_limit={self.get_player_limit()}, '
+                f'player_concurrent_limit={self.get_player_concurrent_limit()}, '
+                f'require_players={self.requires_players()}, '
+                f'require_invitations={self.requires_invitations()}, '
+                f'require_leaders={self.requires_leaders()}, '
+                f'require_character={self.requires_characters()}, '
+                f'team_limit={self.get_team_limit()}, '
+                f'timer_limit={self.get_timer_limit()}, '
+                f'areas={self.get_areas()}), '
+                f'|| '
+                f'players={self.get_players()}, '
+                f'invitations={self.get_invitations()}, '
+                f'leaders={self.get_leaders()}, '
+                f'timers={self.get_timers()}, '
+                f'teams={self.get_teams()}, '
+                f'areas={self.get_areas()}), '
+                f'minigames={self.get_minigames()}, '
+                f'unmanaged={self.is_unmanaged()}), '
+                f')')
 
 class _TrialManagerTrivialInherited(GameWithAreasManager):
     """
@@ -3885,4 +3890,5 @@ class TrialManager(_TrialManagerTrivialInherited):
                 f"_id_to_managee={self.get_managee_ids_to_managees()}, "
                 f"_user_to_managees={self.get_managees_of_players()}, "
                 f"_area_to_managees={self.get_managees_of_areas()}, "
-                f"id={self.get_id()})")
+                f"id={self.get_id()}), "
+                f')')
