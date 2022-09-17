@@ -37,12 +37,7 @@ same game manager.
 from __future__ import annotations
 
 import typing
-
 from typing import Any, Callable, Dict, Set, Tuple, Type, Union
-
-import sys
-if '..' not in sys.path:
-    sys.path.append('..')
 
 from server.exceptions import GameError, PlayerGroupError, TimerError
 from server.playergroup_manager import _PlayerGroup, PlayerGroupManager
@@ -403,14 +398,10 @@ class _GameTrivialInherited(_PlayerGroup):
 
         """
 
-        if self.is_unmanaged():
-            raise GameError.GameIsUnmanagedError
-
         try:
             super().unchecked_add_invitation(user)
         except PlayerGroupError.GroupIsUnmanagedError:
-            # Should not have made it here as we already asserted the game is not unmmanaged
-            raise RuntimeError(self, user)
+            raise GameError.GameIsUnmanagedError
         except PlayerGroupError.GroupDoesNotTakeInvitationsError:
             raise GameError.GameDoesNotTakeInvitationsError
         except PlayerGroupError.UserAlreadyInvitedError:
@@ -465,14 +456,10 @@ class _GameTrivialInherited(_PlayerGroup):
 
         """
 
-        if self.is_unmanaged():
-            raise GameError.GameIsUnmanagedError
-
         try:
             super().unchecked_remove_invitation(user)
         except PlayerGroupError.GroupIsUnmanagedError:
-            # Should not have made it here as we already asserted the game is not unmmanaged
-            raise RuntimeError(self, user)
+            raise GameError.GameIsUnmanagedError
         except PlayerGroupError.GroupDoesNotTakeInvitationsError:
             raise GameError.GameDoesNotTakeInvitationsError
         except PlayerGroupError.UserNotInvitedError:
@@ -611,14 +598,10 @@ class _GameTrivialInherited(_PlayerGroup):
 
         """
 
-        if self.is_unmanaged():
-            raise GameError.GameIsUnmanagedError
-
         try:
             super().unchecked_add_leader(user)
         except PlayerGroupError.GroupIsUnmanagedError:
-            # Should not have made it here as we already asserted the game is not unmmanaged
-            raise RuntimeError(self, user)
+            raise GameError.GameIsUnmanagedError
         except PlayerGroupError.UserNotPlayerError:
             raise GameError.UserNotPlayerError
         except PlayerGroupError.UserAlreadyLeaderError:
@@ -671,14 +654,10 @@ class _GameTrivialInherited(_PlayerGroup):
 
         """
 
-        if self.is_unmanaged():
-            raise GameError.GameIsUnmanagedError
-
         try:
             super().unchecked_remove_leader(user)
         except PlayerGroupError.GroupIsUnmanagedError:
-            # Should not have made it here as we already asserted the game is not unmmanaged
-            raise RuntimeError(self, user)
+            raise GameError.GameIsUnmanagedError
         except PlayerGroupError.UserNotPlayerError:
             raise GameError.UserNotPlayerError
         except PlayerGroupError.UserNotLeaderError:
@@ -972,7 +951,7 @@ class _Game(_GameTrivialInherited):
         try:
             super().unchecked_add_player(user)
         except PlayerGroupError.GroupIsUnmanagedError:
-            raise RuntimeError(self)
+            raise RuntimeError(self, user)
         except PlayerGroupError.UserNotInvitedError:
             raise GameError.UserNotInvitedError
         except PlayerGroupError.UserAlreadyPlayerError:
@@ -2424,10 +2403,3 @@ class GameManager(_GameManagerTrivialInherited):
                 f"_id_to_managee={self.get_managee_ids_to_managees()}, "
                 f"id={self.get_id()}), ",
                 f')')
-
-
-if __name__ == '__main__':
-    server = 'e'
-    m = GameManager(server)
-    n = m.new_managee()
-    n.add_player('3')

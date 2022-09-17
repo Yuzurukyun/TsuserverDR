@@ -304,13 +304,10 @@ class _TrialTrivialInherited(_GameWithAreas):
 
         """
 
-        if self.is_unmanaged():
-            raise TrialError.GameIsUnmanagedError
-
         try:
             super().unchecked_add_invitation(user)
         except GameWithAreasError.GameIsUnmanagedError:
-            raise RuntimeError(self, user)
+            raise TrialError.GameIsUnmanagedError
         except GameWithAreasError.GameDoesNotTakeInvitationsError:
             raise TrialError.GameDoesNotTakeInvitationsError
         except GameWithAreasError.UserAlreadyInvitedError:
@@ -365,13 +362,10 @@ class _TrialTrivialInherited(_GameWithAreas):
 
         """
 
-        if self.is_unmanaged():
-            raise TrialError.GameIsUnmanagedError
-
         try:
             super().unchecked_remove_invitation(user)
         except GameWithAreasError.GameIsUnmanagedError:
-            raise RuntimeError(self, user)
+            raise TrialError.GameIsUnmanagedError
         except GameWithAreasError.GameDoesNotTakeInvitationsError:
             raise TrialError.GameDoesNotTakeInvitationsError
         except GameWithAreasError.UserNotInvitedError:
@@ -510,15 +504,10 @@ class _TrialTrivialInherited(_GameWithAreas):
 
         """
 
-        if self.is_unmanaged():
-            raise TrialError.GameIsUnmanagedError
-
         try:
             super().unchecked_add_leader(user)
         except GameWithAreasError.GameIsUnmanagedError:
-            # Should not have made it here as we already asserted the trial is not
-            # unmmanaged
-            raise RuntimeError(self, user)
+            raise TrialError.GameIsUnmanagedError
         except GameWithAreasError.UserNotPlayerError:
             raise TrialError.UserNotPlayerError
         except GameWithAreasError.UserAlreadyLeaderError:
@@ -577,7 +566,7 @@ class _TrialTrivialInherited(_GameWithAreas):
         try:
             super().unchecked_remove_leader(user)
         except GameWithAreasError.GameIsUnmanagedError:
-            raise RuntimeError(self, user)
+            raise TrialError.GameIsUnmanagedError
         except GameWithAreasError.UserNotPlayerError:
             raise TrialError.UserNotPlayerError
         except GameWithAreasError.UserNotLeaderError:
@@ -757,9 +746,6 @@ class _TrialTrivialInherited(_GameWithAreas):
 
         """
 
-        if self.is_unmanaged():
-            raise GameWithAreasError.GameIsUnmanagedError
-
         try:
             return super().unchecked_new_timer(
                 timer_type=timer_type,
@@ -771,7 +757,7 @@ class _TrialTrivialInherited(_GameWithAreas):
                 auto_destroy=auto_destroy,
             )
         except GameWithAreasError.GameIsUnmanagedError:
-            raise RuntimeError(self)
+            raise TrialError.GameIsUnmanagedError
         except GameWithAreasError.GameTooManyTimersError:
             raise TrialError.GameTooManyTimersError
 
@@ -829,13 +815,10 @@ class _TrialTrivialInherited(_GameWithAreas):
 
         """
 
-        if self.is_unmanaged():
-            raise TrialError.GameIsUnmanagedError
-
         try:
             return super().unchecked_delete_timer(timer)
         except GameWithAreasError.GameIsUnmanagedError:
-            raise RuntimeError(self)
+            raise TrialError.GameIsUnmanagedError
         except GameWithAreasError.GameDoesNotManageTimerError:
             raise TrialError.GameDoesNotManageTimerError
 
@@ -1019,9 +1002,6 @@ class _TrialTrivialInherited(_GameWithAreas):
 
         """
 
-        if self.is_unmanaged():
-            raise TrialError.GameIsUnmanagedError
-
         try:
             return super().unchecked_new_team(
                 team_type=team_type,
@@ -1032,7 +1012,7 @@ class _TrialTrivialInherited(_GameWithAreas):
                 require_leaders=require_leaders,
             )
         except GameWithAreasError.GameIsUnmanagedError:
-            raise RuntimeError(self)
+            raise TrialError.GameIsUnmanagedError
         except GameWithAreasError.GameTooManyTeamsError:
             raise TrialError.GameTooManyTeamsError
         except GameWithAreasError.UserInAnotherTeamError:
@@ -1092,13 +1072,10 @@ class _TrialTrivialInherited(_GameWithAreas):
 
         """
 
-        if self.is_unmanaged():
-            raise TrialError.GameIsUnmanagedError
-
         try:
             return super().unchecked_delete_team(team)
         except GameWithAreasError.GameIsUnmanagedError:
-            raise RuntimeError(self)
+            raise TrialError.GameIsUnmanagedError
         except GameWithAreasError.GameDoesNotManageTeamError:
             raise TrialError.GameDoesNotManageTeamError
 
@@ -1361,12 +1338,10 @@ class _TrialTrivialInherited(_GameWithAreas):
 
         """
 
-        if self.is_unmanaged():
-            raise GameWithAreasError.GameIsUnmanagedError
         try:
             super().unchecked_remove_area(area)
         except GameWithAreasError.GameIsUnmanagedError:
-            raise RuntimeError(self)
+            raise TrialError.GameIsUnmanagedError
         except GameWithAreasError.AreaNotInGameError:
             raise TrialError.AreaNotInGameError
 
@@ -1887,13 +1862,10 @@ class _Trial(_TrialTrivialInherited):
 
         """
 
-        if self.is_unmanaged():
-            raise TrialError.GameIsUnmanagedError
-
         try:
             super().unchecked_add_player(user)
         except GameWithAreasError.GameIsUnmanagedError:
-            raise RuntimeError(self)
+            raise TrialError.GameIsUnmanagedError
         except GameWithAreasError.UserNotInAreaError:
             raise TrialError.UserNotInAreaError
         except GameWithAreasError.UserNotInvitedError:

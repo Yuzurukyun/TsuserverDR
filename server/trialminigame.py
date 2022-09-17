@@ -229,13 +229,10 @@ class _TrialMinigameTrivialInherited(_GameWithAreas):
 
         """
 
-        if self.is_unmanaged():
-            raise TrialMinigameError.GameIsUnmanagedError
-
         try:
             super().unchecked_remove_player(user)
         except GameWithAreasError.GameIsUnmanagedError:
-            raise RuntimeError(self, user)
+            raise TrialMinigameError.GameIsUnmanagedError
         except GameWithAreasError.UserNotPlayerError:
             raise TrialMinigameError.UserNotPlayerError
 
@@ -351,13 +348,10 @@ class _TrialMinigameTrivialInherited(_GameWithAreas):
 
         """
 
-        if self.is_unmanaged():
-            raise TrialMinigameError.GameIsUnmanagedError
-
         try:
             super().unchecked_add_invitation(user)
         except GameWithAreasError.GameIsUnmanagedError:
-            raise RuntimeError(self, user)
+            raise TrialMinigameError.GameIsUnmanagedError
         except GameWithAreasError.GameDoesNotTakeInvitationsError:
             raise TrialMinigameError.GameDoesNotTakeInvitationsError
         except GameWithAreasError.UserAlreadyInvitedError:
@@ -412,13 +406,10 @@ class _TrialMinigameTrivialInherited(_GameWithAreas):
 
         """
 
-        if self.is_unmanaged():
-            raise TrialMinigameError.GameIsUnmanagedError
-
         try:
             super().unchecked_remove_invitation(user)
         except GameWithAreasError.GameIsUnmanagedError:
-            raise RuntimeError(self, user)
+            raise TrialMinigameError.GameIsUnmanagedError
         except GameWithAreasError.GameDoesNotTakeInvitationsError:
             raise TrialMinigameError.GameDoesNotTakeInvitationsError
         except GameWithAreasError.UserNotInvitedError:
@@ -557,15 +548,10 @@ class _TrialMinigameTrivialInherited(_GameWithAreas):
 
         """
 
-        if self.is_unmanaged():
-            raise TrialMinigameError.GameIsUnmanagedError
-
         try:
             super().unchecked_add_leader(user)
         except GameWithAreasError.GameIsUnmanagedError:
-            # Should not have made it here as we already asserted the trial minigame is not
-            # unmmanaged
-            raise RuntimeError(self, user)
+            raise TrialMinigameError.GameIsUnmanagedError
         except GameWithAreasError.UserNotPlayerError:
             raise TrialMinigameError.UserNotPlayerError
         except GameWithAreasError.UserAlreadyLeaderError:
@@ -618,13 +604,10 @@ class _TrialMinigameTrivialInherited(_GameWithAreas):
 
         """
 
-        if self.is_unmanaged():
-            raise TrialMinigameError.GameIsUnmanagedError
-
         try:
             super().unchecked_remove_leader(user)
         except GameWithAreasError.GameIsUnmanagedError:
-            raise RuntimeError(self, user)
+            raise TrialMinigameError.GameIsUnmanagedError
         except GameWithAreasError.UserNotPlayerError:
             raise TrialMinigameError.UserNotPlayerError
         except GameWithAreasError.UserNotLeaderError:
@@ -804,9 +787,6 @@ class _TrialMinigameTrivialInherited(_GameWithAreas):
 
         """
 
-        if self.is_unmanaged():
-            raise TrialMinigameError.GameIsUnmanagedError
-
         try:
             return super().unchecked_new_timer(
                 timer_type=timer_type,
@@ -818,7 +798,7 @@ class _TrialMinigameTrivialInherited(_GameWithAreas):
                 auto_destroy=auto_destroy,
             )
         except GameWithAreasError.GameIsUnmanagedError:
-            raise RuntimeError(self)
+            raise TrialMinigameError.GameIsUnmanagedError
         except GameWithAreasError.GameTooManyTimersError:
             raise TrialMinigameError.GameTooManyTimersError
 
@@ -876,13 +856,10 @@ class _TrialMinigameTrivialInherited(_GameWithAreas):
 
         """
 
-        if self.is_unmanaged():
-            raise TrialMinigameError.GameIsUnmanagedError
-
         try:
             return super().unchecked_delete_timer(timer)
         except GameWithAreasError.GameIsUnmanagedError:
-            raise RuntimeError(self)
+            raise TrialMinigameError.GameIsUnmanagedError
         except GameWithAreasError.GameDoesNotManageTimerError:
             raise TrialMinigameError.GameDoesNotManageTimerError
 
@@ -1066,9 +1043,6 @@ class _TrialMinigameTrivialInherited(_GameWithAreas):
 
         """
 
-        if self.is_unmanaged():
-            raise TrialMinigameError.GameIsUnmanagedError
-
         try:
             return super().unchecked_new_team(
                 team_type=team_type,
@@ -1079,7 +1053,7 @@ class _TrialMinigameTrivialInherited(_GameWithAreas):
                 require_leaders=require_leaders,
             )
         except GameWithAreasError.GameIsUnmanagedError:
-            raise RuntimeError(self)
+            raise TrialMinigameError.GameIsUnmanagedError
         except GameWithAreasError.GameTooManyTeamsError:
             raise TrialMinigameError.GameTooManyTeamsError
         except GameWithAreasError.UserInAnotherTeamError:
@@ -1139,13 +1113,10 @@ class _TrialMinigameTrivialInherited(_GameWithAreas):
 
         """
 
-        if self.is_unmanaged():
-            raise TrialMinigameError.GameIsUnmanagedError
-
         try:
             return super().unchecked_delete_team(team)
         except GameWithAreasError.GameIsUnmanagedError:
-            raise RuntimeError(self)
+            raise TrialMinigameError.GameIsUnmanagedError
         except GameWithAreasError.GameDoesNotManageTeamError:
             raise TrialMinigameError.GameDoesNotManageTeamError
 
@@ -1408,12 +1379,10 @@ class _TrialMinigameTrivialInherited(_GameWithAreas):
 
         """
 
-        if self.is_unmanaged():
-            raise TrialMinigameError.GameIsUnmanagedError
         try:
             super().unchecked_remove_area(area)
         except GameWithAreasError.GameIsUnmanagedError:
-            raise RuntimeError(self)
+            raise TrialMinigameError.GameIsUnmanagedError
         except GameWithAreasError.AreaNotInGameError:
             raise TrialMinigameError.AreaNotInGameError
 
@@ -1925,10 +1894,10 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
 
         """
 
-        if not self._trial.is_player(user):
-            raise TrialMinigameError.UserNotPlayerError
         if self.is_unmanaged():
             raise TrialMinigameError.GameIsUnmanagedError
+        if not self._trial.is_player(user):
+            raise TrialMinigameError.UserNotPlayerError
 
         try:
             super().unchecked_add_player(user)
@@ -1958,11 +1927,11 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
 
         Raises
         ------
-        TrialMinigameError.AreaNotInGameError
-            If the area is not part of the trial of the trial minigame.
         TrialMinigameError.GameIsUnmanagedError
             If the trial minigame was scheduled for deletion and thus does not accept any mutator
             public method calls.
+        TrialMinigameError.AreaNotInGameError
+            If the area is not part of the trial of the trial minigame.
         TrialMinigameError.AreaAlreadyInGameError
             If the area is already part of the trial minigame.
         TrialMinigameError.AreaHitGameConcurrentLimitError.

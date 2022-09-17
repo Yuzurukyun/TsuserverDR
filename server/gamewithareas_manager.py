@@ -216,15 +216,10 @@ class _GameWithAreasTrivialInherited(_Game):
             If the user to remove is already not a player of this game with areas.
 
         """
-
-        if self.is_unmanaged():
-           raise GameWithAreasError.GameIsUnmanagedError
-
         try:
             super().unchecked_remove_player(user)
         except GameError.GameIsUnmanagedError:
-            # Should not have made it here as we already asserted the game is not unmmanaged
-            raise RuntimeError(self, user)
+            raise GameWithAreasError.GameIsUnmanagedError
         except GameError.UserNotPlayerError:
             raise GameWithAreasError.UserNotPlayerError
 
@@ -340,14 +335,10 @@ class _GameWithAreasTrivialInherited(_Game):
 
         """
 
-        if self.is_unmanaged():
-            raise GameWithAreasError.GameIsUnmanagedError
-
         try:
             super().unchecked_add_invitation(user)
         except GameError.GameIsUnmanagedError:
-            # Should not have made it here as we already asserted the game is not unmmanaged
-            raise RuntimeError(self, user)
+            raise GameWithAreasError.GameIsUnmanagedError
         except GameError.GameDoesNotTakeInvitationsError:
             raise GameWithAreasError.GameDoesNotTakeInvitationsError
         except GameError.UserAlreadyInvitedError:
@@ -402,14 +393,10 @@ class _GameWithAreasTrivialInherited(_Game):
 
         """
 
-        if self.is_unmanaged():
-            raise GameWithAreasError.GameIsUnmanagedError
-
         try:
             super().unchecked_remove_invitation(user)
         except GameError.GameIsUnmanagedError:
-            # Should not have made it here as we already asserted the game is not unmmanaged
-            raise RuntimeError(self, user)
+            raise GameWithAreasError.GameIsUnmanagedError
         except GameError.GameDoesNotTakeInvitationsError:
             raise GameWithAreasError.GameDoesNotTakeInvitationsError
         except GameError.UserNotInvitedError:
@@ -548,15 +535,10 @@ class _GameWithAreasTrivialInherited(_Game):
 
         """
 
-        if self.is_unmanaged():
-            raise GameWithAreasError.GameIsUnmanagedError
-
         try:
             super().unchecked_add_leader(user)
         except GameError.GameIsUnmanagedError:
-            # Should not have made it here as we already asserted the game with areas is not
-            # unmmanaged
-            raise RuntimeError(self, user)
+            raise GameWithAreasError.GameIsUnmanagedError
         except GameError.UserNotPlayerError:
             raise GameWithAreasError.UserNotPlayerError
         except GameError.UserAlreadyLeaderError:
@@ -609,14 +591,10 @@ class _GameWithAreasTrivialInherited(_Game):
 
         """
 
-        if self.is_unmanaged():
-            raise GameWithAreasError.GameIsUnmanagedError
-
         try:
             super().unchecked_remove_leader(user)
         except GameError.GameIsUnmanagedError:
-            # Should not have made it here as we already asserted the game is not unmmanaged
-            raise RuntimeError(self, user)
+            raise GameWithAreasError.GameIsUnmanagedError
         except GameError.UserNotPlayerError:
             raise GameWithAreasError.UserNotPlayerError
         except GameError.UserNotLeaderError:
@@ -796,9 +774,6 @@ class _GameWithAreasTrivialInherited(_Game):
 
         """
 
-        if self.is_unmanaged():
-            raise GameError.GameIsUnmanagedError
-
         try:
             return super().unchecked_new_timer(
                 timer_type=timer_type,
@@ -810,7 +785,7 @@ class _GameWithAreasTrivialInherited(_Game):
                 auto_destroy=auto_destroy,
             )
         except GameError.GameIsUnmanagedError:
-            raise RuntimeError(self)
+            raise GameWithAreasError.GameIsUnmanagedError
         except GameError.GameTooManyTimersError:
             raise GameWithAreasError.GameTooManyTimersError
 
@@ -868,13 +843,10 @@ class _GameWithAreasTrivialInherited(_Game):
 
         """
 
-        if self.is_unmanaged():
-            raise GameWithAreasError.GameIsUnmanagedError
-
         try:
             return super().unchecked_delete_timer(timer)
         except GameError.GameIsUnmanagedError:
-            raise RuntimeError(self)
+            raise GameWithAreasError.GameIsUnmanagedError
         except GameError.GameDoesNotManageTimerError:
             raise GameWithAreasError.GameDoesNotManageTimerError
 
@@ -1058,9 +1030,6 @@ class _GameWithAreasTrivialInherited(_Game):
 
         """
 
-        if self.is_unmanaged():
-            raise GameWithAreasError.GameIsUnmanagedError
-
         try:
             return super().unchecked_new_team(
                 team_type=team_type,
@@ -1071,7 +1040,7 @@ class _GameWithAreasTrivialInherited(_Game):
                 require_leaders=require_leaders,
             )
         except GameError.GameIsUnmanagedError:
-            raise RuntimeError(self)
+            raise GameWithAreasError.GameIsUnmanagedError
         except GameError.GameTooManyTeamsError:
             raise GameWithAreasError.GameTooManyTeamsError
         except GameError.UserInAnotherTeamError:
@@ -1131,13 +1100,10 @@ class _GameWithAreasTrivialInherited(_Game):
 
         """
 
-        if self.is_unmanaged():
-            raise GameWithAreasError.GameIsUnmanagedError
-
         try:
             return super().unchecked_delete_team(team)
         except GameError.GameIsUnmanagedError:
-            raise RuntimeError(self)
+            raise GameWithAreasError.GameIsUnmanagedError
         except GameError.GameDoesNotManageTeamError:
             raise GameWithAreasError.GameDoesNotManageTeamError
 

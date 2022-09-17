@@ -324,13 +324,10 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
 
         """
 
-        if self.is_unmanaged():
-            raise NonStopDebateError.GameIsUnmanagedError
-
         try:
             super().unchecked_add_invitation(user)
         except TrialMinigameError.GameIsUnmanagedError:
-            raise RuntimeError(self, user)
+            raise NonStopDebateError.GameIsUnmanagedError
         except TrialMinigameError.GameDoesNotTakeInvitationsError:
             raise NonStopDebateError.GameDoesNotTakeInvitationsError
         except TrialMinigameError.UserAlreadyInvitedError:
@@ -385,13 +382,10 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
 
         """
 
-        if self.is_unmanaged():
-            raise NonStopDebateError.GameIsUnmanagedError
-
         try:
             super().unchecked_remove_invitation(user)
         except TrialMinigameError.GameIsUnmanagedError:
-            raise RuntimeError(self, user)
+            raise NonStopDebateError.GameIsUnmanagedError
         except TrialMinigameError.GameDoesNotTakeInvitationsError:
             raise NonStopDebateError.GameDoesNotTakeInvitationsError
         except TrialMinigameError.UserNotInvitedError:
@@ -530,15 +524,10 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
 
         """
 
-        if self.is_unmanaged():
-            raise NonStopDebateError.GameIsUnmanagedError
-
         try:
             super().unchecked_add_leader(user)
         except TrialMinigameError.GameIsUnmanagedError:
-            # Should not have made it here as we already asserted the nonstop debate is not
-            # unmmanaged
-            raise RuntimeError(self, user)
+            raise NonStopDebateError.GameIsUnmanagedError
         except TrialMinigameError.UserNotPlayerError:
             raise NonStopDebateError.UserNotPlayerError
         except TrialMinigameError.UserAlreadyLeaderError:
@@ -591,13 +580,10 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
 
         """
 
-        if self.is_unmanaged():
-            raise NonStopDebateError.GameIsUnmanagedError
-
         try:
             super().unchecked_remove_leader(user)
         except TrialMinigameError.GameIsUnmanagedError:
-            raise RuntimeError(self, user)
+            raise NonStopDebateError.GameIsUnmanagedError
         except TrialMinigameError.UserNotPlayerError:
             raise NonStopDebateError.UserNotPlayerError
         except TrialMinigameError.UserNotLeaderError:
@@ -777,9 +763,6 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
 
         """
 
-        if self.is_unmanaged():
-            raise TrialMinigameError.GameIsUnmanagedError
-
         try:
             return super().unchecked_new_timer(
                 timer_type=timer_type,
@@ -791,7 +774,7 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
                 auto_destroy=auto_destroy,
             )
         except TrialMinigameError.GameIsUnmanagedError:
-            raise RuntimeError(self)
+            raise NonStopDebateError.GameIsUnmanagedError
         except TrialMinigameError.GameTooManyTimersError:
             raise NonStopDebateError.GameTooManyTimersError
 
@@ -849,13 +832,10 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
 
         """
 
-        if self.is_unmanaged():
-            raise NonStopDebateError.GameIsUnmanagedError
-
         try:
             return super().unchecked_delete_timer(timer)
         except TrialMinigameError.GameIsUnmanagedError:
-            raise RuntimeError(self)
+            raise NonStopDebateError.GameIsUnmanagedError
         except TrialMinigameError.GameDoesNotManageTimerError:
             raise NonStopDebateError.GameDoesNotManageTimerError
 
@@ -1039,9 +1019,6 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
 
         """
 
-        if self.is_unmanaged():
-            raise NonStopDebateError.GameIsUnmanagedError
-
         try:
             return super().unchecked_new_team(
                 team_type=team_type,
@@ -1052,7 +1029,7 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
                 require_leaders=require_leaders,
             )
         except TrialMinigameError.GameIsUnmanagedError:
-            raise RuntimeError(self)
+            raise NonStopDebateError.GameIsUnmanagedError
         except TrialMinigameError.GameTooManyTeamsError:
             raise NonStopDebateError.GameTooManyTeamsError
         except TrialMinigameError.UserInAnotherTeamError:
@@ -1112,13 +1089,10 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
 
         """
 
-        if self.is_unmanaged():
-            raise NonStopDebateError.GameIsUnmanagedError
-
         try:
             return super().unchecked_delete_team(team)
         except TrialMinigameError.GameIsUnmanagedError:
-            raise RuntimeError(self)
+            raise NonStopDebateError.GameIsUnmanagedError
         except TrialMinigameError.GameDoesNotManageTeamError:
             raise NonStopDebateError.GameDoesNotManageTeamError
 
@@ -1343,11 +1317,11 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
 
         Raises
         ------
-        NonStopDebateError.AreaNotInGameError
-            If the area is not part of the trial of the nonstop debate.
         NonStopDebateError.GameIsUnmanagedError
             If the nonstop debate was scheduled for deletion and thus does not accept any mutator
             public method calls.
+        NonStopDebateError.AreaNotInGameError
+            If the area is not part of the trial of the nonstop debate.
         NonStopDebateError.AreaAlreadyInGameError
             If the area is already part of the nonstop debate.
         NonStopDebateError.AreaHitGameConcurrentLimitError.
@@ -1357,15 +1331,12 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
 
         """
 
-        if self.is_unmanaged():
-            raise NonStopDebateError.GameIsUnmanagedError
-
         try:
             super().unchecked_add_area(area)
         except TrialMinigameError.AreaNotInGameError:
             raise NonStopDebateError.AreaNotInGameError
         except TrialMinigameError.GameIsUnmanagedError:
-            raise RuntimeError(self)
+            raise NonStopDebateError.GameIsUnmanagedError
         except TrialMinigameError.AreaAlreadyInGameError:
             raise NonStopDebateError.AreaAlreadyInGameError
         except TrialMinigameError.AreaHitGameConcurrentLimitError:
@@ -1422,12 +1393,10 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
 
         """
 
-        if self.is_unmanaged():
-            raise TrialMinigameError.GameIsUnmanagedError
         try:
             super().unchecked_remove_area(area)
         except TrialMinigameError.GameIsUnmanagedError:
-            raise RuntimeError(self)
+            raise NonStopDebateError.GameIsUnmanagedError
         except TrialMinigameError.AreaNotInGameError:
             raise NonStopDebateError.AreaNotInGameError
 
@@ -1871,13 +1840,10 @@ class NonStopDebate(_NonStopDebateTrivialInherited):
 
         """
 
-        if self.is_unmanaged():
-            raise NonStopDebateError.GameIsUnmanagedError
-
         try:
             super().unchecked_add_player(user)
         except TrialMinigameError.GameIsUnmanagedError:
-            raise RuntimeError(self)
+            raise NonStopDebateError.GameIsUnmanagedError
         except TrialMinigameError.UserNotPlayerError:
             raise NonStopDebateError.UserNotPlayerError
         except TrialMinigameError.UserNotInAreaError:
@@ -1919,13 +1885,10 @@ class NonStopDebate(_NonStopDebateTrivialInherited):
 
         """
 
-        if self.is_unmanaged():
-            raise NonStopDebateError.GameIsUnmanagedError
-
         try:
             super().unchecked_remove_player(user)
         except TrialMinigameError.GameIsUnmanagedError:
-            raise RuntimeError(self, user)
+            raise NonStopDebateError.GameIsUnmanagedError
         except TrialMinigameError.UserNotPlayerError:
             raise NonStopDebateError.UserNotPlayerError
 
