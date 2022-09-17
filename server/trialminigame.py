@@ -1334,10 +1334,10 @@ class _TrialMinigameTrivialInherited(_GameWithAreas):
 
         Raises
         ------
-        GameWithAreasError.GameIsUnmanagedError
+        TrialMinigameError.GameIsUnmanagedError
             If the trial minigame was scheduled for deletion and thus does not accept any mutator
             public method calls.
-        GameWithAreasError.AreaNotInGameError
+        TrialMinigameError.AreaNotInGameError
             If the area is already not part of the trial minigame.
 
         """
@@ -1681,6 +1681,7 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
     """
     A trial minigame is a game with areas that is part of a trial. Any players of the trial minigame
     must be players of the trial, and any areas of the trial minigame must be areas of the trial.
+
     Each of these trial minigames may also set an autoadd on trial adding player flag. If set, if
     the parent trial adds a player, they will also be added to the trial minigame if possible; if
     this fails, no action is taken and no errors are propagated.
@@ -1794,19 +1795,14 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
             another trial minigame managed by `manager` while being an area of this trial).
         autoadd_on_client_enter : bool, optional
             If True, nonplayer users that enter an area part of the trial minigame will be
-            automatically added if permitted by the conditions of the game. If False, no such
-            adding will take place. Defaults to False.
+            automatically added if permitted by the conditions of the trial minigame. If False, no
+            such adding will take place. Defaults to False.
         trial : TrialManager.Trial, optional
             Trial the trial minigame is a part of.
         autoadd_on_trial_player_add : bool, optional
             If True, players that are added to the trial minigame will be automatically added if
             permitted by the conditions of the trial minigame. If False, no such adding will take
             place. Defaults to False.
-
-        Raises
-        ------
-        GameError.ManagerTooManyGamesError
-            If the manager is already managing its maximum number of trial minigames.
 
         """
 
@@ -1830,13 +1826,13 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
 
     def get_name(self) -> str:
         """
-        Return the name of the game. Names are fully lowercase.
+        Return the name of the trial minigame. Names are fully lowercase.
         Implementations of the class should replace this with a human readable name of the trial.
 
         Returns
         -------
         str
-            Name of the game.
+            Name of the trial minigame.
 
         """
 
@@ -1852,7 +1848,7 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
         Parameters
         ----------
         user : ClientManager.Client
-            User to add to the game. They must be in an area part of the game.
+            User to add to the trial minigame. They must be in an area part of the trial minigame.
 
         Raises
         ------
@@ -1924,7 +1920,7 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
         TrialMinigameError.AreaHitGameConcurrentLimitError.
             If `area` has reached the concurrent area membership limit of any of the games it
             belongs to managed by this manager, or by virtue of adding this area it will violate
-            this game's concurrent area membership limit.
+            this trial minigame's concurrent area membership limit.
 
         """
 

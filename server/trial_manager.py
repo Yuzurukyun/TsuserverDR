@@ -1744,10 +1744,6 @@ class _Trial(_TrialTrivialInherited):
         minigame_limit : Union[int, None], optional
             If an int, it is the maximum number of minigames the trial may have simultaneously.
             If None, it indicates the trial has no minigame limit. Defaults to 1.
-        playergroup_manager : PlayerGroupManager, optional
-            The internal playergroup manager of the trial manager. Access to this value is
-            limited exclusively to this __init__, and is only to initialize the internal
-            player group of the trial.
 
         """
 

@@ -1424,11 +1424,14 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
     Any player of such a game with areas must be in an area of the game with areas. If a player of
     the game with areas goes to an area not part of the game with areas, they are removed
     automatically from the game with areas.
+
     If an area is removed from the set of areas of the game with areas, all players in that area
     are removed in some unspecified order.
+
     Each of these games with areas may also impose a concurrent area membership limit, so that
     every area part of a game with areas is at most an area of that many games with areas managed
     by this games's manager.
+
     Each of these games with areas may also set an autoadd on client enter flag. If set, nonplayer
     clients who enter an area part of the game with areas will be added to the game with areas if
     possible; if this fails, no action is taken and no errors are propagated.
@@ -1667,7 +1670,8 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
         GameWithAreasError.UserHitGameConcurrentLimitError
             If the player has reached the concurrent player membership of any of the game with areas
             managed by the manager of this game with areas, or by virtue of joining this
-            game with areas they would violate this game with areas's concurrent player membership limit.
+            game with areas they would violate this game with areas's concurrent player membership
+            limit.
         GameWithAreasError.GameIsFullError
             If the game with areas reached its player limit.
 
