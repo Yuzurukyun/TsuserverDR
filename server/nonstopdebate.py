@@ -1620,7 +1620,7 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
 
         """
 
-        super()._on_trial_player_added()
+        super()._on_trial_player_added(trial, player=player)
 
 
 class _NonStopDebate(_NonStopDebateTrivialInherited):

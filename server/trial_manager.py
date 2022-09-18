@@ -3518,7 +3518,7 @@ class _TrialManagerTrivialInherited(GameWithAreasManager):
 
         return super().get_managees_of_user(user)
 
-    def get_managees_of_players(self) -> Dict[ClientManager.Client, Set[_Trial]]:
+    def get_player_to_managees_map(self) -> Dict[ClientManager.Client, Set[_Trial]]:
         """
         Return a mapping of the players part of any trial managed by this manager to the
         trial managed by this manager such players belong to.
@@ -3529,7 +3529,7 @@ class _TrialManagerTrivialInherited(GameWithAreasManager):
             Mapping.
         """
 
-        return super().get_managees_of_players()
+        return super().get_player_to_managees_map()
 
     def get_users_in_some_managee(self) -> Set[ClientManager.Client]:
         """
@@ -3602,7 +3602,7 @@ class _TrialManagerTrivialInherited(GameWithAreasManager):
 
         return super().find_area_concurrent_limiting_managee(area)
 
-    def get_managees_in_areas(self) -> Dict[ClientManager.Client, Set[_Trial]]:
+    def get_areas_to_managees_map(self) -> Dict[ClientManager.Client, Set[_Trial]]:
         """
         Return a mapping of the areas part of any trial managed by this manager to the
         trial managed by this manager such players belong to.
@@ -3613,7 +3613,7 @@ class _TrialManagerTrivialInherited(GameWithAreasManager):
             Mapping.
         """
 
-        return super().get_managees_in_areas()
+        return super().get_areas_to_managees_map()
 
     def get_id(self) -> str:
         """
@@ -3902,7 +3902,7 @@ class TrialManager(_TrialManagerTrivialInherited):
                 f"default_managee_type={self.get_managee_type()}, "
                 f"|| "
                 f"_id_to_managee={self.get_managee_ids_to_managees()}, "
-                f"_user_to_managees={self.get_managees_of_players()}, "
-                f"_area_to_managees={self.get_managees_in_areas()}, "
+                f"_user_to_managees={self.get_player_to_managees_map()}, "
+                f"_area_to_managees={self.get_areas_to_managees_map()}, "
                 f"id={self.get_id()}), "
                 f')')

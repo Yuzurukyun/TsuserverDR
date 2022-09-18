@@ -1682,7 +1682,7 @@ class _TrialMinigameTrivialInherited(_GameWithAreas):
 
         """
 
-        super()._on_areas_loaded()
+        super()._on_areas_loaded(area_manager)
 
 class _TrialMinigame(_TrialMinigameTrivialInherited):
     """

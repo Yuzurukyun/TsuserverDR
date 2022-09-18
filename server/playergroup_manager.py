@@ -1501,14 +1501,14 @@ class PlayerGroupManager:
 
         """
 
-        users_to_managees = self.get_managees_of_players()
+        users_to_managees = self.get_player_to_managees_map()
 
         try:
             return users_to_managees[user].copy()
         except KeyError:
             return set()
 
-    def get_managees_of_players(self) -> Dict[ClientManager.Client, Set[_PlayerGroup]]:
+    def get_player_to_managees_map(self) -> Dict[ClientManager.Client, Set[_PlayerGroup]]:
         """
         Return a mapping of the players part of any player group managed by this manager to the
         player groups managed by this manager such players belong to.
@@ -1540,7 +1540,7 @@ class PlayerGroupManager:
 
         """
 
-        return set(self.get_managees_of_players().keys())
+        return set(self.get_player_to_managees_map().keys())
 
     def is_managee_creatable(self) -> bool:
         """
@@ -1686,7 +1686,7 @@ class PlayerGroupManager:
                 assert playergroup1.get_id() != playergroup2.get_id(), err
 
         # 4.
-        user_to_groups = self.get_managees_of_players()
+        user_to_groups = self.get_player_to_managees_map()
         for (user, playergroups) in user_to_groups.items():
             membership = len(playergroups)
 
@@ -1720,7 +1720,7 @@ class PlayerGroupManager:
         return (f"PlayerGroupManager(server, managee_limit={self.get_managee_limit()}, "
                 f"default_managee_type={self.get_managee_type()}, "
                 f"|| "
-                f"_user_to_managees={self.get_managees_of_players()}, "
+                f"_user_to_managees={self.get_player_to_managees_map()}, "
                 f"_id_to_managee={self.get_managee_ids_to_managees()}, "
                 f"id={self.get_id()}, "
                 f')')

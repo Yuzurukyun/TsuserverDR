@@ -2253,7 +2253,7 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
 
         return super().get_managees_of_user(user)
 
-    def get_managees_of_players(self) -> Dict[ClientManager.Client, Set[_Game]]:
+    def get_player_to_managees_map(self) -> Dict[ClientManager.Client, Set[_Game]]:
         """
         Return a mapping of the players part of any game managed by this manager to the
         game managed by this manager such players belong to.
@@ -2264,7 +2264,7 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
             Mapping.
         """
 
-        return super().get_managees_of_players()
+        return super().get_player_to_managees_map()
 
     def get_users_in_some_managee(self) -> Set[ClientManager.Client]:
         """
@@ -2397,7 +2397,7 @@ class GameManager(_GameManagerTrivialInherited):
         return (f"GameManager(server, managee_limit={self.get_managee_limit()}, "
                 f"default_managee_type={self.get_managee_type()}, "
                 f"|| "
-                f"_user_to_managees={self.get_managees_of_players()}, "
+                f"_user_to_managees={self.get_player_to_managees_map()}, "
                 f"_id_to_managee={self.get_managee_ids_to_managees()}, "
                 f"id={self.get_id()}), ",
                 f')')

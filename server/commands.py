@@ -5187,7 +5187,7 @@ def ooc_cmd_nsd_kick(client: ClientManager.Client, arg: str):
 
     try:
         nsd.remove_player(target)
-    except TrialError.UserNotPlayerError:
+    except NonStopDebateError.UserNotPlayerError:
         raise ClientError('This player is not part of your nonstop debate.')
 
     client.send_ooc(f'You have kicked {target.displayname} [{target.id}] off your nonstop debate.')

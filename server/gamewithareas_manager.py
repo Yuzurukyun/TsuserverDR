@@ -2452,7 +2452,7 @@ class _GameWithAreasManagerTrivialInherited(GameManager):
 
         return super().get_managees_of_user(user)
 
-    def get_managees_of_players(self) -> Dict[ClientManager.Client, Set[_GameWithAreas]]:
+    def get_player_to_managees_map(self) -> Dict[ClientManager.Client, Set[_GameWithAreas]]:
         """
         Return a mapping of the players part of any game with areas managed by this manager to the
         game with areas managed by this manager such players belong to.
@@ -2463,7 +2463,7 @@ class _GameWithAreasManagerTrivialInherited(GameManager):
             Mapping.
         """
 
-        return super().get_managees_of_players()
+        return super().get_player_to_managees_map()
 
     def get_users_in_some_managee(self) -> Set[ClientManager.Client]:
         """
@@ -2544,7 +2544,7 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
     # Invariants
     # ----------
     # 1. For every area and game with areas pair (`area`, `games`) in
-    #    `self.get_managees_in_areas().items()`:
+    #    `self.get_areas_to_managees_map().items()`:
     #     a. For every game with area `game` in `games`:
     #           1. `game` has no area concurrent membership limit, or it is at least the length
     #               of `games`.
@@ -2772,7 +2772,7 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
 
         """
 
-        areas_to_managees = self.get_managees_in_areas()
+        areas_to_managees = self.get_areas_to_managees_map()
         try:
             return areas_to_managees[area].copy()
         except KeyError:
@@ -2822,7 +2822,7 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
             return None
         return most_restrictive_game
 
-    def get_managees_in_areas(self) -> Dict[ClientManager.Client, Set[_GameWithAreas]]:
+    def get_areas_to_managees_map(self) -> Dict[ClientManager.Client, Set[_GameWithAreas]]:
         """
         Return a mapping of the areas part of any game with areas managed by this manager to the
         game with areas managed by this manager such players belong to.
@@ -2854,7 +2854,7 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
         """
 
         # 1.
-        area_to_games = self.get_managees_in_areas()
+        area_to_games = self.get_areas_to_managees_map()
         for (area, games) in area_to_games.items():
             membership = len(games)
 
@@ -2888,7 +2888,7 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
                 f"default_managee_type={self.get_managee_type()}, "
                 f"|| "
                 f"_id_to_managee={self.get_managee_ids_to_managees()}, "
-                f"_user_to_managees={self.get_managees_of_players()}, "
-                f"_area_to_managees={self.get_managees_in_areas()}, "
+                f"_user_to_managees={self.get_player_to_managees_map()}, "
+                f"_area_to_managees={self.get_areas_to_managees_map()}, "
                 f"id={self.get_id()}, "
                 f')')
