@@ -899,7 +899,7 @@ class TimerManager():
         return hex(id(self))
 
     def new_timer(self, timer_type=None, start_value=None, tick_rate=1,
-                  min_value=None, max_value=None, auto_restart=False, auto_destroy=True):
+                  min_value=None, max_value=None, auto_restart=False, auto_destroy=True) -> Timer:
         """
         Create a new timer with given parameters managed by this manager.
 
