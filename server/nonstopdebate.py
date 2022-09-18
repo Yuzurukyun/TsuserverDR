@@ -161,6 +161,8 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
         NonStopDebateError.GameIsUnmanagedError
             If the nonstop debate was scheduled for deletion and thus does not accept any mutator
             public method calls.
+        NonStopDebateError.UserNotPlayerError
+            If the user is not a player of the trial.
         NonStopDebateError.UserNotInAreaError
             If the user is not in an area part of the nonstop debate.
         NonStopDebateError.UserHasNoCharacterError
@@ -1820,6 +1822,8 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
         NonStopDebateError.GameIsUnmanagedError
             If the nonstop debate was scheduled for deletion and thus does not accept any mutator
             public method calls.
+        NonStopDebateError.UserNotPlayerError
+            If the user is not a player of the trial.
         NonStopDebateError.UserNotInAreaError
             If the user is not in an area part of the nonstop debate.
         NonStopDebateError.UserHasNoCharacterError
@@ -1848,6 +1852,8 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
             raise NonStopDebateError.UserNotPlayerError
         except TrialMinigameError.UserNotInAreaError:
             raise NonStopDebateError.UserNotInAreaError
+        except TrialMinigameError.UserHasNoCharacterError:
+            raise NonStopDebateError.UserHasNoCharacterError
         except TrialMinigameError.UserNotInvitedError:
             raise NonStopDebateError.UserNotInvitedError
         except TrialMinigameError.UserAlreadyPlayerError:
@@ -2659,7 +2665,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
         self,
         area: AreaManager.Area,
         client: ClientManager.Client = None,
-        old_area: AreaManager.Area = None,
+        old_area: Union[AreaManager.Area, None] = None,
         old_displayname: str = None,
         ignore_bleeding: bool = False,
         ignore_autopass: bool = False
@@ -2674,7 +2680,8 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
         client : ClientManager.Client, optional
             The client that has entered. The default is None.
         old_area : AreaManager.Area
-            The old area the client has come from. The default is None.
+            The old area the client has come from (possibly None for a newly connected user). The
+            default is None.
         old_displayname : str, optional
             The old displayed name of the client before they changed area. This will typically
             change only if the client's character or showname are taken. The default is None.
@@ -2693,10 +2700,11 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
             return
 
         if client not in self.get_players():
+            old_area_id = str(old_area.id) if old_area else "SERVER_SELECT"
             client.send_ooc(f'You have entered an area part of NSD `{self.get_id()}`.')
             client.send_ooc_others(f'(X) Non-player {client.displayname} [{client.id}] has entered '
                                    f'an area part of your NSD '
-                                   f'({old_area.id}->{area.id}).',
+                                   f'({old_area_id}->{area.id}).',
                                    pred=lambda c: c in self.get_leaders())
             if not self.get_trial().is_player(client):
                 if client.is_staff():

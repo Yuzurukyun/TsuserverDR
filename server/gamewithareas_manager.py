@@ -1655,6 +1655,8 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
             super().unchecked_add_player(user)
         except GameError.GameIsUnmanagedError:
             raise RuntimeError(self)
+        except GameError.UserHasNoCharacterError:
+            raise GameWithAreasError.UserHasNoCharacterError
         except GameError.UserNotInvitedError:
             raise GameWithAreasError.UserNotInvitedError
         except GameError.UserAlreadyPlayerError:
@@ -1719,15 +1721,14 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
             raise GameWithAreasError.GameIsUnmanagedError
         if area in self._areas:
             raise GameWithAreasError.AreaAlreadyInGameError
+        if self.manager.find_area_concurrent_limiting_managee(area):
+            raise GameWithAreasError.AreaHitGameConcurrentLimitError
+        games_of_area = self.manager.get_managees_in_area(area)
+        if len(games_of_area) >= self._area_concurrent_limit:
+            raise GameWithAreasError.AreaHitGameConcurrentLimitError
 
         self._areas.add(area)
         self.listener.subscribe(area)
-        try:
-            self.manager._add_area_to_mapping(area, self)
-        except GameWithAreasError.AreaHitGameConcurrentLimitError as ex:
-            self._areas.discard(area)
-            self.listener.unsubscribe(area)
-            raise ex
 
     def remove_area(self, area: AreaManager.Area):
         """
@@ -1796,12 +1797,16 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
         faulty_players = self.get_players(cond=lambda client: client.area == area)
         for player in faulty_players:
             self.unchecked_remove_player(player)
+
         # Remove area only after removing all players to prevent structural checks failing
-        self._areas.discard(area)
-        self.listener.unsubscribe(area)
-        self.manager._remove_area_from_mapping(area, self)
+        self._cleanup_remove_area(area)
+
         if not self._areas:
             self.unchecked_destroy()
+
+    def _cleanup_remove_area(self, area: AreaManager.Area):
+        self._areas.discard(area)
+        self.listener.unsubscribe(area)
 
     def has_area(self, area: AreaManager.Area) -> bool:
         """
@@ -1908,11 +1913,14 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
 
         """
 
+        areas = self.get_areas()
         # Remove areas too. This is done first so that structural checks can take place after
         # areas are removed.
-        for area in self.get_areas():
-            self.unchecked_remove_area(area)
+        # for area in self.get_areas():
+        #    self.unchecked_remove_area(area)
         super().unchecked_destroy()
+        for area in areas:
+            self._cleanup_remove_area(area)
 
     def _on_area_client_left_final(
         self,
@@ -1960,7 +1968,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
         self,
         area: AreaManager.Area,
         client: ClientManager.Client = None,
-        old_area: AreaManager.Area = None,
+        old_area: Union[AreaManager.Area, None] = None,
         old_displayname: str = None,
         ignore_bleeding: bool = False,
         ignore_autopass: bool = False,
@@ -1978,7 +1986,8 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
         client : ClientManager.Client, optional
             The client that has entered. The default is None.
         old_area : AreaManager.Area
-            The old area the client has come from. The default is None.
+            The old area the client has come from (possibly None for a newly connected user). The
+            default is None.
         old_displayname : str, optional
             The old displayed name of the client before they changed area. This will typically
             change only if the client's character or showname are taken. The default is None.
@@ -2346,7 +2355,7 @@ class _GameWithAreasManagerTrivialInherited(GameManager):
 
         return super().manages_managee(game)
 
-    def get_managees(self):
+    def get_managees(self) -> Set[_GameWithAreas]:
         """
         Return (a shallow copy of) the games with areas this manager manages.
 
@@ -2529,26 +2538,17 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
     Attributes
     ----------
     server : TsuserverDR
-        Server the game manager belongs to.
+        Server the game with areas manager belongs to.
     """
-
-    # (Private) Attributes
-    # --------------------
-    # _area_to_games : Dict[AreaManager.Area, Set[_GameWithAreas]]
-    #   Mapping of areas to games with areas that this manager manages.
 
     # Invariants
     # ----------
-    # 1. For every area `area` in `self._area_to_games.keys()`:
-    #     a. `self._area_to_games[area]` is a non-empty set.
-    #     b. `self._area_to_games[area]` is a subset of `self.get_managees()
-    #     c. For every game with areas `game` in `self._area_to_games[area]`, `area` belongs to
-    #        `game`.
-    # 2. For every area `area` in `self._area_to_games.keys()`:
-    #     a. For every game with areas `game` in `self._area_to_games[area]`:
+    # 1. For every area and game with areas pair (`area`, `games`) in
+    #    `self.get_managees_in_areas().items()`:
+    #     a. For every game with area `game` in `games`:
     #           1. `game` has no area concurrent membership limit, or it is at least the length
-    #               of `self._area_to_games[area]`.
-    # 3. The invariants of the parent class are maintained.
+    #               of `games`.
+    # 2. The invariants of the parent class are maintained.
 
     def __init__(
         self,
@@ -2574,7 +2574,6 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
 
         if default_managee_type is None:
             default_managee_type = _GameWithAreas
-        self._area_to_games: Dict[AreaManager.Area, Set[_GameWithAreas]] = dict()
 
         super().__init__(
             server,
@@ -2773,8 +2772,9 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
 
         """
 
+        areas_to_managees = self.get_managees_in_areas()
         try:
-            return self._area_to_games[area].copy()
+            return areas_to_managees[area].copy()
         except KeyError:
             return set()
 
@@ -2822,7 +2822,7 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
             return None
         return most_restrictive_game
 
-    def get_managees_of_areas(self) -> Dict[ClientManager.Client, Set[_GameWithAreas]]:
+    def get_managees_in_areas(self) -> Dict[ClientManager.Client, Set[_GameWithAreas]]:
         """
         Return a mapping of the areas part of any game with areas managed by this manager to the
         game with areas managed by this manager such players belong to.
@@ -2833,67 +2833,14 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
             Mapping.
         """
 
-        # Implementation detail
-        # This is essentially a public view of self._area_to_games
-
         output = dict()
-        for (area, games) in self._area_to_games.items():
-            output[area] = games.copy()
+        for group in self.get_managees():
+            for area in group.get_areas():
+                if area not in output:
+                    output[area] = set()
+                output[area].add(group)
 
         return output
-
-    def _add_area_to_mapping(self, area: AreaManager.Area, game: _GameWithAreas):
-        """
-        Update the area to game with areas mapping with the information that `area` was added to
-        `game`.
-
-        Parameters
-        ----------
-        area : AreaManager.Area
-            Area that was added.
-        game : _GameWithAreas
-            Game with areas that `area` was added to.
-
-        Raises
-        ------
-        GameWithAreasError.AreaHitGameConcurrentLimitError.
-            If `area` has reached the concurrent area membership limit of any of the games with areas it
-            belongs to managed by this manager, or by virtue of adding this area to `game` it
-            will violate this game with area's concurrent area membership limit.
-
-        """
-
-        if self.find_area_concurrent_limiting_managee(area):
-            raise GameWithAreasError.AreaHitGameConcurrentLimitError
-
-        try:
-            self._area_to_games[area].add(game)
-        except KeyError:
-            self._area_to_games[area] = {game}
-
-    def _remove_area_from_mapping(self, area: AreaManager.Area, game: _GameWithAreas):
-        """
-        Update the area to game with areas mapping with the information that `area` was removed
-        from `game`.
-        If the area is already not associated with that game with areas, or is not part of the
-        mapping, this method will not do anything.
-
-        Parameters
-        ----------
-        area : AreaManager.Area
-            Area that was removed.
-        game : _GameWithAreas
-            Game with areas that `area` was removed from.
-
-        """
-
-        try:
-            self._area_to_games[area].remove(game)
-        except (KeyError, ValueError):
-            return
-
-        if not self._area_to_games[area]:
-            self._area_to_games.pop(area)
 
     def _check_structure(self):
         """
@@ -2907,33 +2854,8 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
         """
 
         # 1.
-        for area in self._area_to_games:
-            games = self._area_to_games[area]
-
-            # a.
-            err = (f'For game with areas manager {self}, expected that area {area} to only appear '
-                   f'in the area to game with areas mapping if it was a area of any game with '
-                   f'areas managed by this manager, but found it appeared while not belonging to '
-                   f'any game with areas. || {self}')
-            assert games, err
-
-            for game in games:
-                # b.
-                err = (f'For game with areas manager {self}, expected that game with areas {game} '
-                       f'that appears in the area to game with areas mapping for area {area} '
-                       f'also appears in the game with areas ID to game with areas mapping, but '
-                       f'found it did not. || {self}')
-                assert game in self.get_managees(), err
-
-                # c.
-                err = (f'For game with areas manager {self}, expected that area {area} in the area '
-                       f'to game with areas mapping be a area of its associated game with areas '
-                       f'{game}, but found that was not the case. || {self}')
-                assert area in game.get_areas(), err
-
-        # 2.
-        for area in self._area_to_games:
-            games = self._area_to_games[area]
+        area_to_games = self.get_managees_in_areas()
+        for (area, games) in area_to_games.items():
             membership = len(games)
 
             for game in games:
@@ -2967,6 +2889,6 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
                 f"|| "
                 f"_id_to_managee={self.get_managee_ids_to_managees()}, "
                 f"_user_to_managees={self.get_managees_of_players()}, "
-                f"_area_to_managees={self.get_managees_of_areas()}, "
+                f"_area_to_managees={self.get_managees_in_areas()}, "
                 f"id={self.get_id()}, "
                 f')')

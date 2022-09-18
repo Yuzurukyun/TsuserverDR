@@ -1643,18 +1643,16 @@ class _Game(_GameTrivialInherited):
 
         """
 
-        if self._unmanaged:
-            return
-        self._unmanaged = True
-
         for timer in self._timer_manager.get_timers():
             self._timer_manager.delete_timer(timer)
         for team in self._team_manager.get_managees():
             team.unchecked_destroy()
-        for player in self.get_players():
-            self.listener.unsubscribe(player)
 
+        players = self.get_players()
         super().unchecked_destroy()
+
+        for player in players:
+            self.listener.unsubscribe(player)
 
     def _on_client_inbound_ms_check(
         self,
@@ -2158,7 +2156,7 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
 
         return super().manages_managee(game)
 
-    def get_managees(self):
+    def get_managees(self) -> Set[_Game]:
         """
         Return (a shallow copy of) the games this manager manages.
 

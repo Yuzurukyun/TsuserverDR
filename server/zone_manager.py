@@ -689,7 +689,8 @@ class ZoneManager:
             client : ClientManager.Client, optional
                 The client that has entered. The default is None.
             old_area : AreaManager.Area
-                The old area the client has come from. The default is None.
+                The old area the client has come from (possibly None for a newly connected user).
+                The default is None.
             old_displayname : str, optional
                 The old displayed name of the client before they changed area. This will typically
                 change only if the client's character or showname are taken. The default is None.

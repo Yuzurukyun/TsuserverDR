@@ -1868,6 +1868,8 @@ class _Trial(_TrialTrivialInherited):
             raise TrialError.GameIsUnmanagedError
         except GameWithAreasError.UserNotInAreaError:
             raise TrialError.UserNotInAreaError
+        except GameWithAreasError.UserHasNoCharacterError:
+            raise TrialError.UserHasNoCharacterError
         except GameWithAreasError.UserNotInvitedError:
             raise TrialError.UserNotInvitedError
         except GameWithAreasError.UserAlreadyPlayerError:
@@ -2483,25 +2485,28 @@ class _Trial(_TrialTrivialInherited):
 
         areas = {creator.area} if creator else set()
 
-        nsd: _NonStopDebate = self._minigame_manager.new_managee(
-            managee_type=_NonStopDebate,
-            creator=creator,
-            player_limit=player_limit,
-            player_concurrent_limit=1,
-            require_invitations=require_invitations,
-            require_players=require_players,
-            require_leaders=False,
-            require_character=require_character,
-            team_limit=team_limit,
-            timer_limit=timer_limit,
-            areas=areas,
-            area_concurrent_limit=1,
-            autoadd_on_client_enter=False,
-            # kwargs
-            trial=self,
-            autoadd_on_trial_player_add=autoadd_on_trial_player_add,
-            timer_start_value=timer_start_value,
-        )
+        try:
+            nsd: _NonStopDebate = self._minigame_manager.new_managee(
+                managee_type=_NonStopDebate,
+                creator=None,
+                player_limit=player_limit,
+                player_concurrent_limit=1,
+                require_invitations=require_invitations,
+                require_players=require_players,
+                require_leaders=False,
+                require_character=require_character,
+                team_limit=team_limit,
+                timer_limit=timer_limit,
+                areas=areas,
+                area_concurrent_limit=1,
+                autoadd_on_client_enter=False,
+                # kwargs
+                trial=self,
+                autoadd_on_trial_player_add=autoadd_on_trial_player_add,
+                timer_start_value=timer_start_value,
+            )
+        except GameWithAreasError.ManagerTooManyGamesError:
+            raise TrialError.ManagerTooManyGamesError
 
         nsd.setup_timers()
         # Add creator manually. This is because otherwise the creator does not get access to
@@ -2521,7 +2526,7 @@ class _Trial(_TrialTrivialInherited):
             for client in clients_to_add:
                 try:
                     nsd.add_player(client)
-                except GameWithAreasError.UserNotPlayerError:
+                except NonStopDebateError.UserNotPlayerError:
                     continue
 
         # Manually give packets to nonplayers
@@ -2722,6 +2727,9 @@ class _Trial(_TrialTrivialInherited):
 
         super().unchecked_destroy()
 
+        self._player_to_focus = dict()
+        self._player_to_influence = dict()
+
         # Force every user in the former areas of the trial to be dismissed
         for user in users:
             self.dismiss_user(user)
@@ -2822,7 +2830,7 @@ class _Trial(_TrialTrivialInherited):
         self,
         area: AreaManager.Area,
         client: ClientManager.Client = None,
-        old_area: AreaManager.Area = None,
+        old_area: Union[AreaManager.Area, None] = None,
         old_displayname: str = None,
         ignore_bleeding: bool = False,
         ignore_autopass: bool = False,
@@ -2837,7 +2845,8 @@ class _Trial(_TrialTrivialInherited):
         client : ClientManager.Client, optional
             The client that has entered. The default is None.
         old_area : AreaManager.Area
-            The old area the client has come from. The default is None.
+            The old area the client has come from (possibly None for a newly connected user). The
+            default is None.
         old_displayname : str, optional
             The old displayed name of the client before they changed area. This will typically
             change only if the client's character or showname are taken. The default is None.
@@ -2853,9 +2862,10 @@ class _Trial(_TrialTrivialInherited):
         """
 
         if client not in self.get_players() and old_area not in self.get_areas():
+            old_area_id = str(old_area.id) if old_area else "SERVER_SELECT"
             client.send_ooc(f'You have entered an area part of trial `{self.get_id()}`.')
             client.send_ooc_others(f'(X) Non-player {client.displayname} [{client.id}] has entered '
-                                   f'an area part of your trial ({old_area.id}->{area.id}).',
+                                   f'an area part of your trial ({old_area_id}->{area.id}).',
                                    pred=lambda c: c in self.get_leaders())
             if self._require_character and not client.has_character():
                 if client.is_staff():
@@ -3411,14 +3421,14 @@ class _TrialManagerTrivialInherited(GameWithAreasManager):
 
         return super().manages_managee(game)
 
-    def get_managees(self):
+    def get_managees(self) -> Set[_Trial]:
         """
-        Return (a shallow copy of) the games with areas this manager manages.
+        Return (a shallow copy of) the trials this manager manages.
 
         Returns
         -------
         Set[_Trial]
-            Games with areas this manager manages.
+            Trials this manager manages.
 
         """
 
@@ -3465,12 +3475,12 @@ class _TrialManagerTrivialInherited(GameWithAreasManager):
 
     def get_managee_ids(self) -> Set[str]:
         """
-        Return (a shallow copy of) the IDs of all games with areas managed by this manager.
+        Return (a shallow copy of) the IDs of all trials managed by this manager.
 
         Returns
         -------
         Set[str]
-            The IDs of all managed games with areas.
+            The IDs of all managed trials.
 
         """
 
@@ -3478,7 +3488,7 @@ class _TrialManagerTrivialInherited(GameWithAreasManager):
 
     def get_managee_ids_to_managees(self) -> Dict[str, _Trial]:
         """
-        Return a mapping of the IDs of all games with areas managed by this manager to their
+        Return a mapping of the IDs of all trials managed by this manager to their
         associated trial.
 
         Returns
@@ -3491,18 +3501,18 @@ class _TrialManagerTrivialInherited(GameWithAreasManager):
 
     def get_managees_of_user(self, user: ClientManager.Client):
         """
-        Return (a shallow copy of) the games with areas managed by this manager user `user` is a
+        Return (a shallow copy of) the trials managed by this manager user `user` is a
         player of. If the user is part of no such trial, an empty set is returned.
 
         Parameters
         ----------
         user : ClientManager.Client
-            User whose games with areas will be returned.
+            User whose trials will be returned.
 
         Returns
         -------
         Set[_Trial]
-            Games with areas the player belongs to.
+            Trials the player belongs to.
 
         """
 
@@ -3555,7 +3565,7 @@ class _TrialManagerTrivialInherited(GameWithAreasManager):
         Parameters
         ----------
         area : AreaManager.Area
-            Area that all returned games with areas must contain.
+            Area that all returned trials must contain.
 
         Returns
         -------
@@ -3576,7 +3586,7 @@ class _TrialManagerTrivialInherited(GameWithAreasManager):
         they would violate `most_restrictive_game`'s concurrent area membership limit.
         If no such trial exists (or the area is not an area of any trial
         managed by this  manager), return None.
-        If multiple such games with areas exist, any one of them may be returned.
+        If multiple such trials exist, any one of them may be returned.
 
         Parameters
         ----------
@@ -3592,7 +3602,7 @@ class _TrialManagerTrivialInherited(GameWithAreasManager):
 
         return super().find_area_concurrent_limiting_managee(area)
 
-    def get_managees_of_areas(self) -> Dict[ClientManager.Client, Set[_Trial]]:
+    def get_managees_in_areas(self) -> Dict[ClientManager.Client, Set[_Trial]]:
         """
         Return a mapping of the areas part of any trial managed by this manager to the
         trial managed by this manager such players belong to.
@@ -3603,7 +3613,7 @@ class _TrialManagerTrivialInherited(GameWithAreasManager):
             Mapping.
         """
 
-        return super().get_managees_of_areas()
+        return super().get_managees_in_areas()
 
     def get_id(self) -> str:
         """
@@ -3629,7 +3639,7 @@ class _TrialManagerTrivialInherited(GameWithAreasManager):
         violate `most_restrictive_game`'s concurrent player membership limit.
         If no such trial exists (or the player is not member of any trial
         managed by this manager), return None.
-        If multiple such games with areas exist, any one of them may be returned.
+        If multiple such trials exist, any one of them may be returned.
 
         Parameters
         ----------
@@ -3893,6 +3903,6 @@ class TrialManager(_TrialManagerTrivialInherited):
                 f"|| "
                 f"_id_to_managee={self.get_managee_ids_to_managees()}, "
                 f"_user_to_managees={self.get_managees_of_players()}, "
-                f"_area_to_managees={self.get_managees_of_areas()}, "
+                f"_area_to_managees={self.get_managees_in_areas()}, "
                 f"id={self.get_id()}), "
                 f')')

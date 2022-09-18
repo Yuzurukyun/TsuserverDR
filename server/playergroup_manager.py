@@ -354,7 +354,6 @@ class _PlayerGroup:
 
         self._ever_had_players = True
         self._players.add(user)
-        self.manager._add_user_to_mapping(user, self)
 
         if self._require_invitations:
             self._invitations.remove(user)
@@ -417,7 +416,6 @@ class _PlayerGroup:
 
         self._players.remove(user)
         self._leaders.discard(user)
-        self.manager._remove_user_from_mapping(user, self)
 
         # Check updated leadership requirement
         self._choose_leader_if_needed()
@@ -895,10 +893,10 @@ class _PlayerGroup:
             return
         self._unmanaged = True
 
-        try:
+        if self.manager.manages_managee(self):
+            # If manager still recognizes, remove
             self.manager.unchecked_delete_managee(self)
-        except PlayerGroupError.ManagerDoesNotManageGroupError:
-            pass
+            # Don't use errors because exceptions thrown may not be PlayerGroupError
 
         # While only clearing internal variables here means that structural integrity won't be
         # maintained in time for the manager's structural checks, as the manager will no longer
@@ -1092,21 +1090,16 @@ class PlayerGroupManager:
     #    self._managee_limit`.
     # 2. For every player group `(playergroup_id, _PlayerGroup)` in `self._id_to_managee.items()`:
     #     a. `playergroup._playergroup_id == playergroup_id`.
-    #     b. `playergroup._players` is a subset of `self._user_to_managees.keys()`.
-    #     c. `playergroup.is_unmanaged()` is False.
+    #     b. `playergroup.is_unmanaged()` is False.
     # 3. For all pairs of distinct player groups `group1` and `group2` in
     #    `self._id_to_managee.values()`:
     #     a. `group1._playergroup_id != group2._playergroup_id`.
-    # 4. For every player `player` in `self._user_to_managees.keys()`:
-    #     a. `self._user_to_managees[player]` is a non-empty set.
-    #     b. `self._user_to_managees[player]` is a subset of `self._id_to_managee.values()`.
-    #     c. For every player group `group` in `self._user_to_managees[player]`, `player` belongs to
-    #        `group`.
-    # 5. For every player `player` in `self._user_to_managees.keys()`:
-    #     a. For every player group `group` in `self._user_to_managees[player]`:
-    #           1. `group` has no player concurrent membership limit, or it is at least the length
-    #               of `self._user_to_managees[player]`.
-    # 6. Each player group it manages also satisfies its structural invariants.
+    # 4. For every player and player groups pair (`player`, `playergroups`) in
+    #    `self.get_managees_of_user().items()`:
+    #     a. For every player group `playergroup` in `playergroups`:
+    #           1. `playergroup` has no player concurrent membership limit, or it is at least the
+    #               length of `playergroups`.
+    # 5. Each player group it manages also satisfies its structural invariants.
 
     def __init__(
         self,
@@ -1139,7 +1132,6 @@ class PlayerGroupManager:
         self._default_group_type = default_managee_type
         self._group_limit = managee_limit
         self._id_to_group: Dict[str, _PlayerGroup] = dict()
-        self._user_to_groups: Dict[ClientManager.Client, Set[_PlayerGroup]] = dict()
 
     def get_managee_type(self) -> Type[_PlayerGroup]:
         """
@@ -1301,7 +1293,7 @@ class PlayerGroupManager:
             # membership limits being reached.
             if self.find_player_concurrent_limiting_managee(creator):
                 raise PlayerGroupError.UserHitGroupConcurrentLimitError
-            groups_of_user = self._user_to_groups.get(creator, None)
+            groups_of_user = self.get_managees_of_user(creator)
             if groups_of_user is not None and len(groups_of_user) >= player_concurrent_limit:
                 raise PlayerGroupError.UserHitGroupConcurrentLimitError
 
@@ -1390,11 +1382,6 @@ class PlayerGroupManager:
         self._id_to_group.pop(playergroup_id)
 
         former_players = managee.get_players()
-
-        for player in former_players:
-            self._user_to_groups[player].remove(managee)
-            if not self._user_to_groups[player]:
-                self._user_to_groups.pop(player)
 
         managee.unchecked_destroy()
 
@@ -1514,8 +1501,10 @@ class PlayerGroupManager:
 
         """
 
+        users_to_managees = self.get_managees_of_players()
+
         try:
-            return self._user_to_groups[user].copy()
+            return users_to_managees[user].copy()
         except KeyError:
             return set()
 
@@ -1530,12 +1519,12 @@ class PlayerGroupManager:
             Mapping.
         """
 
-        # Implementation detail
-        # This is essentially a public view of self._user_to_groups
-
         output = dict()
-        for (player, groups) in self._user_to_groups.items():
-            output[player] = groups.copy()
+        for group in self._id_to_group.values():
+            for player in group.get_players():
+                if player not in output:
+                    output[player] = set()
+                output[player].add(group)
 
         return output
 
@@ -1551,7 +1540,7 @@ class PlayerGroupManager:
 
         """
 
-        return set(self._user_to_groups.keys())
+        return set(self.get_managees_of_players().keys())
 
     def is_managee_creatable(self) -> bool:
         """
@@ -1653,50 +1642,6 @@ class PlayerGroupManager:
             return None
         return most_restrictive_group
 
-    def _add_user_to_mapping(self, user: ClientManager.Client, group: _PlayerGroup):
-        """
-        Update the user to player groups mapping with the information that `user` was added to
-        `group`.
-
-        Parameters
-        ----------
-        user : ClientManager.Client
-            User that was added.
-        group : _PlayerGroup
-            Player group that `user` was added to.
-
-        Returns
-        -------
-        None.
-
-        """
-
-        try:
-            self._user_to_groups[user].add(group)
-        except KeyError:
-            self._user_to_groups[user] = {group}
-
-    def _remove_user_from_mapping(self, user: ClientManager.Client, group: _PlayerGroup):
-        """
-        Update the user to player groups mapping with the information that `user` was removed from
-        `group`.
-
-        Parameters
-        ----------
-        user : ClientManager.Client
-            User that was removed.
-        group : _PlayerGroup
-            Player group that `user` was removed from.
-
-        Returns
-        -------
-        None.
-
-        """
-        self._user_to_groups[user].remove(group)
-        if not self._user_to_groups[user]:
-            self._user_to_groups.pop(user)
-
     def _check_structure(self):
         """
         Assert that all invariants specified in the class description are maintained.
@@ -1724,15 +1669,6 @@ class PlayerGroupManager:
             assert playergroup.get_id() == playergroup_id, err
 
             # 2b.
-            unrecognized = {player for player in playergroup.get_players()
-                            if player not in self._user_to_groups.keys()}
-            err = (f'For player group manager {self}, expected that the players of player group '
-                   f'{playergroup} were also recognized as players in the user to player group '
-                   f'mapping of the manager, but found these unrecognized players: '
-                   f'{unrecognized}. ')
-            assert not unrecognized, err
-
-            # 2c.
             err = (f'For player group manager {self}, expected that managed player group '
                    f'{playergroup} recognized that it was not unmanaged, but found it did.')
             assert not playergroup.is_unmanaged(), err
@@ -1750,33 +1686,8 @@ class PlayerGroupManager:
                 assert playergroup1.get_id() != playergroup2.get_id(), err
 
         # 4.
-        for user in self._user_to_groups:
-            playergroups = self._user_to_groups[user]
-
-            # a.
-            err = (f'For player group manager {self}, expected that user {user} to only appear '
-                   f'in the user to player groups mapping if it was a player of any player '
-                   f'group managed by this manager, but found it appeared while not belonging to '
-                   f'any player group. || {self}')
-            assert playergroups, err
-
-            for group in playergroups:
-                # b.
-                err = (f'For player group manager {self}, expected that player group {group} '
-                       f'that appears in the user to player group mapping for user {user} '
-                       f'also appears in the player group ID to player group mapping, but found '
-                       f'it did not. || {self}')
-                assert group in self._id_to_group.values(), err
-
-                # c.
-                err = (f'For player group manager {self}, expected that user {user} in the user '
-                       f'to player group mapping be a player of its associated player group '
-                       f'{group}, but found that was not the case. || {self}')
-                assert user in group.get_players(), err
-
-        # 5.
-        for user in self._user_to_groups:
-            playergroups = self._user_to_groups[user]
+        user_to_groups = self.get_managees_of_players()
+        for (user, playergroups) in user_to_groups.items():
             membership = len(playergroups)
 
             for group in playergroups:
