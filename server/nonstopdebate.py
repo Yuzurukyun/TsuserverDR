@@ -1233,7 +1233,7 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
         try:
             return super().get_available_team_id()
         except TrialMinigameError.GameTooManyTeamsError:
-            return NonStopDebateError.GameTooManyTeamsError
+            raise NonStopDebateError.GameTooManyTeamsError
 
     def get_autoadd_on_client_enter(self) -> bool:
         """

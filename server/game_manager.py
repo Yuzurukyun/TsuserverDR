@@ -1626,7 +1626,7 @@ class _Game(_GameTrivialInherited):
         try:
             return self._team_manager.get_available_managee_id()
         except PlayerGroupError.ManagerTooManyGroupsError:
-            return GameError.GameTooManyTeamsError
+            raise GameError.GameTooManyTeamsError
 
     def unchecked_destroy(self):
         """

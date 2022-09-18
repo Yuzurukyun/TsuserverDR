@@ -1255,7 +1255,7 @@ class _TrialMinigameTrivialInherited(_GameWithAreas):
         try:
             return super().get_available_team_id()
         except GameWithAreasError.GameTooManyTeamsError:
-            return TrialMinigameError.GameTooManyTeamsError
+            raise TrialMinigameError.GameTooManyTeamsError
 
     def get_autoadd_on_client_enter(self) -> bool:
         """

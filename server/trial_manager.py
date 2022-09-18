@@ -1214,7 +1214,7 @@ class _TrialTrivialInherited(_GameWithAreas):
         try:
             return super().get_available_team_id()
         except GameWithAreasError.GameTooManyTeamsError:
-            return TrialError.GameTooManyTeamsError
+            raise TrialError.GameTooManyTeamsError
 
     def get_autoadd_on_client_enter(self) -> bool:
         """
@@ -2601,7 +2601,7 @@ class _Trial(_TrialTrivialInherited):
         try:
             return self._minigame_manager.get_managee_by_id(minigame_id)
         except GameWithAreasError.ManagerInvalidGameIDError:
-            return TrialError.ManagerInvalidGameIDError
+            raise TrialError.ManagerInvalidGameIDError
 
     def get_nsd_by_id(self, nsd_id: str) -> _NonStopDebate:
         """
@@ -2627,7 +2627,7 @@ class _Trial(_TrialTrivialInherited):
         try:
             minigame = self.get_minigame_by_id(nsd_id)
         except GameWithAreasError.ManagerInvalidGameIDError:
-            return TrialError.ManagerInvalidGameIDError
+            raise TrialError.ManagerInvalidGameIDError
 
         minigame_type = minigame.get_type()
         if minigame_type != TRIALMINIGAMES.NONSTOP_DEBATE:

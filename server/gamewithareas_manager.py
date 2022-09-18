@@ -1242,7 +1242,7 @@ class _GameWithAreasTrivialInherited(_Game):
         try:
             return super().get_available_team_id()
         except GameError.GameTooManyTeamsError:
-            return GameWithAreasError.GameTooManyTeamsError
+            raise GameWithAreasError.GameTooManyTeamsError
 
     def is_unmanaged(self):
         """
