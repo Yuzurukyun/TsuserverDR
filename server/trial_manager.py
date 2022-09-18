@@ -2632,7 +2632,7 @@ class _Trial(_TrialTrivialInherited):
         minigame_type = minigame.get_type()
         if minigame_type != TRIALMINIGAMES.NONSTOP_DEBATE:
             raise TrialError.ManagerInvalidGameIDError(f'`{nsd_id}` is a minigame of type '
-                                                        '{minigame_type}, not nonstop debate.')
+                                                       f'{minigame_type}, not nonstop debate.')
         return minigame
 
     def get_available_minigame_id(self) -> str:
@@ -3663,7 +3663,7 @@ class TrialManager(_TrialManagerTrivialInherited):
     Attributes
     ----------
     server : TsuserverDR
-        Server the game manager belongs to.
+        Server the trial manager belongs to.
 
     """
 

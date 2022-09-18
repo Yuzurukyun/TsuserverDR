@@ -379,3 +379,7 @@ class NonStopDebateError(TrialMinigameError):
 
     class TimersAlreadySetupError(TrialMinigameError):
         pass
+
+@recreate_subexceptions
+class HubError(GameWithAreasError):
+    pass
