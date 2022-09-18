@@ -820,6 +820,7 @@
 
 ## (4.4.0)
 * Increased minimum Python version required to 3.9
+* Redid trial and nonstop debates
 * Removed unused `server/area_manager_revamp.py` and `server/steptimer_manager.py`
 * Removed the old names of the following commands. Please use the new ones:
   - /clock_cancel: /clock_end
