@@ -1694,18 +1694,22 @@ class _Hub(_HubTrivialInherited):
 
         """
 
-        self.background_manager = BackgroundManager(self)
+        self.background_manager = BackgroundManager(server, hub=self)
         self.load_backgrounds()
 
-        self.character_manager = CharacterManager(self)
+        self.character_manager = CharacterManager(server, hub=self)
         self.load_characters()
 
-        self.music_manager = MusicManager(self)
+        self.music_manager = MusicManager(server, hub=self)
+        self.load_music()
+
+        # Has to be after character_manager to allow proper loading of areas,
+        # as those need to compute restricted areas
+        self.area_manager = AreaManager(server, hub=self)
+
         self.trial_manager = TrialManager(self)
         self.zone_manager = ZoneManager(self)
 
-        # Has to be after character_manager to allow proper loading of areas
-        self.area_manager = AreaManager(server,self)
 
         super().__init__(
             server,
@@ -1873,6 +1877,10 @@ class _Hub(_HubTrivialInherited):
         # Only now update internally. This is to allow `change_character` to work properly.
         self.character_manager.load_file(source_file)
         return characters.copy()
+
+    def load_music(self, music_list_file: str = 'config/music.yaml') -> List[Dict[str, Any]]:
+        music = self.music_manager.load_file(music_list_file)
+        return music.copy()
 
     def _on_area_client_left_final(self, area: AreaManager.Area, client: ClientManager.Client = None, old_displayname: str = None, ignore_bleeding: bool = False, ignore_autopass: bool = False):
         return super()._on_area_client_left_final(area, client, old_displayname, ignore_bleeding, ignore_autopass)

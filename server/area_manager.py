@@ -1139,7 +1139,6 @@ class AreaManager(AssetManager):
         self._source_file = 'config/areas.yaml'
         self.area_names = set()
         self.old_area_list_file = None
-        self.load_file(self._source_file)
 
     def get_name(self) -> str:
         """

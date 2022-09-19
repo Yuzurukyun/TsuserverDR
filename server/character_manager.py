@@ -27,6 +27,7 @@ from server.exceptions import CharacterError
 from server.validate.characters import ValidateCharacters
 
 if typing.TYPE_CHECKING:
+    from server.hub_manager import _Hub
     from server.tsuserver import TsuserverDR
 
 class CharacterManager(AssetManager):
@@ -35,7 +36,7 @@ class CharacterManager(AssetManager):
     loaded file or an adequate Python representation.
     """
 
-    def __init__(self, server: TsuserverDR):
+    def __init__(self, server: TsuserverDR, hub: Union[_Hub, None] = None):
         """
         Create a character manager object.
 
@@ -43,9 +44,11 @@ class CharacterManager(AssetManager):
         ----------
         server: TsuserverDR
             The server this character manager belongs to.
+        hub : _Hub, optional
+            The hub this character manager belongs to. Defaults to None.
         """
 
-        super().__init__(server)
+        super().__init__(server, hub=hub)
         self._characters = []
         self._source_file = 'config/characters.yaml'
 

@@ -31,6 +31,7 @@ from server.exceptions import BackgroundError
 from server.validate.backgrounds import ValidateBackgrounds
 
 if typing.TYPE_CHECKING:
+    from server.hub_manager import _Hub
     from server.tsuserver import TsuserverDR
 
 class BackgroundManager(AssetManager):
@@ -39,7 +40,7 @@ class BackgroundManager(AssetManager):
     loaded file or an adequate Python representation.
     """
 
-    def __init__(self, server: TsuserverDR):
+    def __init__(self, server: TsuserverDR, hub: Union[_Hub, None] = None):
         """
         Create a background manager object.
 
@@ -47,9 +48,11 @@ class BackgroundManager(AssetManager):
         ----------
         server: TsuserverDR
             The server this background manager belongs to.
+        hub : _Hub, optional
+            The hub this area manager belongs to. Defaults to None.
         """
 
-        super().__init__(server)
+        super().__init__(server, hub=hub)
         self._backgrounds = ['default']
         self._source_file = 'config/backgrounds.yaml'
         self._default_background = self._backgrounds[0]

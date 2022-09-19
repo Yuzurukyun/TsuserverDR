@@ -39,7 +39,6 @@ from server.constants import Constants
 from server.client_manager import ClientManager
 from server.exceptions import ServerError
 from server.hub_manager import HubManager
-from server.music_manager import MusicManager
 from server.network.ao_protocol import AOProtocol
 from server.network.ms3_protocol import MasterServerClient
 from server.party_manager import PartyManager
@@ -102,14 +101,12 @@ class TsuserverDR:
 
         self.trial_manager = TrialManager(self)
         self.zone_manager = ZoneManager(self)
-        self.music_manager = MusicManager(self)
         self.party_manager = PartyManager(self)
 
         self.ipid_list = {}
         self.hdid_list = {}
         self.gimp_list = list()
         self.load_commandhelp()
-        self.load_music()
         self.load_ids()
         self.load_gimp()
 
@@ -235,7 +232,7 @@ class TsuserverDR:
         try:
             default_hub.background_manager.validate_file()
             default_hub.character_manager.validate_file()
-            self.music_manager.validate_file()
+            default_hub.music_manager.validate_file()
         except ServerError.YAMLInvalidError as exc:
             # The YAML exception already provides a full description. Just add the fact the
             # reload was undone to ease the person who ran the command's nerves.
@@ -248,7 +245,7 @@ class TsuserverDR:
         # Only on success reload
         default_hub.load_backgrounds()
         default_hub.load_characters()
-        self.load_music()
+        default_hub.load_music()
 
     def reload_commands(self):
         try:
@@ -471,10 +468,6 @@ class TsuserverDR:
             logger.log_pdebug(message)
             self.hdid_list = dict()
             self.dump_hdids()
-
-    def load_music(self, music_list_file: str = 'config/music.yaml') -> List[Dict[str, Any]]:
-        music = self.music_manager.load_file(music_list_file)
-        return music.copy()
 
     def load_gimp(self):
         try:
