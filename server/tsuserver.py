@@ -32,12 +32,8 @@ import ssl
 import sys
 import traceback
 import urllib.request, urllib.error
-import warnings
-import yaml
 
 from server import logger
-from server.area_manager import AreaManager
-from server.background_manager import BackgroundManager
 from server.ban_manager import BanManager
 from server.character_manager import CharacterManager
 from server.constants import Constants
@@ -110,7 +106,6 @@ class TsuserverDR:
 
         self.trial_manager = TrialManager(self)
         self.zone_manager = ZoneManager(self)
-        self.background_manager = BackgroundManager(self)
         self.music_manager = MusicManager(self)
         self.party_manager = PartyManager(self)
 
@@ -241,8 +236,9 @@ class TsuserverDR:
         return mes
 
     def reload(self):
+        default_hub = self.hub_manager.get_default_managee()
         try:
-            self.background_manager.validate_file()
+            default_hub.background_manager.validate_file()
             self.character_manager.validate_file()
             self.music_manager.validate_file()
         except ServerError.YAMLInvalidError as exc:
@@ -256,7 +252,7 @@ class TsuserverDR:
 
         # Only on success reload
         self.load_characters()
-        self.load_backgrounds()
+        default_hub.load_backgrounds()
         self.load_music()
 
     def reload_commands(self):
@@ -307,52 +303,6 @@ class TsuserverDR:
     def get_player_count(self) -> int:
         # Ignore players in the server selection screen.
         return len([client for client in self.get_clients() if client.char_id is not None])
-
-    def load_backgrounds(self, source_file: str = 'config/backgrounds.yaml') -> List[str]:
-        """
-        Load a background list file.
-
-        Parameters
-        ----------
-        source_file : str
-            Relative path from server root folder to background list file, by default
-            'config/backgrounds.yaml'
-
-        Returns
-        -------
-        List[str]
-            Backgrounds.
-
-        Raises
-        ------
-        ServerError.FileNotFoundError
-            If the file was not found.
-        ServerError.FileOSError
-            If there was an operating system error when opening the file.
-        ServerError.YAMLInvalidError
-            If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
-        ServerError.FileSyntaxError
-            If the file failed verification for its asset type.
-        """
-
-        old_backgrounds = self.background_manager.get_backgrounds()
-        backgrounds = self.background_manager.load_file(source_file)
-
-        if old_backgrounds == backgrounds:
-            # No change implies backgrounds still valid, do nothing more
-            return backgrounds.copy()
-
-        # Make sure each area still has a valid background
-        default_background = self.background_manager.get_default_background()
-        for area in self.hub_manager.get_default_managee().get_areas():
-            if not self.background_manager.is_background(area.background) and not area.cbg_allowed:
-                # The area no longer has a valid background, so change it to some valid background
-                # like the first one
-                area.change_background(default_background)
-                area.broadcast_ooc(f'After a change in the background list, your area no longer '
-                                   f'had a valid background. Switching to {default_background}.')
-
-        return backgrounds.copy()
 
     def load_config(self) -> Dict[str, Any]:
         self.config = ValidateConfig().validate('config/config.yaml')

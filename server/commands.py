@@ -11299,7 +11299,7 @@ def ooc_cmd_bg_list(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, is_officer=True)
 
-    client.server.background_manager.command_list_load(client, arg)
+    client.hub.background_manager.command_list_load(client, arg)
 
 
 def ooc_cmd_bg_list_info(client: ClientManager.Client, arg: str):
@@ -11320,7 +11320,7 @@ def ooc_cmd_bg_list_info(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, is_officer=True, parameters='=0')
 
-    client.server.background_manager.command_list_info(client)
+    client.hub.background_manager.command_list_info(client)
 
 
 def ooc_cmd_char_list(client: ClientManager.Client, arg: str):

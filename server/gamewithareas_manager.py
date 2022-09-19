@@ -1550,6 +1550,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
             'area_destroyed': self._on_area_destroyed,
             'areas_loaded': self._on_areas_loaded,
             })
+        self.manager: GameWithAreasManager  # Setting for typing
 
     def get_name(self) -> str:
         """

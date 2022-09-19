@@ -104,6 +104,7 @@ class _Team(_PlayerGroup):
                          require_invitations=require_invitations,
                          require_players=require_players, require_leaders=require_leaders)
         self._game = game
+        self.manager: GameManager  # Setting for typing
 
     def add_player(self, user):
         """

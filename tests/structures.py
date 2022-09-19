@@ -925,7 +925,7 @@ class _TestTsuserverDR(TsuserverDR):
             assert len(user_list) == number
 
         for i in range(number):
-            area = self.area_manager.default_area()
+            area = self.hub_manager.get_default_managee().area_manager.default_area()
             for j in range(len(self.character_manager.get_characters())):
                 if area.is_char_available(j):
                     char_id = j

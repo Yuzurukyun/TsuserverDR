@@ -1723,6 +1723,8 @@ class _Hub(_HubTrivialInherited):
             'client_inbound_rt': self._on_client_inbound_rt,
             })
 
+        self.manager: HubManager  # Setting for typing
+
     def unchecked_add_player(self, user: ClientManager.Client):
         return super().unchecked_add_player(user)
 
@@ -1758,6 +1760,52 @@ class _Hub(_HubTrivialInherited):
 
         areas = self.area_manager.load_file(source_file)
         return areas.copy()
+
+    def load_backgrounds(self, source_file: str = 'config/backgrounds.yaml') -> List[str]:
+        """
+        Load a background list file.
+
+        Parameters
+        ----------
+        source_file : str
+            Relative path from server root folder to background list file, by default
+            'config/backgrounds.yaml'
+
+        Returns
+        -------
+        List[str]
+            Backgrounds.
+
+        Raises
+        ------
+        ServerError.FileNotFoundError
+            If the file was not found.
+        ServerError.FileOSError
+            If there was an operating system error when opening the file.
+        ServerError.YAMLInvalidError
+            If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
+        ServerError.FileSyntaxError
+            If the file failed verification for its asset type.
+        """
+
+        old_backgrounds = self.background_manager.get_backgrounds()
+        backgrounds = self.background_manager.load_file(source_file)
+
+        if old_backgrounds == backgrounds:
+            # No change implies backgrounds still valid, do nothing more
+            return backgrounds.copy()
+
+        # Make sure each area still has a valid background
+        default_background = self.background_manager.get_default_background()
+        for area in self.manager.get_default_managee().get_areas():
+            if not self.background_manager.is_background(area.background) and not area.cbg_allowed:
+                # The area no longer has a valid background, so change it to some valid background
+                # like the first one
+                area.change_background(default_background)
+                area.broadcast_ooc(f'After a change in the background list, your area no longer '
+                                   f'had a valid background. Switching to {default_background}.')
+
+        return backgrounds.copy()
 
     def _on_area_client_left_final(self, area: AreaManager.Area, client: ClientManager.Client = None, old_displayname: str = None, ignore_bleeding: bool = False, ignore_autopass: bool = False):
         return super()._on_area_client_left_final(area, client, old_displayname, ignore_bleeding, ignore_autopass)

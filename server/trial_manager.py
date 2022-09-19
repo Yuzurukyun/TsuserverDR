@@ -1756,6 +1756,7 @@ class _Trial(_TrialTrivialInherited):
         self.listener.update_events({
             'client_inbound_rt': self._on_client_inbound_rt,
             })
+        self.manager: TrialManager  # Setting for typing
 
     def get_name(self) -> str:
         """
