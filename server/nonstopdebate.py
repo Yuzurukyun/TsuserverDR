@@ -1792,6 +1792,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
             timer_limit=timer_limit,
             area_concurrent_limit=area_concurrent_limit,
             autoadd_on_client_enter=autoadd_on_client_enter,
+            hub=hub,
             trial=trial,
             autoadd_on_trial_player_add=autoadd_on_trial_player_add,
         )

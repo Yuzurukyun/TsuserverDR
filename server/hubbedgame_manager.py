@@ -2147,6 +2147,7 @@ class _HubbedGameManagerTrivialInherited(GameWithAreasManager):
         area_concurrent_limit: Union[int, None] = None,
         autoadd_on_client_enter: bool = False,
         autoadd_on_creation_existing_users: bool = False,
+        hub: Union[_Hub, None] = None,
         **kwargs: Any,
         ) -> _HubbedGame:
         """
@@ -2205,6 +2206,9 @@ class _HubbedGameManagerTrivialInherited(GameWithAreasManager):
         autoadd_on_creation_existing_users : bool
             If the hubbed game will attempt to add nonplayer users who were in an area added
             to the hubbed game on creation. Defaults to False.
+        hub : _Hub, optional
+            Hub of the hubbed game. Defaults to None (and converted to the creator's hub if given a
+            creator, and None otherwise).
         **kwargs : Any
             Additional arguments to consider when producing the hubbed game.
 
@@ -2238,6 +2242,7 @@ class _HubbedGameManagerTrivialInherited(GameWithAreasManager):
             area_concurrent_limit=area_concurrent_limit,
             autoadd_on_client_enter=autoadd_on_client_enter,
             autoadd_on_creation_existing_users=autoadd_on_creation_existing_users,
+            hub=hub,
             **kwargs,
             )
         self._check_structure()
@@ -2626,7 +2631,7 @@ class HubbedGameManager(_HubbedGameManagerTrivialInherited):
         area_concurrent_limit: Union[int, None] = None,
         autoadd_on_client_enter: bool = False,
         autoadd_on_creation_existing_users: bool = False,
-        hub: _Hub = None,
+        hub: Union[_Hub, None] = None,
         **kwargs: Any,
         ) -> _HubbedGame:
 
@@ -2687,7 +2692,8 @@ class HubbedGameManager(_HubbedGameManagerTrivialInherited):
             If the hubbed game will attempt to add nonplayer users who were in an area added
             to the hubbed game on creation. Defaults to False.
         hub : _Hub, optional
-            Hub of the hubbed game. Defaults to None.
+            Hub of the hubbed game. Defaults to None (and converted to the creator's hub if given a
+            creator, and None otherwise).
         **kwargs : Any
             Additional arguments to consider when producing the hubbed game.
 
@@ -2712,6 +2718,8 @@ class HubbedGameManager(_HubbedGameManagerTrivialInherited):
             managee_type = self.get_managee_type()
         if not areas:
             areas = {creator.area} if creator else set()
+        if not hub:
+            hub = creator.hub if creator else None
 
         game: _HubbedGame = super().unchecked_new_managee(
             managee_type=managee_type,

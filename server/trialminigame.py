@@ -1840,6 +1840,7 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
             timer_limit=timer_limit,
             area_concurrent_limit=area_concurrent_limit,
             autoadd_on_client_enter=autoadd_on_client_enter,
+            hub=hub,
         )
 
         self.listener.subscribe(trial)

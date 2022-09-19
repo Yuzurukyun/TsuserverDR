@@ -1759,6 +1759,7 @@ class _Trial(_TrialTrivialInherited):
             timer_limit=timer_limit,
             area_concurrent_limit=area_concurrent_limit,
             autoadd_on_client_enter=autoadd_on_client_enter,
+            hub=hub,
         )
 
         self.listener.update_events({
@@ -2493,6 +2494,7 @@ class _Trial(_TrialTrivialInherited):
             autoadd_on_trial_player_add = self.get_autoadd_minigame_on_player_added()
 
         areas = {creator.area} if creator else set()
+        hub = creator.hub
 
         try:
             nsd: _NonStopDebate = self._minigame_manager.new_managee(
@@ -2509,6 +2511,7 @@ class _Trial(_TrialTrivialInherited):
                 areas=areas,
                 area_concurrent_limit=1,
                 autoadd_on_client_enter=False,
+                hub=hub,
                 # kwargs
                 trial=self,
                 autoadd_on_trial_player_add=autoadd_on_trial_player_add,
@@ -3247,6 +3250,8 @@ class _TrialManagerTrivialInherited(HubbedGameManager):
         area_concurrent_limit: Union[int, None] = 1,  # Overriden from parent
         autoadd_on_client_enter: bool = False,
         autoadd_on_creation_existing_users: bool = False,
+        hub: Union[_Hub, None] = None,
+        # new
         autoadd_minigame_on_player_added: bool = False,
         **kwargs: Any,
         ) -> _Trial:
@@ -3294,6 +3299,9 @@ class _TrialManagerTrivialInherited(HubbedGameManager):
         autoadd_on_creation_existing_users : bool
             If the trial will attempt to add nonplayer users who were in an area added
             to the trial on creation. Defaults to False.
+        hub : _Hub, optional
+            Hub of the hubbed game. Defaults to None (and converted to the creator's hub if given a
+            creator, and None otherwise).
         autoadd_minigame_on_player_added : bool, optional
             If True, nonplayer users that are added to the trial will also be automatically added
             to the minigame if permitted by its conditions. If False, no such adding will take
@@ -3333,6 +3341,7 @@ class _TrialManagerTrivialInherited(HubbedGameManager):
             area_concurrent_limit=area_concurrent_limit,
             autoadd_on_client_enter=autoadd_on_client_enter,
             autoadd_on_creation_existing_users=autoadd_on_creation_existing_users,
+            hub=hub,
             autoadd_minigame_on_player_added=autoadd_minigame_on_player_added,
             **kwargs,
             )
@@ -3725,6 +3734,8 @@ class TrialManager(_TrialManagerTrivialInherited):
         area_concurrent_limit: Union[int, None] = 1,  # Overriden from parent
         autoadd_on_client_enter: bool = False,
         autoadd_on_creation_existing_users: bool = False,
+        hub: Union[_Hub, None] = None,
+        # new
         autoadd_minigame_on_player_added: bool = False,
         **kwargs: Any,
         ) -> _Trial:
@@ -3774,6 +3785,9 @@ class TrialManager(_TrialManagerTrivialInherited):
         autoadd_on_creation_existing_users : bool
             If the trial will attempt to add nonplayer users who were in an area added
             to the trial on creation. Defaults to False.
+        hub : _Hub, optional
+            Hub of the hubbed game. Defaults to None (and converted to the creator's hub if given a
+            creator, and None otherwise).
         autoadd_minigame_on_player_added : bool, optional
             If True, nonplayer users that are added to the trial will also be automatically added
             to the minigame if permitted by its conditions. If False, no such adding will take
@@ -3814,6 +3828,7 @@ class TrialManager(_TrialManagerTrivialInherited):
                 area_concurrent_limit=area_concurrent_limit,
                 autoadd_on_client_enter=autoadd_on_client_enter,
                 autoadd_on_creation_existing_users=autoadd_on_creation_existing_users,
+                hub=hub,
                 # kwargs
                 autoadd_minigame_on_player_added=autoadd_minigame_on_player_added,
                 **kwargs,
