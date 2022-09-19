@@ -40,15 +40,17 @@ class _Unittest(unittest.TestCase):
             cls.skipTest('', reason='')
         print('\nTesting {}: '.format(cls.__name__), end=' ')
         cls.server = _TestTsuserverDR()
-        cls.clients: List[_TestClientManager._Testclient] = cls.server.client_list
-        cls.area0: AreaManager.Area = cls.hub.area_manager.get_area_by_id(0)
-        cls.area1: AreaManager.Area = cls.hub.area_manager.get_area_by_id(1)
-        cls.area2: AreaManager.Area = cls.hub.area_manager.get_area_by_id(2)
-        cls.area3: AreaManager.Area = cls.hub.area_manager.get_area_by_id(3)
-        cls.area4: AreaManager.Area = cls.hub.area_manager.get_area_by_id(4)
-        cls.area5: AreaManager.Area = cls.hub.area_manager.get_area_by_id(5)
-        cls.area6: AreaManager.Area = cls.hub.area_manager.get_area_by_id(6)
-        cls.area7: AreaManager.Area = cls.hub.area_manager.get_area_by_id(7)
+        cls.clients: List[_TestClientManager._TestClient] = cls.server.client_list
+
+        default_hub = cls.server.hub_manager.get_default_managee()
+        cls.area0: AreaManager.Area = default_hub.area_manager.get_area_by_id(0)
+        cls.area1: AreaManager.Area = default_hub.area_manager.get_area_by_id(1)
+        cls.area2: AreaManager.Area = default_hub.area_manager.get_area_by_id(2)
+        cls.area3: AreaManager.Area = default_hub.area_manager.get_area_by_id(3)
+        cls.area4: AreaManager.Area = default_hub.area_manager.get_area_by_id(4)
+        cls.area5: AreaManager.Area = default_hub.area_manager.get_area_by_id(5)
+        cls.area6: AreaManager.Area = default_hub.area_manager.get_area_by_id(6)
+        cls.area7: AreaManager.Area = default_hub.area_manager.get_area_by_id(7)
 
         cls.a0_name: str = cls.area0.name
         cls.a1_name: str = cls.area1.name
@@ -887,7 +889,7 @@ class _TestTsuserverDR(TsuserverDR):
 
         self.tasker = Tasker(self)
 
-    def create_client(self):
+    def create_client(self) -> _TestClientManager._TestClient:
         new_ao_protocol = self.ao_protocol(self)
         new_ao_protocol.connection_made(None)
         return new_ao_protocol.client
