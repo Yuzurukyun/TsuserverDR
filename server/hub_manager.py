@@ -1625,9 +1625,6 @@ class _Hub(_HubTrivialInherited):
         timer_limit: Union[int, None] = None,
         area_concurrent_limit: Union[int, None] = None,
         autoadd_on_client_enter: bool = False,
-
-        autoadd_minigame_on_player_added: bool = False,
-        minigame_limit: int = 1,
     ):
         """
         Create a new hub. A hub should not be fully initialized anywhere else other than
@@ -1683,15 +1680,6 @@ class _Hub(_HubTrivialInherited):
             If True, nonplayer users that enter an area part of the hub will be automatically
             added if permitted by the conditions of the hub. If False, no such adding will take
             place. Defaults to False.
-        autoadd_minigame_on_player_added: bool, optional
-            If True, any player added to the hub will be automatically added as a player of the
-            latest minigame currently open in the hub. If no such minigame is open or the
-            player addition fails, no action is taken. If False, no such adding will take place.
-            Defaults to False.
-        minigame_limit : Union[int, None], optional
-            If an int, it is the maximum number of minigames the hub may have simultaneously.
-            If None, it indicates the hub has no minigame limit. Defaults to 1.
-
         """
 
         self.background_manager = BackgroundManager(server, hub=self)

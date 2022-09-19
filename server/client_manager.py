@@ -1707,7 +1707,7 @@ class ClientManager:
 
             # Send command hints for leading trials and other minigames
             try:
-                trial = self.server.trial_manager.get_managee_of_user(self)
+                trial = self.hub.trial_manager.get_managee_of_user(self)
             except TrialError.UserNotPlayerError:
                 pass
             else:
