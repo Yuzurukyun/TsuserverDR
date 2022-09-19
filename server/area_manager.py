@@ -59,23 +59,32 @@ class AreaManager(AssetManager):
         Create a new area for the hub.
         """
 
-        def __init__(self, area_id: int, hub: _Hub, parameters: Dict[str, Any]):
+        def __init__(
+            self,
+            server: TsuserverDR,
+            hub: _Hub,
+            area_id: int,
+            parameters: Dict[str, Any]
+            ):
             """
             Parameters
             ----------
-            area_id: int
-                The area ID.
+            server : TsuserverDR
+                The server this area belongs to.
             hub: _Hub
                 The hub this area belongs to.
+            area_id: int
+                The area ID.
             parameters: dict
                 Area parameters as specified in the loaded area list.
             """
 
-            self._clients = set()
-            self.id = area_id
+            self.server = server
             self.hub = hub
+            self.id = area_id
             self.publisher = Publisher(self)
 
+            self._clients = set()
             self.invite_list = {}
             self.music_looper = None
             self.music_looper_pargs = {}
@@ -308,9 +317,9 @@ class AreaManager(AssetManager):
             self.background = bg
             for c in self.clients:
                 if c.is_blind and not override_blind:
-                    c.send_background(name=self.hub.server.config['blackout_background'])
+                    c.send_background(name=self.server.config['blackout_background'])
                 elif not c.area.lights:
-                    c.send_background(name=self.hub.server.config['blackout_background'])
+                    c.send_background(name=self.server.config['blackout_background'])
                 else:
                     c.send_background(name=self.background,
                                       tod_backgrounds=self.get_background_tod())
@@ -355,9 +364,9 @@ class AreaManager(AssetManager):
 
             for c in self.clients:
                 if c.is_blind and not override_blind:
-                    c.send_background(name=self.hub.server.config['blackout_background'])
+                    c.send_background(name=self.server.config['blackout_background'])
                 elif not c.area.lights:
-                    c.send_background(name=self.hub.server.config['blackout_background'])
+                    c.send_background(name=self.server.config['blackout_background'])
                 else:
                     c.send_background(name=self.background,
                                       tod_backgrounds=self.get_background_tod())
@@ -428,7 +437,7 @@ class AreaManager(AssetManager):
             if not available:
                 raise AreaError('No available characters.')
 
-            return self.hub.server.random.choice(tuple(available))
+            return self.server.random.choice(tuple(available))
 
         def is_char_available(self, char_id: int, allow_restricted: bool = False,
                               more_unavail_chars: Set[int] = None) -> bool:
@@ -945,9 +954,9 @@ class AreaManager(AssetManager):
                 If no client has an active day cycle involving the current area.
             """
 
-            for client in self.hub.server.get_clients():
+            for client in self.server.get_clients():
                 try:
-                    args = self.hub.server.tasker.get_task_args(client, ['as_day_cycle'])
+                    args = self.server.tasker.get_task_args(client, ['as_day_cycle'])
                 except KeyError:
                     pass
                 else:
@@ -973,7 +982,7 @@ class AreaManager(AssetManager):
             except AreaError.ClientNotFound:
                 return ''
             else:
-                period = self.hub.server.tasker.get_task_attr(client, ['as_day_cycle'], 'period')
+                period = self.server.tasker.get_task_attr(client, ['as_day_cycle'], 'period')
                 return period
 
         def get_look_output_for(self, client: ClientManager.Client) -> Tuple[bool, str, str]:
@@ -999,7 +1008,7 @@ class AreaManager(AssetManager):
 
             elevated = False
 
-            if self.description == self.hub.server.config['default_area_description']:
+            if self.description == self.server.config['default_area_description']:
                 area_description = 'Nothing particularly interesting.'
             else:
                 area_description = self.description
@@ -1241,7 +1250,7 @@ class AreaManager(AssetManager):
 
         areas = ValidateAreas().validate(source_file, extra_parameters={
             'server_character_list': self.hub.character_manager.get_characters(),
-            'server_default_area_description': self.hub.server.config['default_area_description']
+            'server_default_area_description': self.server.config['default_area_description']
             })
         areas = self._load_areas(areas, source_file)
         self._check_structure()
@@ -1276,7 +1285,7 @@ class AreaManager(AssetManager):
 
         areas = ValidateAreas().validate_contents(yaml_contents, extra_parameters={
             'server_character_list': self.hub.character_manager.get_characters(),
-            'server_default_area_description': self.hub.server.config['default_area_description']
+            'server_default_area_description': self.server.config['default_area_description']
             })
         areas = self._load_areas(areas, None)
         self._check_structure()
@@ -1291,7 +1300,7 @@ class AreaManager(AssetManager):
 
         temp_areas = list()
         for (i, area_item) in enumerate(areas):
-            temp_areas.append(self.Area(i, self.hub, area_item))
+            temp_areas.append(self.Area(self.hub, i, area_item))
 
         old_areas = self.get_areas()
         self._areas = temp_areas
@@ -1300,22 +1309,22 @@ class AreaManager(AssetManager):
         # Only once all areas have been created, actually set the corresponding values
         # Helps avoiding junk area lists if there was an error
         # But first, remove all zones
-        backup_zones = self.hub.server.zone_manager.get_zones()
+        backup_zones = self.hub.zone_manager.get_zones()
         for (zone_id, zone) in backup_zones.items():
-            self.hub.server.zone_manager.delete_zone(zone_id)
+            self.hub.zone_manager.delete_zone(zone_id)
             for client in zone.get_watchers():
                 client.send_ooc('Your zone has been automatically deleted due to an area list '
                                 'load.')
 
         # And end all existing day cycles
-        for client in self.hub.server.get_clients():
+        for client in self.server.get_clients():
             try:
                 client.server.tasker.remove_task(client, ['as_day_cycle'])
             except KeyError:
                 pass
 
         # And remove all global IC and global IC prefixes
-        for client in self.hub.server.get_clients():
+        for client in self.server.get_clients():
             if client.multi_ic:
                 client.send_ooc('Due to an area list reload, your global IC was turned off. You '
                                 'may turn it on again manually.')

@@ -234,8 +234,8 @@ class Timer:
         if tick_rate == 0:
             raise TimerError.InvalidTickRateError
 
-        self._server = server
-        self._manager = manager
+        self.server = server
+        self.manager = manager
         self._id = timer_id
 
         self._tick_rate = tick_rate
@@ -389,7 +389,7 @@ class Timer:
 
         if self._auto_destroy:
             try:
-                self._manager.delete_timer(self)
+                self.manager.delete_timer(self)
             except TimerError.ManagerDoesNotManageTimerError:
                 # This should only happen if the .terminate call came from a call to manager's
                 # .delete_timer, at which point it is meaningless to attempt to make the manager
@@ -807,7 +807,7 @@ class Timer:
 
         """
 
-        return (f'Timer(server, {self._manager.get_id()}, "{self.get_id()}", '
+        return (f'Timer(server, {self.manager.get_id()}, "{self.get_id()}", '
                 f'tick_rate={self._tick_rate}, '
                 f'min_value={self._min_value}, '
                 f'max_value={self._max_value}, '
@@ -853,7 +853,7 @@ class TimerManager():
     # 1. If `self._timer_limit` is an int, then `len(self._id_to_timer) <=`
     # `self._timer_limit`.
     # 2. For every tuple `(timer_id, timer)` in `self._id_to_group.items()`:
-    #     a. `timer._manager = self`.
+    #     a. `timer.manager = self`.
     #     b. `timer.get_id() = timer_id`.
     # 3. For every pair of distinct timers `timer1` and `timer2` in
     # `self._id_to_timer.values()`:
@@ -878,7 +878,7 @@ class TimerManager():
         if default_timer_type is None:
             default_timer_type = Timer
 
-        self._server = server
+        self.server = server
         self._timer_limit = timer_limit
         self._default_timer_type = default_timer_type
 
@@ -955,7 +955,7 @@ class TimerManager():
 
         # Generate a timer ID and the new timer
         timer_id = self.get_available_timer_id()
-        timer = timer_type(self._server, self, timer_id,
+        timer = timer_type(self.server, self, timer_id,
                            start_value=start_value,
                            tick_rate=tick_rate,
                            min_value=min_value,
@@ -1140,7 +1140,7 @@ class TimerManager():
             err = (f'For timer manager {self}, expected that its managed timer '
                    f'{timer} recognized that it was managed by it, but found it did not. '
                    f'|| {self}')
-            assert timer._manager == self, err
+            assert timer.manager == self, err
 
             # 2b.
             err = (f'For timer manager {self}, expected that timer {timer} '

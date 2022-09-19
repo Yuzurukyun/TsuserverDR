@@ -9904,7 +9904,7 @@ def ooc_cmd_zone(client: ClientManager.Client, arg: str):
     areas = client.hub.area_manager.get_areas_in_range(lower_area, upper_area)
 
     try:
-        zone_id = client.server.zone_manager.new_zone(areas, {client})
+        zone_id = client.hub.zone_manager.new_zone(areas, {client})
     except ZoneError.AreaConflictError:
         raise ZoneError('Some of the areas of your new zone are already part of some other zone.')
     except ZoneError.WatcherConflictError:
@@ -10071,7 +10071,7 @@ def ooc_cmd_zone_end(client: ClientManager.Client, arg: str):
 
     if arg:
         try:
-            target_zone = client.server.zone_manager.get_zone(arg)
+            target_zone = client.hub.zone_manager.get_zone(arg)
         except KeyError:
             raise ZoneError('`{}` is not a valid zone ID.'.format(arg))
     else:
@@ -10082,7 +10082,7 @@ def ooc_cmd_zone_end(client: ClientManager.Client, arg: str):
     backup_watchers = target_zone.get_watchers()  # Keep backup reference to send to others
     backup_id = target_zone.get_id()
 
-    client.server.zone_manager.delete_zone(backup_id)
+    client.hub.zone_manager.delete_zone(backup_id)
 
     if arg:
         client.send_ooc('You have ended zone `{}`.'.format(backup_id))
@@ -10456,7 +10456,7 @@ def ooc_cmd_zone_list(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
-    info = client.server.zone_manager.get_info()
+    info = client.hub.zone_manager.get_info()
     client.send_ooc(info)
 
 
@@ -10888,7 +10888,7 @@ def ooc_cmd_zone_watch(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='=1')
 
     try:
-        target_zone = client.server.zone_manager.get_zone(arg)
+        target_zone = client.hub.zone_manager.get_zone(arg)
     except KeyError:
         raise ZoneError('`{}` is not a valid zone ID.'.format(arg))
 

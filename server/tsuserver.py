@@ -44,7 +44,6 @@ from server.network.ms3_protocol import MasterServerClient
 from server.party_manager import PartyManager
 from server.tasker import Tasker
 from server.timer_manager import TimerManager
-from server.zone_manager import ZoneManager
 
 from server.validate.config import ValidateConfig
 from server.validate.gimp import ValidateGimp
@@ -98,8 +97,6 @@ class TsuserverDR:
         #self.default_hub = self.hub_manager.new_managee(
         #    autoadd_on_client_enter=True,
         #)
-
-        self.zone_manager = ZoneManager(self)
 
         self.ipid_list = {}
         self.hdid_list = {}
