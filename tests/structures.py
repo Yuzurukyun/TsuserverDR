@@ -124,7 +124,7 @@ class _Unittest(unittest.TestCase):
         if group == 'C':
             structure = self.server.client_manager.clients
         elif group == 'A':
-            structure = self.hub.area_manager.get_areas()
+            structure = self.server.hub_manager.get_default_managee().area_manager.get_areas()
 
         if yes == 1:
             yes = {x for x in structure if x not in no}

@@ -1682,24 +1682,6 @@ class _Hub(_HubTrivialInherited):
             place. Defaults to False.
         """
 
-        self.background_manager = BackgroundManager(server, hub=self)
-        self.load_backgrounds()
-
-        self.character_manager = CharacterManager(server, hub=self)
-        self.load_characters()
-
-        self.music_manager = MusicManager(server, hub=self)
-        self.load_music()
-
-        # Has to be after character_manager to allow proper loading of areas,
-        # as those need to compute restricted areas
-        self.area_manager = AreaManager(server, hub=self)
-        self.load_areas()
-
-        self.trial_manager = TrialManager(self)
-        self.zone_manager = ZoneManager(self)
-
-
         super().__init__(
             server,
             manager,
@@ -1716,10 +1698,24 @@ class _Hub(_HubTrivialInherited):
             autoadd_on_client_enter=autoadd_on_client_enter,
         )
 
-        self.listener.update_events({
-            'client_inbound_rt': self._on_client_inbound_rt,
-            })
+        self.background_manager = BackgroundManager(server, hub=self)
+        self.load_backgrounds()
 
+        self.character_manager = CharacterManager(server, hub=self)
+        self.load_characters()
+
+        self.music_manager = MusicManager(server, hub=self)
+        self.load_music()
+
+        self.zone_manager = ZoneManager(server, self)
+
+        # Has to be after character_manager to allow proper loading of areas,
+        # as those need to compute restricted characters
+
+        self.area_manager = AreaManager(server, hub=self)
+        self.load_areas()
+
+        self.trial_manager = TrialManager(self)
         self.manager: HubManager  # Setting for typing
 
     def unchecked_add_player(self, user: ClientManager.Client):
@@ -1794,7 +1790,7 @@ class _Hub(_HubTrivialInherited):
 
         # Make sure each area still has a valid background
         default_background = self.background_manager.get_default_background()
-        for area in self.manager.get_default_managee().get_areas():
+        for area in self.get_areas():
             if not self.background_manager.is_background(area.background) and not area.cbg_allowed:
                 # The area no longer has a valid background, so change it to some valid background
                 # like the first one

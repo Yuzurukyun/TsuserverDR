@@ -2139,13 +2139,13 @@ def ooc_cmd_defaultarea(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_mod=True, parameters='=1')
 
     try:
-        client.hub.area_manager.get_area_by_id(int(arg))
+        area = client.hub.area_manager.get_area_by_id(int(arg))
     except ValueError:
         raise ArgumentError('Expected numerical value for area ID.')
     except AreaError:
         raise ClientError('ID {} does not correspond to a valid area ID.'.format(arg))
 
-    client.hub.area_manager.default_area = int(arg)
+    client.hub.area_manager.set_default_area(area)
     client.send_ooc('Set default area to {}.'.format(arg))
 
 

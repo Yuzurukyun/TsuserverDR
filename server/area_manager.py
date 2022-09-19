@@ -1149,6 +1149,8 @@ class AreaManager(AssetManager):
         self.area_names = set()
         self.old_area_list_file = None
 
+        self._default_area_id = 0
+
     def get_name(self) -> str:
         """
         Return `'area list'`.
@@ -1253,6 +1255,7 @@ class AreaManager(AssetManager):
             'server_default_area_description': self.server.config['default_area_description']
             })
         areas = self._load_areas(areas, source_file)
+        self.ever_loaded_assets = True
         self._check_structure()
 
         return areas
@@ -1288,6 +1291,7 @@ class AreaManager(AssetManager):
             'server_default_area_description': self.server.config['default_area_description']
             })
         areas = self._load_areas(areas, None)
+        self.ever_loaded_assets = True
         self._check_structure()
 
         return areas
@@ -1300,7 +1304,7 @@ class AreaManager(AssetManager):
 
         temp_areas = list()
         for (i, area_item) in enumerate(areas):
-            temp_areas.append(self.Area(self.hub, i, area_item))
+            temp_areas.append(self.Area(self.server, self.hub, i, area_item))
 
         old_areas = self.get_areas()
         self._areas = temp_areas
@@ -1338,8 +1342,8 @@ class AreaManager(AssetManager):
         self.publisher.publish('areas_loaded', dict())
 
         # If the default area ID is now past the number of available areas, reset it back to zero
-        if self.default_area >= len(self._areas):
-            self.default_area = 0
+        if self._default_area_id >= len(self._areas):
+            self.default_area = self.get_area_by_id(0)
 
         for area in old_areas:
             # Decide whether the area still exists or not
@@ -1389,7 +1393,26 @@ class AreaManager(AssetManager):
         Return the Area object corresponding to the server's default area.
         """
 
-        return self._areas[self.default_area]
+        return self._areas[self._default_area_id]
+
+    def set_default_area(self, area: Area):
+        """
+        Set the default area of the area manager.
+
+        Parameters
+        ----------
+        area : Area
+            New area.
+
+        Raises
+        ------
+        AreaError
+            If the manager does not recognize the area as an area it manages.
+        """
+
+        if area not in self._areas:
+            raise AreaError
+        self._default_area_id = area.id
 
     def get_area_by_name(self, name: str) -> AreaManager.Area:
         """

@@ -87,16 +87,16 @@ class TsuserverDR:
         self.server_select_name = 'SERVER_SELECT'
 
         self.load_config()
-        self.ban_manager = BanManager(self)
 
+        self.ban_manager = BanManager(self)
         self.timer_manager = TimerManager(self)
-        self.client_manager: ClientManager = client_manager(self)
         self.party_manager = PartyManager(self)
 
+        self.client_manager: ClientManager = client_manager(self)
         self.hub_manager = HubManager(self)
-        #self.default_hub = self.hub_manager.new_managee(
-        #    autoadd_on_client_enter=True,
-        #)
+        self.hub_manager.new_managee(
+            autoadd_on_client_enter=True,
+        )
 
         self.ipid_list = {}
         self.hdid_list = {}
