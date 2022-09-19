@@ -1542,7 +1542,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
             timer_limit=timer_limit
         )
 
-        self.listener.subscribe(self.server.area_manager)
+        self.listener.subscribe(self.hub.area_manager)
         self.listener.update_events({
             'area_client_left_final': self._on_area_client_left_final,
             'area_client_entered_final': self._on_area_client_entered_final,

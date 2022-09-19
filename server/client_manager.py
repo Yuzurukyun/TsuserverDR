@@ -21,14 +21,6 @@ from __future__ import annotations
 import typing
 from typing import Any, Callable, List, Optional, Set, Tuple, Dict, Union
 
-from server.music_manager import MusicManager
-if typing.TYPE_CHECKING:
-    # Avoid circular referencing
-    from server.area_manager import AreaManager
-    from server.network.ao_protocol import AOProtocol
-    from server.tsuserver import TsuserverDR
-    from server.zone_manager import ZoneManager
-
 import datetime
 import random
 import time
@@ -36,16 +28,33 @@ import time
 from server import clients
 from server import client_changearea
 from server import logger
-from server.exceptions import AreaError, ClientError, GameError, PartyError, TrialError
+
+from server.exceptions import AreaError, ClientError, PartyError, TrialError
 from server.constants import TargetType, Constants
+from server.hub_manager import _Hub
+from server.music_manager import MusicManager
 from server.subscriber import Publisher
 
+if typing.TYPE_CHECKING:
+    # Avoid circular referencing
+    from server.area_manager import AreaManager
+    from server.network.ao_protocol import AOProtocol
+    from server.tsuserver import TsuserverDR
+    from server.zone_manager import ZoneManager
 
 class ClientManager:
     class Client:
-        def __init__(self, server: TsuserverDR, transport, user_id: int, ipid: int,
-                     protocol: AOProtocol = None):
+        def __init__(
+            self,
+            server: TsuserverDR,
+            hub: _Hub,
+            transport,
+            user_id: int,
+            ipid: int,
+            protocol: AOProtocol = None
+            ):
             self.server = server
+            self.hub = hub
             self.transport = transport
             self.protocol = protocol
             self.ip = transport.get_extra_info('peername')[0] if transport else "127.0.0.1"
@@ -78,7 +87,7 @@ class ClientManager:
             # Avoid doing an OS call for a new client
             self.music_manager.transfer_contents_from_manager(self.server.music_manager)
 
-            self.area = server.area_manager.default_area()
+            self.area = hub.area_manager.default_area()
             self.new_area = self.area  # It is different from self.area in transition to a new area
             self.party = None
             self.is_mod = False
@@ -907,13 +916,13 @@ class ClientManager:
             self.change_character(self.char_id, force=True)
 
         def get_area_and_music_list_view(self):
-            area_list = self.server.area_manager.get_client_view(self, from_area=self.area)
+            area_list = self.hub.area_manager.get_client_view(self, from_area=self.area)
             music_list = self.music_manager.get_client_view()
 
             return area_list+music_list
 
         def send_music_list_view(self):
-            area_list = self.server.area_manager.get_client_view(self, from_area=self.area)
+            area_list = self.hub.area_manager.get_client_view(self, from_area=self.area)
             music_list = self.music_manager.get_client_view()
 
             if self.packet_handler.HAS_DISTINCT_AREA_AND_MUSIC_LIST_OUTGOING_PACKETS:
@@ -1383,7 +1392,7 @@ class ClientManager:
         def send_area_list(self):
             msg = '=== Areas ==='
             lock = {True: '[LOCKED]', False: ''}
-            for i, area in enumerate(self.server.area_manager.get_areas()):
+            for i, area in enumerate(self.hub.area_manager.get_areas()):
                 owner = 'FREE'
                 if area.owned:
                     for client in [x for x in area.clients if x.is_cm]:
@@ -1403,7 +1412,7 @@ class ClientManager:
 
         def send_limited_area_list(self):
             msg = '=== Areas ==='
-            for i, area in enumerate(self.server.area_manager.get_areas()):
+            for i, area in enumerate(self.hub.area_manager.get_areas()):
                 msg += '\r\nArea {}: {}'.format(i, area.name)
                 if self.area == area:
                     msg += ' [*]'
@@ -1451,7 +1460,7 @@ class ClientManager:
             if include_ipid is None and as_mod:
                 include_ipid = True
 
-            area = self.server.area_manager.get_area_by_id(area_id)
+            area = self.hub.area_manager.get_area_by_id(area_id)
             clients = self.get_visible_clients(area, mods=mods, as_mod=as_mod,
                                                only_my_multiclients=only_my_multiclients)
             sorted_clients = sorted(clients, key=lambda x: x.get_char_name())
@@ -1513,7 +1522,7 @@ class ClientManager:
                 # all areas info
 
                 if area_id == -1:
-                    areas = self.server.area_manager.get_areas()
+                    areas = self.hub.area_manager.get_areas()
                 elif area_id == -2:
                     zone = self.zone_watched
                     if zone is None:
@@ -1564,15 +1573,15 @@ class ClientManager:
 
         def send_all_area_hdid(self):
             info = '== HDID List =='
-            for i in range(len(self.server.area_manager.get_areas())):
-                if len(self.server.area_manager.get_areas()[i].clients) > 0:
+            for i in range(len(self.hub.area_manager.get_areas())):
+                if len(self.hub.area_manager.get_areas()[i].clients) > 0:
                     info += '\r\n{}'.format(self.get_area_hdid(i))
             self.send_ooc(info)
 
         def send_all_area_ip(self):
             info = '== IP List =='
-            for i in range(len(self.server.area_manager.get_areas())):
-                if len(self.server.area_manager.get_areas()[i].clients) > 0:
+            for i in range(len(self.hub.area_manager.get_areas())):
+                if len(self.hub.area_manager.get_areas()[i].clients) > 0:
                     info += '\r\n{}'.format(self.get_area_ip(i))
             self.send_ooc(info)
 
@@ -1975,7 +1984,7 @@ class ClientManager:
                 areas = set()
             else:
                 start, end = self.multi_ic[0].id, self.multi_ic[1].id
-                areas = {area for area in self.server.area_manager.get_areas()
+                areas = {area for area in self.hub.area_manager.get_areas()
                          if start <= area.id <= end}
             info += ('\n*Global IC range: {}. Global IC prefix: {}'
                      .format(Constants.format_area_ranges(areas),
@@ -2091,8 +2100,13 @@ class ClientManager:
         self.phantom_peek_timer._on_max_end = _phantom_peek
         self.phantom_peek_timer.start()
 
-    def new_client(self, transport, client_obj: typing.Type[ClientManager.Client] = None,
-                   protocol=None):
+    def new_client(
+        self,
+        hub: _Hub,
+        transport,
+        client_obj: typing.Type[ClientManager.Client] = None,
+        protocol=None
+        ):
         ip = transport.get_extra_info('peername')[0] if transport else "127.0.0.1"
         ipid = self.server.get_ipid(ip)
 
@@ -2104,7 +2118,7 @@ class ClientManager:
             if not self.cur_id[i]:
                 cur_id = i
                 break
-        c = client_obj(self.server, transport, cur_id, ipid, protocol=protocol)
+        c = client_obj(self.server, hub, transport, cur_id, ipid, protocol=protocol)
         self.clients.add(c)
 
         # Check if server is full, and if so, send number of players and disconnect
@@ -2211,7 +2225,7 @@ class ClientManager:
         if local:
             areas = [client.area]
         else:
-            areas = client.server.area_manager.get_areas()
+            areas = client.hub.area_manager.get_areas()
         targets = []
         if key == TargetType.ALL:
             for nkey in range(8):

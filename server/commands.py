@@ -105,7 +105,7 @@ def ooc_cmd_area(client: ClientManager.Client, arg: str):
     # Switch to new area
     else:
         try:
-            area = client.server.area_manager.get_area_by_id(int(args[0]))
+            area = client.hub.area_manager.get_area_by_id(int(args[0]))
         except ValueError:
             raise ArgumentError('Area ID must be a number.')
         client.change_area(area, from_party=(client.party is not None))
@@ -151,7 +151,7 @@ def ooc_cmd_area_kick(client: ClientManager.Client, arg: str):
         raise ClientError('You must be authorized to kick clients in lobby areas.')
 
     if len(arg) == 1:
-        area = client.server.area_manager.get_area_by_id(client.server.default_area)
+        area = client.hub.area_manager.default_area()
     else:
         area = Constants.parse_area_names(client, [" ".join(arg[1:])])[0]
 
@@ -216,15 +216,15 @@ def ooc_cmd_area_list(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_officer=True)
 
     # lists which areas are locked before the reload
-    old_locked_areas = [area.name for area in client.server.area_manager.get_areas()
+    old_locked_areas = [area.name for area in client.hub.area_manager.get_areas()
                         if area.is_locked]
 
-    client.server.area_manager.command_list_load(client, arg)
+    client.hub.area_manager.command_list_load(client, arg)
 
     # Every area that was locked before the reload gets warned that their areas were unlocked.
     for area_name in old_locked_areas:
         try:
-            area = client.server.area_manager.get_area_by_name(area_name)
+            area = client.hub.area_manager.get_area_by_name(area_name)
             area.broadcast_ooc('This area became unlocked after the area reload. Relock it using '
                                '/lock.')
         # if no area is found with that name, then an old locked area does not exist anymore, so
@@ -235,7 +235,7 @@ def ooc_cmd_area_list(client: ClientManager.Client, arg: str):
     # Every area that was locked before the reload gets warned that their areas were unlocked.
     for area_name in old_locked_areas:
         try:
-            area = client.server.area_manager.get_area_by_name(area_name)
+            area = client.hub.area_manager.get_area_by_name(area_name)
             area.broadcast_ooc('This area became unlocked after the area reload. Relock it using '
                                '/lock.')
         # if no area is found with that name, then an old locked area does not exist anymore, so
@@ -539,7 +539,7 @@ def ooc_cmd_bilock(client: ClientManager.Client, arg: str):
 
     areas = Constants.parse_two_area_names(client, areas, area_duplicate=False,
                                            check_valid_range=False)
-    now_reachable = client.server.area_manager.change_passage_lock(client, areas, bilock=True,
+    now_reachable = client.hub.area_manager.change_passage_lock(client, areas, bilock=True,
                                                                    change_passage_visibility=False)
 
     status = {True: 'unlocked', False: 'locked'}
@@ -598,7 +598,7 @@ def ooc_cmd_bilockh(client: ClientManager.Client, arg: str):
 
     areas = Constants.parse_two_area_names(client, arg.split(', '), area_duplicate=False,
                                            check_valid_range=False)
-    now_reachable = client.server.area_manager.change_passage_lock(client, areas, bilock=True,
+    now_reachable = client.hub.area_manager.change_passage_lock(client, areas, bilock=True,
                                                                    change_passage_visibility=True)
 
     status = {True: 'unlocked and revealed', False: 'locked and hid'}
@@ -913,7 +913,7 @@ def ooc_cmd_bloodtrail_list(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
     # Get all areas with blood in them
-    areas = sorted([area for area in client.server.area_manager.get_areas()
+    areas = sorted([area for area in client.hub.area_manager.get_areas()
                     if len(area.bleeds_to) > 0 or area.blood_smeared],
                    key=lambda x: x.name)
 
@@ -2139,13 +2139,13 @@ def ooc_cmd_defaultarea(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_mod=True, parameters='=1')
 
     try:
-        client.server.area_manager.get_area_by_id(int(arg))
+        client.hub.area_manager.get_area_by_id(int(arg))
     except ValueError:
         raise ArgumentError('Expected numerical value for area ID.')
     except AreaError:
         raise ClientError('ID {} does not correspond to a valid area ID.'.format(arg))
 
-    client.server.default_area = int(arg)
+    client.hub.area_manager.default_area = int(arg)
     client.send_ooc('Set default area to {}.'.format(arg))
 
 
@@ -3559,10 +3559,10 @@ def ooc_cmd_knock(client: ClientManager.Client, arg: str):
 
     # Get area by either name or ID
     try:
-        target_area = client.server.area_manager.get_area_by_name(arg)
+        target_area = client.hub.area_manager.get_area_by_name(arg)
     except AreaError:
         try:
-            target_area = client.server.area_manager.get_area_by_id(int(arg))
+            target_area = client.hub.area_manager.get_area_by_id(int(arg))
         except Exception:
             raise ArgumentError('Could not parse area name {}.'.format(arg))
 
@@ -4008,7 +4008,7 @@ def ooc_cmd_look_list(client: ClientManager.Client, arg: str):
 
     info = '== Areas in this server with custom descriptions =='
     # Get all areas with changed descriptions
-    areas = [area for area in client.server.area_manager.get_areas()
+    areas = [area for area in client.hub.area_manager.get_areas()
              if area.description != area.default_description]
 
     # No areas found means there are no areas with changed descriptions
@@ -4227,13 +4227,13 @@ def ooc_cmd_minimap(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, parameters='=0')
 
     info = '== Minimap for {} =='.format(client.area.name)
-    if client.area.visible_areas == client.server.area_manager.area_names:
+    if client.area.visible_areas == client.hub.area_manager.area_names:
         # Useful abbreviation
         info += '\r\n<ALL>'
     else:
         # Get all reachable areas and sort them by area ID
         sorted_areas = sorted(client.area.visible_areas,
-                              key=lambda name: client.server.area_manager.get_area_by_name(name).id)
+                              key=lambda name: client.hub.area_manager.get_area_by_name(name).id)
 
         # No areas found or just the current area found means there are no reachable areas.
         if len(sorted_areas) == 0 or sorted_areas == [client.area.name]:
@@ -4243,7 +4243,7 @@ def ooc_cmd_minimap(client: ClientManager.Client, arg: str):
             for area_name in sorted_areas:
                 if area_name == client.area.name:
                     continue
-                area = client.server.area_manager.get_area_by_name(area_name)
+                area = client.hub.area_manager.get_area_by_name(area_name)
                 info += f'\r\n{area.id}-{area_name}'
 
     client.send_ooc(info)
@@ -6256,8 +6256,8 @@ def ooc_cmd_passage_clear(client: ClientManager.Client, arg: str):
     areas = Constants.parse_two_area_names(client, arg.split(', '))
 
     for i in range(areas[0].id, areas[1].id+1):
-        area = client.server.area_manager.get_area_by_id(i)
-        area.reachable_areas = client.server.area_manager.area_names
+        area = client.hub.area_manager.get_area_by_id(i)
+        area.reachable_areas = client.hub.area_manager.area_names
 
     if areas[0] == areas[1]:
         client.send_ooc('Area passage locks have been removed in {}.'.format(areas[0].name))
@@ -6294,7 +6294,7 @@ def ooc_cmd_passage_restore(client: ClientManager.Client, arg: str):
     areas = Constants.parse_two_area_names(client, arg.split(', '))
 
     for i in range(areas[0].id, areas[1].id+1):
-        area = client.server.area_manager.get_area_by_id(i)
+        area = client.hub.area_manager.get_area_by_id(i)
         area.reachable_areas = set(list(area.default_reachable_areas)[:])
         area.change_reachability_allowed = area.default_change_reachability_allowed
 
@@ -7079,7 +7079,7 @@ def ooc_cmd_rplay(client: ClientManager.Client, arg: str):
     except ArgumentError:
         raise ArgumentError('You must specify a song.')
 
-    areas = {client.server.area_manager.get_area_by_name(reachable_area_name)
+    areas = {client.hub.area_manager.get_area_by_name(reachable_area_name)
              for reachable_area_name in client.area.visible_areas}
 
     for area in areas:
@@ -7226,7 +7226,7 @@ def ooc_cmd_scream_range(client: ClientManager.Client, arg: str):
         info += '\r\n*No areas.'
     # Otherwise, build the list of all areas.
     else:
-        areas = [client.server.area_manager.get_area_by_name(area_name)
+        areas = [client.hub.area_manager.get_area_by_name(area_name)
                  for area_name in client.area.scream_range]
         for area in sorted(areas, key=lambda area: area.id):
             info += '\r\n*{}-{}'.format(area.id, area.name)
@@ -7338,7 +7338,7 @@ def ooc_cmd_scream_set_range(client: ClientManager.Client, arg: str):
                 raise ArgumentError('You may not include multiple areas when including a special '
                                     'keyword.')
             area_names = '<ALL>'
-            client.area.scream_range = {area.name for area in client.server.area_manager.get_areas()
+            client.area.scream_range = {area.name for area in client.hub.area_manager.get_areas()
                                         if area != client.area}
         elif '<REACHABLE_AREAS>' in raw_areas:
             if len(raw_areas) != 1:
@@ -9371,7 +9371,7 @@ def ooc_cmd_unilock(client: ClientManager.Client, arg: str):
 
     areas = Constants.parse_two_area_names(client, areas, area_duplicate=False,
                                            check_valid_range=False)
-    now_reachable = client.server.area_manager.change_passage_lock(client, areas, bilock=False,
+    now_reachable = client.hub.area_manager.change_passage_lock(client, areas, bilock=False,
                                                                    change_passage_visibility=False)
 
     status = {True: 'unlocked', False: 'locked'}
@@ -9418,7 +9418,7 @@ def ooc_cmd_unilockh(client: ClientManager.Client, arg: str):
 
     areas = Constants.parse_two_area_names(client, arg.split(', '), area_duplicate=False,
                                            check_valid_range=False)
-    now_reachable = client.server.area_manager.change_passage_lock(client, areas, bilock=False,
+    now_reachable = client.hub.area_manager.change_passage_lock(client, areas, bilock=False,
                                                                    change_passage_visibility=True)
 
     status = {True: 'unlocked and revealed', False: 'locked and hid'}
@@ -9901,7 +9901,7 @@ def ooc_cmd_zone(client: ClientManager.Client, arg: str):
     raw_area_names = arg.split(', ') if arg else []
     lower_area, upper_area = Constants.parse_two_area_names(client, raw_area_names,
                                                             check_valid_range=True)
-    areas = client.server.area_manager.get_areas_in_range(lower_area, upper_area)
+    areas = client.hub.area_manager.get_areas_in_range(lower_area, upper_area)
 
     try:
         zone_id = client.server.zone_manager.new_zone(areas, {client})
@@ -11389,7 +11389,7 @@ def ooc_cmd_area_list_info(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, is_officer=True, parameters='=0')
 
-    client.server.area_manager.command_list_info(client)
+    client.hub.area_manager.command_list_info(client)
 
 
 def ooc_cmd_music_list_info(client: ClientManager.Client, arg: str):

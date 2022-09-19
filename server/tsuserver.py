@@ -43,7 +43,6 @@ from server.character_manager import CharacterManager
 from server.constants import Constants
 from server.client_manager import ClientManager
 from server.exceptions import ServerError
-from server.game_manager import GameManager
 from server.hub_manager import HubManager
 from server.music_manager import MusicManager
 from server.network.ao_protocol import AOProtocol
@@ -91,8 +90,6 @@ class TsuserverDR:
         self.shutting_down = False
         self.loop = None
         self.last_error = None
-        self.old_area_list = None
-        self.default_area = 0
         self.all_passwords = list()
         self.global_allowed = True
         self.server_select_name = 'SERVER_SELECT'
@@ -111,10 +108,8 @@ class TsuserverDR:
         self.character_manager = CharacterManager(self)
         self.load_characters()
 
-        self.game_manager = GameManager(self)
         self.trial_manager = TrialManager(self)
         self.zone_manager = ZoneManager(self)
-        self.area_manager = AreaManager(self)
         self.background_manager = BackgroundManager(self)
         self.music_manager = MusicManager(self)
         self.party_manager = PartyManager(self)
@@ -278,9 +273,13 @@ class TsuserverDR:
         self.logged_packets.append(entry)
 
     def new_client(self, transport, protocol=None) -> Tuple[ClientManager.Client, bool]:
-        c, valid = self.client_manager.new_client(transport, protocol=protocol)
+        c, valid = self.client_manager.new_client(
+            self.hub_manager.get_default_managee(),
+            transport,
+            protocol=protocol
+            )
         c.server = self
-        c.area = self.area_manager.default_area()
+        c.area = self.hub_manager.get_default_managee().area_manager.default_area()
         c.area.new_client(c)
         return c, valid
 
@@ -308,36 +307,6 @@ class TsuserverDR:
     def get_player_count(self) -> int:
         # Ignore players in the server selection screen.
         return len([client for client in self.get_clients() if client.char_id is not None])
-
-    def load_areas(self, source_file: str = 'config/areas.yaml') -> List[AreaManager.Area]:
-        """
-        Load an area list file.
-
-        Parameters
-        ----------
-        source_file : str
-            Relative path from server root folder to the area list file, by default
-            'config/areas.yaml'
-
-        Returns
-        -------
-        List[AreaManager.Area]
-            Areas.
-
-        Raises
-        ------
-        ServerError.FileNotFoundError
-            If the file was not found.
-        ServerError.FileOSError
-            If there was an operating system error when opening the file.
-        ServerError.YAMLInvalidError
-            If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
-        ServerError.FileSyntaxError
-            If the file failed verification for its asset type.
-        """
-
-        areas = self.area_manager.load_file(source_file)
-        return areas.copy()
 
     def load_backgrounds(self, source_file: str = 'config/backgrounds.yaml') -> List[str]:
         """
@@ -375,7 +344,7 @@ class TsuserverDR:
 
         # Make sure each area still has a valid background
         default_background = self.background_manager.get_default_background()
-        for area in self.area_manager.get_areas():
+        for area in self.hub_manager.get_default_managee().get_areas():
             if not self.background_manager.is_background(area.background) and not area.cbg_allowed:
                 # The area no longer has a valid background, so change it to some valid background
                 # like the first one

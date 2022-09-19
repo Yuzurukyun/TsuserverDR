@@ -41,14 +41,14 @@ class _Unittest(unittest.TestCase):
         print('\nTesting {}: '.format(cls.__name__), end=' ')
         cls.server = _TestTsuserverDR()
         cls.clients: List[_TestClientManager._Testclient] = cls.server.client_list
-        cls.area0: AreaManager.Area = cls.server.area_manager.get_area_by_id(0)
-        cls.area1: AreaManager.Area = cls.server.area_manager.get_area_by_id(1)
-        cls.area2: AreaManager.Area = cls.server.area_manager.get_area_by_id(2)
-        cls.area3: AreaManager.Area = cls.server.area_manager.get_area_by_id(3)
-        cls.area4: AreaManager.Area = cls.server.area_manager.get_area_by_id(4)
-        cls.area5: AreaManager.Area = cls.server.area_manager.get_area_by_id(5)
-        cls.area6: AreaManager.Area = cls.server.area_manager.get_area_by_id(6)
-        cls.area7: AreaManager.Area = cls.server.area_manager.get_area_by_id(7)
+        cls.area0: AreaManager.Area = cls.hub.area_manager.get_area_by_id(0)
+        cls.area1: AreaManager.Area = cls.hub.area_manager.get_area_by_id(1)
+        cls.area2: AreaManager.Area = cls.hub.area_manager.get_area_by_id(2)
+        cls.area3: AreaManager.Area = cls.hub.area_manager.get_area_by_id(3)
+        cls.area4: AreaManager.Area = cls.hub.area_manager.get_area_by_id(4)
+        cls.area5: AreaManager.Area = cls.hub.area_manager.get_area_by_id(5)
+        cls.area6: AreaManager.Area = cls.hub.area_manager.get_area_by_id(6)
+        cls.area7: AreaManager.Area = cls.hub.area_manager.get_area_by_id(7)
 
         cls.a0_name: str = cls.area0.name
         cls.a1_name: str = cls.area1.name
@@ -122,7 +122,7 @@ class _Unittest(unittest.TestCase):
         if group == 'C':
             structure = self.server.client_manager.clients
         elif group == 'A':
-            structure = self.server.area_manager.get_areas()
+            structure = self.hub.area_manager.get_areas()
 
         if yes == 1:
             yes = {x for x in structure if x not in no}
@@ -354,7 +354,7 @@ class _TestClientManager(ClientManager):
 
         def move_area(self, area_id, discard_packets=True, discard_trivial=False):
             as_command = random.randint(0, 1)
-            area = self.server.area_manager.get_area_by_id(area_id)
+            area = self.hub.area_manager.get_area_by_id(area_id)
             if as_command:
                 self.ooc('/area {}'.format(area_id))
             else:

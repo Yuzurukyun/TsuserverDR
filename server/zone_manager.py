@@ -1039,7 +1039,7 @@ class ZoneManager:
                 watchers_so_far.add(watcher)
 
         # 7.
-        for area in self._server.area_manager.get_areas():
+        for area in self.hub.area_manager.get_areas():
             if area in areas_so_far:
                 continue
             assert area.in_zone is None, (

@@ -32,7 +32,10 @@ from server.exceptions import HubError, GameWithAreasError
 from server.gamewithareas_manager import _GameWithAreas, GameWithAreasManager
 from server.music_manager import MusicManager
 
-from typing import Callable, Dict, Set, Any, Tuple, Type, Union
+from typing import Callable, Dict, List, Set, Any, Tuple, Type, Union
+
+from server.trial_manager import TrialManager
+from server.zone_manager import ZoneManager
 
 if typing.TYPE_CHECKING:
     from server.client_manager import ClientManager
@@ -1694,9 +1697,11 @@ class _Hub(_HubTrivialInherited):
         self.background_manager = BackgroundManager(self)
         self.character_manager = CharacterManager(self)
         self.music_manager = MusicManager(self)
+        self.trial_manager = TrialManager(self)
+        self.zone_manager = ZoneManager(self)
 
         # Has to be after character_manager to allow proper loading of areas
-        self.area_manager = AreaManager(self)
+        self.area_manager = AreaManager(server,self)
 
         super().__init__(
             server,
@@ -1723,6 +1728,36 @@ class _Hub(_HubTrivialInherited):
 
     def unchecked_remove_player(self, user: ClientManager.Client):
         return super().unchecked_remove_player(user)
+
+    def load_areas(self, source_file: str = 'config/areas.yaml') -> List[AreaManager.Area]:
+        """
+        Load an area list file.
+
+        Parameters
+        ----------
+        source_file : str
+            Relative path from server root folder to the area list file, by default
+            'config/areas.yaml'
+
+        Returns
+        -------
+        List[AreaManager.Area]
+            Areas.
+
+        Raises
+        ------
+        ServerError.FileNotFoundError
+            If the file was not found.
+        ServerError.FileOSError
+            If there was an operating system error when opening the file.
+        ServerError.YAMLInvalidError
+            If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
+        ServerError.FileSyntaxError
+            If the file failed verification for its asset type.
+        """
+
+        areas = self.area_manager.load_file(source_file)
+        return areas.copy()
 
     def _on_area_client_left_final(self, area: AreaManager.Area, client: ClientManager.Client = None, old_displayname: str = None, ignore_bleeding: bool = False, ignore_autopass: bool = False):
         return super()._on_area_client_left_final(area, client, old_displayname, ignore_bleeding, ignore_autopass)
@@ -2414,6 +2449,11 @@ class HubManager(_HubManagerTrivialInherited):
                 return new_game_id
             game_number += 1
         raise HubError.ManagerTooManyGamesError
+
+    def get_default_managee(self) -> _Hub:
+        id_to_managees = self.get_managee_ids_to_managees()
+        earliest_id = sorted(id_to_managees.keys())[0]
+        return id_to_managees[earliest_id]
 
     def _check_structure(self):
         """

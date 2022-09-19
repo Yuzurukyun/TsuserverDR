@@ -35,7 +35,8 @@ from server.exceptions import ServerError
 from server.subscriber import Publisher
 
 if typing.TYPE_CHECKING:
-    from client_manager import ClientManager
+    from server.client_manager import ClientManager
+    from server.hub_manager import _Hub
     from server.tsuserver import TsuserverDR
 
 
@@ -44,7 +45,7 @@ class AssetManager(ABC):
     A quasi-abstract base class for managers of assets.
     """
 
-    def __init__(self, server: TsuserverDR):
+    def __init__(self, server: TsuserverDR, hub: Union[_Hub, None] = None):
         """
         Create an asset manager.
 
@@ -52,9 +53,12 @@ class AssetManager(ABC):
         ----------
         server : TsuserverDR
             The server this asset manager belongs to.
+        hub : _Hub, optional
+            The hub this asset manager belongs to. Defaults to None.
         """
 
         self.server = server
+        self.hub = hub
         self.publisher = Publisher(self)
 
     @abstractmethod
