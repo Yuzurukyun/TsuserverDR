@@ -39,7 +39,8 @@ if typing.TYPE_CHECKING:
     from server.area_manager import AreaManager
     from server.client_manager import ClientManager
     from server.game_manager import _Team
-    from server.gamewithareas_manager import GameWithAreasManager
+    from server.hub_manager import _Hub
+    from server.hubbedgame_manager import HubbedGameManager
     from server.timer_manager import Timer
     from server.trial_manager import _Trial
     from server.tsuserver import TsuserverDR
@@ -1631,8 +1632,10 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
     ----------
     server : TsuserverDR
         Server the nonstop debate belongs to.
-    manager : GameWithAreasManager
+    manager : HubbedGameManager
         Manager for this nonstop debate.
+    hub: _Hub
+        Hub for this hubbed game.
     listener : Listener
         Standard listener of the nonstop debate.
 
@@ -1669,7 +1672,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
     def __init__(
         self,
         server: TsuserverDR,
-        manager: GameWithAreasManager,
+        manager: HubbedGameManager,
         nsd_id: str,
         player_limit: Union[int, None] = None,
         player_concurrent_limit: Union[int, None] = None,
@@ -1681,6 +1684,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
         timer_limit: Union[int, None] = None,
         area_concurrent_limit: Union[int, None] = None,
         autoadd_on_client_enter: bool = False,
+        hub: _Hub = None,
         trial: _Trial = None,
         autoadd_on_trial_player_add: bool = False,
         # new
@@ -1694,7 +1698,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
         ----------
         server : TsuserverDR
             Server the NSD belongs to.
-        manager : GameWithAreasManager
+        manager : HubbedGameManager
             Manager for this NSD.
         nsd_id : str
             Identifier of the NSD.
@@ -1741,6 +1745,8 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
             If True, nonplayer users that enter an area part of the nonstop debate will be
             automatically added if permitted by the conditions of the nonstop debate. If False, no
             such adding will take place. Defaults to False.
+        hub : _Hub, optional
+            Hub the nonstop debate belongs to. Defaults to None.
         trial : _Trial, optional
             Trial the nonstop debate is a part of. Defaults to None.
         autoadd_on_trial_player_add : bool, optional
@@ -1786,6 +1792,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
             timer_limit=timer_limit,
             area_concurrent_limit=area_concurrent_limit,
             autoadd_on_client_enter=autoadd_on_client_enter,
+            hub=hub,
             trial=trial,
             autoadd_on_trial_player_add=autoadd_on_trial_player_add,
         )

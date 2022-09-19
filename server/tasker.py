@@ -216,7 +216,7 @@ class Tasker:
             raise
         else:
             try:
-                area = client.server.area_manager.get_area_by_id(int(afk_sendto))
+                area = client.hub.area_manager.get_area_by_id(int(afk_sendto))
             except Exception:
                 info = ('The area file contains an invalid AFK kick destination area for area {}: '
                         '{}'.format(client.area.id, afk_sendto))

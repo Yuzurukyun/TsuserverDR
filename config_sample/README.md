@@ -9,7 +9,6 @@ With your copy of this software, you should check that you have the following fi
 * `areas.yaml`
 * `backgrounds.yaml`
 * `gimp.yaml`
-* `iniswaps.yaml`
 * `music.yaml`
 * `music_lists.yaml`
 
@@ -54,10 +53,6 @@ Each file contains an example configuration. Further instructions should be loca
 
 * **gimp.yaml**
     - Lists a pool of messages. If a player is gimped, their messages will be replaced with a randomly chosen message from this list.
-
-* **iniswaps.yaml**
-    - Lists the allowed iniswapping combinations.
-    - This is the list the server uses to check in areas that prevent iniswapping to check if they should allow a particular iniswap to exist.
 
 * **music.yaml**
     - Contains the default server music list.

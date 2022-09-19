@@ -21,14 +21,6 @@ from __future__ import annotations
 import typing
 from typing import Any, Callable, List, Optional, Set, Tuple, Dict, Union
 
-from server.music_manager import MusicManager
-if typing.TYPE_CHECKING:
-    # Avoid circular referencing
-    from server.area_manager import AreaManager
-    from server.network.ao_protocol import AOProtocol
-    from server.tsuserver import TsuserverDR
-    from server.zone_manager import ZoneManager
-
 import datetime
 import random
 import time
@@ -36,16 +28,33 @@ import time
 from server import clients
 from server import client_changearea
 from server import logger
-from server.exceptions import AreaError, ClientError, GameError, PartyError, TrialError
+
+from server.exceptions import AreaError, ClientError, PartyError, TrialError
 from server.constants import TargetType, Constants
+from server.hub_manager import _Hub
+from server.music_manager import MusicManager
 from server.subscriber import Publisher
 
+if typing.TYPE_CHECKING:
+    # Avoid circular referencing
+    from server.area_manager import AreaManager
+    from server.network.ao_protocol import AOProtocol
+    from server.tsuserver import TsuserverDR
+    from server.zone_manager import ZoneManager
 
 class ClientManager:
     class Client:
-        def __init__(self, server: TsuserverDR, transport, user_id: int, ipid: int,
-                     protocol: AOProtocol = None):
+        def __init__(
+            self,
+            server: TsuserverDR,
+            hub: _Hub,
+            transport,
+            user_id: int,
+            ipid: int,
+            protocol: AOProtocol = None
+            ):
             self.server = server
+            self.hub = hub
             self.transport = transport
             self.protocol = protocol
             self.ip = transport.get_extra_info('peername')[0] if transport else "127.0.0.1"
@@ -74,11 +83,13 @@ class ClientManager:
             self.ever_outbounded_gamemode = False
             self.ever_outbounded_time_of_day = False
 
-            self.music_manager = MusicManager(server)
+            self.music_manager = MusicManager(server, hub=None)
             # Avoid doing an OS call for a new client
-            self.music_manager.transfer_contents_from_manager(self.server.music_manager)
+            self.music_manager.transfer_contents_from_manager(
+                self.server.hub_manager.get_default_managee().music_manager
+                )
 
-            self.area = server.area_manager.default_area()
+            self.area = hub.area_manager.default_area()
             self.new_area = self.area  # It is different from self.area in transition to a new area
             self.party = None
             self.is_mod = False
@@ -660,12 +671,6 @@ class ClientManager:
 
         def send_music(self, name=None, char_id=None, showname=None, force_same_restart=None,
                        loop=None, channel=None, effects=None):
-            if (not self.packet_handler.HAS_CLIENTSIDE_MUSIC_LOOPING
-                and self.packet_handler.REPLACES_BASE_OPUS_FOR_MP3):
-                if name in self.server.new_110_music:
-                    name = name.replace('.opus', '.mp3')
-                    name = '/'.join(name.split('/')[1:])
-
             self.send_command_dict('MC', {
                 'name': name,
                 'char_id': char_id,
@@ -802,7 +807,7 @@ class ClientManager:
 
             old_char, old_char_id = self.get_char_name(), self.char_id
 
-            if not self.server.character_manager.is_valid_character_id(char_id):
+            if not target_area.hub.character_manager.is_valid_character_id(char_id):
                 raise ClientError('Invalid character ID.')
             if not target_area.is_char_available(char_id, allow_restricted=self.is_staff()):
                 if force:
@@ -913,13 +918,13 @@ class ClientManager:
             self.change_character(self.char_id, force=True)
 
         def get_area_and_music_list_view(self):
-            area_list = self.server.area_manager.get_client_view(self, from_area=self.area)
+            area_list = self.hub.area_manager.get_client_view(self, from_area=self.area)
             music_list = self.music_manager.get_client_view()
 
             return area_list+music_list
 
         def send_music_list_view(self):
-            area_list = self.server.area_manager.get_client_view(self, from_area=self.area)
+            area_list = self.hub.area_manager.get_client_view(self, from_area=self.area)
             music_list = self.music_manager.get_client_view()
 
             if self.packet_handler.HAS_DISTINCT_AREA_AND_MUSIC_LIST_OUTGOING_PACKETS:
@@ -1389,7 +1394,7 @@ class ClientManager:
         def send_area_list(self):
             msg = '=== Areas ==='
             lock = {True: '[LOCKED]', False: ''}
-            for i, area in enumerate(self.server.area_manager.get_areas()):
+            for i, area in enumerate(self.hub.area_manager.get_areas()):
                 owner = 'FREE'
                 if area.owned:
                     for client in [x for x in area.clients if x.is_cm]:
@@ -1409,7 +1414,7 @@ class ClientManager:
 
         def send_limited_area_list(self):
             msg = '=== Areas ==='
-            for i, area in enumerate(self.server.area_manager.get_areas()):
+            for i, area in enumerate(self.hub.area_manager.get_areas()):
                 msg += '\r\nArea {}: {}'.format(i, area.name)
                 if self.area == area:
                     msg += ' [*]'
@@ -1457,7 +1462,7 @@ class ClientManager:
             if include_ipid is None and as_mod:
                 include_ipid = True
 
-            area = self.server.area_manager.get_area_by_id(area_id)
+            area = self.hub.area_manager.get_area_by_id(area_id)
             clients = self.get_visible_clients(area, mods=mods, as_mod=as_mod,
                                                only_my_multiclients=only_my_multiclients)
             sorted_clients = sorted(clients, key=lambda x: x.get_char_name())
@@ -1519,7 +1524,7 @@ class ClientManager:
                 # all areas info
 
                 if area_id == -1:
-                    areas = self.server.area_manager.get_areas()
+                    areas = self.hub.area_manager.get_areas()
                 elif area_id == -2:
                     zone = self.zone_watched
                     if zone is None:
@@ -1570,15 +1575,15 @@ class ClientManager:
 
         def send_all_area_hdid(self):
             info = '== HDID List =='
-            for i in range(len(self.server.area_manager.get_areas())):
-                if len(self.server.area_manager.get_areas()[i].clients) > 0:
+            for i in range(len(self.hub.area_manager.get_areas())):
+                if len(self.hub.area_manager.get_areas()[i].clients) > 0:
                     info += '\r\n{}'.format(self.get_area_hdid(i))
             self.send_ooc(info)
 
         def send_all_area_ip(self):
             info = '== IP List =='
-            for i in range(len(self.server.area_manager.get_areas())):
-                if len(self.server.area_manager.get_areas()[i].clients) > 0:
+            for i in range(len(self.hub.area_manager.get_areas())):
+                if len(self.hub.area_manager.get_areas()[i].clients) > 0:
                     info += '\r\n{}'.format(self.get_area_ip(i))
             self.send_ooc(info)
 
@@ -1586,7 +1591,7 @@ class ClientManager:
             raise NotImplementedError
 
         def refresh_char_list(self):
-            char_list = [0] * len(self.server.character_manager.get_characters())
+            char_list = [0] * len(self.hub.character_manager.get_characters())
             unusable_ids = self.area.get_chars_unusable(allow_restricted=self.is_staff())
             # Remove sneaked players from unusable if needed so that they don't appear as taken
             # Their characters will not be able to be reused, but at least that's one less clue
@@ -1604,11 +1609,11 @@ class ClientManager:
                 })
 
         def refresh_visible_char_list(self):
-            char_list = [0] * len(self.server.character_manager.get_characters())
+            char_list = [0] * len(self.hub.character_manager.get_characters())
             unusable_ids = {c.char_id for c in self.get_visible_clients(self.area)
                             if c.has_character()}
             if not self.is_staff():
-                unusable_ids |= {self.server.character_manager.get_character_id_by_name(name)
+                unusable_ids |= {self.hub.character_manager.get_character_id_by_name(name)
                                 for name in self.area.restricted_chars}
 
             for x in unusable_ids:
@@ -1702,7 +1707,7 @@ class ClientManager:
 
             # Send command hints for leading trials and other minigames
             try:
-                trial = self.server.trial_manager.get_managee_of_user(self)
+                trial = self.hub.trial_manager.get_managee_of_user(self)
             except TrialError.UserNotPlayerError:
                 pass
             else:
@@ -1874,7 +1879,7 @@ class ClientManager:
             if char_id is None:
                 char_id = self.char_id
 
-            return self.server.character_manager.get_character_name(char_id)
+            return self.hub.character_manager.get_character_name(char_id)
 
         def get_showname_history(self) -> str:
             info = '== Showname history of client {} =='.format(self.id)
@@ -1981,7 +1986,7 @@ class ClientManager:
                 areas = set()
             else:
                 start, end = self.multi_ic[0].id, self.multi_ic[1].id
-                areas = {area for area in self.server.area_manager.get_areas()
+                areas = {area for area in self.hub.area_manager.get_areas()
                          if start <= area.id <= end}
             info += ('\n*Global IC range: {}. Global IC prefix: {}'
                      .format(Constants.format_area_ranges(areas),
@@ -2097,8 +2102,13 @@ class ClientManager:
         self.phantom_peek_timer._on_max_end = _phantom_peek
         self.phantom_peek_timer.start()
 
-    def new_client(self, transport, client_obj: typing.Type[ClientManager.Client] = None,
-                   protocol=None):
+    def new_client(
+        self,
+        hub: _Hub,
+        transport,
+        client_obj: typing.Type[ClientManager.Client] = None,
+        protocol=None
+        ):
         ip = transport.get_extra_info('peername')[0] if transport else "127.0.0.1"
         ipid = self.server.get_ipid(ip)
 
@@ -2110,7 +2120,7 @@ class ClientManager:
             if not self.cur_id[i]:
                 cur_id = i
                 break
-        c = client_obj(self.server, transport, cur_id, ipid, protocol=protocol)
+        c = client_obj(self.server, hub, transport, cur_id, ipid, protocol=protocol)
         self.clients.add(c)
 
         # Check if server is full, and if so, send number of players and disconnect
@@ -2217,7 +2227,7 @@ class ClientManager:
         if local:
             areas = [client.area]
         else:
-            areas = client.server.area_manager.get_areas()
+            areas = client.hub.area_manager.get_areas()
         targets = []
         if key == TargetType.ALL:
             for nkey in range(8):

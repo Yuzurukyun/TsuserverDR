@@ -48,15 +48,15 @@ class MasterServerClient():
             Instance of the server that is meant to be advertised.
         """
 
-        self._server = server
+        self.server = server
         self._period_length = 20
         self._announced_success = False
         self._session: aiohttp.ClientSession = None
 
-        self._ms_ip: str = self._server.config['masterserver_ip']
-        self._own_port: int = self._server.config['port']
-        self._own_name: str = self._server.config['masterserver_name']
-        self._own_description: str = self._server.config['masterserver_description']
+        self._ms_ip: str = self.server.config['masterserver_ip']
+        self._own_port: int = self.server.config['port']
+        self._own_name: str = self.server.config['masterserver_name']
+        self._own_description: str = self.server.config['masterserver_description']
 
     def _get_server_content(self) -> typing.Dict[str, typing.Any]:
         """
@@ -69,7 +69,7 @@ class MasterServerClient():
         """
 
         port = self._own_port
-        players = self._server.get_player_count()
+        players = self.server.get_player_count()
         name = self._own_name
         description = self._own_description
 

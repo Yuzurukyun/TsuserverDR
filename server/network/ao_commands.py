@@ -221,11 +221,11 @@ def net_cmd_askchaa(client: ClientManager.Client, pargs: Dict[str, Any]):
     client.can_askchaa = False  # Enforce the joining process happening atomically
 
     # Make sure there is enough room for the client
-    char_cnt = len(client.server.character_manager.get_characters())
+    char_cnt = len(client.hub.character_manager.get_characters())
     evi_cnt = 0
     music_cnt = sum([len(item['songs']) + 1
                      for item in client.music_manager.get_music()])  # +1 for category
-    area_cnt = len(client.server.area_manager.get_areas())
+    area_cnt = len(client.hub.area_manager.get_areas())
     client.send_command_dict('SI', {
         'char_count': char_cnt,
         'evidence_count': evi_cnt,
@@ -257,7 +257,7 @@ def net_cmd_rc(client: ClientManager.Client, pargs: Dict[str, Any]):
     if client.required_packets_received != {'HI', 'ID'}:
         return
     client.send_command_dict('SC', {
-        'chars_ao2_list': client.server.character_manager.get_characters(),
+        'chars_ao2_list': client.hub.character_manager.get_characters(),
         })
 
 
@@ -486,8 +486,8 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
     else:
         # As msg.startswith('') is True, this also accounts for having no required prefix.
         start, end = client.multi_ic[0].id, client.multi_ic[1].id + 1
-        start_area = client.server.area_manager.get_area_by_id(start)
-        end_area = client.server.area_manager.get_area_by_id(end-1)
+        start_area = client.hub.area_manager.get_area_by_id(start)
+        end_area = client.hub.area_manager.get_area_by_id(end-1)
         area_range = range(start, end)
 
         truncated_msg = msg.replace(client.multi_ic_pre, '', 1)
@@ -567,7 +567,7 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
     client.publish_inbound_command('MS_final', pargs)
 
     for area_id in area_range:
-        target_area = client.server.area_manager.get_area_by_id(area_id)
+        target_area = client.hub.area_manager.get_area_by_id(area_id)
         for target in target_area.clients:
             target.send_ic(params=pargs, sender=client, gag_replaced=gag_replaced)
 
@@ -705,7 +705,7 @@ def net_cmd_mc(client: ClientManager.Client, pargs: Dict[str, Any]):
     # because music lists typically include area names for quick access
     try:
         delimiter = pargs['name'].find('-')
-        area = client.server.area_manager.get_area_by_name(pargs["name"][delimiter+1:])
+        area = client.hub.area_manager.get_area_by_name(pargs["name"][delimiter+1:])
         client.change_area(area, from_party=True if client.party else False)
 
     # Otherwise, attempt to play music.

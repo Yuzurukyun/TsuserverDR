@@ -24,17 +24,20 @@ as well as perform tasks only on the areas of the zone.
 """
 
 from __future__ import annotations
+
 import typing
 from typing import Any, Dict, Set
-if typing.TYPE_CHECKING:
-    # Avoid circular referencing
-    from server.area_manager import AreaManager
-    from server.client_manager import ClientManager
-    from server.tsuserver import TsuserverDR
 
 from server.constants import Constants
 from server.exceptions import ClientError, ZoneError
 from server.subscriber import Listener
+
+if typing.TYPE_CHECKING:
+    # Avoid circular referencing
+    from server.area_manager import AreaManager
+    from server.client_manager import ClientManager
+    from server.hub_manager import _Hub
+    from server.tsuserver import TsuserverDR
 
 class ZoneManager:
     """
@@ -48,15 +51,25 @@ class ZoneManager:
         that occur in areas in the zone.
         """
 
-        def __init__(self, server: TsuserverDR, zone_id: str, areas: Set[AreaManager.Area],
-                     watchers: Set[ClientManager.Client]):
+        def __init__(
+            self,
+            server: TsuserverDR,
+            manager: ZoneManager,
+            hub: _Hub,
+            zone_id: str,
+            areas: Set[AreaManager.Area],
+            watchers: Set[ClientManager.Client]):
             """
             Initialization method for a zone.
 
             Parameters
             ----------
-            server: TsuserverDR
-                Server the zone belongs to
+            server : TsuserverDR
+                The server this zone belongs to.
+            manager : ZoneManager
+                The manager of this zone.
+            hub: _Hub
+                The hub this zone belongs to.
             zone_id: str
                 Identifier of zone.
             areas: set of AreaManager.Area
@@ -65,7 +78,10 @@ class ZoneManager:
                 Set of clients who are watching the zone.
             """
 
-            self._server = server
+            self.server = server
+            self.manager = manager
+            self.hub = hub
+
             self._zone_id = zone_id
             self._areas = set()
             self._watchers = set()
@@ -193,7 +209,7 @@ class ZoneManager:
 
             # If no more areas, delete the zone
             if not self._areas:
-                self._server.zone_manager.delete_zone(self._zone_id)
+                self.manager.delete_zone(self._zone_id)
 
         def _cleanup_removed_area(self, area: AreaManager.Area):
             self.listener.unsubscribe(area)
@@ -320,7 +336,7 @@ class ZoneManager:
 
             # If no more watchers nor players, delete the zone
             if not self._watchers and not self._players:
-                self._server.zone_manager.delete_zone(self._zone_id)
+                self.manager.delete_zone(self._zone_id)
                 user.send_ooc('(X) Zone `{}` that you were in was automatically ended as no one '
                               'was in an area part of it or was watching it anymore.'
                               .format(self._zone_id), is_staff=True)
@@ -434,7 +450,7 @@ class ZoneManager:
 
             # If no more watchers nor players, delete the zone
             if not self._watchers and not self._players:
-                self._server.zone_manager.delete_zone(self._zone_id)
+                self.manager.delete_zone(self._zone_id)
                 user.send_ooc('(X) Zone `{}` that you were in was automatically ended as no one '
                               'was in an area part of it or was watching it anymore.'
                               .format(self._zone_id), is_staff=True)
@@ -620,7 +636,7 @@ class ZoneManager:
                 return
 
             self._is_deleted = True
-            self._server.zone_manager.delete_zone(self._zone_id)
+            self.manager.delete_zone(self._zone_id)
 
             for area in self._areas:
                 self._cleanup_removed_area(area)
@@ -738,7 +754,7 @@ class ZoneManager:
             self._check_structure()
 
         def _check_structure(self):
-            self._server.zone_manager._check_structure()
+            self.manager._check_structure()
 
         def __repr__(self) -> str:
             """
@@ -752,17 +768,21 @@ class ZoneManager:
 
             return 'Z::{}:{}:{}'.format(self._zone_id, self._areas, self._watchers)
 
-    def __init__(self, server: TsuserverDR):
+    def __init__(self, server: TsuserverDR, hub: _Hub):
         """
         Create a zone manager object.
 
         Parameters
         ----------
-        server: TsuserverDR
+        server : TsuserverDR
             The server this zone manager belongs to.
+        hub : _Hub
+            The hub this zone manager belongs to.
         """
 
-        self._server = server
+        self.server = server
+        self.hub = hub
+
         self._zones = dict()
         self._zone_limit = 10000
 
@@ -809,7 +829,7 @@ class ZoneManager:
                            .format(Constants.cjoin(conflict_watchers)))
             raise ZoneError.WatcherConflictError(message)
 
-        zone = self.Zone(self._server, zone_id, areas, watchers)
+        zone = self.Zone(self.server, self, self.hub, zone_id, areas, watchers)
         self._zones[zone_id] = zone
         self._check_structure()
         return zone_id
@@ -1039,7 +1059,7 @@ class ZoneManager:
                 watchers_so_far.add(watcher)
 
         # 7.
-        for area in self._server.area_manager.get_areas():
+        for area in self.hub.area_manager.get_areas():
             if area in areas_so_far:
                 continue
             assert area.in_zone is None, (
@@ -1047,7 +1067,7 @@ class ZoneManager:
                 'found it recognized {} instead.'.format(area, area.in_zone))
 
         # 8.
-        for watcher in self._server.get_clients():
+        for watcher in self.server.get_clients():
             if watcher in watchers_so_far:
                 continue
             assert watcher.zone_watched is None, (

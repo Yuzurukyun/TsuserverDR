@@ -347,9 +347,13 @@ class GameWithAreasError(GameError):
     class AreaHitGameConcurrentLimitError(TsuserverException):
         pass
 
+@recreate_subexceptions
+class HubbedGameError(GameWithAreasError):
+    class AreaNotInHubError(GameWithAreasError):
+        pass
 
 @recreate_subexceptions
-class TrialError(GameWithAreasError):
+class TrialError(HubbedGameError):
     class AreaDisallowsBulletsError(GameWithAreasError):
         pass
 
@@ -363,7 +367,7 @@ class TrialError(GameWithAreasError):
         pass
 
 @recreate_subexceptions
-class TrialMinigameError(GameWithAreasError):
+class TrialMinigameError(HubbedGameError):
     pass
 
 @recreate_subexceptions
@@ -379,3 +383,7 @@ class NonStopDebateError(TrialMinigameError):
 
     class TimersAlreadySetupError(TrialMinigameError):
         pass
+
+@recreate_subexceptions
+class HubError(GameWithAreasError):
+    pass

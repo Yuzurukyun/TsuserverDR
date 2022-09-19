@@ -27,6 +27,7 @@ from server.exceptions import MusicError
 from server.validate.music import ValidateMusic
 
 if typing.TYPE_CHECKING:
+    from server.hub_manager import _Hub
     from server.tsuserver import TsuserverDR
 
 class MusicManager(AssetManager):
@@ -35,7 +36,7 @@ class MusicManager(AssetManager):
     loaded file or an adequate Python representation.
     """
 
-    def __init__(self, server: TsuserverDR):
+    def __init__(self, server: TsuserverDR, hub: Union[_Hub, None] = None):
         """
         Create a music manager object.
 
@@ -43,9 +44,11 @@ class MusicManager(AssetManager):
         ----------
         server: TsuserverDR
             The server this music manager belongs to.
+        hub : _Hub, optional
+            The hub this music manager belongs to. Defaults to None.
         """
 
-        super().__init__(server)
+        super().__init__(server, hub=hub)
         self._music = []
         self._source_file = 'config/music.yaml'
 

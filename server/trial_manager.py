@@ -25,8 +25,8 @@ from __future__ import annotations
 
 import typing
 
-from server.exceptions import NonStopDebateError, TrialError, GameWithAreasError
-from server.gamewithareas_manager import _GameWithAreas, GameWithAreasManager
+from server.exceptions import NonStopDebateError, TrialError, HubbedGameError
+from server.hubbedgame_manager import _HubbedGame, HubbedGameManager
 from server.trialminigame import _TrialMinigame, TRIALMINIGAMES
 from server.nonstopdebate import _NonStopDebate
 
@@ -36,10 +36,11 @@ if typing.TYPE_CHECKING:
     from server.area_manager import AreaManager
     from server.client_manager import ClientManager
     from server.game_manager import _Team
+    from server.hub_manager import _Hub
     from server.timer_manager import Timer
     from server.tsuserver import TsuserverDR
 
-class _TrialTrivialInherited(_GameWithAreas):
+class _TrialTrivialInherited(_HubbedGame):
     """
     This class should not be instantiated.
     """
@@ -250,7 +251,7 @@ class _TrialTrivialInherited(_GameWithAreas):
 
         try:
             return super().is_invited(user)
-        except GameWithAreasError.UserAlreadyPlayerError:
+        except HubbedGameError.UserAlreadyPlayerError:
             raise TrialError.UserAlreadyPlayerError
 
     def add_invitation(self, user: ClientManager.Client):
@@ -306,13 +307,13 @@ class _TrialTrivialInherited(_GameWithAreas):
 
         try:
             super().unchecked_add_invitation(user)
-        except GameWithAreasError.GameIsUnmanagedError:
+        except HubbedGameError.GameIsUnmanagedError:
             raise TrialError.GameIsUnmanagedError
-        except GameWithAreasError.GameDoesNotTakeInvitationsError:
+        except HubbedGameError.GameDoesNotTakeInvitationsError:
             raise TrialError.GameDoesNotTakeInvitationsError
-        except GameWithAreasError.UserAlreadyInvitedError:
+        except HubbedGameError.UserAlreadyInvitedError:
             raise TrialError.UserAlreadyInvitedError
-        except GameWithAreasError.UserAlreadyPlayerError:
+        except HubbedGameError.UserAlreadyPlayerError:
             raise TrialError.UserAlreadyPlayerError
 
     def remove_invitation(self, user: ClientManager.Client):
@@ -364,11 +365,11 @@ class _TrialTrivialInherited(_GameWithAreas):
 
         try:
             super().unchecked_remove_invitation(user)
-        except GameWithAreasError.GameIsUnmanagedError:
+        except HubbedGameError.GameIsUnmanagedError:
             raise TrialError.GameIsUnmanagedError
-        except GameWithAreasError.GameDoesNotTakeInvitationsError:
+        except HubbedGameError.GameDoesNotTakeInvitationsError:
             raise TrialError.GameDoesNotTakeInvitationsError
-        except GameWithAreasError.UserNotInvitedError:
+        except HubbedGameError.UserNotInvitedError:
             raise TrialError.UserNotInvitedError
 
     def requires_invitations(self):
@@ -454,7 +455,7 @@ class _TrialTrivialInherited(_GameWithAreas):
 
         try:
             return super().is_leader(user)
-        except GameWithAreasError.UserNotPlayerError:
+        except HubbedGameError.UserNotPlayerError:
             raise TrialError.UserNotPlayerError
 
     def add_leader(self, user: ClientManager.Client):
@@ -506,11 +507,11 @@ class _TrialTrivialInherited(_GameWithAreas):
 
         try:
             super().unchecked_add_leader(user)
-        except GameWithAreasError.GameIsUnmanagedError:
+        except HubbedGameError.GameIsUnmanagedError:
             raise TrialError.GameIsUnmanagedError
-        except GameWithAreasError.UserNotPlayerError:
+        except HubbedGameError.UserNotPlayerError:
             raise TrialError.UserNotPlayerError
-        except GameWithAreasError.UserAlreadyLeaderError:
+        except HubbedGameError.UserAlreadyLeaderError:
             raise TrialError.UserAlreadyLeaderError
 
     def remove_leader(self, user: ClientManager.Client):
@@ -565,11 +566,11 @@ class _TrialTrivialInherited(_GameWithAreas):
 
         try:
             super().unchecked_remove_leader(user)
-        except GameWithAreasError.GameIsUnmanagedError:
+        except HubbedGameError.GameIsUnmanagedError:
             raise TrialError.GameIsUnmanagedError
-        except GameWithAreasError.UserNotPlayerError:
+        except HubbedGameError.UserNotPlayerError:
             raise TrialError.UserNotPlayerError
-        except GameWithAreasError.UserNotLeaderError:
+        except HubbedGameError.UserNotLeaderError:
             raise TrialError.UserNotLeaderError
 
     def has_ever_had_players(self) -> bool:
@@ -756,9 +757,9 @@ class _TrialTrivialInherited(_GameWithAreas):
                 auto_restart=auto_restart,
                 auto_destroy=auto_destroy,
             )
-        except GameWithAreasError.GameIsUnmanagedError:
+        except HubbedGameError.GameIsUnmanagedError:
             raise TrialError.GameIsUnmanagedError
-        except GameWithAreasError.GameTooManyTimersError:
+        except HubbedGameError.GameTooManyTimersError:
             raise TrialError.GameTooManyTimersError
 
     def delete_timer(self, timer: Timer) -> str:
@@ -817,9 +818,9 @@ class _TrialTrivialInherited(_GameWithAreas):
 
         try:
             return super().unchecked_delete_timer(timer)
-        except GameWithAreasError.GameIsUnmanagedError:
+        except HubbedGameError.GameIsUnmanagedError:
             raise TrialError.GameIsUnmanagedError
-        except GameWithAreasError.GameDoesNotManageTimerError:
+        except HubbedGameError.GameDoesNotManageTimerError:
             raise TrialError.GameDoesNotManageTimerError
 
     def get_timers(self) -> Set[Timer]:
@@ -858,7 +859,7 @@ class _TrialTrivialInherited(_GameWithAreas):
 
         try:
             return super().get_timer_by_id(timer_id)
-        except GameWithAreasError.GameInvalidTimerIDError:
+        except HubbedGameError.GameInvalidTimerIDError:
             raise TrialError.GameInvalidTimerIDError
 
     def get_timer_limit(self) -> Union[int, None]:
@@ -1011,11 +1012,11 @@ class _TrialTrivialInherited(_GameWithAreas):
                 require_players=require_players,
                 require_leaders=require_leaders,
             )
-        except GameWithAreasError.GameIsUnmanagedError:
+        except HubbedGameError.GameIsUnmanagedError:
             raise TrialError.GameIsUnmanagedError
-        except GameWithAreasError.GameTooManyTeamsError:
+        except HubbedGameError.GameTooManyTeamsError:
             raise TrialError.GameTooManyTeamsError
-        except GameWithAreasError.UserInAnotherTeamError:
+        except HubbedGameError.UserInAnotherTeamError:
             raise TrialError.UserInAnotherTeamError
 
     def delete_team(self, team: _Team) -> Tuple[str, Set[ClientManager.Client]]:
@@ -1074,9 +1075,9 @@ class _TrialTrivialInherited(_GameWithAreas):
 
         try:
             return super().unchecked_delete_team(team)
-        except GameWithAreasError.GameIsUnmanagedError:
+        except HubbedGameError.GameIsUnmanagedError:
             raise TrialError.GameIsUnmanagedError
-        except GameWithAreasError.GameDoesNotManageTeamError:
+        except HubbedGameError.GameDoesNotManageTeamError:
             raise TrialError.GameDoesNotManageTeamError
 
     def manages_team(self, team: _Team) -> bool:
@@ -1133,7 +1134,7 @@ class _TrialTrivialInherited(_GameWithAreas):
 
         try:
             return super().get_team_by_id(team_id)
-        except GameWithAreasError.GameInvalidTeamIDError:
+        except HubbedGameError.GameInvalidTeamIDError:
             raise TrialError.GameInvalidTeamIDError
 
     def get_team_limit(self) -> Union[int, None]:
@@ -1213,7 +1214,7 @@ class _TrialTrivialInherited(_GameWithAreas):
 
         try:
             return super().get_available_team_id()
-        except GameWithAreasError.GameTooManyTeamsError:
+        except HubbedGameError.GameTooManyTeamsError:
             raise TrialError.GameTooManyTeamsError
 
     def get_autoadd_on_client_enter(self) -> bool:
@@ -1340,9 +1341,9 @@ class _TrialTrivialInherited(_GameWithAreas):
 
         try:
             super().unchecked_remove_area(area)
-        except GameWithAreasError.GameIsUnmanagedError:
+        except HubbedGameError.GameIsUnmanagedError:
             raise TrialError.GameIsUnmanagedError
-        except GameWithAreasError.AreaNotInGameError:
+        except HubbedGameError.AreaNotInGameError:
             raise TrialError.AreaNotInGameError
 
     def has_area(self, area: AreaManager.Area) -> bool:
@@ -1571,7 +1572,7 @@ class _TrialTrivialInherited(_GameWithAreas):
 
 class _Trial(_TrialTrivialInherited):
     """
-    A trial is a game with areas that can manage 'trial minigames', which are the following
+    A trial is a hubbed game that can manage 'trial minigames', which are the following
     trial games (server.trialminigame):
     * Nonstop Debates (server.nonstopdebate).
 
@@ -1584,6 +1585,8 @@ class _Trial(_TrialTrivialInherited):
         Server the trial belongs to.
     manager : TrialManager
         Manager for this trial.
+    hub: _Hub
+        Hub for this hubbed game.
     listener : Listener
         Standard listener of the trial.
 
@@ -1653,7 +1656,8 @@ class _Trial(_TrialTrivialInherited):
         timer_limit: Union[int, None] = None,
         area_concurrent_limit: Union[int, None] = None,
         autoadd_on_client_enter: bool = False,
-
+        hub: _Hub = None,
+        # new
         autoadd_minigame_on_player_added: bool = False,
         minigame_limit: int = 1,
     ):
@@ -1665,6 +1669,8 @@ class _Trial(_TrialTrivialInherited):
         ----------
         server : TsuserverDR
             Server the trial belongs to.
+        hub : _Hub
+            Hub the trial belongs to.
         manager : TrialManager
             Manager for this trial.
         trial_id : str
@@ -1711,6 +1717,8 @@ class _Trial(_TrialTrivialInherited):
             If True, nonplayer users that enter an area part of the trial will be automatically
             added if permitted by the conditions of the trial. If False, no such adding will take
             place. Defaults to False.
+        hub : _Hub, optional
+            Hub the hubbed game belongs to. Defaults to None.
         autoadd_minigame_on_player_added: bool, optional
             If True, any player added to the trial will be automatically added as a player of the
             latest minigame currently open in the trial. If no such minigame is open or the
@@ -1732,7 +1740,7 @@ class _Trial(_TrialTrivialInherited):
         self._client_timer_id = 0
         self._autoadd_minigame_on_player_added = autoadd_minigame_on_player_added
 
-        self._minigame_manager = GameWithAreasManager(
+        self._minigame_manager = HubbedGameManager(
             server,
             managee_limit=minigame_limit,
             default_managee_type=_TrialMinigame,
@@ -1751,11 +1759,13 @@ class _Trial(_TrialTrivialInherited):
             timer_limit=timer_limit,
             area_concurrent_limit=area_concurrent_limit,
             autoadd_on_client_enter=autoadd_on_client_enter,
+            hub=hub,
         )
 
         self.listener.update_events({
             'client_inbound_rt': self._on_client_inbound_rt,
             })
+        self.manager: TrialManager  # Setting for typing
 
     def get_name(self) -> str:
         """
@@ -1864,19 +1874,19 @@ class _Trial(_TrialTrivialInherited):
 
         try:
             super().unchecked_add_player(user)
-        except GameWithAreasError.GameIsUnmanagedError:
+        except HubbedGameError.GameIsUnmanagedError:
             raise TrialError.GameIsUnmanagedError
-        except GameWithAreasError.UserNotInAreaError:
+        except HubbedGameError.UserNotInAreaError:
             raise TrialError.UserNotInAreaError
-        except GameWithAreasError.UserHasNoCharacterError:
+        except HubbedGameError.UserHasNoCharacterError:
             raise TrialError.UserHasNoCharacterError
-        except GameWithAreasError.UserNotInvitedError:
+        except HubbedGameError.UserNotInvitedError:
             raise TrialError.UserNotInvitedError
-        except GameWithAreasError.UserAlreadyPlayerError:
+        except HubbedGameError.UserAlreadyPlayerError:
             raise TrialError.UserAlreadyPlayerError
-        except GameWithAreasError.UserHitGameConcurrentLimitError:
+        except HubbedGameError.UserHitGameConcurrentLimitError:
             raise TrialError.UserHitGameConcurrentLimitError
-        except GameWithAreasError.GameIsFullError:
+        except HubbedGameError.GameIsFullError:
             raise TrialError.GameIsFullError
 
         self._player_to_influence[user.id] = (self._max_influence, self._min_influence,
@@ -1928,10 +1938,10 @@ class _Trial(_TrialTrivialInherited):
 
         try:
             super().unchecked_remove_player(user)
-        except GameWithAreasError.GameIsUnmanagedError:
+        except HubbedGameError.GameIsUnmanagedError:
             # Should not have made it here as we already asserted the trial is not unmanaged
             raise RuntimeError(self, user)
-        except GameWithAreasError.UserNotPlayerError:
+        except HubbedGameError.UserNotPlayerError:
             # Should not have made it here as we already asserted the user is a player of the trial
             raise RuntimeError(self, user)
 
@@ -2028,11 +2038,11 @@ class _Trial(_TrialTrivialInherited):
 
         try:
             super().unchecked_add_area(area)
-        except GameWithAreasError.GameIsUnmanagedError:
+        except HubbedGameError.GameIsUnmanagedError:
             raise RuntimeError(self)
-        except GameWithAreasError.AreaAlreadyInGameError:
+        except HubbedGameError.AreaAlreadyInGameError:
             raise TrialError.AreaAlreadyInGameError
-        except GameWithAreasError.AreaHitGameConcurrentLimitError:
+        except HubbedGameError.AreaHitGameConcurrentLimitError:
             raise TrialError.AreaHitGameConcurrentLimitError
 
     def get_influence(self, user: ClientManager.Client) -> float:
@@ -2484,6 +2494,7 @@ class _Trial(_TrialTrivialInherited):
             autoadd_on_trial_player_add = self.get_autoadd_minigame_on_player_added()
 
         areas = {creator.area} if creator else set()
+        hub = creator.hub
 
         try:
             nsd: _NonStopDebate = self._minigame_manager.new_managee(
@@ -2500,12 +2511,13 @@ class _Trial(_TrialTrivialInherited):
                 areas=areas,
                 area_concurrent_limit=1,
                 autoadd_on_client_enter=False,
+                hub=hub,
                 # kwargs
                 trial=self,
                 autoadd_on_trial_player_add=autoadd_on_trial_player_add,
                 timer_start_value=timer_start_value,
             )
-        except GameWithAreasError.ManagerTooManyGamesError:
+        except HubbedGameError.ManagerTooManyGamesError:
             raise TrialError.ManagerTooManyGamesError
 
         nsd.setup_timers()
@@ -2600,7 +2612,7 @@ class _Trial(_TrialTrivialInherited):
 
         try:
             return self._minigame_manager.get_managee_by_id(minigame_id)
-        except GameWithAreasError.ManagerInvalidGameIDError:
+        except HubbedGameError.ManagerInvalidGameIDError:
             raise TrialError.ManagerInvalidGameIDError
 
     def get_nsd_by_id(self, nsd_id: str) -> _NonStopDebate:
@@ -2626,13 +2638,13 @@ class _Trial(_TrialTrivialInherited):
 
         try:
             minigame = self.get_minigame_by_id(nsd_id)
-        except GameWithAreasError.ManagerInvalidGameIDError:
+        except HubbedGameError.ManagerInvalidGameIDError:
             raise TrialError.ManagerInvalidGameIDError
 
         minigame_type = minigame.get_type()
         if minigame_type != TRIALMINIGAMES.NONSTOP_DEBATE:
             raise TrialError.ManagerInvalidGameIDError(f'`{nsd_id}` is a minigame of type '
-                                                        '{minigame_type}, not nonstop debate.')
+                                                       f'{minigame_type}, not nonstop debate.')
         return minigame
 
     def get_available_minigame_id(self) -> str:
@@ -3217,7 +3229,7 @@ class _Trial(_TrialTrivialInherited):
                 f'unmanaged={self.is_unmanaged()}), '
                 f')')
 
-class _TrialManagerTrivialInherited(GameWithAreasManager):
+class _TrialManagerTrivialInherited(HubbedGameManager):
     """
     This class should not be instantiated.
     """
@@ -3238,6 +3250,8 @@ class _TrialManagerTrivialInherited(GameWithAreasManager):
         area_concurrent_limit: Union[int, None] = 1,  # Overriden from parent
         autoadd_on_client_enter: bool = False,
         autoadd_on_creation_existing_users: bool = False,
+        hub: Union[_Hub, None] = None,
+        # new
         autoadd_minigame_on_player_added: bool = False,
         **kwargs: Any,
         ) -> _Trial:
@@ -3245,8 +3259,6 @@ class _TrialManagerTrivialInherited(GameWithAreasManager):
         Create a new trial managed by this manager. Overriden default parameters include:
         * A trial does not require leaders.
         * An area cannot belong to two or more trials at the same time.
-
-        This method does not assert structural integrity.
 
         Parameters
         ----------
@@ -3287,6 +3299,9 @@ class _TrialManagerTrivialInherited(GameWithAreasManager):
         autoadd_on_creation_existing_users : bool
             If the trial will attempt to add nonplayer users who were in an area added
             to the trial on creation. Defaults to False.
+        hub : _Hub, optional
+            Hub of the hubbed game. Defaults to None (and converted to the creator's hub if given a
+            creator, and None otherwise).
         autoadd_minigame_on_player_added : bool, optional
             If True, nonplayer users that are added to the trial will also be automatically added
             to the minigame if permitted by its conditions. If False, no such adding will take
@@ -3326,6 +3341,7 @@ class _TrialManagerTrivialInherited(GameWithAreasManager):
             area_concurrent_limit=area_concurrent_limit,
             autoadd_on_client_enter=autoadd_on_client_enter,
             autoadd_on_creation_existing_users=autoadd_on_creation_existing_users,
+            hub=hub,
             autoadd_minigame_on_player_added=autoadd_minigame_on_player_added,
             **kwargs,
             )
@@ -3400,7 +3416,7 @@ class _TrialManagerTrivialInherited(GameWithAreasManager):
 
         try:
             return super().unchecked_delete_managee(managee)
-        except GameWithAreasError.ManagerDoesNotManageGameError:
+        except HubbedGameError.ManagerDoesNotManageGameError:
             raise TrialError.ManagerDoesNotManageGameError
 
     def manages_managee(self, game: _Trial):
@@ -3457,7 +3473,7 @@ class _TrialManagerTrivialInherited(GameWithAreasManager):
 
         try:
             return super().get_managee_by_id(managee_id)
-        except GameWithAreasError.ManagerInvalidGameIDError:
+        except HubbedGameError.ManagerInvalidGameIDError:
             raise TrialError.ManagerInvalidGameIDError
 
     def get_managee_limit(self) -> Union[int, None]:
@@ -3467,7 +3483,7 @@ class _TrialManagerTrivialInherited(GameWithAreasManager):
         Returns
         -------
         Union[int, None]
-            Game with areas limit.
+            Trial limit.
 
         """
 
@@ -3658,12 +3674,12 @@ class _TrialManagerTrivialInherited(GameWithAreasManager):
 
 class TrialManager(_TrialManagerTrivialInherited):
     """
-    A trial manager is a game with areas manager with dedicated trial management functions.
+    A trial manager is a hubbed game manager with dedicated trial management functions.
 
     Attributes
     ----------
     server : TsuserverDR
-        Server the game manager belongs to.
+        Server the trial manager belongs to.
 
     """
 
@@ -3678,7 +3694,7 @@ class TrialManager(_TrialManagerTrivialInherited):
         default_managee_type: Type[_Trial] = None,
         ):
         """
-        Create a game with areas manager object.
+        Create a trial manager object.
 
         Parameters
         ----------
@@ -3718,6 +3734,8 @@ class TrialManager(_TrialManagerTrivialInherited):
         area_concurrent_limit: Union[int, None] = 1,  # Overriden from parent
         autoadd_on_client_enter: bool = False,
         autoadd_on_creation_existing_users: bool = False,
+        hub: Union[_Hub, None] = None,
+        # new
         autoadd_minigame_on_player_added: bool = False,
         **kwargs: Any,
         ) -> _Trial:
@@ -3767,6 +3785,9 @@ class TrialManager(_TrialManagerTrivialInherited):
         autoadd_on_creation_existing_users : bool
             If the trial will attempt to add nonplayer users who were in an area added
             to the trial on creation. Defaults to False.
+        hub : _Hub, optional
+            Hub of the hubbed game. Defaults to None (and converted to the creator's hub if given a
+            creator, and None otherwise).
         autoadd_minigame_on_player_added : bool, optional
             If True, nonplayer users that are added to the trial will also be automatically added
             to the minigame if permitted by its conditions. If False, no such adding will take
@@ -3807,11 +3828,12 @@ class TrialManager(_TrialManagerTrivialInherited):
                 area_concurrent_limit=area_concurrent_limit,
                 autoadd_on_client_enter=autoadd_on_client_enter,
                 autoadd_on_creation_existing_users=autoadd_on_creation_existing_users,
+                hub=hub,
                 # kwargs
                 autoadd_minigame_on_player_added=autoadd_minigame_on_player_added,
                 **kwargs,
                 )
-        except GameWithAreasError.ManagerTooManyGamesError:
+        except HubbedGameError.ManagerTooManyGamesError:
             raise TrialError.ManagerTooManyGamesError
 
         # Manually give packets to nonplayers

@@ -32,26 +32,18 @@ import ssl
 import sys
 import traceback
 import urllib.request, urllib.error
-import warnings
-import yaml
 
 from server import logger
-from server.area_manager import AreaManager
-from server.background_manager import BackgroundManager
 from server.ban_manager import BanManager
-from server.character_manager import CharacterManager
 from server.constants import Constants
 from server.client_manager import ClientManager
-from server.exceptions import MusicError, ServerError
-from server.game_manager import GameManager
-from server.music_manager import MusicManager
+from server.exceptions import ServerError
+from server.hub_manager import HubManager
 from server.network.ao_protocol import AOProtocol
 from server.network.ms3_protocol import MasterServerClient
 from server.party_manager import PartyManager
 from server.tasker import Tasker
 from server.timer_manager import TimerManager
-from server.trial_manager import TrialManager
-from server.zone_manager import ZoneManager
 
 from server.validate.config import ValidateConfig
 from server.validate.gimp import ValidateGimp
@@ -68,8 +60,8 @@ class TsuserverDR:
         self.release = 4
         self.major_version = 4
         self.minor_version = 0
-        self.segment_version = 'a3'
-        self.internal_version = 'M220918a'
+        self.segment_version = 'a4'
+        self.internal_version = 'M220919a'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
@@ -90,35 +82,26 @@ class TsuserverDR:
         self.shutting_down = False
         self.loop = None
         self.last_error = None
-        self.allowed_iniswaps = None
-        self.old_area_list = None
-        self.default_area = 0
         self.all_passwords = list()
         self.global_allowed = True
         self.server_select_name = 'SERVER_SELECT'
 
         self.load_config()
-        self.timer_manager = TimerManager(self)
-        self.client_manager: ClientManager = client_manager(self)
-        self.character_manager = CharacterManager(self)
-        self.load_iniswaps()
-        self.load_characters()
 
-        self.game_manager = GameManager(self)
-        self.trial_manager = TrialManager(self)
-        self.zone_manager = ZoneManager(self)
-        self.area_manager = AreaManager(self)
-        self.background_manager = BackgroundManager(self)
-        self.music_manager = MusicManager(self)
         self.ban_manager = BanManager(self)
+        self.timer_manager = TimerManager(self)
         self.party_manager = PartyManager(self)
+
+        self.client_manager: ClientManager = client_manager(self)
+        self.hub_manager = HubManager(self)
+        self.hub_manager.new_managee(
+            autoadd_on_client_enter=True,
+        )
 
         self.ipid_list = {}
         self.hdid_list = {}
         self.gimp_list = list()
         self.load_commandhelp()
-        self.load_music()
-        self.load_backgrounds()
         self.load_ids()
         self.load_gimp()
 
@@ -132,10 +115,6 @@ class TsuserverDR:
         logger.log_print('Server configurations loaded successfully!')
 
         self.error_queue = None
-        with open('config/110_new_music.yaml') as f:
-            self.new_110_music = set(yaml.load(f, yaml.SafeLoader))
-
-        self._server = None
 
     async def start(self):
         self.loop = asyncio.get_event_loop()
@@ -244,10 +223,11 @@ class TsuserverDR:
         return mes
 
     def reload(self):
+        default_hub = self.hub_manager.get_default_managee()
         try:
-            self.background_manager.validate_file()
-            self.character_manager.validate_file()
-            self.music_manager.validate_file()
+            default_hub.background_manager.validate_file()
+            default_hub.character_manager.validate_file()
+            default_hub.music_manager.validate_file()
         except ServerError.YAMLInvalidError as exc:
             # The YAML exception already provides a full description. Just add the fact the
             # reload was undone to ease the person who ran the command's nerves.
@@ -258,9 +238,9 @@ class TsuserverDR:
             raise ServerError(msg)
 
         # Only on success reload
-        self.load_characters()
-        self.load_backgrounds()
-        self.load_music()
+        default_hub.load_backgrounds()
+        default_hub.load_characters()
+        default_hub.load_music()
 
     def reload_commands(self):
         try:
@@ -276,9 +256,13 @@ class TsuserverDR:
         self.logged_packets.append(entry)
 
     def new_client(self, transport, protocol=None) -> Tuple[ClientManager.Client, bool]:
-        c, valid = self.client_manager.new_client(transport, protocol=protocol)
+        c, valid = self.client_manager.new_client(
+            self.hub_manager.get_default_managee(),
+            transport,
+            protocol=protocol
+            )
         c.server = self
-        c.area = self.area_manager.default_area()
+        c.area = self.hub_manager.get_default_managee().area_manager.default_area()
         c.area.new_client(c)
         return c, valid
 
@@ -306,82 +290,6 @@ class TsuserverDR:
     def get_player_count(self) -> int:
         # Ignore players in the server selection screen.
         return len([client for client in self.get_clients() if client.char_id is not None])
-
-    def load_areas(self, source_file: str = 'config/areas.yaml') -> List[AreaManager.Area]:
-        """
-        Load an area list file.
-
-        Parameters
-        ----------
-        source_file : str
-            Relative path from server root folder to the area list file, by default
-            'config/areas.yaml'
-
-        Returns
-        -------
-        List[AreaManager.Area]
-            Areas.
-
-        Raises
-        ------
-        ServerError.FileNotFoundError
-            If the file was not found.
-        ServerError.FileOSError
-            If there was an operating system error when opening the file.
-        ServerError.YAMLInvalidError
-            If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
-        ServerError.FileSyntaxError
-            If the file failed verification for its asset type.
-        """
-
-        areas = self.area_manager.load_file(source_file)
-        return areas.copy()
-
-    def load_backgrounds(self, source_file: str = 'config/backgrounds.yaml') -> List[str]:
-        """
-        Load a background list file.
-
-        Parameters
-        ----------
-        source_file : str
-            Relative path from server root folder to background list file, by default
-            'config/backgrounds.yaml'
-
-        Returns
-        -------
-        List[str]
-            Backgrounds.
-
-        Raises
-        ------
-        ServerError.FileNotFoundError
-            If the file was not found.
-        ServerError.FileOSError
-            If there was an operating system error when opening the file.
-        ServerError.YAMLInvalidError
-            If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
-        ServerError.FileSyntaxError
-            If the file failed verification for its asset type.
-        """
-
-        old_backgrounds = self.background_manager.get_backgrounds()
-        backgrounds = self.background_manager.load_file(source_file)
-
-        if old_backgrounds == backgrounds:
-            # No change implies backgrounds still valid, do nothing more
-            return backgrounds.copy()
-
-        # Make sure each area still has a valid background
-        default_background = self.background_manager.get_default_background()
-        for area in self.area_manager.get_areas():
-            if not self.background_manager.is_background(area.background) and not area.cbg_allowed:
-                # The area no longer has a valid background, so change it to some valid background
-                # like the first one
-                area.change_background(default_background)
-                area.broadcast_ooc(f'After a change in the background list, your area no longer '
-                                   f'had a valid background. Switching to {default_background}.')
-
-        return backgrounds.copy()
 
     def load_config(self) -> Dict[str, Any]:
         self.config = ValidateConfig().validate('config/config.yaml')
@@ -434,68 +342,6 @@ class TsuserverDR:
                 self.config[tag] = value
 
         return self.config
-
-    def load_characters(self, source_file: str = 'config/characters.yaml') -> List[str]:
-        """
-        Load a character list file.
-
-        Parameters
-        ----------
-        source_file : str, optional
-            Relative path from server root folder to character list file, by default
-            'config/characters.yaml'
-
-        Returns
-        -------
-        List[str]
-            Characters.
-
-        Raises
-        ------
-        ServerError.FileNotFoundError
-            If the file was not found.
-        ServerError.FileOSError
-            If there was an operating system error when opening the file.
-        ServerError.YAMLInvalidError
-            If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
-        ServerError.FileSyntaxError
-            If the file failed verification for its asset type.
-        """
-
-        old_characters = self.character_manager.get_characters()
-        characters = self.character_manager.validate_file(source_file)
-        if old_characters == characters:
-            return characters.copy()
-
-        # Inconsistent character list, so change to spectator those who lost their character.
-        new_chars = {char: num for (num, char) in enumerate(characters)}
-
-        for client in self.get_clients():
-            target_char_id = -1
-            old_char_name = client.get_char_name()
-
-            if not client.has_character():
-                # Do nothing for spectators
-                pass
-            elif old_char_name not in new_chars:
-                # Character no longer exists, so switch to spectator
-                client.send_ooc(f'After a change in the character list, your character is no '
-                                f'longer available. Switching to {self.config["spectator_name"]}.')
-            else:
-                target_char_id = new_chars[old_char_name]
-
-            if client.packet_handler.ALLOWS_CHAR_LIST_RELOAD:
-                client.send_command_dict('SC', {
-                    'chars_ao2_list': characters,
-                    })
-                client.change_character(target_char_id, force=True)
-            else:
-                client.send_ooc('After a change in the character list, your client character list '
-                                'is no longer synchronized. Please rejoin the server.')
-
-        # Only now update internally. This is to allow `change_character` to work properly.
-        self.character_manager.load_file(source_file)
-        return characters.copy()
 
     def load_commandhelp(self):
         with Constants.fopen('README.md', 'r', encoding='utf-8') as readme:
@@ -617,20 +463,6 @@ class TsuserverDR:
             logger.log_pdebug(message)
             self.hdid_list = dict()
             self.dump_hdids()
-
-    def load_iniswaps(self):
-        try:
-            with Constants.fopen('config/iniswaps.yaml', 'r', encoding='utf-8') as iniswaps:
-                self.allowed_iniswaps = Constants.yaml_load(iniswaps)
-        except Exception as ex:
-            message = 'WARNING: Error loading config/iniswaps.yaml. Will assume empty values.\n'
-            message += '{}: {}'.format(type(ex).__name__, ex)
-
-            logger.log_pdebug(message)
-
-    def load_music(self, music_list_file: str = 'config/music.yaml') -> List[Dict[str, Any]]:
-        music = self.music_manager.load_file(music_list_file)
-        return music.copy()
 
     def load_gimp(self):
         try:

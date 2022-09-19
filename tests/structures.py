@@ -40,15 +40,17 @@ class _Unittest(unittest.TestCase):
             cls.skipTest('', reason='')
         print('\nTesting {}: '.format(cls.__name__), end=' ')
         cls.server = _TestTsuserverDR()
-        cls.clients: List[_TestClientManager._Testclient] = cls.server.client_list
-        cls.area0: AreaManager.Area = cls.server.area_manager.get_area_by_id(0)
-        cls.area1: AreaManager.Area = cls.server.area_manager.get_area_by_id(1)
-        cls.area2: AreaManager.Area = cls.server.area_manager.get_area_by_id(2)
-        cls.area3: AreaManager.Area = cls.server.area_manager.get_area_by_id(3)
-        cls.area4: AreaManager.Area = cls.server.area_manager.get_area_by_id(4)
-        cls.area5: AreaManager.Area = cls.server.area_manager.get_area_by_id(5)
-        cls.area6: AreaManager.Area = cls.server.area_manager.get_area_by_id(6)
-        cls.area7: AreaManager.Area = cls.server.area_manager.get_area_by_id(7)
+        cls.clients: List[_TestClientManager._TestClient] = cls.server.client_list
+
+        default_hub = cls.server.hub_manager.get_default_managee()
+        cls.area0: AreaManager.Area = default_hub.area_manager.get_area_by_id(0)
+        cls.area1: AreaManager.Area = default_hub.area_manager.get_area_by_id(1)
+        cls.area2: AreaManager.Area = default_hub.area_manager.get_area_by_id(2)
+        cls.area3: AreaManager.Area = default_hub.area_manager.get_area_by_id(3)
+        cls.area4: AreaManager.Area = default_hub.area_manager.get_area_by_id(4)
+        cls.area5: AreaManager.Area = default_hub.area_manager.get_area_by_id(5)
+        cls.area6: AreaManager.Area = default_hub.area_manager.get_area_by_id(6)
+        cls.area7: AreaManager.Area = default_hub.area_manager.get_area_by_id(7)
 
         cls.a0_name: str = cls.area0.name
         cls.a1_name: str = cls.area1.name
@@ -122,7 +124,7 @@ class _Unittest(unittest.TestCase):
         if group == 'C':
             structure = self.server.client_manager.clients
         elif group == 'A':
-            structure = self.server.area_manager.get_areas()
+            structure = self.server.hub_manager.get_default_managee().area_manager.get_areas()
 
         if yes == 1:
             yes = {x for x in structure if x not in no}
@@ -354,7 +356,7 @@ class _TestClientManager(ClientManager):
 
         def move_area(self, area_id, discard_packets=True, discard_trivial=False):
             as_command = random.randint(0, 1)
-            area = self.server.area_manager.get_area_by_id(area_id)
+            area = self.hub.area_manager.get_area_by_id(area_id)
             if as_command:
                 self.ooc('/area {}'.format(area_id))
             else:
@@ -887,7 +889,7 @@ class _TestTsuserverDR(TsuserverDR):
 
         self.tasker = Tasker(self)
 
-    def create_client(self):
+    def create_client(self) -> _TestClientManager._TestClient:
         new_ao_protocol = self.ao_protocol(self)
         new_ao_protocol.connection_made(None)
         return new_ao_protocol.client
@@ -903,7 +905,7 @@ class _TestTsuserverDR(TsuserverDR):
 
         c.send_command_cts("CC#{}#{}#{}#%".format(c.id, char_id, hdid))
         if char_id >= 0:
-            exp = self.character_manager.get_characters()[char_id]
+            exp = self.hub_manager.get_default_managee().character_manager.get_characters()[char_id]
         else:
             exp = self.config['spectator_name']
         res = c.get_char_name()
@@ -924,9 +926,10 @@ class _TestTsuserverDR(TsuserverDR):
         else:
             assert len(user_list) == number
 
+        default_hub = self.hub_manager.get_default_managee()
         for i in range(number):
-            area = self.area_manager.default_area()
-            for j in range(len(self.character_manager.get_characters())):
+            area = default_hub.area_manager.default_area()
+            for j in range(len(default_hub.character_manager.get_characters())):
                 if area.is_char_available(j):
                     char_id = j
                     break

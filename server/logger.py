@@ -115,20 +115,22 @@ def log_error(msg, server: Union[TsuserverDR, None], errortype='P') -> str:
             msg += '\n{}'.format("".join(traceback.format_exception(etype, evalue, etraceback)))
 
         # Add list of areas to error log
-        try:
-            msg += '\n\n\n= Area dump ='
-            msg += '\n*Current area list: {}'.format(server.area_manager.get_source_file())
-            msg += '\n*Old area list: {}'.format(server.old_area_list)
-            msg += '\n*Current areas:'
+        msg += '\n\n\n= Area dump ='
+        for hub in server.hub_manager.get_managees():
+            msg += f'\n\n== Hub {hub.get_id()} =='
+            try:
+                msg += '\n*Current area list: {}'.format(hub.area_manager.get_source_file())
+                msg += '\n*Old area list: {}'.format(hub.area_manager.old_area_list_file)
+                msg += '\n*Current areas:'
 
-            for area in server.area_manager.get_areas():
-                msg += '\n**{}'.format(area)
-                for c in area.clients:
-                    msg += '\n***{}'.format(c)
-        except Exception:
-            etype, evalue, etraceback = sys.exc_info()
-            msg += '\nError generating area dump.'
-            msg += '\n{}'.format("".join(traceback.format_exception(etype, evalue, etraceback)))
+                for area in hub.area_manager.get_areas():
+                    msg += '\n**{}'.format(area)
+                    for c in area.clients:
+                        msg += '\n***{}'.format(c)
+            except Exception:
+                etype, evalue, etraceback = sys.exc_info()
+                msg += '\nError generating area dump.'
+                msg += '\n{}'.format("".join(traceback.format_exception(etype, evalue, etraceback)))
     else:
         # Case server was not initialized properly, so areas and clients are not set
         msg += ('\nServer was not initialized, so packet, client and area dumps could not be '

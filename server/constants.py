@@ -612,7 +612,7 @@ class Constants():
                 conditions.append(lambda c: (c.zone_watched != sender.area.in_zone))
             else:
                 conditions.append(lambda c: False)
-        elif isinstance(is_zstaff, sender.server.area_manager.Area):
+        elif isinstance(is_zstaff, sender.hub.area_manager.Area):
             # Only staff members who are watching the area's zone will receive it, PROVIDED the area
             # is part of a zone. Otherwise, NO notification is sent.
             target_zone = is_zstaff.in_zone
@@ -649,7 +649,7 @@ class Constants():
             else:
                 condition1 = lambda c: False
             conditions.append(lambda c: condition1(c) or not c.is_staff())
-        elif isinstance(is_zstaff_flex, sender.server.area_manager.Area):
+        elif isinstance(is_zstaff_flex, sender.hub.area_manager.Area):
             # Only staff members who are watching the area's zone will receive it, PROVIDED the area
             # is part of a zone. Otherwise, NO notification is sent.
             target_zone = is_zstaff_flex.in_zone
@@ -871,13 +871,13 @@ class Constants():
             # wants ',\' as part of their actual area name. If you are that person... just... why
             try:
                 target = areas[i].replace(',\\', ',')
-                area_list.append(client.server.area_manager.get_area_by_name(target))
+                area_list.append(client.hub.area_manager.get_area_by_name(target))
             except AreaError:
                 try:
-                    area_list.append(client.server.area_manager.get_area_by_name(areas[i]))
+                    area_list.append(client.hub.area_manager.get_area_by_name(areas[i]))
                 except AreaError:
                     try:
-                        area_list.append(client.server.area_manager.get_area_by_id(int(areas[i])))
+                        area_list.append(client.hub.area_manager.get_area_by_id(int(areas[i])))
                     except Exception:
                         raise ArgumentError('Could not parse area `{}`.'.format(areas[i]))
         return area_list
