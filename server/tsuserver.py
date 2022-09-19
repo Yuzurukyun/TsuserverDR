@@ -42,8 +42,9 @@ from server.ban_manager import BanManager
 from server.character_manager import CharacterManager
 from server.constants import Constants
 from server.client_manager import ClientManager
-from server.exceptions import MusicError, ServerError
+from server.exceptions import ServerError
 from server.game_manager import GameManager
+from server.hub_manager import HubManager
 from server.music_manager import MusicManager
 from server.network.ao_protocol import AOProtocol
 from server.network.ms3_protocol import MasterServerClient
@@ -90,7 +91,6 @@ class TsuserverDR:
         self.shutting_down = False
         self.loop = None
         self.last_error = None
-        self.allowed_iniswaps = None
         self.old_area_list = None
         self.default_area = 0
         self.all_passwords = list()
@@ -98,10 +98,17 @@ class TsuserverDR:
         self.server_select_name = 'SERVER_SELECT'
 
         self.load_config()
+        self.ban_manager = BanManager(self)
+
         self.timer_manager = TimerManager(self)
         self.client_manager: ClientManager = client_manager(self)
+
+        self.hub_manager = HubManager(self)
+        #self.default_hub = self.hub_manager.new_managee(
+        #    autoadd_on_client_enter=True,
+        #)
+
         self.character_manager = CharacterManager(self)
-        self.load_iniswaps()
         self.load_characters()
 
         self.game_manager = GameManager(self)
@@ -110,7 +117,6 @@ class TsuserverDR:
         self.area_manager = AreaManager(self)
         self.background_manager = BackgroundManager(self)
         self.music_manager = MusicManager(self)
-        self.ban_manager = BanManager(self)
         self.party_manager = PartyManager(self)
 
         self.ipid_list = {}
@@ -132,10 +138,6 @@ class TsuserverDR:
         logger.log_print('Server configurations loaded successfully!')
 
         self.error_queue = None
-        with open('config/110_new_music.yaml') as f:
-            self.new_110_music = set(yaml.load(f, yaml.SafeLoader))
-
-        self._server = None
 
     async def start(self):
         self.loop = asyncio.get_event_loop()
@@ -617,16 +619,6 @@ class TsuserverDR:
             logger.log_pdebug(message)
             self.hdid_list = dict()
             self.dump_hdids()
-
-    def load_iniswaps(self):
-        try:
-            with Constants.fopen('config/iniswaps.yaml', 'r', encoding='utf-8') as iniswaps:
-                self.allowed_iniswaps = Constants.yaml_load(iniswaps)
-        except Exception as ex:
-            message = 'WARNING: Error loading config/iniswaps.yaml. Will assume empty values.\n'
-            message += '{}: {}'.format(type(ex).__name__, ex)
-
-            logger.log_pdebug(message)
 
     def load_music(self, music_list_file: str = 'config/music.yaml') -> List[Dict[str, Any]]:
         music = self.music_manager.load_file(music_list_file)

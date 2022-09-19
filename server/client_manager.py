@@ -660,12 +660,6 @@ class ClientManager:
 
         def send_music(self, name=None, char_id=None, showname=None, force_same_restart=None,
                        loop=None, channel=None, effects=None):
-            if (not self.packet_handler.HAS_CLIENTSIDE_MUSIC_LOOPING
-                and self.packet_handler.REPLACES_BASE_OPUS_FOR_MP3):
-                if name in self.server.new_110_music:
-                    name = name.replace('.opus', '.mp3')
-                    name = '/'.join(name.split('/')[1:])
-
             self.send_command_dict('MC', {
                 'name': name,
                 'char_id': char_id,

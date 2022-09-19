@@ -587,9 +587,6 @@ class AreaManager(AssetManager):
 
             if '..' in anim1 or '..' in anim2:
                 return True
-            for char_link in self.server.allowed_iniswaps:
-                if client.get_char_name() in char_link and char in char_link:
-                    return False
             return True
 
         def add_to_judgelog(self, client: ClientManager.Client, msg: str):

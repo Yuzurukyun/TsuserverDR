@@ -25,13 +25,16 @@ from __future__ import annotations
 
 import typing
 
+from server.area_manager import AreaManager
+from server.background_manager import BackgroundManager
+from server.character_manager import CharacterManager
 from server.exceptions import HubError, GameWithAreasError
 from server.gamewithareas_manager import _GameWithAreas, GameWithAreasManager
+from server.music_manager import MusicManager
 
 from typing import Callable, Dict, Set, Any, Tuple, Type, Union
 
 if typing.TYPE_CHECKING:
-    from server.area_manager import AreaManager
     from server.client_manager import ClientManager
     from server.game_manager import _Team
     from server.timer_manager import Timer
@@ -1568,7 +1571,208 @@ class _HubTrivialInherited(_GameWithAreas):
         super()._on_area_destroyed(area)
 
 class _Hub(_HubTrivialInherited):
-    pass
+    """
+    A hub is a game with areas that hosts asset managers.
+
+    Attributes
+    ----------
+    server : TsuserverDR
+        Server the hub belongs to.
+    manager : HubManager
+        Manager for this hub.
+    listener : Listener
+        Standard listener of the hub.
+
+    Callback Methods
+    ----------------
+    _on_area_client_left_final
+        Method to perform once a client left an area of the hub.
+    _on_area_client_entered_final
+        Method to perform once a client entered an area of the hub.
+    _on_area_destroyed
+        Method to perform once an area of the hub is marked for destruction.
+    _on_client_inbound_ms_check
+        Method to perform once a player of the hub wants to send an IC message.
+    _on_client_inbound_ms_final
+        Method to perform once a player of the hub sends an IC message.
+    _on_client_change_character
+        Method to perform once a player of the hub has changed character.
+    _on_client_destroyed
+        Method to perform once a player of the hub is destroyed.
+
+    """
+
+    # Invariants
+    # ----------
+    # 1. The invariants from the parent class GameWithArea are satisfied.
+
+
+    def __init__(
+        self,
+        server: TsuserverDR,
+        manager: HubManager,
+        hub_id: str,
+        player_limit: Union[int, None] = None,
+        player_concurrent_limit: Union[int, None] = None,
+        require_invitations: bool = False,
+        require_players: bool = True,
+        require_leaders: bool = True,
+        require_character: bool = False,
+        team_limit: Union[int, None] = None,
+        timer_limit: Union[int, None] = None,
+        area_concurrent_limit: Union[int, None] = None,
+        autoadd_on_client_enter: bool = False,
+
+        autoadd_minigame_on_player_added: bool = False,
+        minigame_limit: int = 1,
+    ):
+        """
+        Create a new hub. A hub should not be fully initialized anywhere else other than
+        some manager code, as otherwise the manager will not recognize the hub.
+
+        Parameters
+        ----------
+        server : TsuserverDR
+            Server the hub belongs to.
+        manager : HubManager
+            Manager for this hub.
+        hub_id : str
+            Identifier of the hub.
+        player_limit : Union[int, None], optional
+            If an int, it is the maximum number of players the hub supports. If None, it
+            indicates the hub has no player limit. Defaults to None.
+        player_concurrent_limit : Union[int, None], optional
+            If an int, it is the maximum number of hubs managed by `manager` that any
+            player of this hub may belong to, including this hub. If None, it indicates
+            that this hub does not care about how many other hubs managed by `manager` each
+            of its players belongs to. Defaults to None.
+        require_invitation : bool, optional
+            If True, players can only be added to the hub if they were previously invited. If
+            False, no checking for invitations is performed. Defaults to False.
+        require_players : bool, optional
+            If True, if at any point the hub has no players left, the hub will
+            automatically be deleted. If False, no such automatic deletion will happen.
+            Defaults to True.
+        require_leaders : bool, optional
+            If True, if at any point the hub has no leaders left, the hub will choose a
+            leader among any remaining players left; if no players are left, the next player
+            added will be made leader. If False, no such automatic assignment will happen.
+            Defaults to True.
+        require_character : bool, optional
+            If False, players without a character will not be allowed to join the hub, and
+            players that switch to something other than a character will be automatically
+            removed from the hub. If False, no such checks are made. A player without a
+            character is considered one where player.has_character() returns False. Defaults
+            to False.
+        team_limit : Union[int, None], optional
+            If an int, it is the maximum number of teams the hub supports. If None, it
+            indicates the hub has no team limit. Defaults to None.
+        timer_limit : Union[int, None], optional
+            If an int, it is the maximum number of timers the hub supports. If None, it
+            indicates the hub has no timer limit. Defaults to None.
+        area_concurrent_limit : Union[int, None], optional
+            If an int, it is the maximum number of hubs managed by `manager` that any
+            area of this hub may belong to, including this hub. If None, it indicates
+            that this hub does not care about how many other hubs managed by
+            `manager` each of its areas belongs to. Defaults to 1 (an area may not be a part of
+            another hub managed by `manager` while being an area of this hub).
+        autoadd_on_client_enter : bool, optional
+            If True, nonplayer users that enter an area part of the hub will be automatically
+            added if permitted by the conditions of the hub. If False, no such adding will take
+            place. Defaults to False.
+        autoadd_minigame_on_player_added: bool, optional
+            If True, any player added to the hub will be automatically added as a player of the
+            latest minigame currently open in the hub. If no such minigame is open or the
+            player addition fails, no action is taken. If False, no such adding will take place.
+            Defaults to False.
+        minigame_limit : Union[int, None], optional
+            If an int, it is the maximum number of minigames the hub may have simultaneously.
+            If None, it indicates the hub has no minigame limit. Defaults to 1.
+
+        """
+
+        self.background_manager = BackgroundManager(self)
+        self.character_manager = CharacterManager(self)
+        self.music_manager = MusicManager(self)
+
+        # Has to be after character_manager to allow proper loading of areas
+        self.area_manager = AreaManager(self)
+
+        super().__init__(
+            server,
+            manager,
+            hub_id,
+            player_limit=player_limit,
+            player_concurrent_limit=player_concurrent_limit,
+            require_invitations=require_invitations,
+            require_players=require_players,
+            require_leaders=require_leaders,
+            require_character=require_character,
+            team_limit=team_limit,
+            timer_limit=timer_limit,
+            area_concurrent_limit=area_concurrent_limit,
+            autoadd_on_client_enter=autoadd_on_client_enter,
+        )
+
+        self.listener.update_events({
+            'client_inbound_rt': self._on_client_inbound_rt,
+            })
+
+    def unchecked_add_player(self, user: ClientManager.Client):
+        return super().unchecked_add_player(user)
+
+    def unchecked_remove_player(self, user: ClientManager.Client):
+        return super().unchecked_remove_player(user)
+
+    def _on_area_client_left_final(self, area: AreaManager.Area, client: ClientManager.Client = None, old_displayname: str = None, ignore_bleeding: bool = False, ignore_autopass: bool = False):
+        return super()._on_area_client_left_final(area, client, old_displayname, ignore_bleeding, ignore_autopass)
+
+    def _on_area_client_entered_final(self, area: AreaManager.Area, client: ClientManager.Client = None, old_area: Union[AreaManager.Area, None] = None, old_displayname: str = None, ignore_bleeding: bool = False, ignore_autopass: bool = False):
+        return super()._on_area_client_entered_final(area, client, old_area, old_displayname, ignore_bleeding, ignore_autopass)
+
+    def _on_client_change_character(self, player: ClientManager.Client, old_char_id: Union[int, None] = None, new_char_id: Union[int, None] = None):
+        return super()._on_client_change_character(player, old_char_id, new_char_id)
+
+    def _on_areas_loaded(self, area_manager: AreaManager):
+        return super()._on_areas_loaded(area_manager)
+
+    def __str__(self) -> str:
+        return (f"Hub::{self.get_id()}:"
+                f"{self.get_players()}:{self.get_leaders()}:{self.get_invitations()}"
+                f"{self.get_timers()}:"
+                f"{self.get_teams()}:"
+                f"{self.get_areas()}")
+
+    def __repr__(self) -> str:
+        """
+        Return a representation of this game with areas.
+
+        Returns
+        -------
+        str
+            Printable representation.
+
+        """
+
+        return (f'Hub(server, {self.manager.get_id()}, "{self.get_id()}", '
+                f'player_limit={self.get_player_limit()}, '
+                f'player_concurrent_limit={self.get_player_concurrent_limit()}, '
+                f'require_players={self.requires_players()}, '
+                f'require_invitations={self.requires_invitations()}, '
+                f'require_leaders={self.requires_leaders()}, '
+                f'require_character={self.requires_characters()}, '
+                f'team_limit={self.get_team_limit()}, '
+                f'timer_limit={self.get_timer_limit()}, '
+                f'areas={self.get_areas()}), '
+                f'|| '
+                f'players={self.get_players()}, '
+                f'invitations={self.get_invitations()}, '
+                f'leaders={self.get_leaders()}, '
+                f'timers={self.get_timers()}, '
+                f'teams={self.get_teams()}, '
+                f'unmanaged={self.is_unmanaged()}), '
+                f')')
+
 
 class _HubManagerTrivialInherited(GameWithAreasManager):
     """
@@ -1582,7 +1786,7 @@ class _HubManagerTrivialInherited(GameWithAreasManager):
         player_limit: Union[int, None] = None,
         player_concurrent_limit: Union[int, None] = 1,
         require_invitations: bool = False,
-        require_players: bool = True,
+        require_players: bool = False,  # Overriden from parent
         require_leaders: bool = False,  # Overriden from parent
         require_character: bool = False,
         team_limit: Union[int, None] = None,
@@ -1591,15 +1795,13 @@ class _HubManagerTrivialInherited(GameWithAreasManager):
         area_concurrent_limit: Union[int, None] = 1,  # Overriden from parent
         autoadd_on_client_enter: bool = False,
         autoadd_on_creation_existing_users: bool = False,
-        autoadd_minigame_on_player_added: bool = False,
         **kwargs: Any,
         ) -> _Hub:
         """
         Create a new hub managed by this manager. Overriden default parameters include:
         * A hub does not require leaders.
+        * A hub does not require players.
         * An area cannot belong to two or more hubs at the same time.
-
-        This method does not assert structural integrity.
 
         Parameters
         ----------
@@ -1640,10 +1842,6 @@ class _HubManagerTrivialInherited(GameWithAreasManager):
         autoadd_on_creation_existing_users : bool
             If the hub will attempt to add nonplayer users who were in an area added
             to the hub on creation. Defaults to False.
-        autoadd_minigame_on_player_added : bool, optional
-            If True, nonplayer users that are added to the hub will also be automatically added
-            to the minigame if permitted by its conditions. If False, no such adding will take
-            place. Defaults to False.
 
         Returns
         -------
@@ -1652,8 +1850,6 @@ class _HubManagerTrivialInherited(GameWithAreasManager):
 
         Raises
         ------
-        HubError.AreaDisallowsBulletsError
-            If `creator` is given and the area of the creator disallows bullets.
         HubError.ManagerTooManyGamesError
             If the manager is already managing its maximum number of minigames.
         Any error from the created hub's add_player(creator)
@@ -1679,7 +1875,6 @@ class _HubManagerTrivialInherited(GameWithAreasManager):
             area_concurrent_limit=area_concurrent_limit,
             autoadd_on_client_enter=autoadd_on_client_enter,
             autoadd_on_creation_existing_users=autoadd_on_creation_existing_users,
-            autoadd_minigame_on_player_added=autoadd_minigame_on_player_added,
             **kwargs,
             )
         self._check_structure()
@@ -2020,4 +2215,225 @@ class HubManager(_HubManagerTrivialInherited):
 
     """
 
-    pass
+    # Invariants
+    # ----------
+    # 1. If `self.get_managees()` is empty, then `self._ever_had_hubs` is True.
+    # 2. The invariants of the parent class are maintained.
+
+    def __init__(
+        self,
+        server: TsuserverDR,
+        managee_limit: Union[int, None] = None,
+        default_managee_type: Type[_Hub] = None,
+        ):
+        """
+        Create a hub manager object.
+
+        Parameters
+        ----------
+        server : TsuserverDR
+            The server this hub manager belongs to.
+        managee_limit : int, optional
+            The maximum number of hub this manager can handle. Defaults to None
+            (no limit).
+        default_managee_type : Type[_Hub], optional
+            The default type of hub this manager will create. Defaults to None (and then
+            converted to _Hub).
+
+        """
+
+        if default_managee_type is None:
+            default_managee_type = _Hub
+
+        self._ever_had_hubs = False
+
+        super().__init__(
+            server,
+            managee_limit=managee_limit,
+            default_managee_type=default_managee_type
+        )
+
+    def unchecked_new_managee(
+        self,
+        managee_type: Type[_Hub] = None,
+        creator: Union[ClientManager.Client, None] = None,
+        player_limit: Union[int, None] = None,
+        player_concurrent_limit: Union[int, None] = 1,
+        require_invitations: bool = False,
+        require_players: bool = False,  # Overriden from parent
+        require_leaders: bool = False,  # Overriden from parent
+        require_character: bool = False,
+        team_limit: Union[int, None] = None,
+        timer_limit: Union[int, None] = None,
+        areas: Set[AreaManager.Area] = None,
+        area_concurrent_limit: Union[int, None] = 1,  # Overriden from parent
+        autoadd_on_client_enter: bool = False,
+        autoadd_on_creation_existing_users: bool = False,
+        **kwargs: Any,
+        ) -> _Hub:
+        """
+        Create a new hub managed by this manager. Overriden default parameters include:
+        * A hub does not require leaders.
+        * A hub does not require players.
+        * An area cannot belong to two or more hubs at the same time.
+
+        This method does not assert structural integrity.
+
+        Parameters
+        ----------
+        creator : ClientManager.Client, optional
+            The player who created this hub. If set, they will also be added to the hub.
+            Defaults to None.
+        player_limit : Union[int, None], optional
+            If an int, it is the maximum number of players the hub supports. If None, it
+            indicates the hub has no player limit. Defaults to None.
+        require_invitations : bool, optional
+            If True, users can only be added to the hub if they were previously invited. If
+            False, no checking for invitations is performed. Defaults to False.
+        require_players : bool, optional
+            If True, if at any point the hub loses all its players, the hub will automatically
+            be deleted. If False, no such automatic deletion will happen. Defaults to False.
+        require_character : bool, optional
+            If False, players without a character will not be allowed to join the hub, and
+            players that switch to something other than a character will be automatically
+            removed from the hub. If False, no such checks are made. A player without a
+            character is considered one where player.has_character() returns False. Defaults
+            to False.
+        team_limit : Union[int, None], optional
+            If an int, it is the maximum number of teams the hub will support. If None, it
+            indicates the hub will have no team limit. Defaults to None.
+        timer_limit : Union[int, None], optional
+            If an int, it is the maximum number of timers the hub will support. If None, it
+            indicates the hub will have no timer limit. Defaults to None.
+        area_concurrent_limit : Union[int, None], optional
+            If an int, it is the maximum number of hubs managed by `manager` that any
+            area of the created hub may belong to, including the created hub. If None, it
+            indicates that this hub does not care about how many other hubs managed by
+            `manager` each of its areas belongs to. Defaults to 1 (an area may not be a part of
+            another hub managed by `manager` while being an area of this hubs).
+        autoadd_on_client_enter : bool, optional
+            If True, nonplayer users that enter an area part of the game will be automatically
+            added if permitted by the conditions of the game. If False, no such adding will take
+            place. Defaults to False.
+        autoadd_on_creation_existing_users : bool
+            If the hub will attempt to add nonplayer users who were in an area added
+            to the hub on creation. Defaults to False.
+
+        Returns
+        -------
+        _Hub
+            The created hub.
+
+        Raises
+        ------
+        HubError.ManagerTooManyGamesError
+            If the manager is already managing its maximum number of minigames.
+        Any error from the created hub's add_player(creator)
+            If the hub cannot add `creator` to the hub if given one.
+
+        """
+
+        if managee_type is None:
+            managee_type = self.get_managee_type()
+
+        try:
+            hub: _Hub = super().unchecked_new_managee(
+                managee_type=managee_type,
+                creator=creator,
+                player_limit=player_limit,
+                player_concurrent_limit=player_concurrent_limit,
+                require_invitations=require_invitations,
+                require_players=require_players,
+                require_leaders=require_leaders,
+                require_character=require_character,
+                team_limit=team_limit,
+                timer_limit=timer_limit,
+                areas=areas,
+                area_concurrent_limit=area_concurrent_limit,
+                autoadd_on_client_enter=autoadd_on_client_enter,
+                autoadd_on_creation_existing_users=autoadd_on_creation_existing_users,
+                # kwargs
+                **kwargs,
+                )
+        except GameWithAreasError.ManagerTooManyGamesError:
+            raise HubError.ManagerTooManyGamesError
+
+        self._ever_had_hubs = True
+        return hub
+
+    def get_managee_of_user(self, user: ClientManager.Client) -> _Hub:
+        """
+        Get the hub the user is in.
+
+        Parameters
+        ----------
+        user : ClientManager.Client
+            User to check.
+
+        Raises
+        ------
+        HubError.UserNotPlayerError
+            If the user is not in a hub managed by this manager.
+
+        Returns
+        -------
+        HubManager.Hub
+            Hub of the user.
+
+        """
+
+        games = self.get_managees_of_user(user)
+        hubs = {game for game in games if isinstance(game, _Hub)}
+        if not hubs:
+            raise HubError.UserNotPlayerError
+        if len(hubs) > 1:
+            raise RuntimeError(hubs)
+        return next(iter(hubs))
+
+    def get_available_managee_id(self):
+        """
+        Get a hub ID that no other hub managed by this manager has.
+
+        Returns
+        -------
+        str
+            A unique hub ID.
+
+        Raises
+        ------
+        HubError.ManagerTooManyGamesError
+            If the manager is already managing its maximum number of games.
+
+        """
+
+        game_number = 0
+        game_limit = self.get_managee_limit()
+        while game_limit is None or game_number < game_limit:
+            new_game_id = "hub{}".format(game_number)
+            if new_game_id not in self.get_managee_ids():
+                return new_game_id
+            game_number += 1
+        raise HubError.ManagerTooManyGamesError
+
+    def _check_structure(self):
+        """
+        Assert that all invariants specified in the class description are maintained.
+
+        Raises
+        ------
+        AssertionError
+            If any of the invariants are not maintained.
+
+        """
+
+        hubs = self.get_managees()
+
+        # 1.
+        if not hubs and self._ever_had_hubs:
+            err = (f'For hub manager {self}, expected that it had no hubs managed only if it had '
+                   f'never had any hubs, found it managed no hubs after it had hubs {hubs} '
+                   f'beforehand.')
+            raise AssertionError(err)
+
+        # 2.
+        super()._check_structure()

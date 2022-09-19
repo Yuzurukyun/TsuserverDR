@@ -3246,8 +3246,6 @@ class _TrialManagerTrivialInherited(GameWithAreasManager):
         * A trial does not require leaders.
         * An area cannot belong to two or more trials at the same time.
 
-        This method does not assert structural integrity.
-
         Parameters
         ----------
         creator : ClientManager.Client, optional
@@ -3467,7 +3465,7 @@ class _TrialManagerTrivialInherited(GameWithAreasManager):
         Returns
         -------
         Union[int, None]
-            Game with areas limit.
+            Trial limit.
 
         """
 
@@ -3678,7 +3676,7 @@ class TrialManager(_TrialManagerTrivialInherited):
         default_managee_type: Type[_Trial] = None,
         ):
         """
-        Create a game with areas manager object.
+        Create a trial manager object.
 
         Parameters
         ----------
