@@ -1695,7 +1695,11 @@ class _Hub(_HubTrivialInherited):
         """
 
         self.background_manager = BackgroundManager(self)
+        self.load_backgrounds()
+
         self.character_manager = CharacterManager(self)
+        self.load_characters()
+
         self.music_manager = MusicManager(self)
         self.trial_manager = TrialManager(self)
         self.zone_manager = ZoneManager(self)
@@ -1806,6 +1810,69 @@ class _Hub(_HubTrivialInherited):
                                    f'had a valid background. Switching to {default_background}.')
 
         return backgrounds.copy()
+
+    def load_characters(self, source_file: str = 'config/characters.yaml') -> List[str]:
+        """
+        Load a character list file.
+
+        Parameters
+        ----------
+        source_file : str, optional
+            Relative path from server root folder to character list file, by default
+            'config/characters.yaml'
+
+        Returns
+        -------
+        List[str]
+            Characters.
+
+        Raises
+        ------
+        ServerError.FileNotFoundError
+            If the file was not found.
+        ServerError.FileOSError
+            If there was an operating system error when opening the file.
+        ServerError.YAMLInvalidError
+            If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
+        ServerError.FileSyntaxError
+            If the file failed verification for its asset type.
+        """
+
+        old_characters = self.character_manager.get_characters()
+        characters = self.character_manager.validate_file(source_file)
+        if old_characters == characters:
+            return characters.copy()
+
+        # Inconsistent character list, so change to spectator those who lost their character.
+        new_chars = {char: num for (num, char) in enumerate(characters)}
+
+        for client in self.server.get_clients():
+            target_char_id = -1
+            old_char_name = client.get_char_name()
+
+            if not client.has_character():
+                # Do nothing for spectators
+                pass
+            elif old_char_name not in new_chars:
+                # Character no longer exists, so switch to spectator
+                client.send_ooc(f'After a change in the character list, your character is no '
+                                f'longer available. Switching to '
+                                f'{self.server.config["spectator_name"]}.')
+            else:
+                target_char_id = new_chars[old_char_name]
+
+            if client.packet_handler.ALLOWS_CHAR_LIST_RELOAD:
+                client.send_command_dict('SC', {
+                    'chars_ao2_list': characters,
+                    })
+                client.change_character(target_char_id, force=True)
+            else:
+                client.send_ooc('After a change in the character list, your client character list '
+                                'is no longer synchronized. Please rejoin the server.')
+
+        # Only now update internally. This is to allow `change_character` to work properly.
+        self.character_manager.load_file(source_file)
+        return characters.copy()
 
     def _on_area_client_left_final(self, area: AreaManager.Area, client: ClientManager.Client = None, old_displayname: str = None, ignore_bleeding: bool = False, ignore_autopass: bool = False):
         return super()._on_area_client_left_final(area, client, old_displayname, ignore_bleeding, ignore_autopass)

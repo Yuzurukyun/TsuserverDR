@@ -35,7 +35,6 @@ import urllib.request, urllib.error
 
 from server import logger
 from server.ban_manager import BanManager
-from server.character_manager import CharacterManager
 from server.constants import Constants
 from server.client_manager import ClientManager
 from server.exceptions import ServerError
@@ -101,9 +100,6 @@ class TsuserverDR:
         #    autoadd_on_client_enter=True,
         #)
 
-        self.character_manager = CharacterManager(self)
-        self.load_characters()
-
         self.trial_manager = TrialManager(self)
         self.zone_manager = ZoneManager(self)
         self.music_manager = MusicManager(self)
@@ -114,7 +110,6 @@ class TsuserverDR:
         self.gimp_list = list()
         self.load_commandhelp()
         self.load_music()
-        self.load_backgrounds()
         self.load_ids()
         self.load_gimp()
 
@@ -239,7 +234,7 @@ class TsuserverDR:
         default_hub = self.hub_manager.get_default_managee()
         try:
             default_hub.background_manager.validate_file()
-            self.character_manager.validate_file()
+            default_hub.character_manager.validate_file()
             self.music_manager.validate_file()
         except ServerError.YAMLInvalidError as exc:
             # The YAML exception already provides a full description. Just add the fact the
@@ -251,8 +246,8 @@ class TsuserverDR:
             raise ServerError(msg)
 
         # Only on success reload
-        self.load_characters()
         default_hub.load_backgrounds()
+        default_hub.load_characters()
         self.load_music()
 
     def reload_commands(self):
@@ -355,68 +350,6 @@ class TsuserverDR:
                 self.config[tag] = value
 
         return self.config
-
-    def load_characters(self, source_file: str = 'config/characters.yaml') -> List[str]:
-        """
-        Load a character list file.
-
-        Parameters
-        ----------
-        source_file : str, optional
-            Relative path from server root folder to character list file, by default
-            'config/characters.yaml'
-
-        Returns
-        -------
-        List[str]
-            Characters.
-
-        Raises
-        ------
-        ServerError.FileNotFoundError
-            If the file was not found.
-        ServerError.FileOSError
-            If there was an operating system error when opening the file.
-        ServerError.YAMLInvalidError
-            If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
-        ServerError.FileSyntaxError
-            If the file failed verification for its asset type.
-        """
-
-        old_characters = self.character_manager.get_characters()
-        characters = self.character_manager.validate_file(source_file)
-        if old_characters == characters:
-            return characters.copy()
-
-        # Inconsistent character list, so change to spectator those who lost their character.
-        new_chars = {char: num for (num, char) in enumerate(characters)}
-
-        for client in self.get_clients():
-            target_char_id = -1
-            old_char_name = client.get_char_name()
-
-            if not client.has_character():
-                # Do nothing for spectators
-                pass
-            elif old_char_name not in new_chars:
-                # Character no longer exists, so switch to spectator
-                client.send_ooc(f'After a change in the character list, your character is no '
-                                f'longer available. Switching to {self.config["spectator_name"]}.')
-            else:
-                target_char_id = new_chars[old_char_name]
-
-            if client.packet_handler.ALLOWS_CHAR_LIST_RELOAD:
-                client.send_command_dict('SC', {
-                    'chars_ao2_list': characters,
-                    })
-                client.change_character(target_char_id, force=True)
-            else:
-                client.send_ooc('After a change in the character list, your client character list '
-                                'is no longer synchronized. Please rejoin the server.')
-
-        # Only now update internally. This is to allow `change_character` to work properly.
-        self.character_manager.load_file(source_file)
-        return characters.copy()
 
     def load_commandhelp(self):
         with Constants.fopen('README.md', 'r', encoding='utf-8') as readme:

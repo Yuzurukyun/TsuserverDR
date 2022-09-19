@@ -221,7 +221,7 @@ def net_cmd_askchaa(client: ClientManager.Client, pargs: Dict[str, Any]):
     client.can_askchaa = False  # Enforce the joining process happening atomically
 
     # Make sure there is enough room for the client
-    char_cnt = len(client.server.character_manager.get_characters())
+    char_cnt = len(client.hub.character_manager.get_characters())
     evi_cnt = 0
     music_cnt = sum([len(item['songs']) + 1
                      for item in client.music_manager.get_music()])  # +1 for category
@@ -257,7 +257,7 @@ def net_cmd_rc(client: ClientManager.Client, pargs: Dict[str, Any]):
     if client.required_packets_received != {'HI', 'ID'}:
         return
     client.send_command_dict('SC', {
-        'chars_ao2_list': client.server.character_manager.get_characters(),
+        'chars_ao2_list': client.hub.character_manager.get_characters(),
         })
 
 

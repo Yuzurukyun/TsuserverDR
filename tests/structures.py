@@ -903,7 +903,7 @@ class _TestTsuserverDR(TsuserverDR):
 
         c.send_command_cts("CC#{}#{}#{}#%".format(c.id, char_id, hdid))
         if char_id >= 0:
-            exp = self.character_manager.get_characters()[char_id]
+            exp = self.hub_manager.get_default_managee().character_manager.get_characters()[char_id]
         else:
             exp = self.config['spectator_name']
         res = c.get_char_name()
@@ -924,9 +924,10 @@ class _TestTsuserverDR(TsuserverDR):
         else:
             assert len(user_list) == number
 
+        default_hub = self.hub_manager.get_default_managee()
         for i in range(number):
-            area = self.hub_manager.get_default_managee().area_manager.default_area()
-            for j in range(len(self.character_manager.get_characters())):
+            area = default_hub.area_manager.default_area()
+            for j in range(len(default_hub.character_manager.get_characters())):
                 if area.is_char_available(j):
                     char_id = j
                     break

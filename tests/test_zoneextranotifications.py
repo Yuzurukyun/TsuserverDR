@@ -308,10 +308,11 @@ class TestZoneExtraNotifications_03_ChangeCharacter(_TestZone):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.sc0_name = cls.server.character_manager.get_characters()[0]
-        cls.sc1_name = cls.server.character_manager.get_characters()[1]
-        cls.sc2_name = cls.server.character_manager.get_characters()[2]
-        cls.sc3_name = cls.server.character_manager.get_characters()[3]
+        cls.default_hub = cls.server.hub_manager.get_default_managee()
+        cls.sc0_name = cls.default_hub.character_manager.get_characters()[0]
+        cls.sc1_name = cls.default_hub.character_manager.get_characters()[1]
+        cls.sc2_name = cls.default_hub.character_manager.get_characters()[2]
+        cls.sc3_name = cls.default_hub.character_manager.get_characters()[3]
         cls.scs_name = cls.server.config['spectator_name']
         cls.expected_next_results = None
 
@@ -499,7 +500,8 @@ class TestZoneExtraNotifications_03_ChangeCharacter(_TestZone):
         self.c3.assert_no_packets()
         self.c4.assert_packet('PV', (4, 'CID', 2))
         self.c4.assert_ooc('Changed character to {}.'
-                           .format(self.server.character_manager.get_characters()[2]), over=True)
+                           .format(self.default_hub.character_manager.get_characters()[2]),
+                           over=True)
         self.c5.assert_no_packets()
 
 class TestZoneExtraNotifications_04_Disconnection(_TestZone):

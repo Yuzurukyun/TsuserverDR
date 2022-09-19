@@ -82,7 +82,7 @@ class TestClientConnection(_Unittest):
 
         # But then it carries on
         c.send_command_cts("askchaa#%")
-        c.assert_packet('SI', (len(self.server.character_manager.get_characters()), None, None), over=True)
+        c.assert_packet('SI', (len(c.hub.character_manager.get_characters()), None, None), over=True)
         c.send_command_cts("RC#%")
         c.assert_packet('SC', None, over=True)
         c.send_command_cts("RM#%")
@@ -132,7 +132,7 @@ class TestClientConnection(_Unittest):
 
         # Join server
         c.send_command_cts("askchaa#%")
-        c.assert_packet('SI', (len(self.server.character_manager.get_characters()), None, None), over=True)
+        c.assert_packet('SI', (len(c.hub.character_manager.get_characters()), None, None), over=True)
         c.send_command_cts("RC#%")
         c.assert_packet('SC', None, over=True)
         c.send_command_cts("RM#%")
@@ -163,7 +163,7 @@ class TestClientConnection(_Unittest):
         c.send_command_cts("CC#1#0#FAKEHDID#%")  # Pick char 0
         c.assert_packet('PV', (1, 'CID', 0))  # 1 because second client online
         c.assert_packet('GM', '', over=True)
-        assert(c.get_char_name() == self.server.character_manager.get_characters()[0])
+        assert(c.get_char_name() == c.hub.character_manager.get_characters()[0])
 
         # Check number of clients
         num_clients = len(self.server.client_manager.clients)
@@ -189,7 +189,8 @@ class TestClientConnection(_Unittest):
 
         # Join server
         c.send_command_cts("askchaa#%")
-        c.assert_packet('SI', (len(self.server.character_manager.get_characters()), None, None), over=True)
+        c.assert_packet('SI', (len(c.hub.character_manager.get_characters()), None, None),
+                        over=True)
         c.send_command_cts("RC#%")
         c.assert_packet('SC', None, over=True)
         c.send_command_cts("RM#%")
@@ -222,7 +223,7 @@ class TestClientConnection(_Unittest):
         c.send_command_cts("CC#2#1#FAKEHDID#%")  # Attempt to pick char 1
         c.assert_packet('PV', (2, 'CID', 1))  # 2 because third client online
         c.assert_packet('GM', '', over=True)
-        assert(c.get_char_name() == self.server.character_manager.get_characters()[1])
+        assert(c.get_char_name() == c.hub.character_manager.get_characters()[1])
 
         # Check number of clients
         num_clients = len(self.server.client_manager.clients)
@@ -246,7 +247,7 @@ class TestClientConnection(_Unittest):
         c.send_command_cts("CC#0#3#FAKEHDID#%")  # Attempt to pick char 3
         c.assert_packet('PV', (0, 'CID', 3))  # 0 because first client online
         c.assert_packet('GM', '', over=True)
-        assert(c.get_char_name() == self.server.character_manager.get_characters()[3])
+        assert(c.get_char_name() == c.hub.character_manager.get_characters()[3])
 
         self.assertEqual(len(self.server.client_manager.clients), 3)
         self.assertEqual(self.server.get_player_count(), 3)
