@@ -1542,13 +1542,11 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
             timer_limit=timer_limit
         )
 
-        self.listener.subscribe(self.hub.area_manager)
         self.listener.update_events({
             'area_client_left_final': self._on_area_client_left_final,
             'area_client_entered_final': self._on_area_client_entered_final,
             'area_client_inbound_ms_check': self._on_area_client_inbound_ms_check,
             'area_destroyed': self._on_area_destroyed,
-            'areas_loaded': self._on_areas_loaded,
             })
         self.manager: GameWithAreasManager  # Setting for typing
 
@@ -1695,7 +1693,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
 
     def unchecked_add_area(self, area: AreaManager.Area):
         """
-        Add an area to this game with area's set of areas.
+        Add an area to this game with areas's set of areas.
 
         This method does not assert structural integrity.
 
@@ -1733,7 +1731,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
 
     def remove_area(self, area: AreaManager.Area):
         """
-        Remove an area from this game with area's set of areas.
+        Remove an area from this game with areas's set of areas.
         If the area is already a part of the game with areas, do nothing.
         If any player of the game with areas is in this area, they are removed from the
         game with areas.
@@ -1759,7 +1757,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
 
     def unchecked_remove_area(self, area: AreaManager.Area):
         """
-        Remove an area from this game with area's set of areas.
+        Remove an area from this game with areas's set of areas.
         If the area is already a part of the game with areas, do nothing.
         If any player of the game with areas is in this area, they are removed from the
         game with areas.
@@ -2058,25 +2056,6 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
         # print('Received DESTRUCTION', area)
         self.remove_area(area)
 
-    def _on_areas_loaded(self, area_manager: AreaManager):
-        """
-        Default callback for server area manager signaling it loaded new areas.
-
-        By default it calls self.destroy().
-
-        Parameters
-        ----------
-        area_manager : AreaManager
-            AreaManager that signaled the areas load.
-
-        Returns
-        -------
-        None.
-
-        """
-
-        self.destroy()
-
     def _check_structure(self):
         """
         Assert that all invariants specified in the class description are maintained.
@@ -2101,7 +2080,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
                    f'if they enter an area of the game with areas, found it did.')
             raise AssertionError(err)
 
-        # 2.
+        # 3.
         super()._check_structure()
 
     def __str__(self) -> str:
@@ -2546,7 +2525,7 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
     # ----------
     # 1. For every area and game with areas pair (`area`, `games`) in
     #    `self.get_areas_to_managees_map().items()`:
-    #     a. For every game with area `game` in `games`:
+    #     a. For every game with areas `game` in `games`:
     #           1. `game` has no area concurrent membership limit, or it is at least the length
     #               of `games`.
     # 2. The invariants of the parent class are maintained.
@@ -2674,13 +2653,13 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
 
         """
 
+        if not self.is_managee_creatable():
+            raise GameWithAreasError.ManagerTooManyGamesError
+
         if managee_type is None:
             managee_type = self.get_managee_type()
         if not areas:
             areas = {creator.area} if creator else set()
-
-        if not self.is_managee_creatable():
-            raise GameWithAreasError.ManagerTooManyGamesError
 
         game: _GameWithAreas = super().unchecked_new_managee(
             managee_type=managee_type,
@@ -2814,7 +2793,7 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
             return None
 
         # It just suffices to analyze the game with the smallest limit, because:
-        # 1. If the area is part of at least as many games with areas as this game with area's
+        # 1. If the area is part of at least as many games with areas as this game with areas's
         #    limit, this game with areas is an example game with areas that can be returned.
         # 2. Otherwise, no other games with areas exist due to the minimality condition.
         most_restrictive_game: _GameWithAreas = min(

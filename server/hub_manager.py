@@ -1706,6 +1706,7 @@ class _Hub(_HubTrivialInherited):
         # Has to be after character_manager to allow proper loading of areas,
         # as those need to compute restricted areas
         self.area_manager = AreaManager(server, hub=self)
+        self.load_areas()
 
         self.trial_manager = TrialManager(self)
         self.zone_manager = ZoneManager(self)
@@ -1890,9 +1891,6 @@ class _Hub(_HubTrivialInherited):
 
     def _on_client_change_character(self, player: ClientManager.Client, old_char_id: Union[int, None] = None, new_char_id: Union[int, None] = None):
         return super()._on_client_change_character(player, old_char_id, new_char_id)
-
-    def _on_areas_loaded(self, area_manager: AreaManager):
-        return super()._on_areas_loaded(area_manager)
 
     def __str__(self) -> str:
         return (f"Hub::{self.get_id()}:"
