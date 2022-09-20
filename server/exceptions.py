@@ -387,3 +387,8 @@ class NonStopDebateError(TrialMinigameError):
 @recreate_subexceptions
 class HubError(GameWithAreasError):
     pass
+
+@recreate_subexceptions
+class TaskError(TsuserverException):
+    class TaskNotFoundError(TsuserverException):
+        pass
