@@ -42,7 +42,7 @@ from server.hub_manager import HubManager
 from server.network.ao_protocol import AOProtocol
 from server.network.ms3_protocol import MasterServerClient
 from server.party_manager import PartyManager
-from server.tasker import Tasker
+from server.task_manager import TaskManager
 from server.timer_manager import TimerManager
 
 from server.validate.config import ValidateConfig
@@ -120,7 +120,7 @@ class TsuserverDR:
         self.loop = asyncio.get_event_loop()
         self.error_queue = asyncio.Queue()
 
-        self.tasker = Tasker(self)
+        self.task_manager = TaskManager(self)
         if self.config['local']:
             bound_ip = '127.0.0.1'
             logger.log_print('Starting a local server...')
@@ -176,7 +176,7 @@ class TsuserverDR:
                               f'{self.config["port"]}.')
 
         if self.config['local']:
-            self.local_connection = asyncio.create_task(self.tasker.do_nothing())
+            self.local_connection = asyncio.create_task(Constants.do_nothing())
 
         if self.config['use_masterserver']:
             self.ms_client = MasterServerClient(self)
@@ -197,12 +197,12 @@ class TsuserverDR:
         # Cancel further polling for master server
         if self.local_connection:
             self.local_connection.cancel()
-            await self.tasker.await_cancellation(self.local_connection)
+            await Constants.await_cancellation(self.local_connection)
 
         if self.masterserver_connection:
             self.masterserver_connection.cancel()
-            await self.tasker.await_cancellation(self.masterserver_connection)
-            await self.tasker.await_cancellation(self.ms_client.shutdown())
+            await Constants.await_cancellation(self.masterserver_connection)
+            await Constants.await_cancellation(self.ms_client.shutdown())
 
         # Cancel pending client tasks and cleanly remove them from the areas
         players = self.get_player_count()

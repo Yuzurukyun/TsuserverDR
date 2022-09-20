@@ -588,14 +588,16 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
                                f'talking ({client.area.id}).', is_zstaff=True)
 
     # Restart AFK kick timer and lurk callout timers, if needed
-    client.server.tasker.create_task(client,
-                                    ['as_afk_kick', client.area.afk_delay, client.area.afk_sendto])
+    client.server.task_manager.new_task(client, 'as_afk_kick', {
+        'afk_delay': client.area.afk_delay,
+        'afk_sendto': client.area.afk_sendto
+    })
     client.check_lurk()
 
     client.last_ic_message = msg
     client.last_active = Constants.get_time()
 
-def _process_ooc_command(cmd, client):
+def _process_ooc_command(cmd: str, client: ClientManager.Client):
     called_function = f'ooc_cmd_{cmd}'
     if hasattr(client.server.commands, called_function):
         function = getattr(client.server.commands, called_function)

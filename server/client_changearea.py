@@ -27,7 +27,7 @@ if typing.TYPE_CHECKING:
 import time
 
 from server import logger
-from server.exceptions import ClientError, AreaError
+from server.exceptions import ClientError, AreaError, TaskError
 from server.constants import Constants
 
 
@@ -65,7 +65,10 @@ class ClientChangeArea:
 
         # Check if player has waited a non-zero movement delay
         if not client.is_staff() and client.is_movement_handicapped and not override_effects:
-            start, length, name, _ = client.server.tasker.get_task_args(client, ['as_handicap'])
+            task = client.server.task_manager.get_task(client, 'as_handicap')
+            start = task.creation_time
+            length = task.parameters['length']
+            name = task.parameters['handicap_name']
             _, remain_text = Constants.time_remaining(start, length)
             raise ClientError("You are still under the effects of movement handicap '{}'. "
                               "Please wait {} before changing areas."
@@ -866,17 +869,25 @@ class ClientChangeArea:
         client.send_music_list_view() # Update music list to include new area's reachable areas
         # If new area has lurk callout timer, reset it to that, provided it makes sense
         client.check_lurk()
-        client.server.tasker.create_task(client, ['as_afk_kick', area.afk_delay, area.afk_sendto])
+        client.server.task_manager.new_task(client, 'as_afk_kick', {
+            'afk_delay': area.afk_delay,
+            'afk_sendto': area.afk_sendto,
+        })
         # Try and restart handicap if needed
         try:
-            _, length, name, announce_if_over = client.server.tasker.get_task_args(client,
-                                                                                   ['as_handicap'])
-        except (ValueError, KeyError):
+            task = client.server.task_manager.get_task(client, 'as_handicap')
+        except TaskError.TaskNotFoundError:
             pass
         else:
-            client.server.tasker.create_task(client,
-                                             ['as_handicap', time.time(), length, name,
-                                              announce_if_over])
+            length = task.parameters['length']
+            name = task.parameters['handicap_name']
+            announce_if_over = task.parameters['announce_if_over']
+
+            client.server.task_manager.new_task(client, 'as_handicap', {
+                'length': length,
+                'handicap_name': name,
+                'announce_if_over': announce_if_over,
+            })
 
         # For old area, check if there are no remaining clients, and if so, end any existing
         # lurk callout timer that may have been imposed on the area

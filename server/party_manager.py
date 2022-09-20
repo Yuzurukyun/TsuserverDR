@@ -21,6 +21,7 @@
 
 import asyncio
 import random
+from server.constants import Constants
 
 from server.exceptions import AreaError, ClientError, PartyError
 
@@ -150,7 +151,8 @@ class PartyManager:
             # Only call this when you are sure you want to cancel potential light timeout timers.
             # Restart light timer
             if self.lights_timeout is not None:
-                self.server.tasker.cancel_task(self.lights_timeout)
+                self.lights_timeout.cancel()
+                asyncio.ensure_future(Constants.await_cancellation(self.lights_timeout))
             self.lights_timeout = None
 
             if not self.area.lights:

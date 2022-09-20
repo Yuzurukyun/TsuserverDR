@@ -1216,3 +1216,19 @@ class Constants():
             if char in text:
                 return True
         return False
+
+    @staticmethod
+    async def await_cancellation(old_task: asyncio.Task):
+        # Wait until it is able to properly retrieve the cancellation exception
+        try:
+            await old_task
+        except asyncio.CancelledError:
+            pass
+
+    @staticmethod
+    async def do_nothing():
+        while True:
+            try:
+                await asyncio.sleep(1)
+            except KeyboardInterrupt:
+                raise

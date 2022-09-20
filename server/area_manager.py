@@ -34,7 +34,7 @@ from server import logger
 from server.asset_manager import AssetManager
 from server.constants import Constants
 from server.evidence import EvidenceList
-from server.exceptions import AreaError, MusicError, ServerError
+from server.exceptions import AreaError, MusicError, ServerError, TaskError
 from server.subscriber import Publisher
 from server.validate.areas import ValidateAreas
 
@@ -956,11 +956,11 @@ class AreaManager(AssetManager):
 
             for client in self.server.get_clients():
                 try:
-                    args = self.server.tasker.get_task_args(client, ['as_day_cycle'])
-                except KeyError:
+                    task = self.server.task_manager.get_task(client, 'as_day_cycle')
+                except TaskError.TaskNotFoundError:
                     pass
                 else:
-                    area_1, area_2 = args[1], args[2]
+                    area_1, area_2 = task.parameters['area_1'], task.parameters['area_2']
                     if area_1 <= self.id <= area_2:
                         return client
             raise AreaError.ClientNotFound
@@ -982,7 +982,8 @@ class AreaManager(AssetManager):
             except AreaError.ClientNotFound:
                 return ''
             else:
-                period = self.server.tasker.get_task_attr(client, ['as_day_cycle'], 'period')
+                task = self.server.task_manager.get_task(client, 'as_day_cycle')
+                period = task.parameters['period']
                 return period
 
         def get_look_output_for(self, client: ClientManager.Client) -> Tuple[bool, str, str]:
@@ -1323,8 +1324,8 @@ class AreaManager(AssetManager):
         # And end all existing day cycles
         for client in self.server.get_clients():
             try:
-                client.server.tasker.remove_task(client, ['as_day_cycle'])
-            except KeyError:
+                client.server.task_manager.delete_task(client, 'as_day_cycle')
+            except TaskError.TaskNotFoundError:
                 pass
 
         # And remove all global IC and global IC prefixes
