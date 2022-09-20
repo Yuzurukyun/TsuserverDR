@@ -17,6 +17,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+from ast import Delete
+from multiprocessing.sharedctypes import Value
 
 import typing
 from typing import Any, Callable, List, Optional, Set, Tuple, Dict, Union
@@ -29,7 +31,7 @@ from server import clients
 from server import client_changearea
 from server import logger
 
-from server.exceptions import AreaError, ClientError, PartyError, TrialError
+from server.exceptions import AreaError, ClientError, PartyError, TaskError, TrialError
 from server.constants import TargetType, Constants
 from server.hub_manager import _Hub
 from server.music_manager import MusicManager
@@ -117,8 +119,7 @@ class ClientManager:
             self.followedby = set()
             self.showname_history = list()
             self.is_transient = False
-            self.handicap = None
-            self.handicap_backup = None  # Use if custom handicap is overwritten with a server one
+            self.old_handicap = None  # Use if custom handicap is overwritten with a server one
             self.is_movement_handicapped = False
             self.show_shownames = True
             self.is_bleeding = False
@@ -831,8 +832,10 @@ class ClientManager:
             if not self.has_character() and self.has_character(char_id=char_id):
                 # No longer spectator?
                 # Now bound by AFK rules
-                self.server.tasker.create_task(self, ['as_afk_kick', self.area.afk_delay,
-                                                      self.area.afk_sendto])
+                self.server.task_manager.new_task(self, 'as_afk_kick', {
+                    'afk_delay': self.area.afk_delay,
+                    'afk_sendto': self.area.afk_sendto,
+                })
                 # And to lurk callouts, if any, provided not staff member
                 self.check_lurk()
 
@@ -847,8 +850,8 @@ class ClientManager:
                 # Now a spectator?
                 # No longer bound to AFK rules
                 try:
-                    self.server.tasker.remove_task(self, ['as_afk_kick'])
-                except KeyError:
+                    self.server.task_manager.delete_task(self, 'as_afk_kick')
+                except TaskError.TaskNotFoundError:
                     pass
                 # And to lurk callouts
                 self.check_lurk()
@@ -959,11 +962,13 @@ class ClientManager:
 
         def check_lurk(self):
             if self.area.lurk_length > 0 and not self.is_staff() and self.has_character():
-                self.server.tasker.create_task(self, ['as_lurk', self.area.lurk_length])
+                self.server.task_manager.new_task(self, 'as_lurk', {
+                    'length': self.area.lurk_length,
+                })
             else:  # Otherwise, end any existing lurk, if there is one
                 try:
-                    self.server.tasker.remove_task(self, ['as_lurk'])
-                except KeyError:
+                    self.server.task_manager.delete_task(self, 'as_lurk')
+                except TaskError.TaskNotFoundError:
                     pass
 
         def change_area(self, area: AreaManager.Area, override_all: bool = False,
@@ -1152,17 +1157,20 @@ class ClientManager:
                 # delay than the server's sneaked handicap and restore it (as by default the server
                 # will take the largest handicap when dealing with the automatic sneak handicap)
                 try:
-                    _, _, name, _ = self.server.tasker.get_task_args(self, ['as_handicap'])
-                except KeyError:
+                    task = self.server.task_manager.get_task(self, 'as_handicap')
+                except TaskError.TaskNotFoundError:
                     pass
                 else:
+                    name = task['handicap_name']
                     if name == "Sneaking":
-                        if self.server.config['sneak_handicap'] > 0 and self.handicap_backup:
+                        if self.server.config['sneak_handicap'] > 0 and self.old_handicap:
                             # Only way for a handicap backup to exist and to be in this situation is
                             # for the player to had a custom handicap whose length was shorter than
                             # the server's sneak handicap, then was set to be sneaking, then was
                             # revealed. From this, we can recover the old handicap backup
-                            _, old_length, old_name, old_announce_if_over = self.handicap_backup[1]
+                            old_length = self.old_handicap.parameters['length']
+                            old_name = self.old_handicap.parameters['handicap_name']
+                            old_announce_if_over = self.old_handicap.parameters['announce_if_over']
 
                             msg = ('(X) {} was [{}] automatically imposed their old movement '
                                    'handicap "{}" of length {} seconds after being revealed in '
@@ -1173,11 +1181,13 @@ class ClientManager:
                             self.send_ooc('You were automatically imposed your former movement '
                                           'handicap "{}" of length {} seconds when changing areas.'
                                           .format(old_name, old_length))
-                            self.server.tasker.create_task(self, ['as_handicap', time.time(),
-                                                                  old_length, old_name,
-                                                                  old_announce_if_over])
+                            self.server.task_manager.new_task(self, 'as_handicap', {
+                                'length': old_length,
+                                'handicap_name': old_name,
+                                'announce_if_over': old_announce_if_over,
+                            })
                         else:
-                            self.server.tasker.remove_task(self, ['as_handicap'])
+                            self.server.task_manager.delete_task(self, 'as_handicap')
 
                 logger.log_server('{} is no longer sneaking.'.format(self.ipid), self)
             else:  # Changed to invisible (e.g. through /sneak)
@@ -1190,20 +1200,25 @@ class ClientManager:
                 # 2. The player has no movement handicap or one shorter than the sneak handicap
                 if shandicap > 0:
                     try:
-                        _, length, _, _ = self.server.tasker.get_task_args(self, ['as_handicap'])
+                        task = self.server.task_manager.get_task(self, 'as_handicap')
+
+                        length = task.parameters['length']
                         if length < shandicap:
                             msg = ('(X) {} [{}] was automatically imposed the longer movement '
                                    'handicap "Sneaking" of length {} seconds in area {} ({}).'
                                    .format(self.displayname, self.id, shandicap, self.area.name,
                                            self.area.id))
                             self.send_ooc_others(msg, is_zstaff_flex=True)
-                            raise KeyError  # Lazy way to get there, but it works
-                    except KeyError:
+                            raise ValueError  # Lazy way to get there, but it works
+                    except (TaskError.TaskNotFoundError, ValueError):
                         self.send_ooc('You were automatically imposed a movement handicap '
                                       '"Sneaking" of length {} seconds when changing areas.'
                                       .format(shandicap))
-                        self.server.tasker.create_task(self, ['as_handicap', time.time(), shandicap,
-                                                              "Sneaking", True])
+                        self.server.task_manager.new_task(self, 'as_handicap', {
+                            'length': shandicap,
+                            'handicap_name': 'Sneaking',
+                            'announce_if_over': True,
+                            })
 
                 logger.log_server('{} is now sneaking.'.format(self.ipid), self)
 
@@ -1223,18 +1238,26 @@ class ClientManager:
                 new_args = [async_name, time.time(), length, effect]
 
                 try:
-                    args = self.server.tasker.get_task_args(self, [async_name])
-                except KeyError:
-                    # New effect
-                    self.server.tasker.create_task(self, new_args)
+                    task = self.server.task_manager.new_task(self, async_name)
+                except TaskError.TaskNotFoundError:
+                    self.server.task_manager.new_task(self, async_name, {
+                        'length': length,
+                        'effect': effect,
+                        'new_value': True,
+                    })
                     resulting_effects[name] = (length, False)
                 else:
+                    old_start = task.creation_time
+                    old_length = task.parameters['length']
                     # Effect existed before, check if need to replace it with a shorter effect
-                    old_start, old_length, _ = args
                     old_remaining, _ = Constants.time_remaining(old_start, old_length)
                     if length < old_remaining:
                         # Replace with shorter timed effect
-                        self.server.tasker.create_task(self, new_args)
+                        self.server.task_manager.new_task(self, async_name, {
+                            'length': length,
+                            'effect': effect,
+                            'new_value': True,
+                        })
                         resulting_effects[name] = (length, True)
                     else:
                         # Do not replace, current effect's time is shorter
@@ -1248,24 +1271,25 @@ class ClientManager:
                 self.send_ooc('You were imposed a movement handicap "{}" of length {} seconds when '
                               'changing areas.'.format(name, length))
 
-                self.server.tasker.create_task(self, ['as_handicap', time.time(), length, name,
-                                                      announce_if_over])
-                self.handicap = (self.server.tasker.get_task(self, ['as_handicap']),
-                                 self.server.tasker.get_task_args(self, ['as_handicap']))
-                self.handicap_backup = (self.server.tasker.get_task(self, ['as_handicap']),
-                                        self.server.tasker.get_task_args(self, ['as_handicap']))
+                self.server.task_manager.new_task(self, 'as_handicap', {
+                    'length': length,
+                    'handicap_name': name,
+                    'announce_if_over': announce_if_over,
+                })
+                task = self.server.task_manager.get_task(self, 'has_handicap')
+                self.old_handicap = task
                 return name
             else:
                 try:
-                    _, _, old_name, _ = self.server.tasker.get_task_args(self, ['as_handicap'])
-                except KeyError:
+                    task = self.server.task_manager.get_task(self, 'as_handicap')
+                except TaskError.TaskNotFoundError:
                     raise ClientError
                 else:
+                    old_name = task.parameters['handicap_name']
                     self.send_ooc('Your movement handicap "{}" when changing areas was removed.'
                                   .format(old_name))
-                    self.handicap = None
-                    self.handicap_backup = None
-                    self.server.tasker.remove_task(self, ['as_handicap'])
+                    self.old_handicap = None
+                    self.server.task_manager.delete_task(self, 'as_handicap')
 
                 if self.area.in_zone and self.area.in_zone.is_property('Handicap'):
                     length, name, announce_if_over = self.area.in_zone.get_property('Handicap')
@@ -1728,10 +1752,10 @@ class ClientManager:
 
             # No longer bound to AFK rules
             # Nor lurk callouts
-            for task in ['as_afk_kick', 'as_lurk']:
+            for task_name in ['as_afk_kick', 'as_lurk']:
                 try:
-                    self.server.tasker.remove_task(self, [task])
-                except KeyError:
+                    self.server.task_manager.delete_task(self, task_name)
+                except TaskError.TaskNotFoundError:
                     pass
 
             # No longer need an IC lock bypass
@@ -1806,8 +1830,10 @@ class ClientManager:
 
             # Update the music list to show reachable areas and activate the AFK timer
             self.send_music_list_view()
-            self.server.tasker.create_task(self, ['as_afk_kick', self.area.afk_delay,
-                                                  self.area.afk_sendto])
+            self.server.task_manager.new_task(self, 'as_afk_kick', {
+                'afk_delay': self.area.afk_delay,
+                'afk_sendto': self.area.afk_sendto,
+            })
 
             # If using a character restricted in the area, switch out
             if self.get_char_name() in self.area.restricted_chars:
@@ -1851,8 +1877,8 @@ class ClientManager:
 
             # If managing a day cycle clock, end it
             try:
-                self.server.tasker.remove_task(self, ['as_day_cycle'])
-            except KeyError:
+                self.server.task_manager.delete_task(self, 'as_day_cycle')
+            except TaskError.TaskNotFoundError:
                 pass
 
             # If having global IC enabled, remove it
@@ -2057,6 +2083,21 @@ class ClientManager:
                 return super().__lt__(other)
             return self.id < other.id
 
+        def __hash__(self) -> int:
+            """
+            Return the hash value for the given object.
+
+            Two objects that compare equal must also have the same hash value, but the reverse is
+            not necessarily true.
+
+            Returns
+            -------
+            int
+                Hash
+            """
+
+            return hash(self.id)
+
         def __repr__(self):
             return ('C::{}:{}:{}:{}:{}:{}:{}'
                     .format(self.id, self.ipid, self.name, self.get_char_name(), self.showname,
@@ -2094,7 +2135,9 @@ class ClientManager:
                 threshold = (client.paranoia+zone_paranoia)/100
                 if random.random() < threshold:
                     delay = random.randint(0, int(_phantom_peek_fuzz_per_client)-1)
-                    self.server.tasker.create_task(client, ['as_phantom_peek', delay])
+                    self.server.task_manager.new_task(client, 'as_phantom_peek', {
+                        'length': delay,
+                    })
             self.phantom_peek_timer.set_max_value(
                 random.randint(int(_phantom_peek_timer_min), int(_phantom_peek_timer_max))
             )
@@ -2131,7 +2174,7 @@ class ClientManager:
                 })
             return c, False
         self.cur_id[cur_id] = True
-        self.server.tasker.client_tasks[cur_id] = dict()
+        self.server.task_manager.tasks[self] = dict()
         return c, True
 
     def remove_client(self, client: ClientManager.Client):
@@ -2149,8 +2192,8 @@ class ClientManager:
         if client.id >= 0:  # Avoid having pre-clients do this (before they are granted a cID)
             self.cur_id[client.id] = False
             # Cancel client's pending tasks
-            for task_id in self.server.tasker.client_tasks[client.id].copy():
-                self.server.tasker.remove_task(client, [task_id])
+            for task_name in self.server.task_manager.tasks[client].copy():
+                self.server.task_manager.delete_task(client, task_name)
 
         # If the client was part of a party, remove them from the party
         if client.party:

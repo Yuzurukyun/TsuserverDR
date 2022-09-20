@@ -588,8 +588,10 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
                                f'talking ({client.area.id}).', is_zstaff=True)
 
     # Restart AFK kick timer and lurk callout timers, if needed
-    client.server.tasker.create_task(client,
-                                    ['as_afk_kick', client.area.afk_delay, client.area.afk_sendto])
+    client.server.task_manager.new_task(client, 'as_afk_kick', {
+        'afk_delay': client.area.afk_delay,
+        'afk_sendto': client.area.afk_sendto
+    })
     client.check_lurk()
 
     client.last_ic_message = msg

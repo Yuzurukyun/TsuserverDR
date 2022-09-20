@@ -42,7 +42,7 @@ from server.hub_manager import HubManager
 from server.network.ao_protocol import AOProtocol
 from server.network.ms3_protocol import MasterServerClient
 from server.party_manager import PartyManager
-from server.tasker import Tasker
+from server.task_manager import TaskManager
 from server.timer_manager import TimerManager
 
 from server.validate.config import ValidateConfig
@@ -120,7 +120,7 @@ class TsuserverDR:
         self.loop = asyncio.get_event_loop()
         self.error_queue = asyncio.Queue()
 
-        self.tasker = Tasker(self)
+        self.task_manager = TaskManager(self)
         if self.config['local']:
             bound_ip = '127.0.0.1'
             logger.log_print('Starting a local server...')

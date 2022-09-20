@@ -1217,14 +1217,16 @@ class Constants():
                 return True
         return False
 
-    async def await_cancellation(self, old_task: asyncio.Task):
+    @staticmethod
+    async def await_cancellation(old_task: asyncio.Task):
         # Wait until it is able to properly retrieve the cancellation exception
         try:
             await old_task
         except asyncio.CancelledError:
             pass
 
-    async def do_nothing(self):
+    @staticmethod
+    async def do_nothing():
         while True:
             try:
                 await asyncio.sleep(1)

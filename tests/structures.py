@@ -29,7 +29,7 @@ from server.area_manager import AreaManager
 from server.client_manager import ClientManager
 from server.constants import Constants
 from server.exceptions import TsuserverException
-from server.tasker import Tasker
+from server.task_manager import TaskManager
 from server.tsuserver import TsuserverDR
 
 
@@ -887,7 +887,7 @@ class _TestTsuserverDR(TsuserverDR):
         self.ao_protocol = AOProtocol
         self.client_list = [None] * self.config['playerlimit']
 
-        self.tasker = Tasker(self)
+        self.task_manager = TaskManager(self)
 
     def create_client(self) -> _TestClientManager._TestClient:
         new_ao_protocol = self.ao_protocol(self)

@@ -22,7 +22,7 @@ import asyncio
 import time
 import typing
 
-from typing import Any, Dict, Hashable, Tuple
+from typing import Any, Callable, Coroutine, Dict, Hashable, Tuple
 
 from server.constants import Constants, Effects
 from server.exceptions import TaskError, ServerError
@@ -35,13 +35,15 @@ if typing.TYPE_CHECKING:
 class Task:
     def __init__(
         self,
-        asyncio_task: asyncio.Task,
+        async_function: Callable[[Task], Coroutine],
         owner: Hashable,
         name: str,
         creation_time: float,
         parameters: Dict[str, Any]
         ):
-        self.asyncio_task = asyncio_task
+
+        async_future = Constants.create_fragile_task(async_function(self))
+        self.asyncio_task = async_future
         self.owner = owner
         self.name = name
         self.creation_time = creation_time
@@ -58,9 +60,9 @@ class TaskManager:
 
         self.server = server
         self.tasks: Dict[Hashable, Dict[str, Task]] = dict()
-        self.active_timers = dict()
+        self.active_timers: Dict[str, ClientManager.Client] = dict()
 
-    def create_task(
+    def new_task(
         self,
         owner: Hashable,
         name: str,
@@ -73,22 +75,24 @@ class TaskManager:
             pass
         else:
             if not old_task.asyncio_task.done() and not old_task.asyncio_task.cancelled():
-                self.order_asyncio_cancellation(old_task)
+                self.force_asyncio_cancelled_error(old_task)
 
         async_function = getattr(self, name)
-        async_future = Constants.create_fragile_task(async_function)
         creation_time = time.time()
 
-        self.tasks[owner][name] = Task(async_future, owner, name, creation_time, parameters)
+        if owner not in self.tasks:
+            self.tasks[owner] = dict()
+
+        self.tasks[owner][name] = Task(async_function, owner, name, creation_time, parameters)
         return self.tasks[owner][name]
 
-    def order_asyncio_cancellation(
+    def force_asyncio_cancelled_error(
         self,
         task: Task
     ):
         task.asyncio_task.cancel()
         # TODO: For some odd reason, it complains if I set it to create_task. Figure that out.
-        asyncio.create_task(Constants.await_cancellation(task))
+        asyncio.ensure_future(Constants.await_cancellation(task.asyncio_task))
 
     def delete_task(
         self,
@@ -100,7 +104,7 @@ class TaskManager:
         except TaskError.TaskNotFoundError:
             raise
 
-        self.order_asyncio_cancellation(task)
+        self.force_asyncio_cancelled_error(task)
 
     def get_task(
         self,
@@ -618,7 +622,7 @@ class TaskManager:
     async def as_timer(self, task: Task):
         client: ClientManager.Client = task.owner
         length: int = task.parameters['length']  # Length in seconds, already converted
-        handicap_name: str = task.parameters['handicap_name']
+        timer_name: str = task.parameters['timer_name']
         is_public: bool = task.parameters['is_public']
 
         client_name = client.name  # Failsafe in case disconnection before task is cancelled/expires
@@ -628,15 +632,15 @@ class TaskManager:
         except asyncio.CancelledError:
             client.send_ooc(f'Your timer {client_name} has been ended.')
             client.send_ooc_others(
-                f'Timer "{handicap_name}" initiated by {client_name} has been ended.',
+                f'Timer "{timer_name}" initiated by {client_name} has been ended.',
                 pred=lambda c: (c.is_staff() or (is_public and c.area == client.area)))
         else:
             client.send_ooc(f'Your timer {client_name} has expired.')
             client.send_ooc_others(
-                f'Timer "{handicap_name}" initiated by {client_name} has expired.',
+                f'Timer "{timer_name}" initiated by {client_name} has expired.',
                 pred=lambda c: (c.is_staff() or (is_public and c.area == client.area)))
         finally:
-            del self.active_timers[handicap_name]
+            del self.active_timers[timer_name]
 
     async def as_lurk(self, task: Task):
         client: ClientManager.Client = task.owner

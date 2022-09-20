@@ -18,6 +18,7 @@
 
 # possible keys: ip, OOC, id, cname, ipid, hdid
 
+from ast import Delete
 import collections
 import datetime
 import random
@@ -28,9 +29,10 @@ import traceback
 
 from server import logger
 from server.constants import Constants, TargetType
-from server.exceptions import ArgumentError, AreaError, ClientError, MusicError, ServerError
+from server.exceptions import ArgumentError, AreaError, ClientError, MusicError, ServerError, TaskError
 from server.exceptions import PartyError, ZoneError, TrialError, NonStopDebateError
 from server.client_manager import ClientManager
+from server.task_manager import TaskManager
 
 # <parameter_name>: required parameter
 # {parameter_name}: optional parameter
@@ -1569,14 +1571,10 @@ def ooc_cmd_clock(client: ClientManager.Client, arg: str):
         raise ArgumentError(f'Invalid hour start {pre_hour_start}.')
 
     # Code after this assumes input is validated
-    try:
-        client.server.tasker.get_task(client, ['as_day_cycle'])
-    except KeyError:
-        normie_notif = True
-    else:
-        # Already existing day cycle. Will overwrite preexisting one
-        # But first, make sure normies do not get a new notification.
-        normie_notif = False
+
+    # If already existing day cycle. Will overwrite preexisting one
+    # But first, make sure normies do not get a new notification.
+    normie_notif = not client.server.task_manager.is_task(client, 'as_day_cycle')
 
     client.send_ooc(f'You initiated a day cycle of length {hour_length} seconds per hour in areas '
                     f'{area_1} through {area_2}. The cycle ID is {client.id}.')
@@ -1588,8 +1586,14 @@ def ooc_cmd_clock(client: ClientManager.Client, arg: str):
         client.send_ooc_others(f'{client.displayname} initiated a day cycle.',
                                is_zstaff_flex=False, pred=lambda c: area_1 <= c.area.id <= area_2)
 
-    client.server.tasker.create_task(client, ['as_day_cycle', time.time(), area_1, area_2,
-                                              hour_length, hour_start, hours_in_day, normie_notif])
+    client.server.task_manager.new_task(client, 'as_day_cycle', {
+        'area_1': area_1,
+        'area_2': area_2,
+        'hour_length': hour_length,
+        'hour_start': hour_start,
+        'hours_in_day': hours_in_day,
+        'send_first_hour': normie_notif,
+    })
 
 
 def ooc_cmd_clock_end(client: ClientManager.Client, arg: str):
@@ -1622,8 +1626,8 @@ def ooc_cmd_clock_end(client: ClientManager.Client, arg: str):
         raise ArgumentError('Client {} is not online.'.format(arg))
 
     try:
-        client.server.tasker.remove_task(c, ['as_day_cycle'])
-    except KeyError:
+        client.server.task_manager.delete_task(c, 'as_day_cycle')
+    except TaskError.TaskNotFoundError:
         raise ClientError('Client {} has not initiated any day cycles.'.format(arg))
 
 
@@ -1659,17 +1663,17 @@ def ooc_cmd_clock_pause(client: ClientManager.Client, arg: str):
         raise ArgumentError('Client {} is not online.'.format(arg))
 
     try:
-        task = client.server.tasker.get_task(c, ['as_day_cycle'])
-    except KeyError:
+        task = client.server.task_manager.get_task(c, 'as_day_cycle')
+    except TaskError.TaskNotFoundError:
         raise ClientError('Client {} has not initiated any day cycles.'.format(arg))
 
-    if client.server.tasker.get_task_attr(c, ['as_day_cycle'], 'is_unknown'):
+    if task.parameters['is_unknown']:
         raise ClientError('You may not pause the day cycle while the time is unknown.')
-    if client.server.tasker.get_task_attr(c, ['as_day_cycle'], 'is_paused'):
+    if task.parameters['is_paused']:
         raise ClientError('Day cycle is already paused.')
 
-    client.server.tasker.set_task_attr(c, ['as_day_cycle'], 'refresh_reason', 'pause')
-    client.server.tasker.cancel_task(task)
+    task.parameters['refresh_reason'] = 'pause'
+    client.server.task_manager.force_asyncio_cancelled_error(task)
 
 
 def ooc_cmd_clock_period(client: ClientManager.Client, arg: str):
@@ -1708,13 +1712,13 @@ def ooc_cmd_clock_period(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='&2-3')
 
     try:
-        task = client.server.tasker.get_task(client, ['as_day_cycle'])
-    except KeyError:
+        task = client.server.task_manager.get_task(client, 'as_day_cycle')
+    except TaskError.TaskNotFoundError:
         raise ClientError('You have not initiated any day cycles.')
 
     args = arg.split()
-    hour_length = client.server.tasker.get_task_attr(client, ['as_day_cycle'], 'main_hour_length')
-    hours_in_day = client.server.tasker.get_task_attr(client, ['as_day_cycle'], 'hours_in_day')
+    hour_length = task.parameters['main_hour_length']
+    hours_in_day = task.parameters['hours_in_day']
 
     name = args[0].lower()
     pre_hour_start = args[2] if len(args) == 3 else args[1]
@@ -1734,10 +1738,9 @@ def ooc_cmd_clock_period(client: ClientManager.Client, arg: str):
     except ValueError:
         raise ArgumentError(f'Invalid period hour length {pre_hour_length}.')
 
-    client.server.tasker.set_task_attr(client, ['as_day_cycle'], 'new_period_start',
-                                       (hour_start, name, hour_length))
-    client.server.tasker.set_task_attr(client, ['as_day_cycle'], 'refresh_reason', 'period')
-    client.server.tasker.cancel_task(task)
+    task.parameters['new_period_start'] = (hour_start, name, hour_length)
+    task.parameters['refresh_reason'] = 'period'
+    client.server.task_manager.force_asyncio_cancelled_error(task)
 
 
 def ooc_cmd_clock_period_end(client: ClientManager.Client, arg: str):
@@ -1763,14 +1766,13 @@ def ooc_cmd_clock_period_end(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='=1')
 
     try:
-        task = client.server.tasker.get_task(client, ['as_day_cycle'])
-    except KeyError:
+        task = client.server.task_manager.get_task(client, 'as_day_cycle')
+    except TaskError.TaskNotFoundError:
         raise ClientError('You have not initiated any day cycles.')
 
-    client.server.tasker.set_task_attr(client, ['as_day_cycle'], 'new_period_start',
-                                       (-1, arg, 0))
-    client.server.tasker.set_task_attr(client, ['as_day_cycle'], 'refresh_reason', 'period')
-    client.server.tasker.cancel_task(task)
+    task.parameters['new_period_start'] = (-1, arg, 0)
+    task.parameters['refresh_reason'] = 'period'
+    client.server.task_manager.force_asyncio_cancelled_error(task)
 
 
 def ooc_cmd_clock_set(client: ClientManager.Client, arg: str):
@@ -1800,8 +1802,8 @@ def ooc_cmd_clock_set(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='=2')
 
     try:
-        task = client.server.tasker.get_task(client, ['as_day_cycle'])
-    except KeyError:
+        task = client.server.task_manager.get_task(client, 'as_day_cycle')
+    except TaskError.TaskNotFoundError:
         raise ClientError('You have not initiated any day cycles.')
 
     pre_hour_length, pre_hour_start = arg.split(' ')
@@ -1814,16 +1816,15 @@ def ooc_cmd_clock_set(client: ClientManager.Client, arg: str):
 
     try:
         hour_start = int(pre_hour_start)
-        hours_in_day = client.server.tasker.get_task_attr(client, ['as_day_cycle'], 'hours_in_day')
+        hours_in_day = task.parameters['hours_in_day']
         if hour_start < 0 or hour_start >= hours_in_day:
             raise ValueError
     except ValueError:
         raise ArgumentError('Invalid hour start {}.'.format(pre_hour_start))
 
-    client.server.tasker.set_task_attr(client, ['as_day_cycle'], 'new_day_cycle_args',
-                                       (hour_length, hour_start))
-    client.server.tasker.set_task_attr(client, ['as_day_cycle'], 'refresh_reason', 'set')
-    client.server.tasker.cancel_task(task)
+    task.parameters['new_day_cycle_args'] = (hour_length, hour_start)
+    task.parameters['refresh_reason'] = 'set'
+    client.server.task_manager.force_asyncio_cancelled_error(task)
 
 
 def ooc_cmd_clock_set_hours(client: ClientManager.Client, arg: str):
@@ -1852,8 +1853,8 @@ def ooc_cmd_clock_set_hours(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='=1')
 
     try:
-        task = client.server.tasker.get_task(client, ['as_day_cycle'])
-    except KeyError:
+        task = client.server.task_manager.get_task(client, 'as_day_cycle')
+    except TaskError.TaskNotFoundError:
         raise ClientError('You have not initiated any day cycles.')
 
     try:
@@ -1863,9 +1864,9 @@ def ooc_cmd_clock_set_hours(client: ClientManager.Client, arg: str):
     except ValueError:
         raise ArgumentError(f'Invalid number of hours per day {hours_in_day}.')
 
-    client.server.tasker.set_task_attr(client, ['as_day_cycle'], 'hours_in_day', hours_in_day)
-    client.server.tasker.set_task_attr(client, ['as_day_cycle'], 'refresh_reason', 'set_hours')
-    client.server.tasker.cancel_task(task)
+    task.parameters['hours_in_day'] = hours_in_day
+    task.parameters['refresh_reason'] = 'set_hours'
+    client.server.task_manager.force_asyncio_cancelled_error(task)
 
 
 def ooc_cmd_clock_unknown(client: ClientManager.Client, arg: str):
@@ -1889,15 +1890,15 @@ def ooc_cmd_clock_unknown(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
     try:
-        task = client.server.tasker.get_task(client, ['as_day_cycle'])
-    except KeyError:
+        task = client.server.task_manager.get_task(client, 'as_day_cycle')
+    except TaskError.TaskNotFoundError:
         raise ClientError('You have not initiated any day cycles.')
 
-    if client.server.tasker.get_task_attr(client, ['as_day_cycle'], 'is_unknown'):
+    if task.parameters['is_unknown']:
         raise ClientError('Your day cycle already has unknown time.')
 
-    client.server.tasker.set_task_attr(client, ['as_day_cycle'], 'refresh_reason', 'unknown')
-    client.server.tasker.cancel_task(task)
+    task.parameters['refresh_reason'] = 'unknown'
+    client.server.task_manager.force_asyncio_cancelled_error(task)
 
 
 def ooc_cmd_clock_unpause(client: ClientManager.Client, arg: str):
@@ -1932,17 +1933,17 @@ def ooc_cmd_clock_unpause(client: ClientManager.Client, arg: str):
         raise ArgumentError('Client {} is not online.'.format(arg))
 
     try:
-        task = client.server.tasker.get_task(c, ['as_day_cycle'])
-    except KeyError:
+        task = client.server.task_manager.get_task(c, 'as_day_cycle')
+    except TaskError.TaskNotFoundError:
         raise ClientError('Client {} has not initiated any day cycles.'.format(arg))
 
-    if client.server.tasker.get_task_attr(c, ['as_day_cycle'], 'is_unknown'):
+    if task.parameters['is_unknown']:
         raise ClientError('You may not unpause the day cycle while the time is unknown.')
-    if not client.server.tasker.get_task_attr(c, ['as_day_cycle'], 'is_paused'):
+    if not task.parameters['is_paused']:
         raise ClientError('Day cycle is already unpaused.')
 
-    client.server.tasker.set_task_attr(c, ['as_day_cycle'], 'refresh_reason', 'unpause')
-    client.server.tasker.cancel_task(task)
+    task.parameters['refresh_reason'] = 'unpause'
+    client.server.task_manager.force_asyncio_cancelled_error(task)
 
 
 def ooc_cmd_coinflip(client: ClientManager.Client, arg: str):
@@ -2018,8 +2019,8 @@ def ooc_cmd_cure(client: ClientManager.Client, arg: str):
     for effect in sorted_effects:
         # Check if the client is subject to a countdown for that effect
         try:
-            client.server.tasker.remove_task(target, [effect.async_name])
-        except KeyError:
+            client.server.task_manager.delete_task(target, effect.async_name)
+        except TaskError.TaskNotFoundError:
             pass  # Do nothing if not subject to one
 
         if target != client:
@@ -8073,7 +8074,7 @@ def ooc_cmd_timer(client: ClientManager.Client, arg: str):
         name = arg[1]
     else:
         name = client.name.replace(" ", "") + "Timer"  # No spaces!
-    if name in client.server.tasker.active_timers.keys():
+    if name in client.server.task_manager.active_timers:
         raise ClientError('Timer name {} is already taken.'.format(name))
 
     # Check public status
@@ -8082,7 +8083,7 @@ def ooc_cmd_timer(client: ClientManager.Client, arg: str):
     else:
         is_public = True
 
-    client.server.tasker.active_timers[name] = client #Add to active timers list
+    client.server.task_manager.active_timers[name] = client #Add to active timers list
     client.send_ooc('You initiated a timer "{}" of length {} seconds.'.format(name, length))
     client.send_ooc_others('(X) {} [{}] initiated a timer "{}" of length {} seconds in area {} '
                            '({}).'
@@ -8092,7 +8093,11 @@ def ooc_cmd_timer(client: ClientManager.Client, arg: str):
                            .format(client.displayname, name, length), is_zstaff_flex=False,
                            pred=lambda c: is_public)
 
-    client.server.tasker.create_task(client, ['as_timer', time.time(), length, name, is_public])
+    client.server.task_manager.new_task(client, 'as_timer', {
+        'length': length,
+        'timer_name': name,
+        'is_public': is_public,
+    })
 
 
 def ooc_cmd_timer_end(client: ClientManager.Client, arg: str):
@@ -8120,7 +8125,7 @@ def ooc_cmd_timer_end(client: ClientManager.Client, arg: str):
 
     timer_name = arg[0]
     try:
-        timer_client = client.server.tasker.active_timers[timer_name]
+        timer_client = client.server.task_manager.active_timers[timer_name]
     except KeyError:
         raise ClientError('Timer {} is not an active timer.'.format(timer_name))
 
@@ -8128,8 +8133,8 @@ def ooc_cmd_timer_end(client: ClientManager.Client, arg: str):
     if not client.is_staff() and client != timer_client:
         raise ClientError('You must be authorized to do that.')
 
-    timer = client.server.tasker.get_task(timer_client, ['as_timer'])
-    client.server.tasker.cancel_task(timer)
+    task = client.server.task_manager.get_task(timer_client, 'as_timer')
+    client.server.task_manager.force_asyncio_cancelled_error(task)
 
 
 def ooc_cmd_timer_get(client: ClientManager.Client, arg: str):
@@ -8167,18 +8172,21 @@ def ooc_cmd_timer_get(client: ClientManager.Client, arg: str):
     if len(arg) == 1:
         # Check specific timer
         timer_name = arg[0]
-        if timer_name not in client.server.tasker.active_timers.keys():
+        if timer_name not in client.server.task_manager.active_timers:
             raise ClientError('Timer {} is not an active timer.'.format(timer_name))
         timers_to_check = [timer_name]
     else:  # Case len(arg) == 0
         # List all timers
-        timers_to_check = client.server.tasker.active_timers.keys()
-        if len(timers_to_check) == 0:
+        timers_to_check = client.server.task_manager.active_timers.keys()
+        if not timers_to_check:
             raise ClientError('No active timers.')
 
     for timer_name in timers_to_check:
-        timer_client = client.server.tasker.active_timers[timer_name]
-        start, length, _, is_public = client.server.tasker.get_task_args(timer_client, ['as_timer'])
+        timer_client = client.server.task_manager.active_timers[timer_name]
+        task = client.server.task_manager.get_task(timer_client, 'as_timer')
+        start = task.creation_time
+        length = task.parameters['length']
+        is_public = task.parameters['is_public']
 
         # Non-public timers can only be consulted by staff and the client who started the timer
         if not is_public and not (client.is_staff() or client == timer_client):
