@@ -16,6 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+"""
+Module that contains the Task class and the TaskManager class.
+"""
+
 from __future__ import annotations
 
 import asyncio
@@ -33,6 +37,11 @@ if typing.TYPE_CHECKING:
 
 
 class Task:
+    """
+    A task is a wrapper around a coroutine that also stores an owner, name, creation time and
+    user modifiable parameters.
+    """
+
     def __init__(
         self,
         async_function: Callable[[Task], Coroutine],
@@ -41,6 +50,23 @@ class Task:
         creation_time: float,
         parameters: Dict[str, Any]
         ):
+        """
+        Create a task
+
+        Parameters
+        ----------
+        async_function : Callable[[Task], Coroutine]
+            Async function that describes what the task will do. This async function will be
+            scheduled for execution with `self` as its argument.
+        owner : Hashable
+            Entity that created the task.
+        name : str
+            Name of the task.
+        creation_time : float
+            Creation time of the task. Recommended to use time.time().
+        parameters : Dict[str, Any]
+            User parameters to hold for the task.
+        """
 
         async_future = Constants.create_fragile_task(async_function(self))
         self.asyncio_task = async_future
@@ -50,12 +76,18 @@ class Task:
         self.parameters = parameters.copy()
 
 class TaskManager:
+    """
+    A task manager is a manager for tasks.
+
+    Tasks should only be created with a task manager.
+    """
+
     def __init__(self, server: TsuserverDR):
         """
         Parameters
         ----------
         server: TsuserverDR
-            Server of the tasker.
+            Server of the task manager.
         """
 
         self.server = server
@@ -68,6 +100,28 @@ class TaskManager:
         name: str,
         parameters: Dict[str, Any] = None
         ) -> Task:
+        """
+        Create a new task with a particular name and owner. If a task linked to that owner and name
+        already exists, it will be scheduled for cancellation and replaced with this new task.
+
+        Parameters
+        ----------
+        owner : Hashable
+            Entity that created the task.
+        name : str
+            Name of the task. This should be the name of an async function defined within the class.
+        parameters : Dict[str, Any], optional
+            Initial user parameters of the task, by default None (and converted to an empty
+            dictionary).
+
+        Returns
+        -------
+        Task
+            Created task.
+        """
+
+        if parameters is None:
+            parameters = dict()
 
         try:
             old_task = self.get_task(owner, name)
@@ -90,6 +144,16 @@ class TaskManager:
         self,
         task: Task
     ):
+        """
+        Force the task to raise an asyncio.CancelledError. This is useful to change execution flow
+        when a task is internally sleeping.
+
+        Parameters
+        ----------
+        task : Task
+            Task that will be forced to raise an asyncio.CancelledError.
+        """
+
         task.asyncio_task.cancel()
         # TODO: For some odd reason, it complains if I set it to create_task. Figure that out.
         asyncio.ensure_future(Constants.await_cancellation(task.asyncio_task))
@@ -99,10 +163,26 @@ class TaskManager:
         owner: Hashable,
         name: str,
     ):
+        """
+        Attempt to delete a task linked to an owner and name.
+
+        Parameters
+        ----------
+        owner : Hashable
+            Owner of the task.
+        name : str
+            Name of the task.
+
+        Raises
+        ------
+        TaskError.TaskNotFoundError
+            If no such task exists.
+        """
+
         try:
             task = self.get_task(owner, name)
         except TaskError.TaskNotFoundError:
-            raise
+            raise TaskError.TaskNotFoundError
 
         self.force_asyncio_cancelled_error(task)
 
@@ -111,6 +191,26 @@ class TaskManager:
         owner: Hashable,
         name: str,
         ) -> Task:
+        """
+        Attempt to get a task linked to an owner and name.
+
+        Parameters
+        ----------
+        owner : Hashable
+            Owner of the task.
+        name : str
+            Name of the task.
+
+        Returns
+        -------
+        Task
+            Task that matches the description.
+
+        Raises
+        ------
+        TaskError.TaskNotFoundError
+            If no such task exists.
+        """
 
         try:
             owner_tasks = self.tasks[owner]
@@ -129,6 +229,22 @@ class TaskManager:
         owner: Hashable,
         name: str,
     ) -> bool:
+        """
+        Return whether there exists a task managed by this manager with given owner and name.
+
+        Parameters
+        ----------
+        owner : Hashable
+            Owner of the task.
+        name : str
+            Name of the task.
+
+        Returns
+        -------
+        bool
+            Whether such a task exists.
+        """
+
         try:
             self.get_task(owner, name)
             return True
@@ -327,9 +443,12 @@ class TaskManager:
                 # 7. The clock was just paused
                 time_refreshed_at = time.time()
 
-                try:
-                    refresh_reason = task.parameters['refresh_reason']
-                except KeyError:
+                if 'refresh_reason' not in task.parameters:
+                    task.parameters['refresh_reason'] = ''
+
+                refresh_reason = task.parameters['refresh_reason']
+
+                if not refresh_reason:
                     # refresh_reason may be undefined or the empty string.
                     # Both cases imply cancelation
                     for c in targets:
@@ -343,7 +462,6 @@ class TaskManager:
                                            is_zstaff_flex=True)
                     targets = [c for c in self.server.get_clients() if c == client or
                                area_1 <= c.area.id <= area_2]
-
                     break
 
                 if refresh_reason == 'set':
