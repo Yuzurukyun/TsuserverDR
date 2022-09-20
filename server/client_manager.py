@@ -1161,7 +1161,7 @@ class ClientManager:
                 except TaskError.TaskNotFoundError:
                     pass
                 else:
-                    name = task['handicap_name']
+                    name = task.parameters['handicap_name']
                     if name == "Sneaking":
                         if self.server.config['sneak_handicap'] > 0 and self.old_handicap:
                             # Only way for a handicap backup to exist and to be in this situation is
@@ -1238,7 +1238,7 @@ class ClientManager:
                 new_args = [async_name, time.time(), length, effect]
 
                 try:
-                    task = self.server.task_manager.new_task(self, async_name)
+                    task = self.server.task_manager.get_task(self, async_name)
                 except TaskError.TaskNotFoundError:
                     self.server.task_manager.new_task(self, async_name, {
                         'length': length,
@@ -2096,7 +2096,7 @@ class ClientManager:
                 Hash
             """
 
-            return hash(self.id)
+            return super().__hash__()
 
         def __repr__(self):
             return ('C::{}:{}:{}:{}:{}:{}:{}'
