@@ -590,7 +590,6 @@ class TaskManager:
                                        .format(client.displayname, client.id, effect.name),
                                        is_zstaff_flex=True)
                 effect.function(client, False)
-            self.remove_task(client, [effect.async_name])
 
     async def as_effect_blindness(self, task: Task):
         await self._as_effect(task)
@@ -630,14 +629,14 @@ class TaskManager:
         try:
             await asyncio.sleep(length)
         except asyncio.CancelledError:
-            client.send_ooc(f'Your timer {client_name} has been ended.')
+            client.send_ooc(f'Your timer {timer_name} has been ended.')
             client.send_ooc_others(
                 f'Timer "{timer_name}" initiated by {client_name} has been ended.',
                 pred=lambda c: (c.is_staff() or (is_public and c.area == client.area)))
         else:
-            client.send_ooc(f'Your timer {client_name} has expired.')
+            client.send_ooc(f'Your timer {timer_name} has expired.')
             client.send_ooc_others(
-                f'Timer "{timer_name}" initiated by {client_name} has expired.',
+                f'Timer "{timer_name}" initiated by {timer_name} has expired.',
                 pred=lambda c: (c.is_staff() or (is_public and c.area == client.area)))
         finally:
             del self.active_timers[timer_name]

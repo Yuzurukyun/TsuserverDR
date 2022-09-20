@@ -597,7 +597,7 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
     client.last_ic_message = msg
     client.last_active = Constants.get_time()
 
-def _process_ooc_command(cmd, client):
+def _process_ooc_command(cmd: str, client: ClientManager.Client):
     called_function = f'ooc_cmd_{cmd}'
     if hasattr(client.server.commands, called_function):
         function = getattr(client.server.commands, called_function)

@@ -1233,7 +1233,6 @@ class ClientManager:
             for effect in effects:
                 name = effect.name
                 async_name = effect.async_name
-                new_args = [async_name, time.time(), length, effect]
 
                 try:
                     task = self.server.task_manager.get_task(self, async_name)
@@ -1269,12 +1268,11 @@ class ClientManager:
                 self.send_ooc('You were imposed a movement handicap "{}" of length {} seconds when '
                               'changing areas.'.format(name, length))
 
-                self.server.task_manager.new_task(self, 'as_handicap', {
+                task = self.server.task_manager.new_task(self, 'as_handicap', {
                     'length': length,
                     'handicap_name': name,
                     'announce_if_over': announce_if_over,
                 })
-                task = self.server.task_manager.get_task(self, 'has_handicap')
                 self.old_handicap = task
                 return name
             else:
