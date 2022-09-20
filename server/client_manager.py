@@ -17,8 +17,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from ast import Delete
-from multiprocessing.sharedctypes import Value
 
 import typing
 from typing import Any, Callable, List, Optional, Set, Tuple, Dict, Union
@@ -2083,21 +2081,6 @@ class ClientManager:
                 return super().__lt__(other)
             return self.id < other.id
 
-        def __hash__(self) -> int:
-            """
-            Return the hash value for the given object.
-
-            Two objects that compare equal must also have the same hash value, but the reverse is
-            not necessarily true.
-
-            Returns
-            -------
-            int
-                Hash
-            """
-
-            return super().__hash__()
-
         def __repr__(self):
             return ('C::{}:{}:{}:{}:{}:{}:{}'
                     .format(self.id, self.ipid, self.name, self.get_char_name(), self.showname,
@@ -2174,7 +2157,7 @@ class ClientManager:
                 })
             return c, False
         self.cur_id[cur_id] = True
-        self.server.task_manager.tasks[self] = dict()
+        self.server.task_manager.tasks[c] = dict()
         return c, True
 
     def remove_client(self, client: ClientManager.Client):
