@@ -962,3 +962,6 @@ class _TestTsuserverDR(TsuserverDR):
                     client.assert_no_packets()
                     client.assert_no_ooc()
                 self.client_list[i] = None
+
+    def get_clients(self) -> List[_TestClientManager._TestClient]:
+        return super().get_clients()

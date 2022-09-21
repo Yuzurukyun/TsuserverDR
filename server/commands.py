@@ -4620,7 +4620,7 @@ def ooc_cmd_notecard_list(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
-    with_notecards = [target for target in client.server.get_clients() if target.notecard]
+    with_notecards = [target for target in client.hub.get_players() if target.notecard]
     if not with_notecards:
         raise ClientError('No players in the server have any notecards set.')
 

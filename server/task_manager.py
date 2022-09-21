@@ -341,8 +341,9 @@ class TaskManager:
         task.parameters['main_hour_length'] = main_hour_length
 
         # Manually notify for the very first hour (if needed)
-        targets = [c for c in self.server.get_clients() if c == client or
-                   ((c.is_staff() or send_first_hour) and area_1 <= c.area.id <= area_2)]
+        targets = [c for c in client.hub.get_players() if c == client or
+                   ((c.is_staff() or send_first_hour)
+                    and area_1 <= c.area.id <= area_2)]
         for c in targets:
             c.send_ooc('It is now {}:00.'.format('{0:02d}'.format(hour)))
             c.send_clock(client_id=client.id, hour=hour)
@@ -400,7 +401,8 @@ class TaskManager:
                 # In all cases now, update hour
                 # We can do that as code only runs here if the timer is not paused
                 hour = (hour + 1) % hours_in_day
-                targets = [c for c in self.server.get_clients() if c == client or
+                targets = [c for c in client.hub.get_players()
+                           if c == client or
                            (notify_normies and area_1 <= c.area.id <= area_2)]
 
                 # Check if new period has started
@@ -460,8 +462,8 @@ class TaskManager:
                                            '{} has been ended.'
                                            .format(client.name, area_1, area_2),
                                            is_zstaff_flex=True)
-                    targets = [c for c in self.server.get_clients() if c == client or
-                               area_1 <= c.area.id <= area_2]
+                    targets = [c for c in client.hub.get_players()
+                               if c == client or area_1 <= c.area.id <= area_2]
                     break
 
                 if refresh_reason == 'set':
@@ -573,8 +575,8 @@ class TaskManager:
                                            pred=lambda c: area_1 <= c.area.id <= area_2)
 
                     task.parameters['period'] = 'unknown'
-                    targets = [c for c in self.server.get_clients() if c == client or
-                               (area_1 <= c.area.id <= area_2)]
+                    targets = [c for c in client.hub.get_players()
+                               if c == client or (area_1 <= c.area.id <= area_2)]
                     for c in targets:
                         c.send_clock(client_id=client.id, hour=-1)
                         c.send_time_of_day(name='unknown')
@@ -621,8 +623,8 @@ class TaskManager:
                                 changed_current_period = True
 
                         if changed_current_period:
-                            targets = [c for c in self.server.get_clients()
-                                    if c == client or area_1 <= c.area.id <= area_2]
+                            targets = [c for c in client.hub.get_players()
+                                       if c == client or area_1 <= c.area.id <= area_2]
                             task.parameters['period'] = new_period_name
                             if new_period_name:
                                 for c in targets:

@@ -1322,14 +1322,23 @@ class AreaManager(AssetManager):
                                 'load.')
 
         # And end all existing day cycles
-        for client in self.server.get_clients():
+        clients_with_clocks: Set[ClientManager.Client] = set()
+        for area in old_areas:
+            try:
+                clock_creator = area.get_clock_creator()
+            except AreaError.ClientNotFound:
+                continue
+            else:
+                clients_with_clocks.add(clock_creator)
+
+        for client in clients_with_clocks:
             try:
                 client.server.task_manager.delete_task(client, 'as_day_cycle')
             except TaskError.TaskNotFoundError:
                 pass
 
         # And remove all global IC and global IC prefixes
-        for client in self.server.get_clients():
+        for client in self.hub.get_players():
             if client.multi_ic:
                 client.send_ooc('Due to an area list reload, your global IC was turned off. You '
                                 'may turn it on again manually.')
