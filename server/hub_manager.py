@@ -28,6 +28,7 @@ import typing
 from server.area_manager import AreaManager
 from server.background_manager import BackgroundManager
 from server.character_manager import CharacterManager
+from server.constants import Constants
 from server.exceptions import HubError, GameWithAreasError
 from server.gamewithareas_manager import _GameWithAreas, GameWithAreasManager
 from server.music_manager import MusicManager
@@ -60,6 +61,57 @@ class _HubTrivialInherited(_GameWithAreas):
         """
 
         return super().get_id()
+
+    def get_numerical_id(self) -> int:
+        """
+        Return the numerical portion of the ID of this hub.
+
+        Returns
+        -------
+        int
+            Numerical portion of the ID.
+        """
+
+        return super().get_numerical_id()
+
+    def get_name(self) -> str:
+        """
+        Get the name of the hub.
+
+        Returns
+        -------
+        str
+            Name.
+        """
+
+        return super().get_name()
+
+    def set_name(self, name: str):
+        """
+        Set the name of the hub.
+
+        Parameters
+        ----------
+        name : str
+            Name.
+        """
+
+        self.unchecked_set_name(name)
+        self.manager._check_structure()
+
+    def unchecked_set_name(self, name: str):
+        """
+        Set the name of the hub.
+
+        This method does not assert structural integrity.
+
+        Parameters
+        ----------
+        name : str
+            Name.
+        """
+
+        super().unchecked_set_name(name)
 
     def get_player_limit(self) -> Union[int, None]:
         """
@@ -1718,6 +1770,20 @@ class _Hub(_HubTrivialInherited):
         self.trial_manager = TrialManager(self)
         self.manager: HubManager  # Setting for typing
 
+    def get_type_name(self) -> str:
+        """
+        Return the type name of the hub. Names are fully lowercase.
+        Implementations of the class should replace this with a human readable name of the hub.
+
+        Returns
+        -------
+        str
+            Type name of the hub.
+
+        """
+
+        return "hub"
+
     def unchecked_add_player(self, user: ClientManager.Client):
         return super().unchecked_add_player(user)
 
@@ -2549,7 +2615,7 @@ class HubManager(_HubManagerTrivialInherited):
         game_number = 0
         game_limit = self.get_managee_limit()
         while game_limit is None or game_number < game_limit:
-            new_game_id = "hub{}".format(game_number)
+            new_game_id = "H{}".format(game_number)
             if new_game_id not in self.get_managee_ids():
                 return new_game_id
             game_number += 1
@@ -2559,6 +2625,20 @@ class HubManager(_HubManagerTrivialInherited):
         id_to_managees = self.get_managee_ids_to_managees()
         earliest_id = sorted(id_to_managees.keys())[0]
         return id_to_managees[earliest_id]
+
+    def get_client_view(self, client: ClientManager.Client) -> List[str]:
+        # Now add areas
+        prepared_list = list()
+        prepared_list.append(Constants.get_first_area_list_item('AREA', client.hub, client.area))
+
+        for hub in self.get_managees():
+            name = hub.get_name()
+            if not name:
+                name = hub.get_id()
+
+            prepared_list.append(f'{hub.get_numerical_id()}-{name}')
+
+        return prepared_list
 
     def _check_structure(self):
         """

@@ -60,8 +60,8 @@ class TsuserverDR:
         self.release = 4
         self.major_version = 4
         self.minor_version = 0
-        self.segment_version = 'a6'
-        self.internal_version = 'M220920b'
+        self.segment_version = 'a7'
+        self.internal_version = 'M220921a'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
@@ -94,9 +94,10 @@ class TsuserverDR:
 
         self.client_manager: ClientManager = client_manager(self)
         self.hub_manager = HubManager(self)
-        self.hub_manager.new_managee(
+        default_hub = self.hub_manager.new_managee(
             autoadd_on_client_enter=True,
         )
+        default_hub.set_name('Main')
 
         self.ipid_list = {}
         self.hdid_list = {}

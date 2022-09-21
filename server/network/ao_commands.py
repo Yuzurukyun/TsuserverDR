@@ -21,6 +21,7 @@ File that contains behavior for all supported client commands.
 """
 
 from __future__ import annotations
+from multiprocessing.connection import Client
 
 import random
 import re
@@ -31,7 +32,7 @@ from typing import Any, Dict
 
 from server import logger, clients
 from server.constants import Constants
-from server.exceptions import AreaError, ClientError, ServerError, PartyError, TsuserverException
+from server.exceptions import AreaError, ClientError, MusicError, ServerError, PartyError, TsuserverException
 # from server.evidence import EvidenceList
 
 if typing.TYPE_CHECKING:
@@ -696,6 +697,73 @@ def net_cmd_ct(client: ClientManager.Client, pargs: Dict[str, Any]):
     client.last_active = Constants.get_time()
 
 
+def _attempt_to_change_hub(client: ClientManager.Client, pargs: Dict[str, Any]) -> bool:
+    name: str = pargs['name']
+
+    if name == Constants.get_first_area_list_item('AREA', client.hub, client.area):
+        client.viewing_hubs = False
+        client.send_music_list_view()
+
+        return True
+    else:
+        return False
+
+
+def _attempt_to_change_area(client: ClientManager.Client, pargs: Dict[str, Any]) -> bool:
+    name: str = pargs['name']
+
+    if name == Constants.get_first_area_list_item('HUB', client.hub, client.area):
+        client.viewing_hubs = True
+        client.send_music_list_view()
+
+        return True
+    else:
+        try:
+            delimiter = name.find('-')
+            area = client.hub.area_manager.get_area_by_name(name[delimiter+1:])
+        except (AreaError, ValueError):
+            return False
+
+        try:
+            client.change_area(area, from_party=True if client.party else False)
+        except (ClientError, PartyError) as ex:
+            client.send_ooc(ex)
+
+        return True
+
+
+def _attempt_to_play_music(client: ClientManager.Client, pargs: Dict[str, Any]) -> bool:
+    name: str = pargs['name']
+
+    if client.is_muted:  # Checks to see if the client has been muted by a mod
+        client.send_ooc("You have been muted by a moderator.")
+        return False
+    if not client.is_dj:
+        client.send_ooc('You were blockdj\'d by a moderator.')
+        return False
+
+    if int(pargs['char_id']) != client.char_id:
+        return False
+
+    delay = client.change_music_cd()
+    if delay:
+        client.send_ooc(f'You changed song too many times recently. Please try again '
+                        f'after {Constants.time_format(delay)}.')
+        return False
+
+    try:
+        client.area.play_track(name, client, raise_if_not_found=True,
+                               reveal_sneaked=True, pargs=pargs)
+    except ServerError.FileInvalidNameError:
+        client.send_ooc(f'Invalid area or music `{name}`.')
+        return False
+    except MusicError.MusicNotFoundError:
+        client.send_ooc(f'Unrecognized area or music `{name}`.')
+        return False
+
+    return True
+
+
 def net_cmd_mc(client: ClientManager.Client, pargs: Dict[str, Any]):
     """ Play music.
 
@@ -703,42 +771,20 @@ def net_cmd_mc(client: ClientManager.Client, pargs: Dict[str, Any]):
 
     """
 
-    # First attempt to switch area,
-    # because music lists typically include area names for quick access
-    try:
-        delimiter = pargs['name'].find('-')
-        area = client.hub.area_manager.get_area_by_name(pargs["name"][delimiter+1:])
-        client.change_area(area, from_party=True if client.party else False)
+    # First attempt to switch area/hub,
+    # because music lists typically include area/hub names for quick access
+    if client.viewing_hubs:
+        done = _attempt_to_change_hub(client, pargs)
+    else:
+        done = _attempt_to_change_area(client, pargs)
 
-    # Otherwise, attempt to play music.
-    except (AreaError, ValueError):
-        if client.is_muted:  # Checks to see if the client has been muted by a mod
-            client.send_ooc("You have been muted by a moderator.")
-            return
-        if not client.is_dj:
-            client.send_ooc('You were blockdj\'d by a moderator.')
-            return
+    if not done:
+        # Otherwise, attempt to play music.
+        done = _attempt_to_play_music(client, pargs)
 
-        if int(pargs['char_id']) != client.char_id:
-            return
-
-        delay = client.change_music_cd()
-        if delay:
-            client.send_ooc(f'You changed song too many times recently. Please try again '
-                            f'after {Constants.time_format(delay)}.')
-            return
-
-        try:
-            client.area.play_track(pargs['name'], client, raise_if_not_found=True,
-                                   reveal_sneaked=True, pargs=pargs)
-        except ServerError.MusicNotFoundError:
-            client.send_ooc(f'Unrecognized area or music `{pargs["name"]}`.')
-        except ServerError:
-            return
-    except (ClientError, PartyError) as ex:
-        client.send_ooc(ex)
-
-    client.last_active = Constants.get_time()
+    # Only update last active if command finished to completion
+    if done:
+        client.last_active = Constants.get_time()
 
 
 def net_cmd_rt(client: ClientManager.Client, pargs: Dict[str, Any]):

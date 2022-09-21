@@ -67,6 +67,57 @@ class _TrialMinigameTrivialInherited(_HubbedGame):
 
         return super().get_id()
 
+    def get_numerical_id(self) -> int:
+        """
+        Return the numerical portion of the ID of this trial minigame.
+
+        Returns
+        -------
+        int
+            Numerical portion of the ID.
+        """
+
+        return super().get_numerical_id()
+
+    def get_name(self) -> str:
+        """
+        Get the name of the trial minigame.
+
+        Returns
+        -------
+        str
+            Name.
+        """
+
+        return super().get_name()
+
+    def set_name(self, name: str):
+        """
+        Set the name of the trial minigame.
+
+        Parameters
+        ----------
+        name : str
+            Name.
+        """
+
+        self.unchecked_set_name(name)
+        self.manager._check_structure()
+
+    def unchecked_set_name(self, name: str):
+        """
+        Set the name of the trial minigame.
+
+        This method does not assert structural integrity.
+
+        Parameters
+        ----------
+        name : str
+            Name.
+        """
+
+        super().unchecked_set_name(name)
+
     def get_player_limit(self) -> Union[int, None]:
         """
         Return the player membership limit of this trial minigame.
@@ -1848,15 +1899,16 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
             'trial_player_added': self._on_trial_player_added,
             })
 
-    def get_name(self) -> str:
+    def get_type_name(self) -> str:
         """
-        Return the name of the trial minigame. Names are fully lowercase.
-        Implementations of the class should replace this with a human readable name of the trial.
+        Return the type name of the trial minigame. Names are fully lowercase.
+        Implementations of the class should replace this with a human readable name of the trial
+        minigame.
 
         Returns
         -------
         str
-            Name of the trial minigame.
+            Type name of the trial minigame.
 
         """
 

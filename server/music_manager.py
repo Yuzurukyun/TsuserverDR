@@ -52,7 +52,7 @@ class MusicManager(AssetManager):
         self._music = []
         self._source_file = 'config/music.yaml'
 
-    def get_name(self) -> str:
+    def get_type_name(self) -> str:
         """
         Return `'music list'`.
 

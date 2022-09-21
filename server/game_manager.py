@@ -159,6 +159,57 @@ class _GameTrivialInherited(_PlayerGroup):
 
         return super().get_id()
 
+    def get_numerical_id(self) -> int:
+        """
+        Return the numerical portion of the ID of this game.
+
+        Returns
+        -------
+        int
+            Numerical portion of the ID.
+        """
+
+        return super().get_numerical_id()
+
+    def get_name(self) -> str:
+        """
+        Get the name of the game.
+
+        Returns
+        -------
+        str
+            Name.
+        """
+
+        return super().get_name()
+
+    def set_name(self, name: str):
+        """
+        Set the name of the game.
+
+        Parameters
+        ----------
+        name : str
+            Name.
+        """
+
+        self.unchecked_set_name(name)
+        self.manager._check_structure()
+
+    def unchecked_set_name(self, name: str):
+        """
+        Set the name of the game.
+
+        This method does not assert structural integrity.
+
+        Parameters
+        ----------
+        name : str
+            Name.
+        """
+
+        super().unchecked_set_name(name)
+
     def get_player_limit(self) -> Union[int, None]:
         """
         Return the player membership limit of this game.
@@ -897,15 +948,15 @@ class _Game(_GameTrivialInherited):
             'client_destroyed': self._on_client_destroyed,
             })
 
-    def get_name(self) -> str:
+    def get_type_name(self) -> str:
         """
-        Return the name of the game. Names are fully lowercase.
+        Return the type name of the game. Names are fully lowercase.
         Implementations of the class should replace this with a human readable name of the game.
 
         Returns
         -------
         str
-            Name of the game.
+            Type name of the game.
 
         """
 

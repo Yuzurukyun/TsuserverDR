@@ -57,7 +57,7 @@ class BackgroundManager(AssetManager):
         self._source_file = 'config/backgrounds.yaml'
         self._default_background = self._backgrounds[0]
 
-    def get_name(self) -> str:
+    def get_type_name(self) -> str:
         """
         Return `'background list'`.
 

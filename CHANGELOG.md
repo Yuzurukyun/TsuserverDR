@@ -821,6 +821,7 @@
 ## (4.4.0)
 * Increased minimum Python version required to 3.9
 * Fixed timer end notification showing the OOC name of the timer initiator as the timer name rather than the actual name
+* Added a first-list-item to switch between areas and hubs in the area list
 * Redid trial and nonstop debates
 * Removed unused `server/area_manager_revamp.py` and `server/steptimer_manager.py`
 * Removed the old names of the following commands. Please use the new ones:

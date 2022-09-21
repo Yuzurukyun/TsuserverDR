@@ -17,14 +17,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from io import TextIOWrapper
-from typing import Awaitable, Any, Callable, Iterable, List, Optional, Set, Tuple
-import typing
-if typing.TYPE_CHECKING:
-    # Avoid circular referencing
-    from server.area_manager import AreaManager
-    from server.client_manager import ClientManager
-    from server.tsuserver import TsuserverDR
 
 import asyncio
 import functools
@@ -36,14 +28,23 @@ import re
 import sys
 import tempfile
 import time
+import typing
 import warnings
 import yaml
 
 from enum import Enum
+from io import TextIOWrapper
+from typing import Awaitable, Any, Callable, Iterable, List, Set, Tuple
 
 from server.exceptions import ClientError, ServerError, ArgumentError, AreaError
 from server.exceptions import TsuserverException
 
+if typing.TYPE_CHECKING:
+    # Avoid circular referencing
+    from server.area_manager import AreaManager
+    from server.client_manager import ClientManager
+    from server.hub_manager import _Hub
+    from server.tsuserver import TsuserverDR
 
 class ArgType(Enum):
     STR = 1
@@ -1216,6 +1217,12 @@ class Constants():
             if char in text:
                 return True
         return False
+
+    @staticmethod
+    def get_first_area_list_item(view_name: str, hub: _Hub, area: AreaManager.Area) -> str:
+        return (f'|| GO TO {view_name} VIEW\n'
+                f'|| YOU ARE HERE:\n'
+                f'|| Hub {hub.get_id()[1:]}, Area {area.id}\n')
 
     @staticmethod
     async def await_cancellation(old_task: asyncio.Task):

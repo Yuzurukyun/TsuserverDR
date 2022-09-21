@@ -52,7 +52,7 @@ class CharacterManager(AssetManager):
         self._characters = []
         self._source_file = 'config/characters.yaml'
 
-    def get_name(self) -> str:
+    def get_type_name(self) -> str:
         """
         Return `'character list'`.
 

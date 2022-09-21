@@ -78,6 +78,7 @@ class ClientManager:
             self.showname = ''
             self.joined = time.time()
             self.last_active = Constants.get_time()
+            self.viewing_hubs = False
 
             self.ever_chose_character = False
             self.ever_outbounded_gamemode = False
@@ -925,7 +926,10 @@ class ClientManager:
             return area_list+music_list
 
         def send_music_list_view(self):
-            area_list = self.hub.area_manager.get_client_view(self, from_area=self.area)
+            if self.viewing_hubs:
+                area_list = self.hub.manager.get_client_view(self)
+            else:
+                area_list = self.hub.area_manager.get_client_view(self, from_area=self.area)
             music_list = self.music_manager.get_client_view()
 
             if self.packet_handler.HAS_DISTINCT_AREA_AND_MUSIC_LIST_OUTGOING_PACKETS:
