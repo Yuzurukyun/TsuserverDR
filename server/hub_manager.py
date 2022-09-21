@@ -28,6 +28,7 @@ import typing
 from server.area_manager import AreaManager
 from server.background_manager import BackgroundManager
 from server.character_manager import CharacterManager
+from server.constants import Constants
 from server.exceptions import HubError, GameWithAreasError
 from server.gamewithareas_manager import _GameWithAreas, GameWithAreasManager
 from server.music_manager import MusicManager
@@ -2549,7 +2550,7 @@ class HubManager(_HubManagerTrivialInherited):
         game_number = 0
         game_limit = self.get_managee_limit()
         while game_limit is None or game_number < game_limit:
-            new_game_id = "hub{}".format(game_number)
+            new_game_id = "H{}".format(game_number)
             if new_game_id not in self.get_managee_ids():
                 return new_game_id
             game_number += 1
@@ -2559,6 +2560,16 @@ class HubManager(_HubManagerTrivialInherited):
         id_to_managees = self.get_managee_ids_to_managees()
         earliest_id = sorted(id_to_managees.keys())[0]
         return id_to_managees[earliest_id]
+
+    def get_client_view(self, client: ClientManager.Client) -> List[str]:
+        # Now add areas
+        prepared_list = list()
+        prepared_list.append(Constants.get_first_area_list_item('AREA', client.hub, client.area))
+
+        for hub in self.get_managees():
+            prepared_list.append(f'{hub.get_id()[1:]}-{hub.get_name()}')
+
+        return prepared_list
 
     def _check_structure(self):
         """

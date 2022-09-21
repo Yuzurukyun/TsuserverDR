@@ -1501,12 +1501,16 @@ class AreaManager(AssetManager):
         need_to_check = from_area is None or client.is_staff() or client.is_transient
 
         # Now add areas
-        prepared_area_list = list()
+        if from_area is None:
+            from_area = client.area
+
+        prepared_list = list()
+        prepared_list.append(Constants.get_first_area_list_item('HUB', from_area.hub, from_area))
         for area in self.get_areas():
             if need_to_check or area.name in from_area.visible_areas:
-                prepared_area_list.append("{}-{}".format(area.id, area.name))
+                prepared_list.append(f'{area.id}-{area.name}')
 
-        return prepared_area_list
+        return prepared_list
 
     def change_passage_lock(self, client: ClientManager.Client,
                             areas: List[AreaManager.Area],
