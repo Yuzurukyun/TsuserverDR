@@ -168,6 +168,7 @@ class _PlayerGroup:
         self._require_players = require_players
         self._require_leaders = require_leaders
 
+        self._name = playergroup_id
         self._players = set()
         self._leaders = set()
         self._invitations = set()
@@ -187,20 +188,73 @@ class _PlayerGroup:
 
         return self._playergroup_id
 
+    def get_numerical_id(self) -> int:
+        """
+        Return the numerical portion of the ID of this player group.
+
+        Returns
+        -------
+        int
+            Numerical portion of the ID.
+        """
+
+        digits = [x for x in self._playergroup_id if x.isdigit()]
+        number = ''.join(digits)
+        return int(number)
+
     def get_type_name(self) -> str:
         """
-        Return the name of the player group. Names are fully lowercase.
+        Return the type name of the player group. Names are fully lowercase.
         Implementations of the class should replace this with a human readable name of the player
         group.
 
         Returns
         -------
         str
-            Name of the player group.
+            Type name of the player group.
 
         """
 
         return "player group"
+
+    def get_name(self) -> str:
+        """
+        Get the name of the player group.
+
+        Returns
+        -------
+        str
+            Name.
+        """
+
+        return self._name
+
+    def set_name(self, name: str):
+        """
+        Set the name of the player group.
+
+        Parameters
+        ----------
+        name : str
+            Name.
+        """
+
+        self.unchecked_set_name(name)
+        self.manager._check_structure()
+
+    def unchecked_set_name(self, name: str):
+        """
+        Set the name of the player group.
+
+        This method does not assert structural integrity.
+
+        Parameters
+        ----------
+        name : str
+            Name.
+        """
+
+        self._name = name
 
     def get_player_limit(self) -> Union[int, None]:
         """

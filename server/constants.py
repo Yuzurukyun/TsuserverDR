@@ -1220,9 +1220,9 @@ class Constants():
 
     @staticmethod
     def get_first_area_list_item(view_name: str, hub: _Hub, area: AreaManager.Area) -> str:
-        return (f'GO TO {view_name} VIEW\n'
-                f'YOU ARE HERE:\n'
-                f'Hub {hub.get_id()[1:]}, Area {area.id}\n')
+        return (f'|| GO TO {view_name} VIEW\n'
+                f'|| YOU ARE HERE:\n'
+                f'|| Hub {hub.get_id()[1:]}, Area {area.id}\n')
 
     @staticmethod
     async def await_cancellation(old_task: asyncio.Task):

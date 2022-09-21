@@ -62,6 +62,57 @@ class _HubTrivialInherited(_GameWithAreas):
 
         return super().get_id()
 
+    def get_numerical_id(self) -> int:
+        """
+        Return the numerical portion of the ID of this hub.
+
+        Returns
+        -------
+        int
+            Numerical portion of the ID.
+        """
+
+        return super().get_numerical_id()
+
+    def get_name(self) -> str:
+        """
+        Get the name of the hub.
+
+        Returns
+        -------
+        str
+            Name.
+        """
+
+        return super().get_name()
+
+    def set_name(self, name: str):
+        """
+        Set the name of the hub.
+
+        Parameters
+        ----------
+        name : str
+            Name.
+        """
+
+        self.unchecked_set_name(name)
+        self.manager._check_structure()
+
+    def unchecked_set_name(self, name: str):
+        """
+        Set the name of the hub.
+
+        This method does not assert structural integrity.
+
+        Parameters
+        ----------
+        name : str
+            Name.
+        """
+
+        super().unchecked_set_name(name)
+
     def get_player_limit(self) -> Union[int, None]:
         """
         Return the player membership limit of this hub.
@@ -1719,6 +1770,20 @@ class _Hub(_HubTrivialInherited):
         self.trial_manager = TrialManager(self)
         self.manager: HubManager  # Setting for typing
 
+    def get_type_name(self) -> str:
+        """
+        Return the type name of the hub. Names are fully lowercase.
+        Implementations of the class should replace this with a human readable name of the hub.
+
+        Returns
+        -------
+        str
+            Type name of the hub.
+
+        """
+
+        return "hub"
+
     def unchecked_add_player(self, user: ClientManager.Client):
         return super().unchecked_add_player(user)
 
@@ -2567,7 +2632,11 @@ class HubManager(_HubManagerTrivialInherited):
         prepared_list.append(Constants.get_first_area_list_item('AREA', client.hub, client.area))
 
         for hub in self.get_managees():
-            prepared_list.append(f'{hub.get_id()[1:]}-{hub.get_type_name()}')
+            name = hub.get_name()
+            if not name:
+                name = hub.get_id()
+
+            prepared_list.append(f'{hub.get_numerical_id()}-{name}')
 
         return prepared_list
 
