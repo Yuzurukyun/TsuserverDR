@@ -2425,6 +2425,34 @@ class _GameWithAreasManagerTrivialInherited(GameManager):
         except GameError.ManagerInvalidGameIDError:
             raise GameWithAreasError.ManagerInvalidGameIDError
 
+    def get_managee_by_numerical_id(self, managee_numerical_id: int) -> _GameWithAreas:
+        """
+        If `managee_numerical_id` is the numerical ID of a game with areas managed by this manager,
+        return the game with areas.
+
+        Parameters
+        ----------
+        managee_numerical_id : int
+            Numerical ID of the game with areas this manager manages.
+
+        Returns
+        -------
+        _GameWithAreas
+            The game with areas with that ID.
+
+        Raises
+        ------
+        GameWithAreasError.ManagerInvalidGameIDError:
+            If `managee_numerical_id` is not the numerical ID of a game with areas
+            this manager manages.
+
+        """
+
+        try:
+            return super().get_managee_by_numerical_id(managee_numerical_id)
+        except GameError.ManagerInvalidGameIDError:
+            raise GameWithAreasError.ManagerInvalidGameIDError
+
     def get_managee_limit(self) -> Union[int, None]:
         """
         Return the game with areas limit of this manager.
@@ -2463,6 +2491,19 @@ class _GameWithAreasManagerTrivialInherited(GameManager):
         """
 
         return super().get_managee_ids_to_managees()
+
+    def get_managee_numerical_ids_to_managees(self) -> Dict[int, _GameWithAreas]:
+        """
+        Return a mapping of the numerical IDs of all game with areas managed by this manager to
+        their associated game with areas.
+
+        Returns
+        -------
+        Dict[int, _GameWithAreas]
+            Mapping.
+        """
+
+        return super().get_managee_numerical_ids_to_managees()
 
     def get_managees_of_user(self, user: ClientManager.Client):
         """

@@ -2214,6 +2214,34 @@ class _HubManagerTrivialInherited(GameWithAreasManager):
         except GameWithAreasError.ManagerInvalidGameIDError:
             raise HubError.ManagerInvalidGameIDError
 
+    def get_managee_by_numerical_id(self, managee_numerical_id: int) -> _Hub:
+        """
+        If `managee_numerical_id` is the numerical ID of a hub managed by this manager,
+        return the hub.
+
+        Parameters
+        ----------
+        managee_numerical_id : int
+            Numerical ID of the hub this manager manages.
+
+        Returns
+        -------
+        _Hub
+            The hub with that ID.
+
+        Raises
+        ------
+        HubError.ManagerInvalidGameIDError:
+            If `managee_numerical_id` is not the numerical ID of a hub
+            this manager manages.
+
+        """
+
+        try:
+            return super().get_managee_by_numerical_id(managee_numerical_id)
+        except GameWithAreasError.ManagerInvalidGameIDError:
+            raise HubError.ManagerInvalidGameIDError
+
     def get_managee_limit(self) -> Union[int, None]:
         """
         Return the hub limit of this manager.
@@ -2252,6 +2280,19 @@ class _HubManagerTrivialInherited(GameWithAreasManager):
         """
 
         return super().get_managee_ids_to_managees()
+
+    def get_managee_numerical_ids_to_managees(self) -> Dict[int, _Hub]:
+        """
+        Return a mapping of the numerical IDs of all hubs managed by this manager to
+        their associated hubs.
+
+        Returns
+        -------
+        Dict[int, _Hub]
+            Mapping.
+        """
+
+        return super().get_managee_numerical_ids_to_managees()
 
     def get_managees_of_user(self, user: ClientManager.Client):
         """

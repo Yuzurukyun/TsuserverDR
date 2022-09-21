@@ -1444,6 +1444,14 @@ class ClientManager:
                     msg += ' [*]'
             self.send_ooc(msg)
 
+        def send_limited_hub_list(self):
+            msg = '=== Hubs ==='
+            for i, hub in self.hub.manager.get_managee_numerical_ids_to_managees().items():
+                msg += '\r\nHub {}: {}'.format(i, hub.get_name())
+                if self.hub == hub:
+                    msg += ' [*]'
+            self.send_ooc(msg)
+
         def get_visible_clients(self, area: AreaManager.Area,
                                 mods=False, as_mod=None,
                                 only_my_multiclients=False) -> Set[ClientManager.Client]:

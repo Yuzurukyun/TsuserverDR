@@ -2247,6 +2247,34 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
         except PlayerGroupError.ManagerInvalidGroupIDError:
             raise GameError.ManagerInvalidGameIDError
 
+    def get_managee_by_numerical_id(self, managee_numerical_id: int) -> _Game:
+        """
+        If `managee_numerical_id` is the numerical ID of a game managed by this manager,
+        return the game.
+
+        Parameters
+        ----------
+        managee_numerical_id : int
+            Numerical ID of the game this manager manages.
+
+        Returns
+        -------
+        _Game
+            The game with that ID.
+
+        Raises
+        ------
+        GameError.ManagerInvalidGroupIDError:
+            If `managee_numerical_id` is not the numerical ID of a game
+            this manager manages.
+
+        """
+
+        try:
+            return super().get_managee_by_numerical_id(managee_numerical_id)
+        except PlayerGroupError.ManagerInvalidGroupIDError:
+            raise GameError.ManagerInvalidGameIDError
+
     def get_managee_limit(self) -> Union[int, None]:
         """
         Return the game limit of this manager.
@@ -2285,6 +2313,19 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
         """
 
         return super().get_managee_ids_to_managees()
+
+    def get_managee_numerical_ids_to_managees(self) -> Dict[int, _Game]:
+        """
+        Return a mapping of the numerical IDs of all games managed by this manager to their
+        associated game.
+
+        Returns
+        -------
+        Dict[int, _Game]
+            Mapping.
+        """
+
+        return super().get_managee_numerical_ids_to_managees()
 
     def get_managees_of_user(self, user: ClientManager.Client):
         """

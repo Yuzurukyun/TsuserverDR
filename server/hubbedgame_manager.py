@@ -2426,6 +2426,34 @@ class _HubbedGameManagerTrivialInherited(GameWithAreasManager):
         except GameWithAreasError.ManagerInvalidGameIDError:
             raise HubbedGameError.ManagerInvalidGameIDError
 
+    def get_managee_by_numerical_id(self, managee_numerical_id: int) -> _HubbedGame:
+        """
+        If `managee_numerical_id` is the numerical ID of a hubbed game managed by this manager,
+        return the hubbed game.
+
+        Parameters
+        ----------
+        managee_numerical_id : int
+            Numerical ID of the hubbed game this manager manages.
+
+        Returns
+        -------
+        _HubbedGame
+            The hubbed game with that ID.
+
+        Raises
+        ------
+        HubbedGameError.ManagerInvalidGameIDError:
+            If `managee_numerical_id` is not the numerical ID of a hubbed game
+            this manager manages.
+
+        """
+
+        try:
+            return super().get_managee_by_numerical_id(managee_numerical_id)
+        except GameWithAreasError.ManagerInvalidGameIDError:
+            raise HubbedGameError.ManagerInvalidGameIDError
+
     def get_managee_limit(self) -> Union[int, None]:
         """
         Return the hubbed game limit of this manager.
@@ -2464,6 +2492,19 @@ class _HubbedGameManagerTrivialInherited(GameWithAreasManager):
         """
 
         return super().get_managee_ids_to_managees()
+
+    def get_managee_numerical_ids_to_managees(self) -> Dict[int, _HubbedGame]:
+        """
+        Return a mapping of the numerical IDs of all hubbed game managed by this manager to
+        their associated hubbed game.
+
+        Returns
+        -------
+        Dict[int, _HubbedGame]
+            Mapping.
+        """
+
+        return super().get_managee_numerical_ids_to_managees()
 
     def get_managees_of_user(self, user: ClientManager.Client):
         """

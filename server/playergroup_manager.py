@@ -1499,6 +1499,34 @@ class PlayerGroupManager:
         except KeyError:
             raise PlayerGroupError.ManagerInvalidGroupIDError
 
+    def get_managee_by_numerical_id(self, managee_numerical_id: int) -> _PlayerGroup:
+        """
+        If `managee_numerical_id` is the numerical ID of a player group managed by this manager,
+        return the player group.
+
+        Parameters
+        ----------
+        managee_numerical_id : int
+            Numerical ID of the player group this manager manages.
+
+        Returns
+        -------
+        _PlayerGroup
+            The player group with that ID.
+
+        Raises
+        ------
+        PlayerGroupError.ManagerInvalidGroupIDError:
+            If `managee_numerical_id` is not the numerical ID of a player group
+            this manager manages.
+
+        """
+
+        for group in self._id_to_group.values():
+            if group.get_numerical_id() == managee_numerical_id:
+                return group
+        raise PlayerGroupError.ManagerInvalidGroupIDError
+
     def get_managee_limit(self) -> Union[int, None]:
         """
         Return the player group limit of this manager.
@@ -1537,6 +1565,27 @@ class PlayerGroupManager:
         """
 
         return self._id_to_group.copy()
+
+    def get_managee_numerical_ids_to_managees(self) -> Dict[int, _PlayerGroup]:
+        """
+        Return a mapping of the numerical IDs of all player groups managed by this manager to their
+        associated player group.
+
+        Returns
+        -------
+        Dict[int, _PlayerGroup]
+            Mapping.
+        """
+
+        temp = dict()
+        for group in self._id_to_group.values():
+            temp[group.get_numerical_id()] = group
+
+        output = dict()
+        for num_id in sorted(temp.keys()):
+            output[num_id] = temp[num_id]
+
+        return output
 
     def get_managees_of_user(self, user: ClientManager.Client) -> Set[_PlayerGroup]:
         """

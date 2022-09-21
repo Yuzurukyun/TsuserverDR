@@ -3527,6 +3527,34 @@ class _TrialManagerTrivialInherited(HubbedGameManager):
         except HubbedGameError.ManagerInvalidGameIDError:
             raise TrialError.ManagerInvalidGameIDError
 
+    def get_managee_by_numerical_id(self, managee_numerical_id: int) -> _Trial:
+        """
+        If `managee_numerical_id` is the numerical ID of a trial managed by this manager,
+        return the trial.
+
+        Parameters
+        ----------
+        managee_numerical_id : int
+            Numerical ID of the trial this manager manages.
+
+        Returns
+        -------
+        _Trial
+            The trial with that ID.
+
+        Raises
+        ------
+        TrialError.ManagerInvalidGameIDError:
+            If `managee_numerical_id` is not the numerical ID of a trial
+            this manager manages.
+
+        """
+
+        try:
+            return super().get_managee_by_numerical_id(managee_numerical_id)
+        except HubbedGameError.ManagerInvalidGameIDError:
+            raise TrialError.ManagerInvalidGameIDError
+
     def get_managee_limit(self) -> Union[int, None]:
         """
         Return the trial limit of this manager.
@@ -3565,6 +3593,19 @@ class _TrialManagerTrivialInherited(HubbedGameManager):
         """
 
         return super().get_managee_ids_to_managees()
+
+    def get_managee_numerical_ids_to_managees(self) -> Dict[int, _Trial]:
+        """
+        Return a mapping of the numerical IDs of all trials managed by this manager to
+        their associated trial.
+
+        Returns
+        -------
+        Dict[int, _Trial]
+            Mapping.
+        """
+
+        return super().get_managee_numerical_ids_to_managees()
 
     def get_managees_of_user(self, user: ClientManager.Client):
         """
