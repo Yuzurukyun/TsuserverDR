@@ -78,6 +78,7 @@ class ClientManager:
             self.showname = ''
             self.joined = time.time()
             self.last_active = Constants.get_time()
+            self.viewing_hubs = False
 
             self.ever_chose_character = False
             self.ever_outbounded_gamemode = False
