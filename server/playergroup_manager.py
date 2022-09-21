@@ -187,7 +187,7 @@ class _PlayerGroup:
 
         return self._playergroup_id
 
-    def get_name(self) -> str:
+    def get_type_name(self) -> str:
         """
         Return the name of the player group. Names are fully lowercase.
         Implementations of the class should replace this with a human readable name of the player

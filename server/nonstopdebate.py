@@ -1797,7 +1797,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
             autoadd_on_trial_player_add=autoadd_on_trial_player_add,
         )
 
-    def get_name(self) -> str:
+    def get_type_name(self) -> str:
         """
         Return "nonstop debate"
 

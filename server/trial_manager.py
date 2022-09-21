@@ -1767,7 +1767,7 @@ class _Trial(_TrialTrivialInherited):
             })
         self.manager: TrialManager  # Setting for typing
 
-    def get_name(self) -> str:
+    def get_type_name(self) -> str:
         """
         Return the name of the trial. Names are fully lowercase.
         Implementations of the class should replace this with a human readable name of the trial.
@@ -2911,7 +2911,7 @@ class _Trial(_TrialTrivialInherited):
                 # Check if client was added to any minigames automatically or not.
                 # If so, notifidy leaders
                 for minigame in self.get_minigames():
-                    name = minigame.get_name()
+                    name = minigame.get_type_name()
                     if minigame.is_player(client):
                         client.send_ooc(f'You were automatically added to {name} '
                                         f'`{minigame.get_id()}`.')

@@ -1848,7 +1848,7 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
             'trial_player_added': self._on_trial_player_added,
             })
 
-    def get_name(self) -> str:
+    def get_type_name(self) -> str:
         """
         Return the name of the trial minigame. Names are fully lowercase.
         Implementations of the class should replace this with a human readable name of the trial.

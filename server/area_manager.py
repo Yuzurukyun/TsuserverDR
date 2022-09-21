@@ -1152,7 +1152,7 @@ class AreaManager(AssetManager):
 
         self._default_area_id = 0
 
-    def get_name(self) -> str:
+    def get_type_name(self) -> str:
         """
         Return `'area list'`.
 

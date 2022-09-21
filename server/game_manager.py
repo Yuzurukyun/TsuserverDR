@@ -897,7 +897,7 @@ class _Game(_GameTrivialInherited):
             'client_destroyed': self._on_client_destroyed,
             })
 
-    def get_name(self) -> str:
+    def get_type_name(self) -> str:
         """
         Return the name of the game. Names are fully lowercase.
         Implementations of the class should replace this with a human readable name of the game.

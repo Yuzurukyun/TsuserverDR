@@ -2567,7 +2567,7 @@ class HubManager(_HubManagerTrivialInherited):
         prepared_list.append(Constants.get_first_area_list_item('AREA', client.hub, client.area))
 
         for hub in self.get_managees():
-            prepared_list.append(f'{hub.get_id()[1:]}-{hub.get_name()}')
+            prepared_list.append(f'{hub.get_id()[1:]}-{hub.get_type_name()}')
 
         return prepared_list
 

@@ -62,7 +62,7 @@ class AssetManager(ABC):
         self.publisher = Publisher(self)
 
     @abstractmethod
-    def get_name(self) -> str:
+    def get_type_name(self) -> str:
         """
         Return a brief human-readable description of the manager.
 
@@ -197,10 +197,10 @@ class AssetManager(ABC):
 
         if not file:
             source_file = self.get_default_file()
-            msg = f'the default {self.get_name()} file'
+            msg = f'the default {self.get_type_name()} file'
         else:
             source_file = f'{self.get_custom_folder()}/{file}.yaml'
-            msg = f'the custom {self.get_name()} file `{source_file}`'
+            msg = f'the custom {self.get_type_name()} file `{source_file}`'
         fail_msg = f'Unable to load {msg}'
 
         try:
@@ -247,7 +247,7 @@ class AssetManager(ABC):
         else:
             name = 'the default list'
 
-        client.send_ooc(f'The current {self.get_name()} is {name}.')
+        client.send_ooc(f'The current {self.get_type_name()} is {name}.')
 
     @abstractmethod
     def _check_structure(self):

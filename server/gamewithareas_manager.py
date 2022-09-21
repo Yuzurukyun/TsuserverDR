@@ -1550,7 +1550,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
             })
         self.manager: GameWithAreasManager  # Setting for typing
 
-    def get_name(self) -> str:
+    def get_type_name(self) -> str:
         """
         Return the name of the game with areas. Names are fully lowercase.
         Implementations of the class should replace this with a human readable name of the game
