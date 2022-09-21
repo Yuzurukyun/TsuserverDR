@@ -27,7 +27,7 @@ import time
 
 from server import logger
 from server.constants import Constants, TargetType
-from server.exceptions import ArgumentError, AreaError, ClientError, MusicError, ServerError, TaskError
+from server.exceptions import ArgumentError, AreaError, ClientError, HubError, MusicError, ServerError, TaskError
 from server.exceptions import PartyError, ZoneError, TrialError, NonStopDebateError
 from server.client_manager import ClientManager
 
@@ -69,21 +69,22 @@ def ooc_cmd_announce(client: ClientManager.Client, arg: str):
 def ooc_cmd_area(client: ClientManager.Client, arg: str):
     """
     Either lists all areas in the server or changes your area to a new given area.
-    Returns an error if you are unathorized to list all areas or unable to move to the intended new
-    area.
+    Returns an error if you are unathorized to list all areas, already in the new area, or
+    unable to move to the intended new area.
 
     SYNTAX
-    /area {new_area_id}
+    /area
+    /area <new_area_id>
 
     PARAMETERS
     None
 
-    OPTIONAL PARAMETERS
-    {new_area_id}: ID of the area
+    PARAMETERS
+    <new_area_id>: ID of the area
 
     EXAMPLES
     >>> /area
-    Lists all areas in the server along with their user count.
+    Lists all areas in the server.
     >>> /area 1
     Moves you to area 1.
     """
@@ -11483,6 +11484,50 @@ def ooc_cmd_bg_period_end(client: ClientManager.Client, arg: str):
     logger.log_server('[{}][{}]Removed background associated with period `{}`'
                       .format(client.area.id, client.get_char_name(), arg), client)
 
+
+def ooc_cmd_hub(client: ClientManager.Client, arg: str):
+    """
+    Either lists all hubs in the server or changes your area to a new given area.
+    Returns an error if you are already in the target hub or you are unable to move to the default
+    area of the new hub.
+
+    SYNTAX
+    /hub
+    /hub <new_hub_numerical_id>
+
+    PARAMETERS
+    None
+
+    PARAMETERS
+    <new_hub_numerical_id>: Numerical ID of the hub
+
+    EXAMPLES
+    >>> /hub
+    Lists all hubs in the server.
+    >>> /hub 1
+    Moves you to hub 1.
+    """
+
+    Constants.assert_command(client, arg, parameters='<2')
+
+    args = arg.split()
+    # List all hubs
+    if not args:
+        client.send_limited_hub_list()
+
+    # Switch to new area
+    else:
+        try:
+            numerical_id = int(args[0])
+        except ValueError:
+            raise ArgumentError('Hub ID must be a number.')
+
+        try:
+            hub = client.hub.manager.get_managee_by_numerical_id(numerical_id)
+        except HubError.ManagerInvalidGameIDError:
+            raise HubError.ManagerInvalidGameIDError('Hub not found.')
+
+        client.change_hub(hub, from_party=(client.party is not None))
 
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):
     """

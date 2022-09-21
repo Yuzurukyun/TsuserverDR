@@ -973,6 +973,24 @@ class ClientManager:
                 except TaskError.TaskNotFoundError:
                     pass
 
+        def change_hub(self, hub: _Hub, override_all: bool = False,
+                       override_effects: bool = False,
+                       ignore_bleeding: bool = False, ignore_followers: bool = False,
+                       ignore_autopass: bool = False,
+                       ignore_checks: bool = False, ignore_notifications: bool = False,
+                       more_unavail_chars: Set[int] = None,
+                       change_to: int = None, from_party: bool = False):
+            if hub == self.hub:
+                raise ClientError('User is already in target hub.')
+            self.change_area(
+                hub.area_manager.default_area(),
+                override_all=override_all, override_passages=True,  # Overriden
+                override_effects=override_effects, ignore_bleeding=ignore_bleeding,
+                ignore_autopass=ignore_autopass,
+                ignore_followers=ignore_followers, ignore_checks=ignore_checks,
+                ignore_notifications=ignore_notifications, change_to=change_to,
+                more_unavail_chars=more_unavail_chars, from_party=from_party)
+
         def change_area(self, area: AreaManager.Area, override_all: bool = False,
                         override_passages: bool = False, override_effects: bool = False,
                         ignore_bleeding: bool = False, ignore_followers: bool = False,

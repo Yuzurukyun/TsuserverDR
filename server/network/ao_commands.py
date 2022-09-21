@@ -32,7 +32,7 @@ from typing import Any, Dict
 
 from server import logger, clients
 from server.constants import Constants
-from server.exceptions import AreaError, ClientError, MusicError, ServerError, PartyError, TsuserverException
+from server.exceptions import AreaError, ClientError, HubError, MusicError, ServerError, PartyError, TsuserverException
 # from server.evidence import EvidenceList
 
 if typing.TYPE_CHECKING:
@@ -706,7 +706,19 @@ def _attempt_to_change_hub(client: ClientManager.Client, pargs: Dict[str, Any]) 
 
         return True
     else:
-        return False
+        try:
+            delimiter = name.find('-')
+            numerical_id = int(name[:delimiter])
+            hub = client.hub.manager.get_managee_by_numerical_id(numerical_id)
+        except (HubError.ManagerInvalidGameIDError,  ValueError):
+            return False
+
+        try:
+            client.change_hub(hub, from_party=True if client.party else False)
+        except (ClientError, PartyError) as ex:
+            client.send_ooc(ex)
+
+        return True
 
 
 def _attempt_to_change_area(client: ClientManager.Client, pargs: Dict[str, Any]) -> bool:
