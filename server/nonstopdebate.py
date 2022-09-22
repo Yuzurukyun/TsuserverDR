@@ -2693,7 +2693,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
             client.send_ooc_others(f'(X) Player {old_displayname} [{client.id}] has left to '
                                    f'an area not part of your NSD and thus was '
                                    f'automatically removed from it ({area.id}->{client.area.id}).',
-                                   pred=lambda c: c in self.get_leaders())
+                                   pred=lambda c: c in self.get_leaders(), in_hub=area.hub)
 
             nonplayers = self.get_nonplayer_users_in_areas()
             nid = self.get_id()
@@ -2705,10 +2705,10 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
                                 f'ended as it lost all its players.')
                 client.send_ooc_others(f'(X) Nonstop debate `{nid}` was automatically '
                                        f'ended as it lost all its players.',
-                                       is_zstaff_flex=True, not_to=nonplayers)
+                                       is_zstaff_flex=True, not_to=nonplayers, in_hub=area.hub)
                 client.send_ooc_others('The nonstop debate you were watching was automatically '
                                        'ended as it lost all its players.',
-                                       is_zstaff_flex=False, part_of=nonplayers)
+                                       is_zstaff_flex=False, part_of=nonplayers, in_hub=area.hub)
 
         else:
             client.send_ooc(f'You have left to an area not part of NSD '
@@ -2716,7 +2716,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
             client.send_ooc_others(f'(X) Player {old_displayname} [{client.id}] has left to an '
                                    f'area not part of your NSD '
                                    f'({area.id}->{client.area.id}).',
-                                   pred=lambda c: c in self.get_leaders())
+                                   pred=lambda c: c in self.get_leaders(), in_hub=area.hub)
             self.dismiss_user(client)
 
         self.manager._check_structure()

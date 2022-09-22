@@ -69,7 +69,7 @@ def net_cmd_hi(client: ClientManager.Client, pargs: Dict[str, Any]):
             client.send_ooc_others(
                 f'Banned client with HDID {client.hdid} and IPID {client.ipid} '
                 f'attempted to join the server but was refused entrance.',
-                is_officer=True)
+                is_officer=True, in_hub=None)
             client.send_command_dict('BD', dict())
             client.disconnect()
             return

@@ -2154,7 +2154,7 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
                                    f'an area not part of your trial minigame and thus was '
                                    f'automatically removed from it '
                                    f'({area.id}->{client.area.id}).',
-                                   pred=lambda c: c in self.get_leaders())
+                                   pred=lambda c: c in self.get_leaders(), in_hub=area.hub)
 
             self.remove_player(client)
             if self.is_unmanaged():
@@ -2163,7 +2163,7 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
                                     f'ended as it lost all its players.')
                 client.send_ooc_others(f'(X) Trial minigame `{self.get_id()}` was automatically '
                                        f'ended as it lost all its players.',
-                                       is_zstaff_flex=True)
+                                       is_zstaff_flex=True, in_hub=area.hub)
 
         elif client.area not in self.get_areas():
             client.send_ooc(f'You have left to an area not part of trial minigame '
@@ -2171,7 +2171,7 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
             client.send_ooc_others(f'(X) Player {old_displayname} [{client.id}] has left to an '
                                    f'area not part of your trial minigame '
                                    f'({area.id}->{client.area.id}).',
-                                   pred=lambda c: c in self.get_leaders())
+                                   pred=lambda c: c in self.get_leaders(), in_hub=area.hub)
 
     def _on_area_client_entered_final(
         self,

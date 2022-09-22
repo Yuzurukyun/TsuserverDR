@@ -339,10 +339,10 @@ class ZoneManager:
                 self.manager.delete_zone(self._zone_id)
                 user.send_ooc('(X) Zone `{}` that you were in was automatically ended as no one '
                               'was in an area part of it or was watching it anymore.'
-                              .format(self._zone_id), is_staff=True)
+                              .format(self._zone_id))
                 user.send_ooc_others('Zone `{}` was automatically ended as no one was in an '
                                      'area part of it or was watching it anymore.'
-                                     .format(self._zone_id), is_officer=True)
+                                     .format(self._zone_id), is_officer=True, in_hub=None)
 
         def _cleanup_removed_watcher(self, user: ClientManager.Client):
             user.zone_watched = None
@@ -453,10 +453,10 @@ class ZoneManager:
                 self.manager.delete_zone(self._zone_id)
                 user.send_ooc('(X) Zone `{}` that you were in was automatically ended as no one '
                               'was in an area part of it or was watching it anymore.'
-                              .format(self._zone_id), is_staff=True)
+                              .format(self._zone_id))
                 user.send_ooc_others('Zone `{}` was automatically ended as no one was in an '
                                      'area part of it or was watching it anymore.'
-                                     .format(self._zone_id), is_officer=True)
+                                     .format(self._zone_id), is_officer=True, in_hub=None)
 
         def _cleanup_removed_player(self, player: ClientManager.Client):
             self.listener.unsubscribe(player)

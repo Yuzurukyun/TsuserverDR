@@ -323,6 +323,7 @@ class TaskManager:
         send_first_hour: bool = task.parameters['send_first_hour']
 
         hour = hour_start
+        hub = client.hub  # For later, in case client changes hub
         minute_at_interruption = 0
         main_hour_length = hour_length
         time_started_at = time.time()
@@ -461,7 +462,7 @@ class TaskManager:
                     client.send_ooc_others('(X) The day cycle initiated by {} in areas {} through '
                                            '{} has been ended.'
                                            .format(client.name, area_1, area_2),
-                                           is_zstaff_flex=True)
+                                           is_zstaff_flex=True, in_hub=hub)
                     targets = [c for c in client.hub.get_players()
                                if c == client or area_1 <= c.area.id <= area_2]
                     break
@@ -486,7 +487,7 @@ class TaskManager:
                                            'New hour: {}:00.'
                                            .format(client.name, area_1, area_2, hour_length,
                                                    str_hour),
-                                           is_zstaff_flex=True)
+                                           is_zstaff_flex=True, in_hub=hub)
                     # Setting time does not unpause the timer, warn clock master
                     if task.parameters['is_paused']:
                         client.send_ooc('(X) Warning: Your day cycle is still paused.')
@@ -518,7 +519,8 @@ class TaskManager:
                     client.send_ooc_others(f'(X) The day cycle initiated by {client.displayname} '
                                            f'[{client.id}] in areas {area_1} through {area_2} has '
                                            f'been updated. New number of hours in the day: '
-                                           f'{hours_in_day} hours.', is_zstaff_flex=True)
+                                           f'{hours_in_day} hours.',
+                                           is_zstaff_flex=True, in_hub=hub)
                     # Check if current hours exceed new number of hours in the day
                     if hour >= hours_in_day:
                         hour = 0
@@ -531,7 +533,8 @@ class TaskManager:
                                                f'{client.displayname} [{client.id}] in areas '
                                                f'{area_1} through {area_2} has had its current '
                                                f'hour be set to 0 because it was beyond the number '
-                                               f'of hours it was set to now have.', is_staff=True,
+                                               f'of hours it was set to now have.',
+                                               is_zstaff_flex=True, in_hub=hub,
                                                pred=lambda c: area_1 <= c.area.id <= area_2)
 
                         # Moreover, hour is +1'd automatically if the clock is unpaused
@@ -554,7 +557,8 @@ class TaskManager:
                                                f'{area_1} through {area_2} has had the following '
                                                f'periods be removed from the list of periods as '
                                                f'they were beyond the number of hours it was set '
-                                               f'to now have: {popped_periods}.', is_staff=True,
+                                               f'to now have: {popped_periods}.',
+                                               is_zstaff_flex=True, in_hub=hub,
                                                pred=lambda c: area_1 <= c.area.id <= area_2)
 
                     force_period_refresh = True  # Super conservative but always correct.
@@ -569,9 +573,11 @@ class TaskManager:
                     client.send_ooc('You have set the time to be unknown.')
                     client.send_ooc_others(f'(X) The day cycle initiated by {client.displayname} '
                                            f'[{client.id}] in areas {area_1} through {area_2} has '
-                                           f'been set to be at an unknown time.', is_staff=True,
+                                           f'been set to be at an unknown time.',
+                                           is_zstaff_flex=True, in_hub=hub,
                                            pred=lambda c: area_1 <= c.area.id <= area_2)
-                    client.send_ooc_others('You seem to have lost track of time.', is_staff=False,
+                    client.send_ooc_others('You seem to have lost track of time.',
+                                           is_zstaff_flex=False, in_hub=hub,
                                            pred=lambda c: area_1 <= c.area.id <= area_2)
 
                     task.parameters['period'] = 'unknown'
@@ -642,19 +648,21 @@ class TaskManager:
                             client.send_ooc(f'(X) You have added period `{name}`. '
                                             f'Period hour length: {new_period_length} seconds. '
                                             f'Period hour start: {formatted_time}.')
-                            client.send_ooc_others(f'(X) {client.displayname} [{client.id}] has '
-                                                f'added period `{name}` to their day cycle. '
-                                                f'Period hour length: {new_period_length} seconds. '
-                                                f'Period hour start: {formatted_time} '
-                                                f'({client.area.id}).',
-                                                is_zstaff_flex=True)
+                            client.send_ooc_others(
+                                f'(X) {client.displayname} [{client.id}] has added period `{name}` '
+                                f'to their day cycle. '
+                                f'Period hour length: {new_period_length} seconds. '
+                                f'Period hour start: {formatted_time} '
+                                f'({client.area.id}).',
+                                is_zstaff_flex=True, in_hub=hub,
+                                )
                         else:
                             # Case removed a period
                             client.send_ooc(f'(X) You have removed period `{name}`.')
                             client.send_ooc_others(f'(X) {client.displayname} [{client.id}] has '
-                                                f'removed period `{name}` off their day cycle '
-                                                f'({client.area.id}).',
-                                                is_zstaff_flex=True)
+                                                   f'removed period `{name}` off their day cycle '
+                                                   f'({client.area.id}).',
+                                                   is_zstaff_flex=True, in_hub=hub)
                 elif refresh_reason == 'unpause':
                     task.parameters['is_paused'] = False
 
@@ -663,13 +671,14 @@ class TaskManager:
                     client.send_ooc_others('(X) The day cycle initiated by {} in areas {} through '
                                            '{} has been unpaused.'
                                            .format(client.name, area_1, area_2),
-                                           is_zstaff_flex=True)
+                                           is_zstaff_flex=True, in_hub=hub)
 
                     time_started_at = time.time()
                     igt_now = '{}:{}'.format('{0:02d}'.format(hour),
                                              '{0:02d}'.format(int(minute_at_interruption)))
                     client.send_ooc('It is now {}.'.format(igt_now))
-                    client.send_ooc_others('It is now {}.'.format(igt_now), is_staff=True,
+                    client.send_ooc_others('It is now {}.'.format(igt_now),
+                                           is_zstaff_flex=True, in_hub=hub,
                                            pred=lambda c: area_1 <= c.area.id <= area_2)
 
                 elif refresh_reason == 'pause':
@@ -683,7 +692,7 @@ class TaskManager:
                     client.send_ooc_others('(X) The day cycle initiated by {} in areas {} through '
                                            '{} has been paused at {}.'
                                            .format(client.name, area_1, area_2, igt_now),
-                                           is_zstaff_flex=True)
+                                           is_zstaff_flex=True, in_hub=hub)
                 else:
                     raise ValueError(f'Unknown refresh reason {refresh_reason} for day cycle.')
 

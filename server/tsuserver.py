@@ -554,7 +554,7 @@ class TsuserverDR:
         client.send_ooc(info)
         client.send_ooc_others('Client {} triggered a Python error through a client packet. '
                                'Do /lasterror to take a look at it.'.format(client.id),
-                               pred=lambda c: c.is_mod)
+                               is_mod=True, in_hub=None)
 
         # Print complete traceback to console
         info = 'TSUSERVERDR HAS ENCOUNTERED AN ERROR HANDLING A CLIENT PACKET'

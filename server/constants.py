@@ -516,8 +516,8 @@ class Constants():
         part_of: Union[Set[ClientManager.Client], None] = None,
         to_blind: Union[bool, None] = None,
         to_deaf: Union[bool, None] = None,
-        is_zstaff: Union[bool, None] = None,
-        is_zstaff_flex: Union[bool, None] = None,
+        is_zstaff: Union[bool, AreaManager.Area, None] = None,
+        is_zstaff_flex: Union[bool, AreaManager.Area, None] = None,
         pred: Callable[[ClientManager.Client], bool] = None,
         ) -> Callable[[ClientManager.Client], bool]:
         """

@@ -233,14 +233,14 @@ class ClientManager:
             is_staff: Union[bool, None] = None,
             is_officer: Union[bool, None] = None,
             is_mod: Union[bool, None] = None,
-            in_hub: Union[bool, _Hub, Set[_Hub], None] = None,
+            in_hub: Union[bool, _Hub, Set[_Hub], None] = True,
             in_area: Union[bool, AreaManager.Area, Set[AreaManager.Area], None] = None,
             not_to: Union[Set[ClientManager.Client], None] = None,
             part_of: Union[Set[ClientManager.Client], None] = None,
             to_blind: Union[bool, None] = None,
             to_deaf: Union[bool, None] = None,
-            is_zstaff: Union[bool, None] = None,
-            is_zstaff_flex: Union[bool, None] = None,
+            is_zstaff: Union[bool, AreaManager.Area, None] = None,
+            is_zstaff_flex: Union[bool, AreaManager.Area, None] = None,
             pred: Callable[[ClientManager.Client], bool] = None
             ):
             if not allow_empty and not msg:
@@ -284,14 +284,14 @@ class ClientManager:
             is_staff: Union[bool, None] = None,
             is_officer: Union[bool, None] = None,
             is_mod: Union[bool, None] = None,
-            in_hub: Union[bool, _Hub, Set[_Hub], None] = None,
+            in_hub: Union[bool, _Hub, Set[_Hub], None] = True,
             in_area: Union[bool, AreaManager.Area, Set[AreaManager.Area], None] = None,
             not_to: Union[Set[ClientManager.Client], None] = None,
             part_of: Union[Set[ClientManager.Client], None] = None,
             to_blind: Union[bool, None] = None,
             to_deaf: Union[bool, None] = None,
-            is_zstaff: Union[bool, None] = None,
-            is_zstaff_flex: Union[bool, None] = None,
+            is_zstaff: Union[bool, AreaManager.Area, None] = None,
+            is_zstaff_flex: Union[bool, AreaManager.Area, None] = None,
             pred: Callable[[ClientManager.Client], bool] = None
         ):
             if not allow_empty and not msg:
@@ -335,14 +335,14 @@ class ClientManager:
             is_staff: Union[bool, None] = None,
             is_officer: Union[bool, None] = None,
             is_mod: Union[bool, None] = None,
-            in_hub: Union[bool, _Hub, Set[_Hub], None] = None,
+            in_hub: Union[bool, _Hub, Set[_Hub], None] = True,
             in_area: Union[bool, AreaManager.Area, Set[AreaManager.Area], None] = None,
             not_to: Union[Set[ClientManager.Client], None] = None,
             part_of: Union[Set[ClientManager.Client], None] = None,
             to_blind: Union[bool, None] = None,
             to_deaf: Union[bool, None] = None,
-            is_zstaff: Union[bool, None] = None,
-            is_zstaff_flex: Union[bool, None] = None,
+            is_zstaff: Union[bool, AreaManager.Area, None] = None,
+            is_zstaff_flex: Union[bool, AreaManager.Area, None] = None,
             pred: Callable[[ClientManager.Client], bool] = None,
 
             msg=None,
@@ -639,14 +639,14 @@ class ClientManager:
             is_staff: Union[bool, None] = None,
             is_officer: Union[bool, None] = None,
             is_mod: Union[bool, None] = None,
-            in_hub: Union[bool, _Hub, Set[_Hub], None] = None,
+            in_hub: Union[bool, _Hub, Set[_Hub], None] = True,
             in_area: Union[bool, AreaManager.Area, Set[AreaManager.Area], None] = None,
             not_to: Union[Set[ClientManager.Client], None] = None,
             part_of: Union[Set[ClientManager.Client], None] = None,
             to_blind: Union[bool, None] = None,
             to_deaf: Union[bool, None] = None,
-            is_zstaff: Union[bool, None] = None,
-            is_zstaff_flex: Union[bool, None] = None,
+            is_zstaff: Union[bool, AreaManager.Area, None] = None,
+            is_zstaff_flex: Union[bool, AreaManager.Area, None] = None,
             pred: Callable[[ClientManager.Client], bool] = None,
 
             msg=None,
@@ -900,13 +900,14 @@ class ClientManager:
                     for client in self.area.clients:
                         if client.char_id == char_id:
                             client.char_select()
-                            if client != self:
-                                client.send_ooc('You were forced off your character.')
-                                self.send_ooc(f'You forced client {client.id} off their '
-                                              f'character.')
-                                self.send_ooc_others(f'{self.name} [{self.id}] forced client '
-                                                     f'{client.id} off their character.',
-                                                     is_officer=True, not_to={client})
+                            if client == self:
+                                continue
+
+                            client.send_ooc('You were forced off your character.')
+                            self.send_ooc(f'You forced client {client.id} off their character.')
+                            self.send_ooc_others(f'{self.name} [{self.id}] forced client '
+                                                 f'{client.id} off their character.',
+                                                 is_officer=True, in_hub=None, not_to={client})
                 else:
                     raise ClientError('Character {} not available.'
                                       .format(self.get_char_name(char_id)))
@@ -951,7 +952,7 @@ class ClientManager:
                 self.send_ooc_others('(X) Client {} has changed from character `{}` to `{}` in '
                                      'your zone ({}).'
                                      .format(self.id, old_char, self.char_folder, self.area.id),
-                                     is_zstaff=target_area)
+                                     is_zstaff=target_area, in_hub=target_area.hub)
 
             self.send_command_dict('PV', {
                 'client_id': self.id,
@@ -1400,16 +1401,19 @@ class ClientManager:
 
                 if self.area.in_zone and self.area.in_zone.is_property('Handicap'):
                     length, name, announce_if_over = self.area.in_zone.get_property('Handicap')
-                    self.send_ooc_others(f'(X) Warning: {self.displayname} [{self.id}] lost '
+                    self.send_ooc_others(
+                        f'(X) Warning: {self.displayname} [{self.id}] lost '
                         f'their zone movement handicap by virtue of having their '
                         f'handicap removed. Add it again with /zone_handicap_add {self.id}',
-                        is_zstaff_flex=True)
+                        is_zstaff_flex=True
+                        )
                 if not self.is_visible and self.server.config['sneak_handicap'] > 0:
-                    self.send_ooc_others(f'(X) Warning: {self.displayname} [{self.id}] lost '
-                                         f'their sneaking handicap by virtue of having their '
-                                         f'handicap removed. Add it again with /handicap '
-                                         f'{self.id} {self.server.config["sneak_handicap"]} '
-                                         f'Sneaking', is_zstaff_flex=True)
+                    self.send_ooc_others(
+                        f'(X) Warning: {self.displayname} [{self.id}] lost their sneaking handicap '
+                        f'by virtue of having their handicap removed. Add it again with /handicap '
+                        f'{self.id} {self.server.config["sneak_handicap"]} Sneaking',
+                        is_zstaff_flex=True
+                        )
                 return old_name
 
         def refresh_remembered_status(self,
@@ -1489,7 +1493,8 @@ class ClientManager:
             # Warn zone watchers of the area of the target
             self.send_ooc_others(f'(X) {self.displayname} [{self.id}] started following '
                                  f'{target.displayname} [{target.id}] in your zone '
-                                 f'({self.area.id}).', is_zstaff=target.area)
+                                 f'({self.area.id}).',
+                                 is_zstaff=target.area, in_hub=target.area.hub)
 
         def unfollow_user(self):
             if not self.following:
@@ -1499,7 +1504,8 @@ class ClientManager:
                           f'at {Constants.get_time()}.')
             self.send_ooc_others(f'(X) {self.displayname} [{self.id}] stopped following '
                                  f'{self.following.displayname} [{self.following.id}] in your zone '
-                                 f'({self.area.id}).', is_zstaff=self.following.area)
+                                 f'({self.area.id}).',
+                                 is_zstaff=self.following.area, in_hub=self.following.area.hub)
             self.following.followedby.remove(self)
             self.following = None
 
@@ -1835,7 +1841,7 @@ class ClientManager:
             # Filter out messages about GMs because they were called earlier in auth_gm
             if not self.is_gm and announce_to_officers:
                 self.send_ooc_others('{} [{}] logged in as a {}.'.format(self.name, self.id, role),
-                                     is_officer=True)
+                                     is_officer=True, in_hub=None)
             logger.log_server('Logged in as a {}.'.format(role), self)
 
             if self.area.in_zone and self.area.in_zone != self.zone_watched:
@@ -1889,7 +1895,7 @@ class ClientManager:
             else:
                 if announce_to_officers:
                     self.send_ooc_others('{} [{}] failed to login as a moderator.'
-                                         .format(self.name, self.id), is_officer=True)
+                                         .format(self.name, self.id), is_officer=True, in_hub=None)
                 raise ClientError('Invalid password.')
 
         def auth_cm(self, password: str, announce_to_officers: bool = True):
@@ -1902,7 +1908,7 @@ class ClientManager:
             else:
                 if announce_to_officers:
                     self.send_ooc_others('{} [{}] failed to login as a community manager.'
-                                         .format(self.name, self.id), is_officer=True)
+                                         .format(self.name, self.id), is_officer=True, in_hub=None)
                 raise ClientError('Invalid password.')
 
         def auth_gm(self, password: str , announce_to_officers: bool =True):
@@ -1924,14 +1930,16 @@ class ClientManager:
                     g_or_daily = 'global password'
                 if announce_to_officers:
                     self.send_ooc_others('{} [{}] logged in as a game master with the {}.'
-                                         .format(self.name, self.id, g_or_daily), is_officer=True)
+                                         .format(self.name, self.id, g_or_daily),
+                                         is_officer=True, in_hub=None)
                 self.is_gm = True
                 self.is_mod = False
                 self.is_cm = False
             else:
                 if announce_to_officers:
                     self.send_ooc_others('{} [{}] failed to login as a game master.'
-                                         .format(self.name, self.id), is_officer=True)
+                                         .format(self.name, self.id),
+                                         is_officer=True, in_hub=None)
                 raise ClientError('Invalid password.')
 
         def logout(self):

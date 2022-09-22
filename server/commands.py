@@ -364,18 +364,19 @@ def ooc_cmd_ban(client: ClientManager.Client, arg: str):
     if targets:
         for c in targets:
             client.send_ooc('You banned {} [{}/{}].'.format(c.displayname, c.ipid, c.hdid))
-            client.send_ooc_others('{} was banned.'.format(c.displayname), is_officer=False,
-                                   in_area=True)
+            client.send_ooc_others('{} was banned.'.format(c.displayname),
+                                   is_officer=False, in_area=True, in_hub=True)
             client.send_ooc_others('{} [{}] banned {} [{}/{}].'
                                    .format(client.name, client.id, c.displayname, c.ipid, c.hdid),
-                                   is_officer=True)
+                                   is_officer=True, in_hub=None)
             c.disconnect()
 
     plural = 's were' if len(targets) != 1 else ' was'
     client.send_ooc('You banned `{}`. As a result, {} client{} kicked as well.'
                     .format(idnt, len(targets), plural))
     client.send_ooc_others('{} banned `{}`. As a result, {} client{} kicked as well.'
-                           .format(client.name, idnt, len(targets), plural), is_officer=True)
+                           .format(client.name, idnt, len(targets), plural),
+                           is_officer=True, in_hub=None)
     logger.log_server('Banned {}.'.format(idnt), client)
 
 
@@ -425,10 +426,10 @@ def ooc_cmd_banhdid(client: ClientManager.Client, arg: str):
         for c in targets:
             client.send_ooc('You HDID banned {} [{}/{}].'.format(c.displayname, c.ipid, c.hdid))
             client.send_ooc_others('{} was banned.'.format(c.displayname), is_officer=False,
-                                   in_area=True)
+                                   in_area=True, in_hub=True)
             client.send_ooc_others('{} [{}] HDID banned {} [{}/{}].'
                                    .format(client.name, client.id, c.displayname, c.ipid, c.hdid),
-                                   is_officer=True)
+                                   is_officer=True, in_hub=None)
             c.disconnect()
 
     plural = 's were' if len(targets) != 1 else ' was'
@@ -436,7 +437,7 @@ def ooc_cmd_banhdid(client: ClientManager.Client, arg: str):
                     .format(arg, len(targets), plural))
     client.send_ooc_others('{} [{}] banned HDID `{}`. As a result, {} client{} kicked as well.'
                            .format(client.name, client.id, arg, len(targets), plural),
-                           is_officer=True)
+                           is_officer=True, in_hub=None)
     logger.log_server('HDID-banned {}.'.format(identifier), client)
 
 
@@ -1293,7 +1294,7 @@ def ooc_cmd_charselect(client: ClientManager.Client, arg: str):
                 c.send_ooc('You were forced to open the character select screen.')
             client.send_ooc_others(f'{client.name} [{client.id}] forced {c.displayname} [{c.id}] '
                                    f'to open the character select screen ({c.area.id}).',
-                                   not_to={c}, is_officer=True)
+                                   not_to={c}, is_officer=True, in_hub=None)
             c.char_select()
 
 
@@ -1494,14 +1495,16 @@ def ooc_cmd_cleargm(client: ClientManager.Client, arg: str):
             raise ClientError(f'Client {target.id} is already not a GM.')
         client.send_ooc(f'You have logged out client {client.id} from their GM rank.')
         client.send_ooc_others(f'{client.name} [{client.id}] has logged out {target.name} '
-                               f'[{target.id}] from their GM rank.', is_officer=True)
+                               f'[{target.id}] from their GM rank.',
+                               is_officer=True, in_hub=None)
     else:
         if not gm_list:
             raise ClientError('No GMs are currently connected.')
         output = Constants.cjoin(gm_list, sort=False)
         client.send_ooc(f'You have logged out the following clients from their GM rank: {output}.')
-        client.send_ooc_others(f'{client.name} [{client.id}] has been logged out these clients '
-                               f'from their GM rank: {output}.', is_officer=True)
+        client.send_ooc_others(f'{client.name} [{client.id}] has logged out these clients '
+                               f'from their GM rank: {output}.',
+                               is_officer=True, in_hub=None)
 
 
 def ooc_cmd_clock(client: ClientManager.Client, arg: str):
@@ -2848,10 +2851,11 @@ def ooc_cmd_glock(client: ClientManager.Client, arg: str):
 
     client.send_ooc('You have {} the global chat.'.format(status[client.server.global_allowed]))
     client.send_ooc_others('A mod has {} the global chat.'
-                           .format(status[client.server.global_allowed]), is_officer=False)
+                           .format(status[client.server.global_allowed]),
+                           is_officer=False, in_hub=None)
     client.send_ooc_others('{} [{}] has {} the global chat.'
                            .format(client.name, client.id, status[client.server.global_allowed]),
-                           is_officer=True)
+                           is_officer=True, in_hub=None)
     logger.log_server('{} has {} the global chat.'
                       .format(client.name, status[client.server.global_allowed]), client)
 
@@ -3491,11 +3495,11 @@ def ooc_cmd_kick(client: ClientManager.Client, arg: str):
     # Kick matching targets
     for c in Constants.parse_id_or_ipid(client, arg):
         client.send_ooc('You kicked {} [{}/{}].'.format(c.displayname, c.ipid, c.hdid))
-        client.send_ooc_others('{} was kicked.'.format(c.displayname), is_officer=False,
-                               in_area=True)
+        client.send_ooc_others('{} was kicked.'.format(c.displayname),
+                               is_officer=False, in_area=True, in_hub=True)
         client.send_ooc_others('{} [{}] kicked {} [{}/{}].'
                                .format(client.name, client.id, c.displayname, c.ipid, c.hdid),
-                               is_officer=True)
+                               is_officer=True, in_hub=None)
         logger.log_server('Kicked {}.'.format(c.ipid), client)
         c.disconnect()
 
@@ -3873,7 +3877,8 @@ def ooc_cmd_logout(client: ClientManager.Client, arg: str):
 
     client.send_ooc('You are no longer logged in.')
     client.send_ooc_others('{} [{}] is no longer a {}.'
-                           .format(client.name, client.id, role), is_officer=True)
+                           .format(client.name, client.id, role),
+                           is_officer=True, in_hub=None)
     client.logout()
 
 
@@ -4196,7 +4201,8 @@ def ooc_cmd_make_gm(client: ClientManager.Client, arg: str):
                  announce_to_officers=False)
     client.send_ooc('Logged client {} as a GM.'.format(target.id))
     client.send_ooc_others('{} [{}] has been logged in as a game master by {} [{}].'
-                           .format(target.name, target.id, client.name, client.id), is_officer=True)
+                           .format(target.name, target.id, client.name, client.id),
+                           is_officer=True, in_hub=None)
 
 
 def ooc_cmd_minimap(client: ClientManager.Client, arg: str):
@@ -4661,8 +4667,7 @@ def ooc_cmd_notecard_reveal(client: ClientManager.Client, arg: str):
     client.send_ooc('You revealed all notecards in the area.')
     client.send_ooc_others(f'(X) {client.displayname} [{client.id}] revealed all notecards in '
                            f'area {client.area.name} ({client.area.id}).', is_zstaff_flex=True)
-    client.area.broadcast_ooc(f'The notecards in the area were revealed: '
-                              f'{output}')
+    client.area.broadcast_ooc(f'The notecards in the area were revealed: {output}')
 
 
 def ooc_cmd_notecard_reveal_count(client: ClientManager.Client, arg: str):
@@ -4705,8 +4710,7 @@ def ooc_cmd_notecard_reveal_count(client: ClientManager.Client, arg: str):
     client.send_ooc_others(f'(X) {client.displayname} [{client.id}] revealed the tally of all '
                            f'notecards in area {client.area.name} ({client.area.id}).',
                            is_zstaff_flex=True)
-    client.area.broadcast_ooc(f'The tally of all notecards in the area was revealed: '
-                              f'{output}')
+    client.area.broadcast_ooc(f'The tally of all notecards in the area was revealed: {output}')
 
 
 def ooc_cmd_noteworthy(client: ClientManager.Client, arg: str):
@@ -4967,8 +4971,8 @@ def ooc_cmd_nsd_add(client: ClientManager.Client, arg: str):
 
     client.send_ooc(f'You added {target.displayname} [{target.id}] to your nonstop debate.')
     client.send_ooc_others(f'(X) {client.displayname} added {target.displayname} [{target.id}] '
-                           'to your nonstop '
-                           f'debate.', pred=lambda c: c in trial.get_leaders())
+                           f'to your nonstop debate.',
+                           pred=lambda c: c in trial.get_leaders())
     target.send_ooc(f'You were added to the nonstop debate `{nsd.get_id()}`.')
 
 
@@ -7454,10 +7458,11 @@ def ooc_cmd_showname_freeze(client: ClientManager.Client, arg: str):
 
     client.send_ooc('You have {} all shownames.'.format(status[client.server.showname_freeze]))
     client.send_ooc_others('A mod has {} all shownames.'
-                           .format(status[client.server.showname_freeze]), is_officer=False)
+                           .format(status[client.server.showname_freeze]),
+                           is_officer=False, in_hub=None)
     client.send_ooc_others('{} [{}] has {} all shownames.'
                            .format(client.name, client.id, status[client.server.showname_freeze]),
-                           is_officer=True)
+                           is_officer=True, in_hub=None)
     logger.log_server('{} has {} all shownames.'
                       .format(client.name, status[client.server.showname_freeze]), client)
 
@@ -7523,9 +7528,9 @@ def ooc_cmd_showname_nuke(client: ClientManager.Client, arg: str):
             c.change_showname('')
 
     client.send_ooc('You have nuked all shownames.')
-    client.send_ooc_others('A mod has nuked all shownames.', is_officer=False)
+    client.send_ooc_others('A mod has nuked all shownames.', is_officer=False, in_hub=None)
     client.send_ooc_others('{} [{}] has nuked all shownames.'
-                           .format(client.name, client.id), is_officer=True)
+                           .format(client.name, client.id), is_officer=True, in_hub=None)
     logger.log_server('{} has nuked all shownames.'.format(client.name), client)
 
 
@@ -7877,7 +7882,6 @@ def ooc_cmd_status_set_other(client: ClientManager.Client, arg: str):
         for c in refreshed_clients:
             if c == client:
                 continue
-
             c.send_ooc(f'You now note something about {target.displayname}.',
                        is_zstaff_flex=False)
         target.area.broadcast_ic_attention(ding=False)
@@ -9035,7 +9039,8 @@ def ooc_cmd_unban(client: ClientManager.Client, arg: str):
 
     client.send_ooc('Unbanned `{}`.'.format(idnt))
     client.send_ooc_others('{} [{}] unbanned `{}`.'
-                           .format(client.name, client.id, idnt), is_officer=True)
+                           .format(client.name, client.id, idnt),
+                           is_officer=True, in_hub=None)
     logger.log_server('Unbanned {}.'.format(idnt), client)
 
 
@@ -9074,7 +9079,8 @@ def ooc_cmd_unbanhdid(client: ClientManager.Client, arg: str):
 
     client.send_ooc('Unbanned HDID `{}`.'.format(arg))
     client.send_ooc_others('{} [{}] unbanned HDID `{}`.'
-                           .format(client.name, client.id, arg), is_officer=True)
+                           .format(client.name, client.id, arg),
+                           is_officer=True, in_hub=None)
     logger.log_server('HDID-unbanned {}.'.format(arg), client)
 
 
@@ -10870,8 +10876,8 @@ def ooc_cmd_zone_unwatch(client: ClientManager.Client, arg: str):
         client.send_ooc('(X) As you were the last person in an area part of it or who was watching '
                         'it, your zone has been deleted.')
         client.send_ooc_others('Zone `{}` was automatically ended as no one was in an '
-                                'area part of it or was watching it anymore.'
-                                .format(target_zone.get_id()), is_officer=True)
+                               'area part of it or was watching it anymore.'
+                               .format(target_zone.get_id()), is_officer=True, in_hub=None)
 
 
 def ooc_cmd_zone_watch(client: ClientManager.Client, arg: str):
@@ -11539,7 +11545,7 @@ def ooc_cmd_hub_create(client: ClientManager.Client, arg: str):
 
     client.send_ooc(f'You created hub {hub.get_numerical_id()}.')
     client.send_ooc_others(f'{client.name} [{client.id}] created hub {hub.get_numerical_id()}.',
-                           is_officer=True)
+                           is_officer=True, in_hub=None)
 
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):
     """

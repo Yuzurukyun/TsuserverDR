@@ -2864,7 +2864,7 @@ class _Trial(_TrialTrivialInherited):
             client.send_ooc_others(f'(X) Player {old_displayname} [{client.id}] has left to '
                                    f'an area not part of your trial and thus was automatically '
                                    f'removed it ({area.id}->{client.area.id}).',
-                                   pred=lambda c: c in self.get_leaders())
+                                   pred=lambda c: c in self.get_leaders(), in_hub=area.hub)
 
             nonplayers = self.get_nonplayer_users_in_areas()
             tid = self.get_id()
@@ -2876,15 +2876,15 @@ class _Trial(_TrialTrivialInherited):
                                 f'ended as it lost all its players.')
                 client.send_ooc_others(f'(X) Trial `{tid}` was automatically '
                                        f'ended as it lost all its players.',
-                                       is_zstaff_flex=True, not_to=nonplayers)
+                                       is_zstaff_flex=True, not_to=nonplayers, in_hub=area.hub)
                 client.send_ooc_others('The trial you were watching was automatically ended '
                                        'as it lost all its players.',
-                                       is_zstaff_flex=False, part_of=nonplayers)
+                                       is_zstaff_flex=False, part_of=nonplayers, in_hub=area.hub)
         else:
             client.send_ooc(f'You have left to an area not part of trial `{self.get_id()}`.')
             client.send_ooc_others(f'(X) Player {old_displayname} [{client.id}] has left to '
                                    f'an area not part of your trial ({area.id}->{client.area.id}).',
-                                   pred=lambda c: c in self.get_leaders())
+                                   pred=lambda c: c in self.get_leaders(), in_hub=area.hub)
             self.dismiss_user(client)
 
         self.manager._check_structure()

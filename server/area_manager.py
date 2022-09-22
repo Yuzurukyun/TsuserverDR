@@ -676,9 +676,11 @@ class AreaManager(AssetManager):
                         initiator.send_ooc('You feel a light switch was flipped.')
 
                 initiator.send_ooc_others('The lights were turned {}.'.format(status[new_lights]),
-                                          is_zstaff_flex=False, in_area=area if area else True, to_blind=False)
-                initiator.send_ooc_others('You hear a flicker.', is_zstaff_flex=False, in_area=area if area else True,
-                                          to_blind=True, to_deaf=False)
+                                          is_zstaff_flex=False, to_blind=False,
+                                          in_area=area if area else True)
+                initiator.send_ooc_others('You hear a flicker.',
+                                          is_zstaff_flex=False, to_blind=True, to_deaf=False,
+                                          in_area=area if area else True)
                 initiator.send_ooc_others('(X) {} [{}] turned the lights {}.'
                                           .format(initiator.displayname, initiator.id,
                                                   status[new_lights]),
@@ -822,7 +824,7 @@ class AreaManager(AssetManager):
                 client.change_visibility(True)
                 client.send_ooc_others('(X) {} [{}] revealed themselves by playing music ({}).'
                                        .format(client.displayname, client.id, client.area.id),
-                                       is_zstaff=True)
+                                       is_zstaff_flex=True)
 
         def play_current_track(self, only_for: Set[ClientManager.Client] = None,
                                force_same_restart: int = -1):
