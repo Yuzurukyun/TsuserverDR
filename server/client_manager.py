@@ -224,24 +224,50 @@ class ClientManager:
                                    {'contents': final_dargs.copy()})
             return final_dargs, to_send
 
-        def send_ooc(self, msg: str, username: str = None, allow_empty: bool = False,
-                     is_staff=None, is_officer=None, in_area=None, not_to=None, part_of=None,
-                     to_blind=None, to_deaf=None, is_zstaff=None, is_zstaff_flex=None,
-                     pred: Callable[[ClientManager.Client], bool] = None):
+        def send_ooc(
+            self,
+            msg: str,
+            username: str = None,
+            allow_empty: bool = False,
+
+            is_staff: Union[bool, None] = None,
+            is_officer: Union[bool, None] = None,
+            is_mod: Union[bool, None] = None,
+            in_hub: Union[bool, _Hub, Set[_Hub], None] = None,
+            in_area: Union[bool, AreaManager.Area, Set[AreaManager.Area], None] = None,
+            not_to: Union[Set[ClientManager.Client], None] = None,
+            part_of: Union[Set[ClientManager.Client], None] = None,
+            to_blind: Union[bool, None] = None,
+            to_deaf: Union[bool, None] = None,
+            is_zstaff: Union[bool, None] = None,
+            is_zstaff_flex: Union[bool, None] = None,
+            pred: Callable[[ClientManager.Client], bool] = None
+            ):
+            if not allow_empty and not msg:
+                return
+
             if pred is None:
                 pred = lambda x: True
             if not_to is None:
                 not_to = set()
-            if not allow_empty and not msg:
-                return
             if username is None:
                 username = self.server.config['hostname']
 
-            cond = Constants.build_cond(self, is_staff=is_staff, is_officer=is_officer,
-                                        in_area=in_area, not_to=not_to, part_of=part_of,
-                                        to_blind=to_blind, to_deaf=to_deaf,
-                                        is_zstaff=is_zstaff, is_zstaff_flex=is_zstaff_flex,
-                                        pred=pred)
+            cond = Constants.build_cond(
+                self,
+                is_staff=is_staff,
+                is_officer=is_officer,
+                is_mod=is_mod,
+                in_hub=in_hub,
+                in_area=in_area,
+                not_to=not_to,
+                part_of=part_of,
+                to_blind=to_blind,
+                to_deaf=to_deaf,
+                is_zstaff=is_zstaff,
+                is_zstaff_flex=is_zstaff_flex,
+                pred=pred
+                )
 
             if cond(self):
                 self.send_command_dict('CT', {
@@ -249,11 +275,25 @@ class ClientManager:
                     'message': msg,
                     })
 
-        def send_ooc_others(self, msg: str, username: str = None, allow_empty: bool = False,
-                            is_staff=None, is_officer=None, in_area=None,
-                            not_to: Set = None, part_of=None,
-                            to_blind=None, to_deaf=None, is_zstaff=None, is_zstaff_flex=None,
-                            pred: Callable[[ClientManager.Client], bool] = None):
+        def send_ooc_others(
+            self,
+            msg: str,
+            username: str = None,
+            allow_empty: bool = False,
+
+            is_staff: Union[bool, None] = None,
+            is_officer: Union[bool, None] = None,
+            is_mod: Union[bool, None] = None,
+            in_hub: Union[bool, _Hub, Set[_Hub], None] = None,
+            in_area: Union[bool, AreaManager.Area, Set[AreaManager.Area], None] = None,
+            not_to: Union[Set[ClientManager.Client], None] = None,
+            part_of: Union[Set[ClientManager.Client], None] = None,
+            to_blind: Union[bool, None] = None,
+            to_deaf: Union[bool, None] = None,
+            is_zstaff: Union[bool, None] = None,
+            is_zstaff_flex: Union[bool, None] = None,
+            pred: Callable[[ClientManager.Client], bool] = None
+        ):
             if not allow_empty and not msg:
                 return
 
@@ -264,39 +304,56 @@ class ClientManager:
             if username is None:
                 username = self.server.config['hostname']
 
-            cond = Constants.build_cond(self, is_staff=is_staff, is_officer=is_officer,
-                                        in_area=in_area, not_to=not_to.union({self}),
-                                        part_of=part_of, to_blind=to_blind, to_deaf=to_deaf,
-                                        is_zstaff=is_zstaff, is_zstaff_flex=is_zstaff_flex,
-                                        pred=pred)
+            cond = Constants.build_cond(
+                self,
+                is_staff=is_staff,
+                is_officer=is_officer,
+                is_mod=is_mod,
+                in_hub=in_hub,
+                in_area=in_area,
+                not_to=not_to.union({self}),
+                part_of=part_of,
+                to_blind=to_blind,
+                to_deaf=to_deaf,
+                is_zstaff=is_zstaff,
+                is_zstaff_flex=is_zstaff_flex,
+                pred=pred
+                )
+
             self.server.make_all_clients_do("send_ooc", msg, pred=cond, allow_empty=allow_empty,
                                             username=username)
 
-        def send_ic(self,
-                    params: List = None,
-                    sender: ClientManager.Client = None,
-                    bypass_text_replace: bool = False,
-                    bypass_deafened_starters: bool = False,
-                    use_last_received_sprites: bool = False,
-                    gag_replaced: bool = False,
-                    pred: Callable[[ClientManager.Client], bool] = None,
-                    not_to: Set[ClientManager.Client] = None,
-                    part_of: Set[ClientManager.Client] = None,
-                    is_staff: bool = None,
-                    is_officer: bool = None,
-                    is_zstaff: bool = None,
-                    is_zstaff_flex: bool = None,
-                    in_area: bool = None,
-                    to_blind: bool = None,
-                    to_deaf: bool = None,
-                    msg=None,
-                    folder=None,
-                    pos=None,
-                    char_id=None,
-                    ding=None,
-                    color=None,
-                    showname=None,
-                    hide_character=0):
+        def send_ic(
+            self,
+            params: List = None,
+            sender: ClientManager.Client = None,
+            bypass_text_replace: bool = False,
+            bypass_deafened_starters: bool = False,
+            use_last_received_sprites: bool = False,
+            gag_replaced: bool = False,
+
+            is_staff: Union[bool, None] = None,
+            is_officer: Union[bool, None] = None,
+            is_mod: Union[bool, None] = None,
+            in_hub: Union[bool, _Hub, Set[_Hub], None] = None,
+            in_area: Union[bool, AreaManager.Area, Set[AreaManager.Area], None] = None,
+            not_to: Union[Set[ClientManager.Client], None] = None,
+            part_of: Union[Set[ClientManager.Client], None] = None,
+            to_blind: Union[bool, None] = None,
+            to_deaf: Union[bool, None] = None,
+            is_zstaff: Union[bool, None] = None,
+            is_zstaff_flex: Union[bool, None] = None,
+            pred: Callable[[ClientManager.Client], bool] = None,
+
+            msg=None,
+            folder=None,
+            pos=None,
+            char_id=None,
+            ding=None,
+            color=None,
+            showname=None,
+            hide_character=0
+            ):
 
             # sender is the client who sent the IC message
             # self is who is receiving the IC message at this particular moment
@@ -335,11 +392,21 @@ class ClientManager:
             # Check if receiver is actually meant to receive the message. Bail out early if not.
             # FIXME: First argument should be sender, not self. Using in_area=True fails otherwise
 
-            cond = Constants.build_cond(self, is_staff=is_staff, is_officer=is_officer,
-                                        in_area=in_area, not_to=not_to,
-                                        part_of=part_of, to_blind=to_blind, to_deaf=to_deaf,
-                                        is_zstaff=is_zstaff, is_zstaff_flex=is_zstaff_flex,
-                                        pred=pred)
+            cond = Constants.build_cond(
+                self,
+                is_staff=is_staff,
+                is_officer=is_officer,
+                is_mod=is_mod,
+                in_hub=in_hub,
+                in_area=in_area,
+                not_to=not_to,
+                part_of=part_of,
+                to_blind=to_blind,
+                to_deaf=to_deaf,
+                is_zstaff=is_zstaff,
+                is_zstaff_flex=is_zstaff_flex,
+                pred=pred
+                )
             if not cond(self):
                 return
             # If self is ignoring sender, now is the moment to discard
@@ -560,57 +627,76 @@ class ClientManager:
 
             self.send_command_dict('MS', final_pargs)
 
-        def send_ic_others(self,
-                           params: List = None,
-                           sender: ClientManager.Client = None,
-                           bypass_text_replace: bool = False,
-                           bypass_deafened_starters: bool = False,
-                           use_last_received_sprites: bool = False,
-                           gag_replaced: bool = False,
-                           pred: Callable[[ClientManager.Client], bool] = None,
-                           not_to: Set[ClientManager.Client] = None,
-                           part_of: Set[ClientManager.Client] = None,
-                           is_staff: bool = None,
-                           is_officer: bool = None,
-                           is_zstaff: bool = None,
-                           is_zstaff_flex: bool = None,
-                           in_area: bool = None,
-                           to_blind: bool = None,
-                           to_deaf: bool = None,
-                           msg=None,
-                           folder=None,
-                           pos=None,
-                           char_id=None,
-                           ding=None,
-                           color=None,
-                           showname=None,
-                           hide_character=0):
+        def send_ic_others(
+            self,
+            params: List = None,
+            sender: ClientManager.Client = None,
+            bypass_text_replace: bool = False,
+            bypass_deafened_starters: bool = False,
+            use_last_received_sprites: bool = False,
+            gag_replaced: bool = False,
+
+            is_staff: Union[bool, None] = None,
+            is_officer: Union[bool, None] = None,
+            is_mod: Union[bool, None] = None,
+            in_hub: Union[bool, _Hub, Set[_Hub], None] = None,
+            in_area: Union[bool, AreaManager.Area, Set[AreaManager.Area], None] = None,
+            not_to: Union[Set[ClientManager.Client], None] = None,
+            part_of: Union[Set[ClientManager.Client], None] = None,
+            to_blind: Union[bool, None] = None,
+            to_deaf: Union[bool, None] = None,
+            is_zstaff: Union[bool, None] = None,
+            is_zstaff_flex: Union[bool, None] = None,
+            pred: Callable[[ClientManager.Client], bool] = None,
+
+            msg=None,
+            folder=None,
+            pos=None,
+            char_id=None,
+            ding=None,
+            color=None,
+            showname=None,
+            hide_character=0
+            ):
 
             if not_to is None:
                 not_to = {self}
             else:
                 not_to = not_to.union({self})
 
-            cond = Constants.build_cond(self, is_staff=is_staff, is_officer=is_officer,
-                                        in_area=in_area, not_to=not_to.union({self}),
-                                        part_of=part_of, to_blind=to_blind, to_deaf=to_deaf,
-                                        is_zstaff=is_zstaff, is_zstaff_flex=is_zstaff_flex,
-                                        pred=pred)
-            self.server.make_all_clients_do("send_ic", pred=cond,
-                                            params=params,
-                                            sender=sender,
-                                            bypass_text_replace=bypass_text_replace,
-                                            bypass_deafened_starters=bypass_deafened_starters,
-                                            use_last_received_sprites=use_last_received_sprites,
-                                            gag_replaced=gag_replaced,
-                                            msg=msg,
-                                            folder=folder,
-                                            pos=pos,
-                                            char_id=char_id,
-                                            ding=ding,
-                                            color=color,
-                                            showname=showname,
-                                            hide_character=hide_character)
+            cond = Constants.build_cond(
+                self,
+                is_staff=is_staff,
+                is_officer=is_officer,
+                is_mod=is_mod,
+                in_hub=in_hub,
+                in_area=in_area,
+                not_to=not_to.union({self}),
+                part_of=part_of,
+                to_blind=to_blind,
+                to_deaf=to_deaf,
+                is_zstaff=is_zstaff,
+                is_zstaff_flex=is_zstaff_flex,
+                pred=pred
+                )
+            self.server.make_all_clients_do(
+                "send_ic",
+                pred=cond,
+                params=params,
+                sender=sender,
+                bypass_text_replace=bypass_text_replace,
+                bypass_deafened_starters=bypass_deafened_starters,
+                use_last_received_sprites=use_last_received_sprites,
+                gag_replaced=gag_replaced,
+                msg=msg,
+                folder=folder,
+                pos=pos,
+                char_id=char_id,
+                ding=ding,
+                color=color,
+                showname=showname,
+                hide_character=hide_character
+                )
 
         def send_ic_attention(self, ding: bool = True):
             int_ding = 1 if ding else 0

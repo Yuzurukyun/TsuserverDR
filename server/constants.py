@@ -34,7 +34,7 @@ import yaml
 
 from enum import Enum
 from io import TextIOWrapper
-from typing import Awaitable, Any, Callable, Iterable, List, Set, Tuple
+from typing import Awaitable, Any, Callable, Iterable, List, Set, Tuple, Union
 
 from server.exceptions import ClientError, ServerError, ArgumentError, AreaError
 from server.exceptions import TsuserverException
@@ -505,14 +505,27 @@ class Constants():
                 raise ArgumentError(error[0].format(error[1], 's' if error[1] != 1 else ''))
 
     @staticmethod
-    def build_cond(sender: ClientManager.Client, is_staff=None, is_officer=None, is_mod=None,
-                   in_area=None, pred=None, part_of=None, not_to=None, to_blind=None, to_deaf=None,
-                   is_zstaff=None, is_zstaff_flex=None) -> Callable[[ClientManager.Client], bool]:
+    def build_cond(
+        sender: ClientManager.Client,
+        is_staff: Union[bool, None] = None,
+        is_officer: Union[bool, None] = None,
+        is_mod: Union[bool, None] = None,
+        in_hub: Union[bool, _Hub, Set[_Hub], None] = None,
+        in_area: Union[bool, AreaManager.Area, Set[AreaManager.Area], None] = None,
+        not_to: Union[Set[ClientManager.Client], None] = None,
+        part_of: Union[Set[ClientManager.Client], None] = None,
+        to_blind: Union[bool, None] = None,
+        to_deaf: Union[bool, None] = None,
+        is_zstaff: Union[bool, None] = None,
+        is_zstaff_flex: Union[bool, None] = None,
+        pred: Callable[[ClientManager.Client], bool] = None,
+        ) -> Callable[[ClientManager.Client], bool]:
         """
         Acceptable conditions:
             is_staff: If target is GM, CM or Mod
             is_officer: If target is CM or Mod
             is_mod: If target is Mod
+            in_hub: If target is in client's hub, or some particular hub
             in_area: If target is in client's area, or some particular area
             part_of: If target is an element of this set
             not_to: If target is not in a set of clients that are filtered out
@@ -554,6 +567,19 @@ class Constants():
             pass
         else:
             raise KeyError('Invalid argument for build_cond is_mod: {}'.format(is_mod))
+
+        if in_hub is True:
+            conditions.append(lambda c: c.hub == sender.hub)
+        elif in_hub is False:
+            conditions.append(lambda c: c.area != sender.hub)
+        elif isinstance(in_hub, type(sender.hub)):  # Lazy way of finding if in_hub is hub obj
+            conditions.append(lambda c: c.hub == in_hub)
+        elif isinstance(in_hub, set):
+            conditions.append(lambda c: c.hub in in_hub)
+        elif in_hub is None:
+            pass
+        else:
+            raise KeyError('Invalid argument for build_cond in_hub: {}'.format(in_hub))
 
         if in_area is True:
             conditions.append(lambda c: c.area == sender.area)
