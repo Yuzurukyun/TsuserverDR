@@ -1560,7 +1560,10 @@ class ClientManager:
         def send_limited_hub_list(self):
             msg = '=== Hubs ==='
             for i, hub in self.hub.manager.get_managee_numerical_ids_to_managees().items():
-                msg += '\r\nHub {}: {}'.format(i, hub.get_name())
+                name = hub.get_name()
+                if not name:
+                    name = hub.get_id()
+                msg += '\r\nHub {}: {}'.format(i, name)
                 if self.hub == hub:
                     msg += ' [*]'
             self.send_ooc(msg)

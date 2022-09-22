@@ -11547,6 +11547,25 @@ def ooc_cmd_hub_create(client: ClientManager.Client, arg: str):
     client.send_ooc_others(f'{client.name} [{client.id}] created hub {hub.get_numerical_id()}.',
                            is_officer=True, in_hub=None)
 
+def ooc_cmd_hub_rename(client: ClientManager.Client, arg: str):
+    Constants.assert_command(client, arg, is_staff=True)
+
+    hub = client.hub
+    hub.set_name(arg)
+
+    if arg:
+        client.send_ooc('You have cleared the name of your hub.')
+        client.send_ooc_others(f'{client.displayname} [{client.id}] cleared the name of your hub '
+                               f'({client.area.id}).', is_zstaff_flex=True)
+    else:
+        client.send_ooc(f'You have renamed your hub to `{arg}`.')
+        client.send_ooc_others(f'{client.displayname} [{client.id}] renamed your hub to `{arg}` '
+                               f'({client.area.id}).', is_zstaff_flex=True)
+
+    for target in client.server.get_clients():
+        target.send_music_list_view()
+
+
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):
     """
     VERY DANGEROUS. SHOULD ONLY BE ENABLED FOR DEBUGGING.
