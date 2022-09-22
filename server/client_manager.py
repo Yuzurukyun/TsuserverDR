@@ -991,6 +991,9 @@ class ClientManager:
                 ignore_notifications=ignore_notifications, change_to=change_to,
                 more_unavail_chars=more_unavail_chars, from_party=from_party)
 
+            self.hub = hub
+            self.send_music_list_view()
+
         def change_area(self, area: AreaManager.Area, override_all: bool = False,
                         override_passages: bool = False, override_effects: bool = False,
                         ignore_bleeding: bool = False, ignore_followers: bool = False,

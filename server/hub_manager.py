@@ -1901,7 +1901,7 @@ class _Hub(_HubTrivialInherited):
         # Inconsistent character list, so change to spectator those who lost their character.
         new_chars = {char: num for (num, char) in enumerate(characters)}
 
-        for client in self.server.get_clients():
+        for client in self.get_players():
             target_char_id = -1
             old_char_name = client.get_char_name()
 
@@ -1999,7 +1999,7 @@ class _HubManagerTrivialInherited(GameWithAreasManager):
         timer_limit: Union[int, None] = None,
         areas: Set[AreaManager.Area] = None,
         area_concurrent_limit: Union[int, None] = 1,  # Overriden from parent
-        autoadd_on_client_enter: bool = False,
+        autoadd_on_client_enter: bool = True,  # Overiden from parent
         autoadd_on_creation_existing_users: bool = False,
         **kwargs: Any,
         ) -> _Hub:
@@ -2672,12 +2672,12 @@ class HubManager(_HubManagerTrivialInherited):
         prepared_list = list()
         prepared_list.append(Constants.get_first_area_list_item('AREA', client.hub, client.area))
 
-        for hub in self.get_managees():
+        for (num_id, hub) in self.get_managee_numerical_ids_to_managees().items():
             name = hub.get_name()
             if not name:
                 name = hub.get_id()
 
-            prepared_list.append(f'{hub.get_numerical_id()}-{name}')
+            prepared_list.append(f'{num_id}-{name}')
 
         return prepared_list
 

@@ -94,9 +94,7 @@ class TsuserverDR:
 
         self.client_manager: ClientManager = client_manager(self)
         self.hub_manager = HubManager(self)
-        default_hub = self.hub_manager.new_managee(
-            autoadd_on_client_enter=True,
-        )
+        default_hub = self.hub_manager.new_managee()
         default_hub.set_name('Main')
 
         self.ipid_list = {}

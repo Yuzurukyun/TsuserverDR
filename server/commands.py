@@ -11529,6 +11529,18 @@ def ooc_cmd_hub(client: ClientManager.Client, arg: str):
 
         client.change_hub(hub, from_party=(client.party is not None))
 
+def ooc_cmd_hub_create(client: ClientManager.Client, arg: str):
+    Constants.assert_command(client, arg, is_officer=True, parameters='=0')
+
+    hub = client.hub.manager.new_managee()
+
+    for target in client.server.get_clients():
+        target.send_music_list_view()
+
+    client.send_ooc(f'You created hub {hub.get_numerical_id()}.')
+    client.send_ooc_others(f'{client.name} [{client.id}] created hub {hub.get_numerical_id()}.',
+                           is_officer=True)
+
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):
     """
     VERY DANGEROUS. SHOULD ONLY BE ENABLED FOR DEBUGGING.
