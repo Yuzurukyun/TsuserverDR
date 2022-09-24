@@ -1933,6 +1933,15 @@ class _Hub(_HubTrivialInherited):
         music = self.music_manager.load_file(music_list_file)
         return music.copy()
 
+    def get_info(self) -> str:
+        output = f'== Hub {self.get_numerical_id()} =='
+        output += f'\r\n*GMs: {len(self.get_leaders())}. NonGMs: {len(self.get_regulars())}'
+        output += f'\r\n*Area list: {self.area_manager.get_source_file()}'
+        output += f'\r\n*Background list: {self.background_manager.get_source_file()}'
+        output += f'\r\n*Character list: {self.character_manager.get_source_file()}'
+        output += f'\r\n*DJ list: {self.music_manager.get_source_file()}'
+        return output
+
     def _on_area_client_left_final(self, area: AreaManager.Area, client: ClientManager.Client = None, old_displayname: str = None, ignore_bleeding: bool = False, ignore_autopass: bool = False):
         return super()._on_area_client_left_final(area, client, old_displayname, ignore_bleeding, ignore_autopass)
 
@@ -2214,14 +2223,14 @@ class _HubManagerTrivialInherited(GameWithAreasManager):
         except GameWithAreasError.ManagerInvalidGameIDError:
             raise HubError.ManagerInvalidGameIDError
 
-    def get_managee_by_numerical_id(self, managee_numerical_id: int) -> _Hub:
+    def get_managee_by_numerical_id(self, managee_numerical_id: Union[str, int]) -> _Hub:
         """
         If `managee_numerical_id` is the numerical ID of a hub managed by this manager,
         return the hub.
 
         Parameters
         ----------
-        managee_numerical_id : int
+        managee_numerical_id : Union[str, int]
             Numerical ID of the hub this manager manages.
 
         Returns

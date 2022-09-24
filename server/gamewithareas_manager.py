@@ -2425,14 +2425,14 @@ class _GameWithAreasManagerTrivialInherited(GameManager):
         except GameError.ManagerInvalidGameIDError:
             raise GameWithAreasError.ManagerInvalidGameIDError
 
-    def get_managee_by_numerical_id(self, managee_numerical_id: int) -> _GameWithAreas:
+    def get_managee_by_numerical_id(self, managee_numerical_id: Union[str, int]) -> _GameWithAreas:
         """
         If `managee_numerical_id` is the numerical ID of a game with areas managed by this manager,
         return the game with areas.
 
         Parameters
         ----------
-        managee_numerical_id : int
+        managee_numerical_id : Union[str, int]
             Numerical ID of the game with areas this manager manages.
 
         Returns

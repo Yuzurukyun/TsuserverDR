@@ -11565,6 +11565,23 @@ def ooc_cmd_hub_rename(client: ClientManager.Client, arg: str):
     for target in client.server.get_clients():
         target.send_music_list_view()
 
+def ooc_cmd_hub_info(client: ClientManager.Client, arg: str):
+    try:
+        Constants.assert_command(client, arg, is_officer=True, parameters='<2')
+    except ClientError.UnauthorizedError:
+        Constants.assert_command(client, arg, is_staff=True, parameters='=0')
+
+    if not arg:
+        arg = client.hub.get_numerical_id()
+
+    try:
+        hub = client.hub.manager.get_managee_by_numerical_id(arg)
+    except HubError.ManagerInvalidGameIDError:
+        raise ClientError(f'Hub {arg} not found.')
+
+    info = hub.get_info()
+    client.send_ooc(info)
+
 
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):
     """

@@ -2247,14 +2247,14 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
         except PlayerGroupError.ManagerInvalidGroupIDError:
             raise GameError.ManagerInvalidGameIDError
 
-    def get_managee_by_numerical_id(self, managee_numerical_id: int) -> _Game:
+    def get_managee_by_numerical_id(self, managee_numerical_id: Union[str, int]) -> _Game:
         """
         If `managee_numerical_id` is the numerical ID of a game managed by this manager,
         return the game.
 
         Parameters
         ----------
-        managee_numerical_id : int
+        managee_numerical_id : Union[str, int]
             Numerical ID of the game this manager manages.
 
         Returns

@@ -3527,14 +3527,14 @@ class _TrialManagerTrivialInherited(HubbedGameManager):
         except HubbedGameError.ManagerInvalidGameIDError:
             raise TrialError.ManagerInvalidGameIDError
 
-    def get_managee_by_numerical_id(self, managee_numerical_id: int) -> _Trial:
+    def get_managee_by_numerical_id(self, managee_numerical_id: Union[str, int]) -> _Trial:
         """
         If `managee_numerical_id` is the numerical ID of a trial managed by this manager,
         return the trial.
 
         Parameters
         ----------
-        managee_numerical_id : int
+        managee_numerical_id : Union[str, int]
             Numerical ID of the trial this manager manages.
 
         Returns

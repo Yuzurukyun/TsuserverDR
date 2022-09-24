@@ -24,6 +24,7 @@ Module that contains the PlayerGroupManager class and the _PlayerGroup subclass.
 from __future__ import annotations
 
 import random
+from re import M
 import typing
 
 from typing import Callable, Dict, Tuple, Type, Union, Set
@@ -1499,14 +1500,14 @@ class PlayerGroupManager:
         except KeyError:
             raise PlayerGroupError.ManagerInvalidGroupIDError
 
-    def get_managee_by_numerical_id(self, managee_numerical_id: int) -> _PlayerGroup:
+    def get_managee_by_numerical_id(self, managee_numerical_id: Union[str, int]) -> _PlayerGroup:
         """
         If `managee_numerical_id` is the numerical ID of a player group managed by this manager,
         return the player group.
 
         Parameters
         ----------
-        managee_numerical_id : int
+        managee_numerical_id : Union[str, int]
             Numerical ID of the player group this manager manages.
 
         Returns
@@ -1521,6 +1522,11 @@ class PlayerGroupManager:
             this manager manages.
 
         """
+
+        try:
+            managee_numerical_id = int(managee_numerical_id)
+        except ValueError:
+            raise PlayerGroupError.ManagerInvalidGroupIDError
 
         for group in self._id_to_group.values():
             if group.get_numerical_id() == managee_numerical_id:
