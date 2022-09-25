@@ -2141,9 +2141,10 @@ class _HubbedGame(_HubbedGameTrivialInherited):
 
         # 1.
         for area in self.get_areas():
-            err = (f'For hubbed game {self}, expected all its areas belong to hub {self.hub}, '
-                   f'found area {area} belonged to hub {area.hub} instead')
-            assert area.hub == self.hub, err
+            assert area.hub == self.hub, (
+                f'For hubbed game {self}, expected all its areas belong to hub {self.hub}, '
+                f'found area {area} belonged to hub {area.hub} instead'
+                )
 
         # 2.
         super()._check_structure()

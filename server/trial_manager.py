@@ -3167,83 +3167,96 @@ class _Trial(_TrialTrivialInherited):
 
         """
 
+        _id = self.get_id()
+
         # 1.
         for game in self.get_minigames():
             for player in game.get_players():
-                err = (f'For trial {self}, expected that player {player} of its minigame '
-                       f'{game} was a player of the trial, found that was not the case.')
-                assert player in self.get_players(), err
+                assert player in self.get_players(), (
+                    f'For trial {_id}, expected that player {player} of its minigame '
+                    f'{game} was a player of the trial, found that was not the case. || {self}'
+                    )
 
         # 2.
         for game in self.get_minigames():
             for area in game.get_areas():
-                err = (f'For trial {self}, expected that area {area} of its minigame '
-                       f'{game} was an area of the trial, found that was not the case.')
-                assert area in self.get_areas(), err
+                assert area in self.get_areas(), (
+                    f'For trial {_id}, expected that area {area} of its minigame '
+                    f'{game} was an area of the trial, found that was not the case. || {self}'
+                    )
 
         # 3.
         for player in self.get_players():
-            err = (f'For trial {self}, expected that player {player} of the trial appeared in the '
-                   f'player to influence map of the trial {self._player_to_influence}, found that '
-                   f'was not the case.')
-            assert player.id in self._player_to_influence, err
+            assert player.id in self._player_to_influence, (
+                f'For trial {_id}, expected that player {player} of the trial appeared in the '
+                f'player to influence map of the trial {self._player_to_influence}, found that was '
+                f'not the case. || {self}'
+                )
 
-            err = (f'For trial {self}, expected that player {player} of the trial appeared in the '
-                   f'player to focus map of the trial {self._player_to_focus}, found that '
-                   f'was not the case.')
-            assert player.id in self._player_to_focus, err
+            assert player.id in self._player_to_focus, (
+                f'For trial {_id}, expected that player {player} of the trial appeared in the '
+                f'player to focus map of the trial {self._player_to_focus}, found that was '
+                f'not the case. || {self}'
+                )
 
         player_ids = {player.id for player in self.get_players()}
         for player_id in self._player_to_influence:
-            err = (f'For trial {self}, expected that player with ID {player_id} that appeared '
-                   f'in the player to influence map of the trial {self._player_to_influence} was '
-                   f'a player of the trial, found that was not the case.')
-            assert player_id in player_ids, err
+            assert player_id in player_ids, (
+                f'For trial {_id}, expected that player with ID {player_id} that appeared '
+                f'in the player to influence map of the trial {self._player_to_influence} was '
+                f'a player of the trial, found that was not the case. || {self}'
+                )
 
         for player_id in self._player_to_focus:
-            err = (f'For trial {self}, expected that player with ID {player_id} that appeared '
-                   f'in the player to focus map of the trial {self._player_to_focus} was '
-                   f'a player of the trial, found that was not the case.')
-            assert player_id in player_ids, err
+            assert player_id in player_ids, (
+                f'For trial {_id}, expected that player with ID {player_id} that appeared '
+                f'in the player to focus map of the trial {self._player_to_focus} was '
+                f'a player of the trial, found that was not the case. || {self}'
+                )
 
         # 4.
         for (player_id, influences) in self._player_to_influence.items():
-            err = (f'For trial {self}, expected that the player with ID {player_id} had a '
-                   f'3-tuple of current influence, min influence and max influence associated '
-                   f'to it in the player to influence map, found it was {influences} instead.')
-            assert isinstance(influences, tuple) and len(influences) == 3, err
+            assert isinstance(influences, tuple) and len(influences) == 3, (
+                f'For trial {_id}, expected that the player with ID {player_id} had a '
+                f'3-tuple of current influence, min influence and max influence associated '
+                f'to it in the player to influence map, found it was {influences} instead. '
+                f'|| {self}'
+                )
 
             influence, min_influence, max_influence = self._player_to_influence[player_id]
-            err = (f'For trial {self}, expected that the player with ID {player_id} had a '
-                   f'3-tuple of floats associated to it in the player to influence map, found it '
-                   f'was {influences} instead.')
-
             all_numbers = [isinstance(value, (int, float)) for value in influences]
-            assert all(all_numbers), err
+            assert all(all_numbers), (
+                f'For trial {_id}, expected that the player with ID {player_id} had a '
+                f'3-tuple of floats associated to it in the player to influence map, found it '
+                f'was {influences} instead. || {self}'
+                )
 
-            err = (f'For trial {self}, expected that player with ID {player_id} had an influence '
-                   f'value between {min_influence} and {max_influence} inclusive, '
-                   f'found it was {influence} instead.')
-            assert min_influence <= influence <= max_influence, err
+            assert min_influence <= influence <= max_influence, (
+                f'For trial {_id}, expected that player with ID {player_id} had an influence '
+                f'value between {min_influence} and {max_influence} inclusive, '
+                f'found it was {influence} instead. || {self}'
+                )
 
         for (player_id, focuses) in self._player_to_focus.items():
-            err = (f'For trial {self}, expected that the player with ID {player_id} had a '
-                   f'3-tuple of current focus, min focus and max focus associated '
-                   f'to it in the player to focus map, found it was {focuses} instead.')
-            assert isinstance(focuses, tuple) and len(focuses) == 3, err
+            assert isinstance(focuses, tuple) and len(focuses) == 3, (
+                f'For trial {_id}, expected that the player with ID {player_id} had a '
+                f'3-tuple of current focus, min focus and max focus associated '
+                f'to it in the player to focus map, found it was {focuses} instead. || {self}'
+                )
 
             focus, min_focus, max_focus = self._player_to_focus[player_id]
-            err = (f'For trial {self}, expected that the player with ID {player_id} had a '
-                   f'3-tuple of floats associated to it in the player to focus map, found it '
-                   f'was {focuses} instead.')
-
             all_numbers = [isinstance(value, (int, float)) for value in focuses]
-            assert all(all_numbers), err
+            assert all(all_numbers), (
+                f'For trial {_id}, expected that the player with ID {player_id} had a '
+                f'3-tuple of floats associated to it in the player to focus map, found it '
+                f'was {focuses} instead. || {self}'
+                )
 
-            err = (f'For trial {self}, expected that player with ID {player_id} had an focus '
-                   f'value between {min_focus} and {max_focus} inclusive, '
-                   f'found it was {focus} instead.')
-            assert min_focus <= focus <= max_focus, err
+            assert min_focus <= focus <= max_focus, (
+                f'For trial {self}, expected that player with ID {player_id} had an focus '
+                f'value between {min_focus} and {max_focus} inclusive, '
+                f'found it was {focus} instead. || {self}'
+                )
 
         # 5.
         super()._check_structure()

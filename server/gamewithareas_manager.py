@@ -2150,22 +2150,25 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
 
         # 1.
         for player in self.get_players():
-            err = (f'For game with areas {self}, expected that its player {player} was in an area '
-                   f'part of the game with areas, found they were in area {player.area} instead.')
-            assert player.area in self._areas, err
+            assert player.area in self._areas, (
+                f'For game with areas {self}, expected that its player {player} was in an part of '
+                f'the game with areas, found they were in area {player.area} instead.'
+                )
 
         # 2.
-        if self._autoadd_on_client_enter and self.requires_invitations():
-            err = (f'For game with areas {self}, expected that it did not simultaneously require '
-                   f'invitations for users to join while mandating users be automatically added '
-                   f'if they enter an area of the game with areas, found it did.')
-            raise AssertionError(err)
+        if self.requires_invitations():
+            assert self._autoadd_on_client_enter, (
+                f'For game with areas {self}, expected that it did not simultaneously require '
+                f'invitations for users to join while mandating users be automatically added '
+                f'if they enter an area of the game with areas, found it did.'
+                )
 
         # 3.
         if self._require_areas and self._ever_had_areas:
-            err = (f'For game with areas {self}, expected that it was scheduled for '
-                   f'deletion after losing all its areas, but found it was not.')
-            assert self._areas or self.is_unmanaged(), err
+            assert self._areas or self.is_unmanaged(), (
+                f'For game with areas {self}, expected that it was scheduled for '
+                f'deletion after losing all its areas, but found it was not.'
+                )
 
         # 4.
         super()._check_structure()
@@ -2986,12 +2989,13 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
 
                 if limit is None:
                     continue
-                err = (f'For game with areas manager {self}, expected that area {area} in game '
-                       f'with areas {game} belonged to at most the concurrent area membership '
-                       f'limit of that game with areas of {limit} game{"s" if limit != 1 else ""} '
-                       f'with areas, found it belonged to {membership} '
-                       f'game{"s" if membership != 1 else ""} with areas. || {self}')
-                assert membership <= limit, err
+                assert membership <= limit, (
+                    f'For game with areas manager {self}, expected that area {area} in game with '
+                    f'areas {game} belonged to at most the concurrent area membership limit of '
+                    f'that game with areas of {limit} game {"s" if limit != 1 else ""} with areas, '
+                    f'found it belonged to {membership} game{"s" if membership != 1 else ""} with '
+                    f'areas. || {self}'
+                    )
 
         # Last
         super()._check_structure()

@@ -2116,7 +2116,7 @@ class _HubManagerTrivialInherited(GameWithAreasManager):
         area_concurrent_limit: Union[int, None] = 1,  # Overriden from parent
         autoadd_on_client_enter: bool = True,  # Overiden from parent
         autoadd_on_creation_existing_users: bool = False,
-        require_areas: bool = True,
+        require_areas: bool = False,  # Overriden from parent
         **kwargs: Any,
         ) -> _Hub:
         """
@@ -2610,7 +2610,7 @@ class HubManager(_HubManagerTrivialInherited):
         area_concurrent_limit: Union[int, None] = 1,  # Overriden from parent
         autoadd_on_client_enter: bool = True,  # Overriden from parent
         autoadd_on_creation_existing_users: bool = False,
-        require_areas: bool = True,
+        require_areas: bool = False,  # Overriden from parent
         **kwargs: Any,
         ) -> _Hub:
         """
@@ -2832,11 +2832,12 @@ class HubManager(_HubManagerTrivialInherited):
 
         # 1.
         if not hubs and self._ever_had_hubs and not self.server.shutting_down:
-            err = (f'For hub manager {self}, expected that it had no hubs managed only if it had '
-                   f'never had any hubs or the server was shutting down, found it managed no hubs '
-                   f'after it had hubs {hubs} beforehand and the server is currently not shutting '
-                   f'down.')
-            raise AssertionError(err)
+            assert not self._ever_had_hubs, (
+                f'For hub manager {self}, expected that it had no hubs managed only if it had '
+                f'never had any hubs or the server was shutting down, found it managed no hubs '
+                f'after it had hubs {hubs} beforehand and the server is currently not shutting '
+                f'down.'
+                )
 
         # 2.
         super()._check_structure()
