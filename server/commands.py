@@ -11583,6 +11583,32 @@ def ooc_cmd_hub_info(client: ClientManager.Client, arg: str):
     client.send_ooc(info)
 
 
+def ooc_cmd_hub_end(client: ClientManager.Client, arg: str):
+    try:
+        Constants.assert_command(client, arg, is_officer=True, parameters='<2')
+    except ClientError.UnauthorizedError:
+        Constants.assert_command(client, arg, is_staff=True, parameters='=0')
+
+    if not arg:
+        arg = client.hub.get_numerical_id()
+
+    try:
+        hub = client.hub.manager.get_managee_by_numerical_id(arg)
+    except HubError.ManagerInvalidGameIDError:
+        raise ClientError(f'Hub {arg} not found.')
+
+    try:
+        client.hub.manager.delete_managee(hub)
+    except HubError.ManagerCannotManageeNoManagees:
+        raise ClientError(f'You cannot delete a hub when it is the only one of the server.')
+
+    for target in client.server.get_clients():
+        target.send_music_list_view()
+
+    client.send_ooc(f'You deleted hub {hub.get_numerical_id()}.')
+    client.send_ooc_others(f'{client.name} [{client.id}] deleted hub {hub.get_numerical_id()}.',
+                           is_officer=True, in_hub=None)
+
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):
     """
     VERY DANGEROUS. SHOULD ONLY BE ENABLED FOR DEBUGGING.

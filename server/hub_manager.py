@@ -29,7 +29,7 @@ from server.area_manager import AreaManager
 from server.background_manager import BackgroundManager
 from server.character_manager import CharacterManager
 from server.constants import Constants
-from server.exceptions import HubError, GameWithAreasError
+from server.exceptions import AreaError, HubError, GameWithAreasError
 from server.gamewithareas_manager import _GameWithAreas, GameWithAreasManager
 from server.music_manager import MusicManager
 
@@ -1329,8 +1329,6 @@ class _HubTrivialInherited(_GameWithAreas):
         HubError.GameIsUnmanagedError
             If the hub was scheduled for deletion and thus does not accept any mutator
             public method calls.
-        HubError.AreaDisallowsBulletsError
-            If the area to add disallows bullets.
         HubError.AreaAlreadyInGameError
             If the area is already part of the hub.
         HubError.AreaHitGameConcurrentLimitError.
@@ -1342,6 +1340,40 @@ class _HubTrivialInherited(_GameWithAreas):
 
         self.unchecked_add_area(area)
         self.manager._check_structure()
+
+    def unchecked_add_area(self, area: AreaManager.Area):
+        """
+        Add an area to this hub's set of areas.
+
+        This method does not assert structural integrity.
+
+        Parameters
+        ----------
+        area : AreaManager.Area
+            Area to add.
+
+        Raises
+        ------
+        HubError.GameIsUnmanagedError
+            If the hub was scheduled for deletion and thus does not accept any mutator
+            public method calls.
+        HubError.AreaAlreadyInGameError
+            If the area is already part of the hub.
+        HubError.AreaHitGameConcurrentLimitError.
+            If `area` has reached the concurrent area membership limit of any of the games with
+            areas it belongs to managed by this manager, or by virtue of adding this area it will
+            violate this hub's concurrent area membership limit.
+
+        """
+
+        try:
+            super().unchecked_add_area(area)
+        except GameWithAreasError.GameIsUnmanagedError:
+            raise HubError.GameIsUnmanagedError
+        except GameWithAreasError.AreaAlreadyInGameError:
+            raise HubError.AreaAlreadyInGameError
+        except GameWithAreasError.AreaHitGameConcurrentLimitError:
+            raise HubError.AreaHitGameConcurrentLimitError
 
     def remove_area(self, area: AreaManager.Area):
         """
@@ -1509,6 +1541,12 @@ class _HubTrivialInherited(_GameWithAreas):
         its players and unsubscribe it from updates of its former players.
 
         This method is reentrant (it will do nothing though).
+
+        Raises
+        ------
+        HubError.ManagerCannotManageeNoManagees
+            If the manager is currently only managing this managee and the server is not shutting
+            down.
 
         Returns
         -------
@@ -1818,6 +1856,8 @@ class _Hub(_HubTrivialInherited):
         """
 
         areas = self.area_manager.load_file(source_file)
+        for area in areas:
+            self.add_area(area)
         return areas.copy()
 
     def load_backgrounds(self, source_file: str = 'config/backgrounds.yaml') -> List[str]:
@@ -1920,7 +1960,7 @@ class _Hub(_HubTrivialInherited):
                 client.send_command_dict('SC', {
                     'chars_ao2_list': characters,
                     })
-                client.change_character(target_char_id, force=True)
+                client.change_character(target_char_id, force=True, old_char=old_char_name)
             else:
                 client.send_ooc('After a change in the character list, your client character list '
                                 'is no longer synchronized. Please rejoin the server.')
@@ -1941,6 +1981,54 @@ class _Hub(_HubTrivialInherited):
         output += f'\r\n*Character list: {self.character_manager.get_source_file()}'
         output += f'\r\n*DJ list: {self.music_manager.get_source_file()}'
         return output
+
+    def unchecked_destroy(self):
+        """
+        Mark this hub as destroyed and notify its manager so that it is deleted.
+        If the hub is already destroyed, this function does nothing.
+
+        This method is reentrant (it will do nothing though).
+
+        Raises
+        ------
+        HubError.ManagerCannotManageeNoManagees
+            If the manager is currently only managing this managee and the server is not shutting
+            down.
+
+        Returns
+        -------
+        None.
+
+        """
+
+        players = self.get_players()
+        areas = self.get_areas()
+
+        super().unchecked_destroy()
+
+        # Move to default area of default hub
+        new_hub = self.manager.get_default_managee()
+        new_area = new_hub.area_manager.default_area()
+
+        for player in players:
+            if new_area.is_char_available(player.char_id):
+                new_char_id = player.char_id
+            else:
+                try:
+                    new_char_id = new_area.get_rand_avail_char_id()
+                except AreaError:
+                    new_char_id = -1
+
+            player.send_ooc(f'Your hub no longer exists. Moving you to the default area '
+                            f'{new_area.name} of hub {new_hub.get_numerical_id()}.')
+            player.change_hub(new_hub, ignore_checks=True, change_to=new_char_id,
+                              ignore_notifications=True)
+
+        # Move parties (independently)
+        for area in areas:
+            for party in area.parties.copy():
+                party.area = new_area
+                new_area.add_party(party)
 
     def _on_area_client_left_final(self, area: AreaManager.Area, client: ClientManager.Client = None, old_displayname: str = None, ignore_bleeding: bool = False, ignore_autopass: bool = False):
         return super()._on_area_client_left_final(area, client, old_displayname, ignore_bleeding, ignore_autopass)
@@ -2129,42 +2217,15 @@ class _HubManagerTrivialInherited(GameWithAreasManager):
         ------
         HubError.ManagerDoesNotManageGameError
             If the manager does not manage the target hub.
+        HubError.ManagerCannotManageeNoManagees
+            If the manager is currently only managing the managee that is to be destroyed and the
+            server is not shutting down.
 
         """
 
         game_id, game_players = self.unchecked_delete_managee(managee)
         self._check_structure()
         return game_id, game_players
-
-    def unchecked_delete_managee(
-        self,
-        managee: _Hub
-        ) -> Tuple[str, Set[ClientManager.Client]]:
-        """
-        Delete a hub managed by this manager, so all its players no longer belong to
-        this hub.
-
-        Parameters
-        ----------
-        managee : _Hub
-            The hub to delete.
-
-        Returns
-        -------
-        Tuple[str, Set[ClientManager.Client]]
-            The ID and players of the hub that was deleted.
-
-        Raises
-        ------
-        HubError.ManagerDoesNotManageGameError
-            If the manager does not manage the target hub.
-
-        """
-
-        try:
-            return super().unchecked_delete_managee(managee)
-        except GameWithAreasError.ManagerDoesNotManageGameError:
-            raise HubError.ManagerDoesNotManageGameError
 
     def manages_managee(self, game: _Hub):
         """
@@ -2523,7 +2584,7 @@ class HubManager(_HubManagerTrivialInherited):
         timer_limit: Union[int, None] = None,
         areas: Set[AreaManager.Area] = None,
         area_concurrent_limit: Union[int, None] = 1,  # Overriden from parent
-        autoadd_on_client_enter: bool = False,
+        autoadd_on_client_enter: bool = True,  # Overriden from parent
         autoadd_on_creation_existing_users: bool = False,
         **kwargs: Any,
         ) -> _Hub:
@@ -2617,6 +2678,42 @@ class HubManager(_HubManagerTrivialInherited):
         self._ever_had_hubs = True
         return hub
 
+    def unchecked_delete_managee(
+        self,
+        managee: _Hub
+        ) -> Tuple[str, Set[ClientManager.Client]]:
+        """
+        Delete a hub managed by this manager, so all its players no longer belong to
+        this hub.
+
+        Parameters
+        ----------
+        managee : _Hub
+            The hub to delete.
+
+        Returns
+        -------
+        Tuple[str, Set[ClientManager.Client]]
+            The ID and players of the hub that was deleted.
+
+        Raises
+        ------
+        HubError.ManagerDoesNotManageGameError
+            If the manager does not manage the target hub.
+        HubError.ManagerCannotManageeNoManagees
+            If the manager is currently only managing the managee that is to be destroyed and the
+            server is not shutting down.
+
+        """
+
+        if self.get_managees() == {managee}:
+            raise HubError.ManagerCannotManageeNoManagees
+
+        try:
+            return super().unchecked_delete_managee(managee)
+        except GameWithAreasError.ManagerDoesNotManageGameError:
+            raise HubError.ManagerDoesNotManageGameError
+
     def get_managee_of_user(self, user: ClientManager.Client) -> _Hub:
         """
         Get the hub the user is in.
@@ -2704,10 +2801,11 @@ class HubManager(_HubManagerTrivialInherited):
         hubs = self.get_managees()
 
         # 1.
-        if not hubs and self._ever_had_hubs:
+        if not hubs and self._ever_had_hubs and not self.server.shutting_down:
             err = (f'For hub manager {self}, expected that it had no hubs managed only if it had '
-                   f'never had any hubs, found it managed no hubs after it had hubs {hubs} '
-                   f'beforehand.')
+                   f'never had any hubs or the server was shutting down, found it managed no hubs '
+                   f'after it had hubs {hubs} beforehand and the server is currently not shutting '
+                   f'down.')
             raise AssertionError(err)
 
         # 2.
