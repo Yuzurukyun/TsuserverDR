@@ -78,15 +78,15 @@ class CharacterManager(AssetManager):
 
     def get_loader(self) -> Callable[[str, ], str]:
         """
-        Return `self.server.load_characters`.
+        Return `self.hub.load_characters`.
 
         Returns
         -------
         Callable[[str, ], str]
-            `self.server.load_characters`.
+            `self.hub.load_characters`.
         """
 
-        return self.server.load_characters
+        return self.hub.load_characters
 
     def get_characters(self) -> List[str]:
         """

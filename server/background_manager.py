@@ -83,15 +83,15 @@ class BackgroundManager(AssetManager):
 
     def get_loader(self) -> Callable[[str, ], str]:
         """
-        Return `self.server.load_backgrounds`.
+        Return `self.hub.load_backgrounds`.
 
         Returns
         -------
         Callable[[str, ], str]
-            `self.server.load_backgrounds`.
+            `self.hub.load_backgrounds`.
         """
 
-        return self.server.load_backgrounds
+        return self.hub.load_backgrounds
 
     def get_backgrounds(self) -> List[str]:
         """

@@ -880,6 +880,7 @@ class ClientManager:
 
         def change_character(self, char_id: int, force: bool = False,
                              target_area: AreaManager.Area = None,
+                             old_char: str = None,
                              announce_zwatch: bool = True):
             # Do not run this code if player is still doing server handshake
             if self.char_id is None:
@@ -890,8 +891,9 @@ class ClientManager:
             # area if I just did self.area
             if target_area is None:
                 target_area = self.area
-
-            old_char, old_char_id = self.get_char_name(), self.char_id
+            if old_char is None:
+                old_char = self.get_char_name()
+            old_char_id = self.char_id
 
             if not target_area.hub.character_manager.is_valid_character_id(char_id):
                 raise ClientError('Invalid character ID.')
@@ -1061,24 +1063,59 @@ class ClientManager:
                     pass
 
         def change_hub(self, hub: _Hub, override_all: bool = False,
-                       override_effects: bool = False,
-                       ignore_bleeding: bool = False, ignore_followers: bool = False,
-                       ignore_autopass: bool = False,
-                       ignore_checks: bool = False, ignore_notifications: bool = False,
-                       more_unavail_chars: Set[int] = None,
-                       change_to: int = None, from_party: bool = False):
+                    override_effects: bool = False,
+                    ignore_bleeding: bool = False, ignore_followers: bool = False,
+                    ignore_autopass: bool = False,
+                    ignore_checks: bool = False, ignore_notifications: bool = False,
+                    more_unavail_chars: Set[int] = None,
+                    change_to: int = None, from_party: bool = False):
             if hub == self.hub:
                 raise ClientError('User is already in target hub.')
+
+            # Refresh current character, and change to spectator if unavailable
+            old_characters = self.hub.character_manager.get_characters()
+            new_characters = hub.character_manager.get_characters()
+            new_chars = {char: num for (num, char) in enumerate(new_characters)}
+            target_char_id = -1
+            old_char_name = self.get_char_name()
+
+            if change_to is not None and change_to != self.char_id:
+                target_char_name = self.get_char_name(char_id=change_to)
+            else:
+                target_char_name = old_char_name
+
+            if not self.has_character():
+                # Do nothing for spectators
+                pass
+            elif target_char_name not in new_chars:
+                # Character no longer exists, so switch to spectator
+                self.send_ooc(f'After a change in the character list, your character is no '
+                              f'longer available. Switching to '
+                              f'{self.server.config["spectator_name"]}.')
+            else:
+                target_char_id = new_chars[target_char_name]
+
             self.change_area(
                 hub.area_manager.default_area(),
                 override_all=override_all, override_passages=True,  # Overriden
                 override_effects=override_effects, ignore_bleeding=ignore_bleeding,
                 ignore_autopass=ignore_autopass,
                 ignore_followers=ignore_followers, ignore_checks=ignore_checks,
-                ignore_notifications=ignore_notifications, change_to=change_to,
+                ignore_notifications=ignore_notifications, change_to=target_char_id,
                 more_unavail_chars=more_unavail_chars, from_party=from_party)
 
             self.hub = hub
+            self.send_ooc(f'Changed hub to hub {hub.get_numerical_id()}.')
+
+            if old_characters != new_characters:
+                if self.packet_handler.ALLOWS_CHAR_LIST_RELOAD:
+                    self.send_command_dict('SC', {
+                        'chars_ao2_list': new_characters,
+                        })
+                    self.change_character(target_char_id, force=True, old_char=old_char_name)
+                else:
+                    self.send_ooc('After a change in the character list, your client character list '
+                                'is no longer synchronized. Please rejoin the server.')
             self.send_music_list_view()
 
         def change_area(self, area: AreaManager.Area, override_all: bool = False,

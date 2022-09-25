@@ -78,12 +78,12 @@ class MusicManager(AssetManager):
 
     def get_loader(self) -> Callable[[str, ], str]:
         """
-        Return `self.server.load_characters`.
+        Return `self.load_file`.
 
         Returns
         -------
         Callable[[str, ], str]
-            `self.server.load_characters`.
+            `self.load_file`.
         """
 
         return self.load_file
