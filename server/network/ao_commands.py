@@ -673,7 +673,7 @@ def net_cmd_ct(client: ClientManager.Client, pargs: Dict[str, Any]):
                 if ex.message:
                     client.send_ooc(ex)
                 else:
-                    client.send_ooc(type(ex).__name__)
+                    raise
         else:
             client.send_ooc(f'Invalid command `{cmd}`.')
     else:

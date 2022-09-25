@@ -1397,6 +1397,18 @@ class _TrialTrivialInherited(_HubbedGame):
         except HubbedGameError.AreaNotInGameError:
             raise TrialError.AreaNotInGameError
 
+    def requires_areas(self) -> bool:
+        """
+        Return whether the trial requires areas at all times.
+
+        Returns
+        -------
+        bool
+            Whether the trial requires areas at all times.
+        """
+
+        return super().requires_areas()
+
     def has_area(self, area: AreaManager.Area) -> bool:
         """
         If the area is part of this trial's set of areas, return True; otherwise, return
@@ -1707,6 +1719,7 @@ class _Trial(_TrialTrivialInherited):
         timer_limit: Union[int, None] = None,
         area_concurrent_limit: Union[int, None] = None,
         autoadd_on_client_enter: bool = False,
+        require_areas: bool = True,
         hub: _Hub = None,
         # new
         autoadd_minigame_on_player_added: bool = False,
@@ -1768,6 +1781,10 @@ class _Trial(_TrialTrivialInherited):
             If True, nonplayer users that enter an area part of the trial will be automatically
             added if permitted by the conditions of the trial. If False, no such adding will take
             place. Defaults to False.
+        require_areas : bool, optional
+            If True, if at any point the trial has no areas left, the game with areas
+            will automatically be deleted. If False, no such automatic deletion will happen.
+            Defaults to True.
         hub : _Hub, optional
             Hub the hubbed game belongs to. Defaults to None.
         autoadd_minigame_on_player_added: bool, optional
@@ -1810,6 +1827,7 @@ class _Trial(_TrialTrivialInherited):
             timer_limit=timer_limit,
             area_concurrent_limit=area_concurrent_limit,
             autoadd_on_client_enter=autoadd_on_client_enter,
+            require_areas=require_areas,
             hub=hub,
         )
 
@@ -3301,6 +3319,7 @@ class _TrialManagerTrivialInherited(HubbedGameManager):
         area_concurrent_limit: Union[int, None] = 1,  # Overriden from parent
         autoadd_on_client_enter: bool = False,
         autoadd_on_creation_existing_users: bool = False,
+        require_areas: bool = True,
         hub: Union[_Hub, None] = None,
         # new
         autoadd_minigame_on_player_added: bool = False,
@@ -3350,6 +3369,10 @@ class _TrialManagerTrivialInherited(HubbedGameManager):
         autoadd_on_creation_existing_users : bool
             If the trial will attempt to add nonplayer users who were in an area added
             to the trial on creation. Defaults to False.
+        require_areas : bool, optional
+            If True, if at any point the trial has no areas left, the game with areas
+            will automatically be deleted. If False, no such automatic deletion will happen.
+            Defaults to True.
         hub : _Hub, optional
             Hub of the hubbed game. Defaults to None (and converted to the creator's hub if given a
             creator, and None otherwise).
@@ -3392,6 +3415,7 @@ class _TrialManagerTrivialInherited(HubbedGameManager):
             area_concurrent_limit=area_concurrent_limit,
             autoadd_on_client_enter=autoadd_on_client_enter,
             autoadd_on_creation_existing_users=autoadd_on_creation_existing_users,
+            require_areas=require_areas,
             hub=hub,
             autoadd_minigame_on_player_added=autoadd_minigame_on_player_added,
             **kwargs,
@@ -3826,6 +3850,7 @@ class TrialManager(_TrialManagerTrivialInherited):
         area_concurrent_limit: Union[int, None] = 1,  # Overriden from parent
         autoadd_on_client_enter: bool = False,
         autoadd_on_creation_existing_users: bool = False,
+        require_areas: bool = True,
         hub: Union[_Hub, None] = None,
         # new
         autoadd_minigame_on_player_added: bool = False,
@@ -3877,6 +3902,10 @@ class TrialManager(_TrialManagerTrivialInherited):
         autoadd_on_creation_existing_users : bool
             If the trial will attempt to add nonplayer users who were in an area added
             to the trial on creation. Defaults to False.
+        require_areas : bool, optional
+            If True, if at any point the trial has no areas left, the game with areas
+            will automatically be deleted. If False, no such automatic deletion will happen.
+            Defaults to True.
         hub : _Hub, optional
             Hub of the hubbed game. Defaults to None (and converted to the creator's hub if given a
             creator, and None otherwise).
@@ -3920,6 +3949,7 @@ class TrialManager(_TrialManagerTrivialInherited):
                 area_concurrent_limit=area_concurrent_limit,
                 autoadd_on_client_enter=autoadd_on_client_enter,
                 autoadd_on_creation_existing_users=autoadd_on_creation_existing_users,
+                require_areas=require_areas,
                 hub=hub,
                 # kwargs
                 autoadd_minigame_on_player_added=autoadd_minigame_on_player_added,

@@ -39,9 +39,6 @@ class _PlayerGroup:
     """
     A mutable data type for player groups.
 
-    WARNING: Mutable methods in this class do not perform internal structural checks after
-    completion. Only use this class if you intend to develop a class that inherits from this class.
-
     Player groups are groups of users (called players) with an ID, where some players
     (possibly none) are leaders.
 
@@ -90,7 +87,7 @@ class _PlayerGroup:
     #     If True and the player group has no leaders but at least one player, it will randomly
     #     choose one player to be a leader.
     # _ever_had_players : bool
-    #    If True, at least once has a player been added successfully the the player group;
+    #    If True, at least once has a player been added successfully the player group;
     #    otherwise False.
     # _unmanaged : bool
     #     If True, the manager this player group claims is its manager no longer recognizes it is

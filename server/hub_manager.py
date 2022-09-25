@@ -1433,6 +1433,18 @@ class _HubTrivialInherited(_GameWithAreas):
         except GameWithAreasError.AreaNotInGameError:
             raise HubError.AreaNotInGameError
 
+    def requires_areas(self) -> bool:
+        """
+        Return whether the hub requires areas at all times.
+
+        Returns
+        -------
+        bool
+            Whether the hub requires areas at all times.
+        """
+
+        return super().requires_areas()
+
     def has_area(self, area: AreaManager.Area) -> bool:
         """
         If the area is part of this hub's set of areas, return True; otherwise, return
@@ -1715,6 +1727,7 @@ class _Hub(_HubTrivialInherited):
         timer_limit: Union[int, None] = None,
         area_concurrent_limit: Union[int, None] = None,
         autoadd_on_client_enter: bool = False,
+        require_areas: bool = True,
     ):
         """
         Create a new hub. A hub should not be fully initialized anywhere else other than
@@ -1770,6 +1783,10 @@ class _Hub(_HubTrivialInherited):
             If True, nonplayer users that enter an area part of the hub will be automatically
             added if permitted by the conditions of the hub. If False, no such adding will take
             place. Defaults to False.
+        require_areas : bool, optional
+            If True, if at any point the hub has no areas left, the game with areas
+            will automatically be deleted. If False, no such automatic deletion will happen.
+            Defaults to True.
         """
 
         super().__init__(
@@ -1786,6 +1803,7 @@ class _Hub(_HubTrivialInherited):
             timer_limit=timer_limit,
             area_concurrent_limit=area_concurrent_limit,
             autoadd_on_client_enter=autoadd_on_client_enter,
+            require_areas=require_areas,
         )
 
         self.background_manager = BackgroundManager(server, hub=self)
@@ -2098,6 +2116,7 @@ class _HubManagerTrivialInherited(GameWithAreasManager):
         area_concurrent_limit: Union[int, None] = 1,  # Overriden from parent
         autoadd_on_client_enter: bool = True,  # Overiden from parent
         autoadd_on_creation_existing_users: bool = False,
+        require_areas: bool = True,
         **kwargs: Any,
         ) -> _Hub:
         """
@@ -2145,6 +2164,10 @@ class _HubManagerTrivialInherited(GameWithAreasManager):
         autoadd_on_creation_existing_users : bool
             If the hub will attempt to add nonplayer users who were in an area added
             to the hub on creation. Defaults to False.
+        require_areas : bool, optional
+            If True, if at any point the hub has no areas left, the game with areas
+            will automatically be deleted. If False, no such automatic deletion will happen.
+            Defaults to True.
 
         Returns
         -------
@@ -2178,6 +2201,7 @@ class _HubManagerTrivialInherited(GameWithAreasManager):
             area_concurrent_limit=area_concurrent_limit,
             autoadd_on_client_enter=autoadd_on_client_enter,
             autoadd_on_creation_existing_users=autoadd_on_creation_existing_users,
+            require_areas=require_areas,
             **kwargs,
             )
         self._check_structure()
@@ -2586,6 +2610,7 @@ class HubManager(_HubManagerTrivialInherited):
         area_concurrent_limit: Union[int, None] = 1,  # Overriden from parent
         autoadd_on_client_enter: bool = True,  # Overriden from parent
         autoadd_on_creation_existing_users: bool = False,
+        require_areas: bool = True,
         **kwargs: Any,
         ) -> _Hub:
         """
@@ -2635,6 +2660,10 @@ class HubManager(_HubManagerTrivialInherited):
         autoadd_on_creation_existing_users : bool
             If the hub will attempt to add nonplayer users who were in an area added
             to the hub on creation. Defaults to False.
+        require_areas : bool, optional
+            If True, if at any point the hub has no areas left, the game with areas
+            will automatically be deleted. If False, no such automatic deletion will happen.
+            Defaults to True.
 
         Returns
         -------
@@ -2669,6 +2698,7 @@ class HubManager(_HubManagerTrivialInherited):
                 area_concurrent_limit=area_concurrent_limit,
                 autoadd_on_client_enter=autoadd_on_client_enter,
                 autoadd_on_creation_existing_users=autoadd_on_creation_existing_users,
+                require_areas=require_areas,
                 # kwargs
                 **kwargs,
                 )

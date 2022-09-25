@@ -1455,6 +1455,9 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
     clients who enter an area part of the game with areas will be added to the game with areas if
     possible; if this fails, no action is taken and no errors are propagated.
 
+    Each of these games with areas may also require that it never loses all its areas as soon as it
+    gets its first one (or else it is automatically deleted).
+
     Attributes
     ----------
     server : TsuserverDR
@@ -1493,13 +1496,17 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
     # _autoadd_on_client_enter : bool
     #   Whether nonplayer users that enter an area part of the game with areas will be
     #   automatically added if permitted by the conditions of the game with areas.
+    # _ever_had_areas : bool
+    #    If True, at least once has a area been added successfully the game with areas;
+    #    otherwise False.
     #
     # Invariants
     # ----------
     # 1. For each player of the game with areas, they are in an area part of the game with areas.
     # 2. It is not true that the game with areas requires invitations and automatically adds users
     #    that join an area part of the game with areas.
-    # 3. The invariants from the parent class _Game are satisfied.
+    # 3. If `self._require_areas` is True, then `len(self._areas) >= 1 or self.is_unmanaged()`.
+    # 4. The invariants from the parent class _Game are satisfied.
 
     def __init__(
         self,
@@ -1516,6 +1523,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
         timer_limit: Union[int, None] = None,
         area_concurrent_limit: Union[int, None] = None,
         autoadd_on_client_enter: bool = False,
+        require_areas: bool = True,
     ):
         """
         Create a new game with areas. A game with areas should not be fully initialized anywhere
@@ -1572,12 +1580,17 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
             If True, nonplayer users that enter an area part of the game with areas will be
             automatically added if permitted by the conditions of the game with areas. If False, no
             such adding will take place. Defaults to False.
+        require_areas : bool, optional
+            If True, if at any point the game with areas has no areas left, the game with areas
+            will automatically be deleted. If False, no such automatic deletion will happen.
+            Defaults to True.
 
         """
 
         self._areas = set()
         self._area_concurrent_limit = area_concurrent_limit
         self._autoadd_on_client_enter = autoadd_on_client_enter
+        self._require_areas = require_areas
 
         super().__init__(
             server,
@@ -1599,6 +1612,8 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
             'area_client_inbound_ms_check': self._on_area_client_inbound_ms_check,
             'area_destroyed': self._on_area_destroyed,
             })
+        self._ever_had_areas = False
+
         self.manager: GameWithAreasManager  # Setting for typing
 
     def get_type_name(self) -> str:
@@ -1777,6 +1792,9 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
         if len(games_of_area) >= self._area_concurrent_limit:
             raise GameWithAreasError.AreaHitGameConcurrentLimitError
 
+        # At this point, the area add will be successful
+
+        self._ever_had_areas = True
         self._areas.add(area)
         self.listener.subscribe(area)
 
@@ -1851,12 +1869,24 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
         # Remove area only after removing all players to prevent structural checks failing
         self._cleanup_remove_area(area)
 
-        if not self._areas:
+        if not self._areas and self._require_areas:
             self.unchecked_destroy()
 
     def _cleanup_remove_area(self, area: AreaManager.Area):
         self._areas.discard(area)
         self.listener.unsubscribe(area)
+
+    def requires_areas(self) -> bool:
+        """
+        Return whether the game with areas requires areas at all times.
+
+        Returns
+        -------
+        bool
+            Whether the game with areas requires areas at all times.
+        """
+
+        return self._require_areas
 
     def has_area(self, area: AreaManager.Area) -> bool:
         """
@@ -2132,6 +2162,12 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
             raise AssertionError(err)
 
         # 3.
+        if self._require_areas and self._ever_had_areas:
+            err = (f'For game with areas {self}, expected that it was scheduled for '
+                   f'deletion after losing all its areas, but found it was not.')
+            assert self._areas or self.is_unmanaged(), err
+
+        # 4.
         super()._check_structure()
 
     def __str__(self) -> str:
@@ -2202,6 +2238,7 @@ class _GameWithAreasManagerTrivialInherited(GameManager):
         area_concurrent_limit: Union[int, None] = None,
         autoadd_on_client_enter: bool = False,
         autoadd_on_creation_existing_users: bool = False,
+        require_areas: bool = True,
         **kwargs: Any,
         ) -> _GameWithAreas:
         """
@@ -2260,6 +2297,10 @@ class _GameWithAreasManagerTrivialInherited(GameManager):
         autoadd_on_creation_existing_users : bool
             If the game with areas will attempt to add nonplayer users who were in an area added
             to the game with areas on creation. Defaults to False.
+        require_areas : bool, optional
+            If True, if at any point the game with areas has no areas left, the game with areas
+            will automatically be deleted. If False, no such automatic deletion will happen.
+            Defaults to True.
         **kwargs : Any
             Additional arguments to consider when producing the game with areas.
 
@@ -2285,14 +2326,15 @@ class _GameWithAreasManagerTrivialInherited(GameManager):
             require_invitations=require_invitations,
             require_players=require_players,
             require_leaders=require_leaders,
-            # kwargs
             require_character=require_character,
             team_limit=team_limit,
             timer_limit=timer_limit,
+            # kwargs
             areas=areas,
             area_concurrent_limit=area_concurrent_limit,
             autoadd_on_client_enter=autoadd_on_client_enter,
             autoadd_on_creation_existing_users=autoadd_on_creation_existing_users,
+            require_area=require_areas,
             **kwargs,
             )
         self._check_structure()
@@ -2669,11 +2711,14 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
         area_concurrent_limit: Union[int, None] = None,
         autoadd_on_client_enter: bool = False,
         autoadd_on_creation_existing_users: bool = False,
+        require_areas: bool = True,
         **kwargs: Any,
         ) -> _GameWithAreas:
 
         """
         Create a new game with areas managed by this manager.
+
+        This method does not assert structural integrity.
 
         Parameters
         ----------
@@ -2728,6 +2773,10 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
         autoadd_on_creation_existing_users : bool
             If the game with areas will attempt to add nonplayer users who were in an area added
             to the game with areas on creation. Defaults to False.
+        require_areas : bool, optional
+            If True, if at any point the game with areas has no areas left, the game with areas
+            will automatically be deleted. If False, no such automatic deletion will happen.
+            Defaults to True.
         **kwargs : Any
             Additional arguments to consider when producing the game with areas.
 
@@ -2745,30 +2794,32 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
 
         """
 
-        if not self.is_managee_creatable():
-            raise GameWithAreasError.ManagerTooManyGamesError
-
         if managee_type is None:
             managee_type = self.get_managee_type()
         if not areas:
             areas = {creator.area} if creator else set()
 
-        game: _GameWithAreas = super().unchecked_new_managee(
-            managee_type=managee_type,
-            creator=None,  # Manually none
-            player_limit=player_limit,
-            player_concurrent_limit=player_concurrent_limit,
-            require_invitations=require_invitations,
-            require_players=require_players,
-            require_leaders=require_leaders,
-            require_character=require_character,
-            team_limit=team_limit,
-            timer_limit=timer_limit,
-            # kwargs
-            area_concurrent_limit=area_concurrent_limit,
-            autoadd_on_client_enter=autoadd_on_client_enter,
-            **kwargs,
-        )
+
+        try:
+            game: _GameWithAreas = super().unchecked_new_managee(
+                managee_type=managee_type,
+                creator=None,  # Manually none
+                player_limit=player_limit,
+                player_concurrent_limit=player_concurrent_limit,
+                require_invitations=require_invitations,
+                require_players=require_players,
+                require_leaders=require_leaders,
+                require_character=require_character,
+                team_limit=team_limit,
+                timer_limit=timer_limit,
+                # kwargs
+                area_concurrent_limit=area_concurrent_limit,
+                autoadd_on_client_enter=autoadd_on_client_enter,
+                require_areas=require_areas,
+                **kwargs,
+            )
+        except GameError.ManagerTooManyGamesError:
+            raise GameWithAreasError.ManagerTooManyGamesError
 
         try:
             for area in areas:

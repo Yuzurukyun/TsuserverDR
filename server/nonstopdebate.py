@@ -1454,6 +1454,18 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
         except TrialMinigameError.AreaNotInGameError:
             raise NonStopDebateError.AreaNotInGameError
 
+    def requires_areas(self) -> bool:
+        """
+        Return whether the nonstop debate requires areas at all times.
+
+        Returns
+        -------
+        bool
+            Whether the nonstop debate requires areas at all times.
+        """
+
+        return super().requires_areas()
+
     def has_area(self, area: AreaManager.Area) -> bool:
         """
         If the area is part of this nonstop debate's set of areas, return True; otherwise, return
@@ -1735,6 +1747,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
         timer_limit: Union[int, None] = None,
         area_concurrent_limit: Union[int, None] = None,
         autoadd_on_client_enter: bool = False,
+        require_areas: bool = True,
         hub: _Hub = None,
         trial: _Trial = None,
         autoadd_on_trial_player_add: bool = False,
@@ -1796,6 +1809,10 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
             If True, nonplayer users that enter an area part of the nonstop debate will be
             automatically added if permitted by the conditions of the nonstop debate. If False, no
             such adding will take place. Defaults to False.
+        require_areas : bool, optional
+            If True, if at any point the nonstop debate has no areas left, the game with areas
+            will automatically be deleted. If False, no such automatic deletion will happen.
+            Defaults to True.
         hub : _Hub, optional
             Hub the nonstop debate belongs to. Defaults to None.
         trial : _Trial, optional
@@ -1843,6 +1860,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
             timer_limit=timer_limit,
             area_concurrent_limit=area_concurrent_limit,
             autoadd_on_client_enter=autoadd_on_client_enter,
+            require_areas=require_areas,
             hub=hub,
             trial=trial,
             autoadd_on_trial_player_add=autoadd_on_trial_player_add,
