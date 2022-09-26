@@ -2126,11 +2126,98 @@ class _Hub(_HubTrivialInherited):
                 party.area = new_area
                 new_area.add_party(party)
 
-    def _on_area_client_left_final(self, area: AreaManager.Area, client: ClientManager.Client = None, old_displayname: str = None, ignore_bleeding: bool = False, ignore_autopass: bool = False):
-        return super()._on_area_client_left_final(area, client, old_displayname, ignore_bleeding, ignore_autopass)
+    def _on_area_client_left_final(
+        self,
+        area: AreaManager.Area,
+        client: ClientManager.Client = None,
+        old_displayname: str = None,
+        ignore_bleeding: bool = False,
+        ignore_autopass: bool = False,
+        ):
+        """
+        Default callback for hub area signaling a client left. This is executed after
+        all other actions related to moving the player to a new area have been executed:
+        in particular, client.area holds the new area of the client.
 
-    def _on_area_client_entered_final(self, area: AreaManager.Area, client: ClientManager.Client = None, old_area: Union[AreaManager.Area, None] = None, old_displayname: str = None, ignore_bleeding: bool = False, ignore_autopass: bool = False):
-        return super()._on_area_client_entered_final(area, client, old_area, old_displayname, ignore_bleeding, ignore_autopass)
+        By default it removes the player from the hub if their new area is not part of
+        the hub.
+
+        Parameters
+        ----------
+        area : AreaManager.Area
+            Area that signaled a client has left.
+        client : ClientManager.Client, optional
+            The client that has left. The default is None.
+        new_area : AreaManager.Area
+            The new area the client has gone to. The default is None.
+        old_displayname : str, optional
+            The old displayed name of the client before they changed area. This will typically
+            change only if the client's character or showname are taken. The default is None.
+        ignore_bleeding : bool, optional
+            If the code should ignore actions regarding bleeding. The default is False.
+        ignore_autopass : bool, optional
+            If the code should ignore actions regarding autopass. The default is False.
+
+        Returns
+        -------
+        None.
+
+        """
+
+        super()._on_area_client_left_final(
+            area,
+            client=client,
+            old_displayname=old_displayname,
+            ignore_bleeding=ignore_bleeding,
+            ignore_autopass=ignore_autopass,
+        )
+
+    def _on_area_client_entered_final(
+        self,
+        area: AreaManager.Area,
+        client: ClientManager.Client = None,
+        old_area: Union[AreaManager.Area, None] = None,
+        old_displayname: str = None,
+        ignore_bleeding: bool = False,
+        ignore_autopass: bool = False,
+        ):
+        """
+        Default callback for hub area signaling a client entered.
+
+        By default adds a user to the hub if the hub is meant to
+        automatically add users that enter an area part of the hub.
+
+        Parameters
+        ----------
+        area : AreaManager.Area
+            Area that signaled a client has entered.
+        client : ClientManager.Client, optional
+            The client that has entered. The default is None.
+        old_area : AreaManager.Area
+            The old area the client has come from (possibly None for a newly connected user). The
+            default is None.
+        old_displayname : str, optional
+            The old displayed name of the client before they changed area. This will typically
+            change only if the client's character or showname are taken. The default is None.
+        ignore_bleeding : bool, optional
+            If the code should ignore actions regarding bleeding. The default is False.
+        ignore_autopass : bool, optional
+            If the code should ignore actions regarding autopass. The default is False.
+
+        Returns
+        -------
+        None.
+
+        """
+
+        super()._on_area_client_entered_final(
+            area,
+            client=client,
+            old_area=old_area,
+            old_displayname=old_displayname,
+            ignore_bleeding=ignore_bleeding,
+            ignore_autopass=ignore_autopass,
+        )
 
     def _on_client_change_character(self, player: ClientManager.Client, old_char_id: Union[int, None] = None, new_char_id: Union[int, None] = None):
         return super()._on_client_change_character(player, old_char_id, new_char_id)

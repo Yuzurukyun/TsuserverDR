@@ -1731,7 +1731,7 @@ class _TrialMinigameTrivialInherited(_HubbedGame):
 
     def _on_areas_loaded(self, area_manager: AreaManager):
         """
-        Default callback for server area manager signaling it loaded new areas.
+        Default callback for hub area manager signaling it loaded new areas.
 
         By default it calls self.destroy().
 

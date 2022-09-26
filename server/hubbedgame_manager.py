@@ -1881,7 +1881,7 @@ class _HubbedGameTrivialInherited(_GameWithAreas):
 
     def _on_areas_loaded(self, area_manager: AreaManager):
         """
-        Default callback for server area manager signaling it loaded new areas.
+        Default callback for hub area manager signaling it loaded new areas.
 
         By default it does nothing.
 
@@ -1896,8 +1896,7 @@ class _HubbedGameTrivialInherited(_GameWithAreas):
 
         """
 
-        super()._on_areas_loaded(area_manager)
-
+        pass
 
 
 class _HubbedGame(_HubbedGameTrivialInherited):

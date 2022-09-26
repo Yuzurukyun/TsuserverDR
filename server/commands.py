@@ -282,9 +282,10 @@ def ooc_cmd_autopass(client: ClientManager.Client, arg: str):
 
     SYNTAX
     /autopass
+    /autopass <client_id>
 
     PARAMETERS
-    None
+    <client_id>: Client identifier (number in brackets in /getarea)
 
     EXAMPLES
     Assuming /autopass for you and for client 1is off...
@@ -11502,9 +11503,6 @@ def ooc_cmd_hub(client: ClientManager.Client, arg: str):
     /hub <new_hub_numerical_id>
 
     PARAMETERS
-    None
-
-    PARAMETERS
     <new_hub_numerical_id>: Numerical ID of the hub
 
     EXAMPLES
@@ -11536,6 +11534,23 @@ def ooc_cmd_hub(client: ClientManager.Client, arg: str):
         client.change_hub(hub, from_party=(client.party is not None))
 
 def ooc_cmd_hub_create(client: ClientManager.Client, arg: str):
+    """ (OFFICER ONLY)
+    Creates a new hub. The numerical ID of the hub will be the lowest non-taken numerical hub ID.
+
+    SYNTAX
+    /hub_create
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    Assuming that two hubs with numerical IDs 0 and 2 respectively exist...
+    >>> /hub_create
+    Creates hub with numerical ID 1.
+    >>> /hub_create
+    Creates hub with numerical ID 3.
+    """
+
     Constants.assert_command(client, arg, is_officer=True, parameters='=0')
 
     hub = client.hub.manager.new_managee()
@@ -11547,43 +11562,29 @@ def ooc_cmd_hub_create(client: ClientManager.Client, arg: str):
     client.send_ooc_others(f'{client.name} [{client.id}] created hub {hub.get_numerical_id()}.',
                            is_officer=True, in_hub=None)
 
-def ooc_cmd_hub_rename(client: ClientManager.Client, arg: str):
-    Constants.assert_command(client, arg, is_staff=True)
-
-    hub = client.hub
-    hub.set_name(arg)
-
-    if arg:
-        client.send_ooc('You have cleared the name of your hub.')
-        client.send_ooc_others(f'{client.displayname} [{client.id}] cleared the name of your hub '
-                               f'({client.area.id}).', is_zstaff_flex=True)
-    else:
-        client.send_ooc(f'You have renamed your hub to `{arg}`.')
-        client.send_ooc_others(f'{client.displayname} [{client.id}] renamed your hub to `{arg}` '
-                               f'({client.area.id}).', is_zstaff_flex=True)
-
-    for target in client.server.get_clients():
-        target.send_music_list_view()
-
-def ooc_cmd_hub_info(client: ClientManager.Client, arg: str):
-    try:
-        Constants.assert_command(client, arg, is_officer=True, parameters='<2')
-    except ClientError.UnauthorizedError:
-        Constants.assert_command(client, arg, is_staff=True, parameters='=0')
-
-    if not arg:
-        arg = client.hub.get_numerical_id()
-
-    try:
-        hub = client.hub.manager.get_managee_by_numerical_id(arg)
-    except HubError.ManagerInvalidGameIDError:
-        raise ClientError(f'Hub {arg} not found.')
-
-    info = hub.get_info()
-    client.send_ooc(info)
-
 
 def ooc_cmd_hub_end(client: ClientManager.Client, arg: str):
+    """ (VARYING REQUIREMENTS)
+    (STAFF ONLY) Deletes the current hub if not given a numerical ID, or
+    (OFFICER ONLY) of the given hub by numerical ID.
+    Players in the deleted hub are moved to the default hub of the server.
+    Returns an error if given a numerical ID and it is not the numerical ID of a hub in the server,
+    or if the server has only one hub.
+
+    SYNTAX
+    /hub_end
+    /hub_end <hub_id>
+
+    PARAMETERS
+    <hub_id>: Numerical ID
+
+    EXAMPLES
+    >>> /hub_end
+    Deletes the current hub.
+    >>> /hub_end 2
+    Deletes the hub with numerical ID 2.
+    """
+
     try:
         Constants.assert_command(client, arg, is_officer=True, parameters='<2')
     except ClientError.UnauthorizedError:
@@ -11608,6 +11609,84 @@ def ooc_cmd_hub_end(client: ClientManager.Client, arg: str):
     client.send_ooc(f'You deleted hub {hub.get_numerical_id()}.')
     client.send_ooc_others(f'{client.name} [{client.id}] deleted hub {hub.get_numerical_id()}.',
                            is_officer=True, in_hub=None)
+
+
+def ooc_cmd_hub_info(client: ClientManager.Client, arg: str):
+    """ (VARYING REQUIREMENTS)
+    (STAFF ONLY) Return information about the current hub if not given a numerical ID, or
+    (OFFICER ONLY) of the given hub by numerical ID.
+    Returns an error if given a numerical ID and it is not the numerical ID of a hub in the server.
+
+    SYNTAX
+    /hub_info
+    /hub_info <hub_id>
+
+    PARAMETERS
+    <hub_id>: Numerical ID
+
+    EXAMPLES
+    >>> /hub_info
+    May return something like this:
+    | [17:34] $H: == Hub 0 ==
+    | *GMs: 1. NonGMs: 0
+    | *Area list: config/areas.yaml
+    | *Background list: config/backgrounds.yaml
+    | *Character list: config/character_lists/custom.yaml
+    | *DJ list: config/music.yaml
+    """
+
+    try:
+        Constants.assert_command(client, arg, is_officer=True, parameters='<2')
+    except ClientError.UnauthorizedError:
+        Constants.assert_command(client, arg, is_staff=True, parameters='=0')
+
+    if not arg:
+        arg = client.hub.get_numerical_id()
+
+    try:
+        hub = client.hub.manager.get_managee_by_numerical_id(arg)
+    except HubError.ManagerInvalidGameIDError:
+        raise ClientError(f'Hub {arg} not found.')
+
+    info = hub.get_info()
+    client.send_ooc(info)
+
+
+def ooc_cmd_hub_rename(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Changes the name of a hub by its numerical ID if given a name, or clears it if not given one.
+
+    SYNTAX
+    /hub_rename
+    /hub_rename <name>
+
+    PARAMETERS
+    <name>: Name
+
+    EXAMPLES
+    >>> /hub_rename Great Hub
+    Changes the name of the hub to Great Hub.
+    >>> /hub_rename
+    Clears the name of the hub.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True)
+
+    hub = client.hub
+    hub.set_name(arg)
+
+    if arg:
+        client.send_ooc('You have cleared the name of your hub.')
+        client.send_ooc_others(f'{client.displayname} [{client.id}] cleared the name of your hub '
+                               f'({client.area.id}).', is_zstaff_flex=True)
+    else:
+        client.send_ooc(f'You have renamed your hub to `{arg}`.')
+        client.send_ooc_others(f'{client.displayname} [{client.id}] renamed your hub to `{arg}` '
+                               f'({client.area.id}).', is_zstaff_flex=True)
+
+    for target in client.server.get_clients():
+        target.send_music_list_view()
+
 
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):
     """
