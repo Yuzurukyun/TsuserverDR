@@ -48,9 +48,9 @@ def _upcoming_python_version_check():
     current_python_simple = 'Python {}.{}.{}'.format(*current_python_tuple[:3])
     if current_python_tuple < (3, 9):
         msg = (f'WARNING: The upcoming major release of TsuserverDR (4.4.0) will be requiring '
-                f'at least Python 3.9. You currently have {current_python_simple}. '
-                f'Please consider upgrading to at least Python 3.9 soon. You may find '
-                f'additional instructions on updating in README.md')
+               f'at least Python 3.9. You currently have {current_python_simple}. '
+               f'Please consider upgrading to at least Python 3.9 soon. You may find '
+               f'additional instructions on updating in README.md')
         logger.log_print(msg)
 
 
@@ -80,6 +80,8 @@ async def _abnormal_shutdown(exception, server=None):
     try:
         await server.normal_shutdown()
     except Exception as exception2:
+        server.shutting_down = True
+
         logger.log_print('Unable to gracefully shut down: Forcing a shutdown.')
         etype, evalue, etraceback = (type(exception2), exception2, exception2.__traceback__)
         info = "\r\n" + "".join(traceback.format_exception(etype, evalue, etraceback))

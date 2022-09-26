@@ -1438,6 +1438,18 @@ class _TrialMinigameTrivialInherited(_HubbedGame):
         except HubbedGameError.AreaNotInGameError:
             raise TrialMinigameError.AreaNotInGameError
 
+    def requires_areas(self) -> bool:
+        """
+        Return whether the trial minigame requires areas at all times.
+
+        Returns
+        -------
+        bool
+            Whether the trial minigame requires areas at all times.
+        """
+
+        return super().requires_areas()
+
     def has_area(self, area: AreaManager.Area) -> bool:
         """
         If the area is part of this trial minigame's set of areas, return True; otherwise, return
@@ -1719,7 +1731,7 @@ class _TrialMinigameTrivialInherited(_HubbedGame):
 
     def _on_areas_loaded(self, area_manager: AreaManager):
         """
-        Default callback for server area manager signaling it loaded new areas.
+        Default callback for hub area manager signaling it loaded new areas.
 
         By default it calls self.destroy().
 
@@ -1803,6 +1815,7 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
         timer_limit: Union[int, None] = None,
         area_concurrent_limit: Union[int, None] = None,
         autoadd_on_client_enter: bool = False,
+        require_areas: bool = True,
         hub: _Hub = None,
         # new
         trial: _Trial = None,
@@ -1863,6 +1876,10 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
             If True, nonplayer users that enter an area part of the trial minigame will be
             automatically added if permitted by the conditions of the trial minigame. If False, no
             such adding will take place. Defaults to False.
+        require_areas : bool, optional
+            If True, if at any point the trial minigame has no areas left, the game with areas
+            will automatically be deleted. If False, no such automatic deletion will happen.
+            Defaults to True.
         hub : _Hub, optional
             Hub the trial belongs to. Defaults to None.
         trial : _Trial, optional
@@ -1891,6 +1908,7 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
             timer_limit=timer_limit,
             area_concurrent_limit=area_concurrent_limit,
             autoadd_on_client_enter=autoadd_on_client_enter,
+            require_areas=require_areas,
             hub=hub,
         )
 
@@ -2154,7 +2172,7 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
                                    f'an area not part of your trial minigame and thus was '
                                    f'automatically removed from it '
                                    f'({area.id}->{client.area.id}).',
-                                   pred=lambda c: c in self.get_leaders())
+                                   pred=lambda c: c in self.get_leaders(), in_hub=area.hub)
 
             self.remove_player(client)
             if self.is_unmanaged():
@@ -2163,7 +2181,7 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
                                     f'ended as it lost all its players.')
                 client.send_ooc_others(f'(X) Trial minigame `{self.get_id()}` was automatically '
                                        f'ended as it lost all its players.',
-                                       is_zstaff_flex=True)
+                                       is_zstaff_flex=True, in_hub=area.hub)
 
         elif client.area not in self.get_areas():
             client.send_ooc(f'You have left to an area not part of trial minigame '
@@ -2171,7 +2189,7 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
             client.send_ooc_others(f'(X) Player {old_displayname} [{client.id}] has left to an '
                                    f'area not part of your trial minigame '
                                    f'({area.id}->{client.area.id}).',
-                                   pred=lambda c: c in self.get_leaders())
+                                   pred=lambda c: c in self.get_leaders(), in_hub=area.hub)
 
     def _on_area_client_entered_final(
         self,

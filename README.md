@@ -155,6 +155,8 @@ Additional notes are listed at the end of the command list. Unless otherwise spe
     - Shows the current characters in your area, including their showname if they have set it.
 * **getareas**
     - Shows all characters in all areas reachable from your own, including their showname if they have set it.
+* **hub** "hub number"
+    - Moves you to the default area of a hub by its numerical ID, or displays all hubs if not given a number.
 * **ignore** "ID/char name/edited-to character/showname/char showname/OOC name"
     - Marks a target as ignored, so you will no longer receive any IC messages from them.
     - The target is not notified of you marking them as ignored.
@@ -429,6 +431,12 @@ GMs can:
     - If name is given, the handicap announcement will use it as the name of the handicap.
     - If announce if over is set to any of "False, false, 0, No, no", no announcements will be sent to the player indicating that they may now move areas.
     - If the player had an existing handicap, it will be overwritten with this one.
+* **hub_end**
+    - Deletes your hub.
+* **hub_info**
+    - Returns information about your hub.
+* **hub_rename** "name"
+    - Changes the name of your hub to the given name, or clears it if not given any.
 * **iclock**
     - Changes the IC lock status of the current area.
     - If the area has an IC lock, only GMs and above will be able to send IC messages.
@@ -706,6 +714,14 @@ GMs can:
     - Sets a movement handicap on a client by ID or IPID so that they need to wait a set amount of time in seconds between changing areas.
     - If name is given, the handicap announcement will use it as the name of the handicap.
     - If announce if over is set to any of "False, false, 0, No, no", no announcements will be sent to the player indicating that they may now move areas.
+* **hub_create**
+    - Creates a new hub.
+* **hub_end** "hub"
+    - Deletes the hub by numerical ID, or your hub if not given any.
+* **hub_info** "hub"
+    - Returns information about the hub by numerical ID, or your hub if not given any.
+* **hub_rename** "name"
+    - Changes the name of your hub to the given name, or clears it if not given any.
 * **invite** "ID/IPID/char name/edited-to character/showname/char showname/OOC name"
     - Adds target to the invite list of your area.
 * **kick** "ID/IPID"

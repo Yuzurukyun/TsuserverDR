@@ -224,9 +224,12 @@ class AssetManager(ABC):
             client.send_ooc(f'You have loaded {msg}.')
             if notify_others:
                 client.send_ooc_others(f'{msg[0].upper()}{msg[1:]} has been loaded.',
-                                       is_officer=False)
+                                       is_officer=False, in_hub=True)
                 client.send_ooc_others(f'{client.name} [{client.id}] has loaded {msg}.',
-                                       is_officer=True)
+                                       is_officer=True, in_hub=True)
+                client.send_ooc_others(f'{client.name} [{client.id}] has loaded {msg} in '
+                                       f'hub {client.hub.get_numerical_id()}',
+                                       is_officer=True, in_hub=False)
 
     def command_list_info(self, client: ClientManager.Client):
         """

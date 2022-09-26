@@ -60,8 +60,8 @@ class TsuserverDR:
         self.release = 4
         self.major_version = 4
         self.minor_version = 0
-        self.segment_version = 'a7'
-        self.internal_version = 'M220921a'
+        self.segment_version = 'a8'
+        self.internal_version = 'M220925a'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
@@ -94,9 +94,7 @@ class TsuserverDR:
 
         self.client_manager: ClientManager = client_manager(self)
         self.hub_manager = HubManager(self)
-        default_hub = self.hub_manager.new_managee(
-            autoadd_on_client_enter=True,
-        )
+        default_hub = self.hub_manager.new_managee()
         default_hub.set_name('Main')
 
         self.ipid_list = {}
@@ -556,7 +554,7 @@ class TsuserverDR:
         client.send_ooc(info)
         client.send_ooc_others('Client {} triggered a Python error through a client packet. '
                                'Do /lasterror to take a look at it.'.format(client.id),
-                               pred=lambda c: c.is_mod)
+                               is_mod=True, in_hub=None)
 
         # Print complete traceback to console
         info = 'TSUSERVERDR HAS ENCOUNTERED AN ERROR HANDLING A CLIENT PACKET'

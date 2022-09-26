@@ -1397,6 +1397,18 @@ class _TrialTrivialInherited(_HubbedGame):
         except HubbedGameError.AreaNotInGameError:
             raise TrialError.AreaNotInGameError
 
+    def requires_areas(self) -> bool:
+        """
+        Return whether the trial requires areas at all times.
+
+        Returns
+        -------
+        bool
+            Whether the trial requires areas at all times.
+        """
+
+        return super().requires_areas()
+
     def has_area(self, area: AreaManager.Area) -> bool:
         """
         If the area is part of this trial's set of areas, return True; otherwise, return
@@ -1707,6 +1719,7 @@ class _Trial(_TrialTrivialInherited):
         timer_limit: Union[int, None] = None,
         area_concurrent_limit: Union[int, None] = None,
         autoadd_on_client_enter: bool = False,
+        require_areas: bool = True,
         hub: _Hub = None,
         # new
         autoadd_minigame_on_player_added: bool = False,
@@ -1768,6 +1781,10 @@ class _Trial(_TrialTrivialInherited):
             If True, nonplayer users that enter an area part of the trial will be automatically
             added if permitted by the conditions of the trial. If False, no such adding will take
             place. Defaults to False.
+        require_areas : bool, optional
+            If True, if at any point the trial has no areas left, the game with areas
+            will automatically be deleted. If False, no such automatic deletion will happen.
+            Defaults to True.
         hub : _Hub, optional
             Hub the hubbed game belongs to. Defaults to None.
         autoadd_minigame_on_player_added: bool, optional
@@ -1810,6 +1827,7 @@ class _Trial(_TrialTrivialInherited):
             timer_limit=timer_limit,
             area_concurrent_limit=area_concurrent_limit,
             autoadd_on_client_enter=autoadd_on_client_enter,
+            require_areas=require_areas,
             hub=hub,
         )
 
@@ -2864,7 +2882,7 @@ class _Trial(_TrialTrivialInherited):
             client.send_ooc_others(f'(X) Player {old_displayname} [{client.id}] has left to '
                                    f'an area not part of your trial and thus was automatically '
                                    f'removed it ({area.id}->{client.area.id}).',
-                                   pred=lambda c: c in self.get_leaders())
+                                   pred=lambda c: c in self.get_leaders(), in_hub=area.hub)
 
             nonplayers = self.get_nonplayer_users_in_areas()
             tid = self.get_id()
@@ -2876,15 +2894,15 @@ class _Trial(_TrialTrivialInherited):
                                 f'ended as it lost all its players.')
                 client.send_ooc_others(f'(X) Trial `{tid}` was automatically '
                                        f'ended as it lost all its players.',
-                                       is_zstaff_flex=True, not_to=nonplayers)
+                                       is_zstaff_flex=True, not_to=nonplayers, in_hub=area.hub)
                 client.send_ooc_others('The trial you were watching was automatically ended '
                                        'as it lost all its players.',
-                                       is_zstaff_flex=False, part_of=nonplayers)
+                                       is_zstaff_flex=False, part_of=nonplayers, in_hub=area.hub)
         else:
             client.send_ooc(f'You have left to an area not part of trial `{self.get_id()}`.')
             client.send_ooc_others(f'(X) Player {old_displayname} [{client.id}] has left to '
                                    f'an area not part of your trial ({area.id}->{client.area.id}).',
-                                   pred=lambda c: c in self.get_leaders())
+                                   pred=lambda c: c in self.get_leaders(), in_hub=area.hub)
             self.dismiss_user(client)
 
         self.manager._check_structure()
@@ -3149,83 +3167,96 @@ class _Trial(_TrialTrivialInherited):
 
         """
 
+        _id = self.get_id()
+
         # 1.
         for game in self.get_minigames():
             for player in game.get_players():
-                err = (f'For trial {self}, expected that player {player} of its minigame '
-                       f'{game} was a player of the trial, found that was not the case.')
-                assert player in self.get_players(), err
+                assert player in self.get_players(), (
+                    f'For trial {_id}, expected that player {player} of its minigame '
+                    f'{game} was a player of the trial, found that was not the case. || {self}'
+                    )
 
         # 2.
         for game in self.get_minigames():
             for area in game.get_areas():
-                err = (f'For trial {self}, expected that area {area} of its minigame '
-                       f'{game} was an area of the trial, found that was not the case.')
-                assert area in self.get_areas(), err
+                assert area in self.get_areas(), (
+                    f'For trial {_id}, expected that area {area} of its minigame '
+                    f'{game} was an area of the trial, found that was not the case. || {self}'
+                    )
 
         # 3.
         for player in self.get_players():
-            err = (f'For trial {self}, expected that player {player} of the trial appeared in the '
-                   f'player to influence map of the trial {self._player_to_influence}, found that '
-                   f'was not the case.')
-            assert player.id in self._player_to_influence, err
+            assert player.id in self._player_to_influence, (
+                f'For trial {_id}, expected that player {player} of the trial appeared in the '
+                f'player to influence map of the trial {self._player_to_influence}, found that was '
+                f'not the case. || {self}'
+                )
 
-            err = (f'For trial {self}, expected that player {player} of the trial appeared in the '
-                   f'player to focus map of the trial {self._player_to_focus}, found that '
-                   f'was not the case.')
-            assert player.id in self._player_to_focus, err
+            assert player.id in self._player_to_focus, (
+                f'For trial {_id}, expected that player {player} of the trial appeared in the '
+                f'player to focus map of the trial {self._player_to_focus}, found that was '
+                f'not the case. || {self}'
+                )
 
         player_ids = {player.id for player in self.get_players()}
         for player_id in self._player_to_influence:
-            err = (f'For trial {self}, expected that player with ID {player_id} that appeared '
-                   f'in the player to influence map of the trial {self._player_to_influence} was '
-                   f'a player of the trial, found that was not the case.')
-            assert player_id in player_ids, err
+            assert player_id in player_ids, (
+                f'For trial {_id}, expected that player with ID {player_id} that appeared '
+                f'in the player to influence map of the trial {self._player_to_influence} was '
+                f'a player of the trial, found that was not the case. || {self}'
+                )
 
         for player_id in self._player_to_focus:
-            err = (f'For trial {self}, expected that player with ID {player_id} that appeared '
-                   f'in the player to focus map of the trial {self._player_to_focus} was '
-                   f'a player of the trial, found that was not the case.')
-            assert player_id in player_ids, err
+            assert player_id in player_ids, (
+                f'For trial {_id}, expected that player with ID {player_id} that appeared '
+                f'in the player to focus map of the trial {self._player_to_focus} was '
+                f'a player of the trial, found that was not the case. || {self}'
+                )
 
         # 4.
         for (player_id, influences) in self._player_to_influence.items():
-            err = (f'For trial {self}, expected that the player with ID {player_id} had a '
-                   f'3-tuple of current influence, min influence and max influence associated '
-                   f'to it in the player to influence map, found it was {influences} instead.')
-            assert isinstance(influences, tuple) and len(influences) == 3, err
+            assert isinstance(influences, tuple) and len(influences) == 3, (
+                f'For trial {_id}, expected that the player with ID {player_id} had a '
+                f'3-tuple of current influence, min influence and max influence associated '
+                f'to it in the player to influence map, found it was {influences} instead. '
+                f'|| {self}'
+                )
 
             influence, min_influence, max_influence = self._player_to_influence[player_id]
-            err = (f'For trial {self}, expected that the player with ID {player_id} had a '
-                   f'3-tuple of floats associated to it in the player to influence map, found it '
-                   f'was {influences} instead.')
-
             all_numbers = [isinstance(value, (int, float)) for value in influences]
-            assert all(all_numbers), err
+            assert all(all_numbers), (
+                f'For trial {_id}, expected that the player with ID {player_id} had a '
+                f'3-tuple of floats associated to it in the player to influence map, found it '
+                f'was {influences} instead. || {self}'
+                )
 
-            err = (f'For trial {self}, expected that player with ID {player_id} had an influence '
-                   f'value between {min_influence} and {max_influence} inclusive, '
-                   f'found it was {influence} instead.')
-            assert min_influence <= influence <= max_influence, err
+            assert min_influence <= influence <= max_influence, (
+                f'For trial {_id}, expected that player with ID {player_id} had an influence '
+                f'value between {min_influence} and {max_influence} inclusive, '
+                f'found it was {influence} instead. || {self}'
+                )
 
         for (player_id, focuses) in self._player_to_focus.items():
-            err = (f'For trial {self}, expected that the player with ID {player_id} had a '
-                   f'3-tuple of current focus, min focus and max focus associated '
-                   f'to it in the player to focus map, found it was {focuses} instead.')
-            assert isinstance(focuses, tuple) and len(focuses) == 3, err
+            assert isinstance(focuses, tuple) and len(focuses) == 3, (
+                f'For trial {_id}, expected that the player with ID {player_id} had a '
+                f'3-tuple of current focus, min focus and max focus associated '
+                f'to it in the player to focus map, found it was {focuses} instead. || {self}'
+                )
 
             focus, min_focus, max_focus = self._player_to_focus[player_id]
-            err = (f'For trial {self}, expected that the player with ID {player_id} had a '
-                   f'3-tuple of floats associated to it in the player to focus map, found it '
-                   f'was {focuses} instead.')
-
             all_numbers = [isinstance(value, (int, float)) for value in focuses]
-            assert all(all_numbers), err
+            assert all(all_numbers), (
+                f'For trial {_id}, expected that the player with ID {player_id} had a '
+                f'3-tuple of floats associated to it in the player to focus map, found it '
+                f'was {focuses} instead. || {self}'
+                )
 
-            err = (f'For trial {self}, expected that player with ID {player_id} had an focus '
-                   f'value between {min_focus} and {max_focus} inclusive, '
-                   f'found it was {focus} instead.')
-            assert min_focus <= focus <= max_focus, err
+            assert min_focus <= focus <= max_focus, (
+                f'For trial {self}, expected that player with ID {player_id} had an focus '
+                f'value between {min_focus} and {max_focus} inclusive, '
+                f'found it was {focus} instead. || {self}'
+                )
 
         # 5.
         super()._check_structure()
@@ -3301,6 +3332,7 @@ class _TrialManagerTrivialInherited(HubbedGameManager):
         area_concurrent_limit: Union[int, None] = 1,  # Overriden from parent
         autoadd_on_client_enter: bool = False,
         autoadd_on_creation_existing_users: bool = False,
+        require_areas: bool = True,
         hub: Union[_Hub, None] = None,
         # new
         autoadd_minigame_on_player_added: bool = False,
@@ -3350,6 +3382,10 @@ class _TrialManagerTrivialInherited(HubbedGameManager):
         autoadd_on_creation_existing_users : bool
             If the trial will attempt to add nonplayer users who were in an area added
             to the trial on creation. Defaults to False.
+        require_areas : bool, optional
+            If True, if at any point the trial has no areas left, the game with areas
+            will automatically be deleted. If False, no such automatic deletion will happen.
+            Defaults to True.
         hub : _Hub, optional
             Hub of the hubbed game. Defaults to None (and converted to the creator's hub if given a
             creator, and None otherwise).
@@ -3392,6 +3428,7 @@ class _TrialManagerTrivialInherited(HubbedGameManager):
             area_concurrent_limit=area_concurrent_limit,
             autoadd_on_client_enter=autoadd_on_client_enter,
             autoadd_on_creation_existing_users=autoadd_on_creation_existing_users,
+            require_areas=require_areas,
             hub=hub,
             autoadd_minigame_on_player_added=autoadd_minigame_on_player_added,
             **kwargs,
@@ -3527,6 +3564,34 @@ class _TrialManagerTrivialInherited(HubbedGameManager):
         except HubbedGameError.ManagerInvalidGameIDError:
             raise TrialError.ManagerInvalidGameIDError
 
+    def get_managee_by_numerical_id(self, managee_numerical_id: Union[str, int]) -> _Trial:
+        """
+        If `managee_numerical_id` is the numerical ID of a trial managed by this manager,
+        return the trial.
+
+        Parameters
+        ----------
+        managee_numerical_id : Union[str, int]
+            Numerical ID of the trial this manager manages.
+
+        Returns
+        -------
+        _Trial
+            The trial with that ID.
+
+        Raises
+        ------
+        TrialError.ManagerInvalidGameIDError:
+            If `managee_numerical_id` is not the numerical ID of a trial
+            this manager manages.
+
+        """
+
+        try:
+            return super().get_managee_by_numerical_id(managee_numerical_id)
+        except HubbedGameError.ManagerInvalidGameIDError:
+            raise TrialError.ManagerInvalidGameIDError
+
     def get_managee_limit(self) -> Union[int, None]:
         """
         Return the trial limit of this manager.
@@ -3565,6 +3630,19 @@ class _TrialManagerTrivialInherited(HubbedGameManager):
         """
 
         return super().get_managee_ids_to_managees()
+
+    def get_managee_numerical_ids_to_managees(self) -> Dict[int, _Trial]:
+        """
+        Return a mapping of the numerical IDs of all trials managed by this manager to
+        their associated trial.
+
+        Returns
+        -------
+        Dict[int, _Trial]
+            Mapping.
+        """
+
+        return super().get_managee_numerical_ids_to_managees()
 
     def get_managees_of_user(self, user: ClientManager.Client):
         """
@@ -3785,6 +3863,7 @@ class TrialManager(_TrialManagerTrivialInherited):
         area_concurrent_limit: Union[int, None] = 1,  # Overriden from parent
         autoadd_on_client_enter: bool = False,
         autoadd_on_creation_existing_users: bool = False,
+        require_areas: bool = True,
         hub: Union[_Hub, None] = None,
         # new
         autoadd_minigame_on_player_added: bool = False,
@@ -3836,6 +3915,10 @@ class TrialManager(_TrialManagerTrivialInherited):
         autoadd_on_creation_existing_users : bool
             If the trial will attempt to add nonplayer users who were in an area added
             to the trial on creation. Defaults to False.
+        require_areas : bool, optional
+            If True, if at any point the trial has no areas left, the game with areas
+            will automatically be deleted. If False, no such automatic deletion will happen.
+            Defaults to True.
         hub : _Hub, optional
             Hub of the hubbed game. Defaults to None (and converted to the creator's hub if given a
             creator, and None otherwise).
@@ -3879,6 +3962,7 @@ class TrialManager(_TrialManagerTrivialInherited):
                 area_concurrent_limit=area_concurrent_limit,
                 autoadd_on_client_enter=autoadd_on_client_enter,
                 autoadd_on_creation_existing_users=autoadd_on_creation_existing_users,
+                require_areas=require_areas,
                 hub=hub,
                 # kwargs
                 autoadd_minigame_on_player_added=autoadd_minigame_on_player_added,

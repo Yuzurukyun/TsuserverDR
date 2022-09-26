@@ -24,6 +24,7 @@ Module that contains the PlayerGroupManager class and the _PlayerGroup subclass.
 from __future__ import annotations
 
 import random
+from re import M
 import typing
 
 from typing import Callable, Dict, Tuple, Type, Union, Set
@@ -37,9 +38,6 @@ if typing.TYPE_CHECKING:
 class _PlayerGroup:
     """
     A mutable data type for player groups.
-
-    WARNING: Mutable methods in this class do not perform internal structural checks after
-    completion. Only use this class if you intend to develop a class that inherits from this class.
 
     Player groups are groups of users (called players) with an ID, where some players
     (possibly none) are leaders.
@@ -89,7 +87,7 @@ class _PlayerGroup:
     #     If True and the player group has no leaders but at least one player, it will randomly
     #     choose one player to be a leader.
     # _ever_had_players : bool
-    #    If True, at least once has a player been added successfully the the player group;
+    #    If True, at least once has a player been added successfully the player group;
     #    otherwise False.
     # _unmanaged : bool
     #     If True, the manager this player group claims is its manager no longer recognizes it is
@@ -997,90 +995,96 @@ class _PlayerGroup:
 
         # 1.
         for player in self._players:
-            err = (f'For player group {self._playergroup_id}, expected that player {player} was a '
-                   f'client of its server {self.server}, but found that was not the case. '
-                   f'|| {self}')
-            assert self.server.is_client(player), err
+            assert self.server.is_client(player), (
+                f'For player group {self._playergroup_id}, expected that player {player} was a '
+                f'client of its server {self.server}, but found that was not the case. || {self}'
+                )
 
         # 2.
-        err = (f'For player group {self._playergroup_id} that is not unmanaged that also claims '
-               f'that it is managed by manager {self.manager}, expected that it recognized that '
-               f'it managed it, but found it did not. || {self}')
-        if not self._unmanaged:
-            assert self in self.manager.get_managees(), err
-
-        err = (f'For player group {self._playergroup_id} that is unmanaged that also claims that '
-               f'it was managed by manager {self.manager}, expected that it recognized that '
-               f'it did not manage it, but found it did. || {self}')
-        if self._unmanaged:
-            assert self not in self.manager.get_managees(), err
+        assert self._unmanaged or self in self.manager.get_managees(), (
+            f'For player group {self._playergroup_id} that is not unmanaged that also claims '
+            f'that it is managed by manager {self.manager}, expected that it recognized that '
+            f'it managed it, but found it did not. || {self}'
+            )
 
         # 3.
         if self._unmanaged:
-            err = (f'For player group {self._playergroup_id} that is unmanaged, expected that it '
-                   f'had no players, but found it had these players: {self._players} || {self}')
-            assert not self._players, err
+            assert not self._players, (
+                f'For player group {self._playergroup_id} that is unmanaged, expected that it had '
+                f'no players, but found it had these players: {self._players} || {self}'
+                )
 
-            err = (f'For player group {self._playergroup_id} that is unmanaged, expected that it '
-                   f'had no invitations, but found it had these invitations: {self._invitations} '
-                   f'|| {self}')
-            assert not self._invitations, err
+            assert not self._invitations, (
+                f'For player group {self._playergroup_id} that is unmanaged, expected that it had '
+                f'no invitations, but found it had these invitations: {self._invitations} '
+                f'|| {self}')
 
-            err = (f'For player group {self._playergroup_id} that is unmanaged, expected that it '
-                   f'had no leaders, but found it had these leaders: {self._leaders} || {self}')
-            assert not self._leaders, err
+            assert not self._leaders, (
+                f'For player group {self._playergroup_id} that is unmanaged, expected that it had '
+                f'no leaders, but found it had these leaders: {self._leaders} || {self}'
+                )
 
         # 4.
         for player in self._players:
-            err = (f'For player group {self._playergroup_id}, expected that its player {player} is '
-                   f'properly recognized in the player to player group mapping of the manager of '
-                   f'the player group {self.manager}, but found that was not the case. || {self}')
-            assert (player in self.manager.get_users_in_some_managee()
-                    and self in self.manager.get_managees_of_user(player)), err
+            assert (
+                player in self.manager.get_users_in_some_managee()
+                and self in self.manager.get_managees_of_user(player)
+                ), (
+                f'For player group {self._playergroup_id}, expected that its player {player} is '
+                f'properly recognized in the player to player group mapping of the manager of '
+                f'the player group {self.manager}, but found that was not the case. || {self}'
+                )
 
         # 5.
         if self._player_limit is not None:
-            err = (f'For player group {self._playergroup_id}, expected that there were at most '
-                   f'{self._player_limit} players, but found it had {len(self._players)} '
-                   f'players. || {self}')
-            assert len(self._players) <= self._player_limit, err
+            assert len(self._players) <= self._player_limit, (
+                f'For player group {self._playergroup_id}, expected that there were at most '
+                f'{self._player_limit} players, but found it had {len(self._players)} players. '
+                f'|| {self}'
+                )
 
         # 6.
         for leader in self._leaders:
-            err = (f'For player group {self._playergroup_id}, expected that leader {leader} was a '
-                   f'player of it too, but found it was not. || {self}')
-            assert leader in self._players, err
+            assert leader in self._players, (
+                f'For player group {self._playergroup_id}, expected that leader {leader} was a '
+                f'player of it too, but found it was not. || {self}'
+                )
 
         # 7.
         if self._players:
-            err = (f'For player group {self._playergroup_id}, expected it knew it ever had some '
-                   f'players, but found it did not. || {self}')
-            assert self._ever_had_players, err
+            assert self._ever_had_players, (
+                f'For player group {self._playergroup_id}, expected it knew it ever had some '
+                f'players, but found it did not. || {self}'
+                )
 
         # 8.
         if self._require_players and self._ever_had_players:
-            err = (f'For player group {self._playergroup_id}, expected that it was scheduled for '
-                   f'deletion after losing all its players, but found it was not. || {self}')
-            assert self._players or self._unmanaged, err
+            assert self._players or self._unmanaged, (
+                f'For player group {self._playergroup_id}, expected that it was scheduled for '
+                f'deletion after losing all its players, but found it was not. || {self}'
+                )
 
         # 9.
         if self._require_leaders:
-            err = (f'For player group {self._playergroup_id} with some players, expected that '
-                   f'there was a leader, but found it had none. || {self}')
-            assert not self._players or self._leaders, err
+            assert not self._players or self._leaders, (
+                f'For player group {self._playergroup_id} with some players, expected that '
+                f'there was a leader, but found it had none. || {self}'
+                )
 
         # 10.
         players_also_invited = self._players.intersection(self._invitations)
-        err = (f'For player group {self._playergroup_id}, expected that all users in the '
-               f'invitation list of the player group were not players, but found the following '
-               f'players who were in the invitation list: {players_also_invited}. || {self}')
-        assert not players_also_invited, err
+        assert not players_also_invited, (
+            f'For player group {self._playergroup_id}, expected that all users in the '
+            f'invitation list of the player group were not players, but found the following '
+            f'players who were in the invitation list: {players_also_invited}. || {self}'
+            )
 
         # 11.
-        err = (f'For player group {self._playergroup_id} that does not require invitations, '
-               f'expected that no player was invited to the player group, but found the following '
-               f'users who were in the invitation list: {self._invitations}. || {self}')
-        assert self._require_invitations or not self._invitations, err
+        assert self._require_invitations or not self._invitations, (
+            f'For player group {self._playergroup_id} that does not require invitations, '
+            f'expected that no player was invited to the player group, but found the following '
+            f'users who were in the invitation list: {self._invitations}. || {self}'
+            )
 
     def __repr__(self) -> str:
         """
@@ -1499,6 +1503,39 @@ class PlayerGroupManager:
         except KeyError:
             raise PlayerGroupError.ManagerInvalidGroupIDError
 
+    def get_managee_by_numerical_id(self, managee_numerical_id: Union[str, int]) -> _PlayerGroup:
+        """
+        If `managee_numerical_id` is the numerical ID of a player group managed by this manager,
+        return the player group.
+
+        Parameters
+        ----------
+        managee_numerical_id : Union[str, int]
+            Numerical ID of the player group this manager manages.
+
+        Returns
+        -------
+        _PlayerGroup
+            The player group with that ID.
+
+        Raises
+        ------
+        PlayerGroupError.ManagerInvalidGroupIDError:
+            If `managee_numerical_id` is not the numerical ID of a player group
+            this manager manages.
+
+        """
+
+        try:
+            managee_numerical_id = int(managee_numerical_id)
+        except ValueError:
+            raise PlayerGroupError.ManagerInvalidGroupIDError
+
+        for group in self._id_to_group.values():
+            if group.get_numerical_id() == managee_numerical_id:
+                return group
+        raise PlayerGroupError.ManagerInvalidGroupIDError
+
     def get_managee_limit(self) -> Union[int, None]:
         """
         Return the player group limit of this manager.
@@ -1537,6 +1574,27 @@ class PlayerGroupManager:
         """
 
         return self._id_to_group.copy()
+
+    def get_managee_numerical_ids_to_managees(self) -> Dict[int, _PlayerGroup]:
+        """
+        Return a mapping of the numerical IDs of all player groups managed by this manager to their
+        associated player group.
+
+        Returns
+        -------
+        Dict[int, _PlayerGroup]
+            Mapping.
+        """
+
+        temp = dict()
+        for group in self._id_to_group.values():
+            temp[group.get_numerical_id()] = group
+
+        output = dict()
+        for num_id in sorted(temp.keys()):
+            output[num_id] = temp[num_id]
+
+        return output
 
     def get_managees_of_user(self, user: ClientManager.Client) -> Set[_PlayerGroup]:
         """
@@ -1709,23 +1767,26 @@ class PlayerGroupManager:
 
         # 1.
         if self._group_limit is not None:
-            err = (f'For player group manager {self}, expected that it managed at most '
-                   f'{self._group_limit} player groups, but found it managed '
-                   f'{len(self._id_to_group)} player groups. || {self}')
-            assert len(self._id_to_group) <= self._group_limit, err
+            assert len(self._id_to_group) <= self._group_limit, (
+                f'For player group manager {self._id}, expected that it managed at most '
+                f'{self._group_limit} player groups, but found it managed '
+                f'{len(self._id_to_group)} player groups. || {self}'
+                )
 
         # 2.
         for (playergroup_id, playergroup) in self._id_to_group.items():
             # 2a.
-            err = (f'For player group manager {self}, expected that player group {playergroup} '
-                   f'that appears in the ID to player group mapping has the same ID as in the '
-                   f'mapping, but found it did not.')
-            assert playergroup.get_id() == playergroup_id, err
+            assert playergroup.get_id() == playergroup_id, (
+                f'For player group manager {self._id}, expected that player group {playergroup} '
+                f'that appears in the ID to player group mapping has the same ID as in the '
+                f'mapping, but found it did not. || {self}'
+                )
 
             # 2b.
-            err = (f'For player group manager {self}, expected that managed player group '
-                   f'{playergroup} recognized that it was not unmanaged, but found it did.')
-            assert not playergroup.is_unmanaged(), err
+            assert not playergroup.is_unmanaged(), (
+                f'For player group manager {self._id}, expected that managed player group '
+                f'{playergroup} recognized that it was not unmanaged, but found it did.'
+                )
 
         # 3.
         for playergroup1 in self._id_to_group.values():
@@ -1734,10 +1795,11 @@ class PlayerGroupManager:
                     continue
 
                 # 3a.
-                err = (f'For player group manager {self}, expected that its two managed player '
-                       f'groups {playergroup1}, {playergroup2} had unique player group IDs, but '
-                       f'found they did not. || {self}')
-                assert playergroup1.get_id() != playergroup2.get_id(), err
+                assert playergroup1.get_id() != playergroup2.get_id(), (
+                    f'For player group manager {self._id}, expected that its two managed player '
+                    f'groups {playergroup1}, {playergroup2} had unique player group IDs, but '
+                    f'found they did not. || {self}'
+                    )
 
         # 4.
         user_to_groups = self.get_player_to_managees_map()
@@ -1749,12 +1811,13 @@ class PlayerGroupManager:
 
                 if limit is None:
                     continue
-                err = (f'For player group manager {self}, expected that user {user} in player '
-                       f'group {group} belonged to at most the concurrent player membership limit '
-                       f'of that player group of {limit} player group{"s" if limit != 1 else ""}, '
-                       f'found they belonged to {membership} player '
-                       f'group{"s" if membership != 1 else ""}. || {self}')
-                assert membership <= limit, err
+                assert membership <= limit, (
+                    f'For player group manager {self}, expected that user {user} in player '
+                    f'group {group} belonged to at most the concurrent player membership limit '
+                    f'of that player group of {limit} player group{"s" if limit != 1 else ""}, '
+                    f'found they belonged to {membership} player '
+                    f'group{"s" if membership != 1 else ""}. || {self}'
+                    )
 
         # Last.
         for playergroup in self._id_to_group.values():

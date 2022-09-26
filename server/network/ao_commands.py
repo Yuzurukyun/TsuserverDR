@@ -32,7 +32,7 @@ from typing import Any, Dict
 
 from server import logger, clients
 from server.constants import Constants
-from server.exceptions import AreaError, ClientError, MusicError, ServerError, PartyError, TsuserverException
+from server.exceptions import AreaError, ClientError, HubError, MusicError, ServerError, PartyError, TsuserverException
 # from server.evidence import EvidenceList
 
 if typing.TYPE_CHECKING:
@@ -69,7 +69,7 @@ def net_cmd_hi(client: ClientManager.Client, pargs: Dict[str, Any]):
             client.send_ooc_others(
                 f'Banned client with HDID {client.hdid} and IPID {client.ipid} '
                 f'attempted to join the server but was refused entrance.',
-                is_officer=True)
+                is_officer=True, in_hub=None)
             client.send_command_dict('BD', dict())
             client.disconnect()
             return
@@ -673,7 +673,7 @@ def net_cmd_ct(client: ClientManager.Client, pargs: Dict[str, Any]):
                 if ex.message:
                     client.send_ooc(ex)
                 else:
-                    client.send_ooc(type(ex).__name__)
+                    raise
         else:
             client.send_ooc(f'Invalid command `{cmd}`.')
     else:
@@ -706,7 +706,19 @@ def _attempt_to_change_hub(client: ClientManager.Client, pargs: Dict[str, Any]) 
 
         return True
     else:
-        return False
+        try:
+            delimiter = name.find('-')
+            numerical_id = int(name[:delimiter])
+            hub = client.hub.manager.get_managee_by_numerical_id(numerical_id)
+        except (HubError.ManagerInvalidGameIDError,  ValueError):
+            return False
+
+        try:
+            client.change_hub(hub, from_party=True if client.party else False)
+        except (ClientError, PartyError) as ex:
+            client.send_ooc(ex)
+
+        return True
 
 
 def _attempt_to_change_area(client: ClientManager.Client, pargs: Dict[str, Any]) -> bool:

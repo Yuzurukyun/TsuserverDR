@@ -1470,11 +1470,23 @@ class _HubbedGameTrivialInherited(_GameWithAreas):
         """
 
         try:
-            super().unchecked_remove_area()
+            super().unchecked_remove_area(area)
         except GameWithAreasError.GameIsUnmanagedError:
             raise HubbedGameError.GameIsUnmanagedError
         except GameWithAreasError.AreaNotInGameError:
             raise HubbedGameError.AreaNotInGameError
+
+    def requires_areas(self) -> bool:
+        """
+        Return whether the hubbed game requires areas at all times.
+
+        Returns
+        -------
+        bool
+            Whether the hubbed game requires areas at all times.
+        """
+
+        return super().requires_areas()
 
     def has_area(self, area: AreaManager.Area) -> bool:
         """
@@ -1869,7 +1881,7 @@ class _HubbedGameTrivialInherited(_GameWithAreas):
 
     def _on_areas_loaded(self, area_manager: AreaManager):
         """
-        Default callback for server area manager signaling it loaded new areas.
+        Default callback for hub area manager signaling it loaded new areas.
 
         By default it does nothing.
 
@@ -1885,7 +1897,6 @@ class _HubbedGameTrivialInherited(_GameWithAreas):
         """
 
         pass
-
 
 
 class _HubbedGame(_HubbedGameTrivialInherited):
@@ -1969,6 +1980,7 @@ class _HubbedGame(_HubbedGameTrivialInherited):
         timer_limit: Union[int, None] = None,
         area_concurrent_limit: Union[int, None] = None,
         autoadd_on_client_enter: bool = False,
+        require_areas: bool = True,
         # new
         hub: _Hub = None,
     ):
@@ -2027,6 +2039,10 @@ class _HubbedGame(_HubbedGameTrivialInherited):
             If True, nonplayer users that enter an area part of the hubbed game will be
             automatically added if permitted by the conditions of the hubbed game. If False, no
             such adding will take place. Defaults to False.
+        require_areas : bool, optional
+            If True, if at any point the hubbed game has no areas left, the game with areas
+            will automatically be deleted. If False, no such automatic deletion will happen.
+            Defaults to True.
         hub : _Hub, optional
             Hub the hubbed game belongs to. Defaults to None.
 
@@ -2048,6 +2064,7 @@ class _HubbedGame(_HubbedGameTrivialInherited):
             timer_limit=timer_limit,
             area_concurrent_limit=area_concurrent_limit,
             autoadd_on_client_enter=autoadd_on_client_enter,
+            require_areas=require_areas,
         )
 
         self.listener.subscribe(self.hub.area_manager)
@@ -2123,9 +2140,10 @@ class _HubbedGame(_HubbedGameTrivialInherited):
 
         # 1.
         for area in self.get_areas():
-            err = (f'For hubbed game {self}, expected all its areas belong to hub {self.hub}, '
-                   f'found area {area} belonged to hub {area.hub} instead')
-            assert area.hub == self.hub, err
+            assert area.hub == self.hub, (
+                f'For hubbed game {self}, expected all its areas belong to hub {self.hub}, '
+                f'found area {area} belonged to hub {area.hub} instead'
+                )
 
         # 2.
         super()._check_structure()
@@ -2198,6 +2216,7 @@ class _HubbedGameManagerTrivialInherited(GameWithAreasManager):
         area_concurrent_limit: Union[int, None] = None,
         autoadd_on_client_enter: bool = False,
         autoadd_on_creation_existing_users: bool = False,
+        require_areas: bool = True,
         hub: Union[_Hub, None] = None,
         **kwargs: Any,
         ) -> _HubbedGame:
@@ -2257,6 +2276,10 @@ class _HubbedGameManagerTrivialInherited(GameWithAreasManager):
         autoadd_on_creation_existing_users : bool
             If the hubbed game will attempt to add nonplayer users who were in an area added
             to the hubbed game on creation. Defaults to False.
+        require_areas : bool, optional
+            If True, if at any point the hubbed game has no areas left, the game with areas
+            will automatically be deleted. If False, no such automatic deletion will happen.
+            Defaults to True.
         hub : _Hub, optional
             Hub of the hubbed game. Defaults to None (and converted to the creator's hub if given a
             creator, and None otherwise).
@@ -2293,6 +2316,7 @@ class _HubbedGameManagerTrivialInherited(GameWithAreasManager):
             area_concurrent_limit=area_concurrent_limit,
             autoadd_on_client_enter=autoadd_on_client_enter,
             autoadd_on_creation_existing_users=autoadd_on_creation_existing_users,
+            require_areas=require_areas,
             hub=hub,
             **kwargs,
             )
@@ -2426,6 +2450,34 @@ class _HubbedGameManagerTrivialInherited(GameWithAreasManager):
         except GameWithAreasError.ManagerInvalidGameIDError:
             raise HubbedGameError.ManagerInvalidGameIDError
 
+    def get_managee_by_numerical_id(self, managee_numerical_id: int) -> _HubbedGame:
+        """
+        If `managee_numerical_id` is the numerical ID of a hubbed game managed by this manager,
+        return the hubbed game.
+
+        Parameters
+        ----------
+        managee_numerical_id : int
+            Numerical ID of the hubbed game this manager manages.
+
+        Returns
+        -------
+        _HubbedGame
+            The hubbed game with that ID.
+
+        Raises
+        ------
+        HubbedGameError.ManagerInvalidGameIDError:
+            If `managee_numerical_id` is not the numerical ID of a hubbed game
+            this manager manages.
+
+        """
+
+        try:
+            return super().get_managee_by_numerical_id(managee_numerical_id)
+        except GameWithAreasError.ManagerInvalidGameIDError:
+            raise HubbedGameError.ManagerInvalidGameIDError
+
     def get_managee_limit(self) -> Union[int, None]:
         """
         Return the hubbed game limit of this manager.
@@ -2464,6 +2516,19 @@ class _HubbedGameManagerTrivialInherited(GameWithAreasManager):
         """
 
         return super().get_managee_ids_to_managees()
+
+    def get_managee_numerical_ids_to_managees(self) -> Dict[int, _HubbedGame]:
+        """
+        Return a mapping of the numerical IDs of all hubbed game managed by this manager to
+        their associated hubbed game.
+
+        Returns
+        -------
+        Dict[int, _HubbedGame]
+            Mapping.
+        """
+
+        return super().get_managee_numerical_ids_to_managees()
 
     def get_managees_of_user(self, user: ClientManager.Client):
         """
@@ -2682,12 +2747,15 @@ class HubbedGameManager(_HubbedGameManagerTrivialInherited):
         area_concurrent_limit: Union[int, None] = None,
         autoadd_on_client_enter: bool = False,
         autoadd_on_creation_existing_users: bool = False,
+        require_areas: bool = True,
         hub: Union[_Hub, None] = None,
         **kwargs: Any,
         ) -> _HubbedGame:
 
         """
         Create a new hubbed game managed by this manager.
+
+        This method does not assert structural integrity.
 
         Parameters
         ----------
@@ -2742,6 +2810,10 @@ class HubbedGameManager(_HubbedGameManagerTrivialInherited):
         autoadd_on_creation_existing_users : bool, optional
             If the hubbed game will attempt to add nonplayer users who were in an area added
             to the hubbed game on creation. Defaults to False.
+        require_areas : bool, optional
+            If True, if at any point the hubbed game has no areas left, the game with areas
+            will automatically be deleted. If False, no such automatic deletion will happen.
+            Defaults to True.
         hub : _Hub, optional
             Hub of the hubbed game. Defaults to None (and converted to the creator's hub if given a
             creator, and None otherwise).
@@ -2762,34 +2834,34 @@ class HubbedGameManager(_HubbedGameManagerTrivialInherited):
 
         """
 
-        if not self.is_managee_creatable():
-            raise HubbedGameError.ManagerTooManyGamesError
-
         if managee_type is None:
             managee_type = self.get_managee_type()
-        if not areas:
-            areas = {creator.area} if creator else set()
         if not hub:
             hub = creator.hub if creator else None
 
-        game: _HubbedGame = super().unchecked_new_managee(
-            managee_type=managee_type,
-            creator=None,  # Manually none
-            player_limit=player_limit,
-            player_concurrent_limit=player_concurrent_limit,
-            require_invitations=require_invitations,
-            require_players=require_players,
-            require_leaders=require_leaders,
-            require_character=require_character,
-            team_limit=team_limit,
-            timer_limit=timer_limit,
-            # kwargs
-            area_concurrent_limit=area_concurrent_limit,
-            autoadd_on_client_enter=autoadd_on_client_enter,
-            hub=hub,
-            **kwargs,
-        )
+        try:
+            game: _HubbedGame = super().unchecked_new_managee(
+                managee_type=managee_type,
+                creator=None,  # Manually none
+                player_limit=player_limit,
+                player_concurrent_limit=player_concurrent_limit,
+                require_invitations=require_invitations,
+                require_players=require_players,
+                require_leaders=require_leaders,
+                require_character=require_character,
+                team_limit=team_limit,
+                timer_limit=timer_limit,
+                area_concurrent_limit=area_concurrent_limit,
+                autoadd_on_client_enter=autoadd_on_client_enter,
+                require_areas=require_areas,
+                # kwargs
+                hub=hub,
+                **kwargs,
+            )
+        except GameWithAreasError.ManagerTooManyGamesError:
+            raise HubbedGameError.ManagerTooManyGamesError
 
+        areas = game.get_areas()
         try:
             for area in areas:
                 game.unchecked_add_area(area)

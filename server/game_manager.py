@@ -1834,25 +1834,27 @@ class _Game(_GameTrivialInherited):
         team_players = self._team_manager.get_users_in_some_managee()
         game_players = self.get_players()
         team_not_in_game = {player for player in team_players if player not in game_players}
-        err = (f'For game {self}, expected that every player in the set {team_players} of all '
-               f'players in a team managed by the game is in the set {game_players} of players '
-               f'of the game, found the following players that did not satisfy this: '
-               f'{team_not_in_game}')
-        assert team_players.issubset(game_players), err
+        assert team_players.issubset(game_players), (
+            f'For game {self}, expected that every player in the set {team_players} of all players '
+            f'in a team managed by the game is in the set {game_players} of players of the game, '
+            f'found the following players that did not satisfy this: {team_not_in_game}'
+            )
 
         # 2.
         listener_parents = {obj.get_parent() for obj in self.listener.get_subscriptions()}
         for player in self.get_players():
-            err = (f'For game {self}, expected that its player {player} was among its '
-                   f'subscriptions {listener_parents} found it was not.')
-            assert player in listener_parents, err
+            assert player in listener_parents, (
+                f'For game {self}, expected that its player {player} was among its '
+                f'subscriptions {listener_parents} found it was not.'
+                )
 
         # 3.
         if self._require_character:
             for player in self.get_players():
-                err = (f'For game with areas {self} that expected all its players had '
-                       f'characters, found player {player} did not have a character.')
-                assert player.has_character(), err
+                assert player.has_character(), (
+                    f'For game with areas {self} that expected all its players had '
+                    f'characters, found player {player} did not have a character.'
+                    )
 
         # 4.
         self._timer_manager._check_structure()
@@ -2247,6 +2249,34 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
         except PlayerGroupError.ManagerInvalidGroupIDError:
             raise GameError.ManagerInvalidGameIDError
 
+    def get_managee_by_numerical_id(self, managee_numerical_id: Union[str, int]) -> _Game:
+        """
+        If `managee_numerical_id` is the numerical ID of a game managed by this manager,
+        return the game.
+
+        Parameters
+        ----------
+        managee_numerical_id : Union[str, int]
+            Numerical ID of the game this manager manages.
+
+        Returns
+        -------
+        _Game
+            The game with that ID.
+
+        Raises
+        ------
+        GameError.ManagerInvalidGroupIDError:
+            If `managee_numerical_id` is not the numerical ID of a game
+            this manager manages.
+
+        """
+
+        try:
+            return super().get_managee_by_numerical_id(managee_numerical_id)
+        except PlayerGroupError.ManagerInvalidGroupIDError:
+            raise GameError.ManagerInvalidGameIDError
+
     def get_managee_limit(self) -> Union[int, None]:
         """
         Return the game limit of this manager.
@@ -2285,6 +2315,19 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
         """
 
         return super().get_managee_ids_to_managees()
+
+    def get_managee_numerical_ids_to_managees(self) -> Dict[int, _Game]:
+        """
+        Return a mapping of the numerical IDs of all games managed by this manager to their
+        associated game.
+
+        Returns
+        -------
+        Dict[int, _Game]
+            Mapping.
+        """
+
+        return super().get_managee_numerical_ids_to_managees()
 
     def get_managees_of_user(self, user: ClientManager.Client):
         """

@@ -339,10 +339,10 @@ class ZoneManager:
                 self.manager.delete_zone(self._zone_id)
                 user.send_ooc('(X) Zone `{}` that you were in was automatically ended as no one '
                               'was in an area part of it or was watching it anymore.'
-                              .format(self._zone_id), is_staff=True)
+                              .format(self._zone_id))
                 user.send_ooc_others('Zone `{}` was automatically ended as no one was in an '
                                      'area part of it or was watching it anymore.'
-                                     .format(self._zone_id), is_officer=True)
+                                     .format(self._zone_id), is_officer=True, in_hub=None)
 
         def _cleanup_removed_watcher(self, user: ClientManager.Client):
             user.zone_watched = None
@@ -453,10 +453,10 @@ class ZoneManager:
                 self.manager.delete_zone(self._zone_id)
                 user.send_ooc('(X) Zone `{}` that you were in was automatically ended as no one '
                               'was in an area part of it or was watching it anymore.'
-                              .format(self._zone_id), is_staff=True)
+                              .format(self._zone_id))
                 user.send_ooc_others('Zone `{}` was automatically ended as no one was in an '
                                      'area part of it or was watching it anymore.'
-                                     .format(self._zone_id), is_officer=True)
+                                     .format(self._zone_id), is_officer=True, in_hub=None)
 
         def _cleanup_removed_player(self, player: ClientManager.Client):
             self.listener.unsubscribe(player)
@@ -1023,39 +1023,45 @@ class ZoneManager:
         # 1.
         assert len(self._zones.keys()) < self._zone_limit, (
             'Expected the server cap of {} to be enforced, found the server linked to '
-            '{} zones instead.'.format(self._zone_limit, len(self._zones.keys())))
+            '{} zones instead.'.format(self._zone_limit, len(self._zones.keys()))
+            )
 
         # 2.
         for zone_id, zone in self._zones.items():
             assert zone._zone_id == zone_id, (
                 'Expected zone {} associated with ID {} to have the same ID, found it had ID '
-                '{} instead.'.format(zone, zone_id, zone._zone_id))
+                '{} instead.'.format(zone, zone_id, zone._zone_id)
+                )
 
         for zone in self._zones.values():
             # 3.
             conflicting_areas = [area for area in zone._areas if area in areas_so_far]
             assert not conflicting_areas, (
                 'Expected no conflicting areas, but zone {} introduces repeated areas {}.'
-                .format(zone, conflicting_areas))
+                .format(zone, conflicting_areas)
+                )
 
             # 4.
             for area in zone._areas:
                 assert area.in_zone == zone, (
                     'Expected area {} to recognize it being a part of zone {}, found it '
-                    'recognized {} instead.'.format(area, zone, area.in_zone))
+                    'recognized {} instead.'.format(area, zone, area.in_zone)
+                    )
                 areas_so_far.add(area)
 
             # 5.
             conflicting_watchers = [watch for watch in zone._watchers if watch in watchers_so_far]
             assert not conflicting_watchers, (
                 'Expected no conflicting watchers, but zone {} introduces conflicting watchers '
-                '{}.'.format(zone, conflicting_watchers))
+                '{}.'.format(zone, conflicting_watchers)
+                )
 
             # 6.
             for watcher in zone._watchers:
                 assert watcher.zone_watched == zone, (
                     'Expected watcher {} to recognize it is watching zone {}, found it '
-                    'recognized {} instead.'.format(watcher, zone, watcher.zone_watched))
+                    'recognized {} instead.'.format(watcher, zone, watcher.zone_watched)
+                    )
                 watchers_so_far.add(watcher)
 
         # 7.
@@ -1064,7 +1070,8 @@ class ZoneManager:
                 continue
             assert area.in_zone is None, (
                 'Expected area {} not part of a zone to recognize it not being in a zone, '
-                'found it recognized {} instead.'.format(area, area.in_zone))
+                'found it recognized {} instead.'.format(area, area.in_zone)
+                )
 
         # 8.
         for watcher in self.server.get_clients():
@@ -1072,4 +1079,5 @@ class ZoneManager:
                 continue
             assert watcher.zone_watched is None, (
                 'Expected watcher {} to recognize that it is not watching a zone, found it '
-                'recognized it watched {} instead.'.format(watcher, watcher.zone_watched))
+                'recognized it watched {} instead.'.format(watcher, watcher.zone_watched)
+                )

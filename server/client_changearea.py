@@ -191,7 +191,8 @@ class ClientChangeArea:
             client.send_ooc_others('(X) Client {} had their showname `{}` removed in your zone '
                                    'due to it conflicting with the showname of another player in '
                                    'the same area ({}).'
-                                   .format(client.id, client.showname, area.id), is_zstaff=area)
+                                   .format(client.id, client.showname, area.id),
+                                   is_zstaff=area, in_hub=area.hub)
             client.change_showname('', target_area=area)
             logger.log_server('{} had their showname removed due it being used in the new area.'
                               .format(client.ipid), client)
@@ -205,7 +206,8 @@ class ClientChangeArea:
             client.send_ooc_others('(X) Client {} had their character showname `{}` removed in '
                                    'your zone due to it conflicting with the showname of another '
                                    'player in the same area ({}).'
-                                   .format(client.id, client.showname, area.id), is_zstaff=area)
+                                   .format(client.id, client.showname, area.id),
+                                   is_zstaff=area, in_hub=area.hub)
             client.change_character_ini_details(client.char_folder, '')
             logger.log_server('{} had their character showname removed due it being used in the '
                               'new area.'.format(client.ipid), client)
@@ -442,13 +444,13 @@ class ClientChangeArea:
         if old_area.in_zone and area.in_zone != old_area.in_zone:
             client.send_ooc_others('(X) {} [{}] has left your zone ({}->{}).'
                                    .format(old_dname, client.id, old_area.id, area.id),
-                                   is_zstaff=old_area)
+                                   is_zstaff=old_area, in_hub=old_area.hub)
 
         # Check if entering a zone
         if area.in_zone and area.in_zone != old_area.in_zone:
             client.send_ooc_others('(X) {} [{}] has entered your zone ({}->{}).'
                                    .format(new_dname, client.id, old_area.id, area.id),
-                                   is_zstaff=area)
+                                   is_zstaff=area, in_hub=area.hub)
             # Raise multiclienting warning to the watchers of the new zone if needed
             # Note that this implementation does not have an off-by-one error, as the incoming
             # client is technically still not in an area within the zone, so only one client being
@@ -457,7 +459,8 @@ class ClientChangeArea:
             if [c for c in client.get_multiclients() if c.area.in_zone == area.in_zone]:
                 client.send_ooc_others('(X) Warning: Client {} is multiclienting in your zone. '
                                        'Do /multiclients {} to take a look.'
-                                       .format(client.id, client.id), is_zstaff=area)
+                                       .format(client.id, client.id),
+                                       is_zstaff=area, in_hub=area.hub)
 
         # Assuming this is not a spectator...
         # If autopassing, send OOC messages
@@ -524,19 +527,19 @@ class ClientChangeArea:
             nbyd = ''
 
         if client.autopass:
-            client.send_ooc_others(staff, in_area=area, is_zstaff_flex=True)
+            client.send_ooc_others(staff, in_area=area, is_zstaff_flex=True, in_hub=area.hub)
         else:
-            client.send_ooc_others(staff, in_area=area, is_zstaff_flex=True,
+            client.send_ooc_others(staff, in_area=area, is_zstaff_flex=True, in_hub=area.hub,
                                    pred=lambda c: c.get_nonautopass_autopass)
-            client.send_ooc_others(nbnd, in_area=area, is_zstaff_flex=True,
+            client.send_ooc_others(nbnd, in_area=area, is_zstaff_flex=True, in_hub=area.hub,
                                    pred=lambda c: not c.get_nonautopass_autopass)
 
-        client.send_ooc_others(nbnd, in_area=area, is_zstaff_flex=False, to_blind=False,
-                               to_deaf=False)
-        client.send_ooc_others(ybnd, in_area=area, is_zstaff_flex=False, to_blind=True,
-                               to_deaf=False)
-        client.send_ooc_others(nbyd, in_area=area, is_zstaff_flex=False, to_blind=False,
-                               to_deaf=True)
+        client.send_ooc_others(nbnd, in_area=area, is_zstaff_flex=False, in_hub=area.hub,
+                               to_blind=False, to_deaf=False)
+        client.send_ooc_others(ybnd, in_area=area, is_zstaff_flex=False, in_hub=area.hub,
+                               to_blind=True, to_deaf=False)
+        client.send_ooc_others(nbyd, in_area=area, is_zstaff_flex=False, in_hub=area.hub,
+                               to_blind=False, to_deaf=True)
         # Blind and deaf get nothing
 
     def notify_others_blood(self, client: ClientManager.Client, area: AreaManager.Area,
@@ -614,16 +617,16 @@ class ClientChangeArea:
         staff = staff.replace('no longer bleeding and sneaking.',
                               'no longer bleeding, but is still sneaking.') # Ugly
 
-        client.send_ooc_others(norm, is_zstaff_flex=False, in_area=area, to_blind=False,
-                               to_deaf=False)
-        client.send_ooc_others(ybnd, is_zstaff_flex=False, in_area=area, to_blind=True,
-                               to_deaf=False)
-        client.send_ooc_others(nbyd, is_zstaff_flex=False, in_area=area, to_blind=False,
-                               to_deaf=True)
-        client.send_ooc_others(ybyd, is_zstaff_flex=False, in_area=area, to_blind=True,
-                               to_deaf=True)
+        client.send_ooc_others(norm, is_zstaff_flex=False, in_area=area, in_hub=area.hub,
+                               to_blind=False, to_deaf=False)
+        client.send_ooc_others(ybnd, is_zstaff_flex=False, in_area=area, in_hub=area.hub,
+                               to_blind=True, to_deaf=False)
+        client.send_ooc_others(nbyd, is_zstaff_flex=False, in_area=area, in_hub=area.hub,
+                               to_blind=False, to_deaf=True)
+        client.send_ooc_others(ybyd, is_zstaff_flex=False, in_area=area, in_hub=area.hub,
+                               to_blind=True, to_deaf=True)
         if send_to_staff:
-            client.send_ooc_others(staff, is_zstaff_flex=True, in_area=area)
+            client.send_ooc_others(staff, is_zstaff_flex=True, in_area=area, in_hub=area.hub)
 
     def notify_others_status(self, client: ClientManager.Client, area: AreaManager.Area,
                              name: str, status: str = 'stay'):
@@ -670,13 +673,13 @@ class ClientChangeArea:
             nbyd = vague_mes
             staff = staff_mes.format(' while sneaking')
 
-        client.send_ooc_others(norm, is_zstaff_flex=False, in_area=area, to_blind=False,
-                               to_deaf=False)
-        client.send_ooc_others(ybnd, is_zstaff_flex=False, in_area=area, to_blind=True,
-                               to_deaf=False)
-        client.send_ooc_others(nbyd, is_zstaff_flex=False, in_area=area, to_blind=False,
-                               to_deaf=True)
-        client.send_ooc_others(staff, is_zstaff_flex=True, in_area=area)
+        client.send_ooc_others(norm, is_zstaff_flex=False, in_area=area, in_hub=area.hub,
+                               to_blind=False, to_deaf=False)
+        client.send_ooc_others(ybnd, is_zstaff_flex=False, in_area=area, in_hub=area.hub,
+                               to_blind=True, to_deaf=False)
+        client.send_ooc_others(nbyd, is_zstaff_flex=False, in_area=area, in_hub=area.hub,
+                               to_blind=False, to_deaf=True)
+        client.send_ooc_others(staff, is_zstaff_flex=True, in_area=area, in_hub=area.hub)
 
     def change_area(self, area: AreaManager.Area, override_all: bool = False,
                     override_passages: bool = False, override_effects: bool = False,
@@ -753,7 +756,7 @@ class ClientChangeArea:
                                            '`{}` in your zone as their old character was '
                                            'restricted in their new area ({}).'
                                            .format(client.id, old_char, new_char, area.id),
-                                           is_zstaff=area)
+                                           is_zstaff=area, in_hub=area.hub)
                 else:
                     client.send_ooc('Your character was taken in your new area, switched to `{}`.'
                                     .format(client.get_char_name()))
@@ -761,7 +764,7 @@ class ClientChangeArea:
                                            '`{}` in your zone as their old character was '
                                            'taken in their new area ({}).'
                                            .format(client.id, old_char, new_char, area.id),
-                                           is_zstaff=area)
+                                           is_zstaff=area, in_hub=area.hub)
 
             # IC lock bypasses only last the old area
             if client.can_bypass_iclock:
@@ -769,7 +772,8 @@ class ClientChangeArea:
                                 'different area.')
                 client.send_ooc_others(f'(X) {client.displayname} [{client.id}] has lost their IC '
                                        f'lock bypass as they moved to a different area. '
-                                       f'({area.id})', is_zstaff_flex=old_area)
+                                       f'({area.id})',
+                                       is_zstaff_flex=old_area, in_hub=old_area.hub)
                 client.can_bypass_iclock = False
 
             if not ignore_notifications:
@@ -896,7 +900,7 @@ class ClientChangeArea:
             mes = ('(X) The lurk callout timer in area {} has been ended as there is no one '
                    'left there.'.format(old_area.name))
             client.send_ooc(mes, is_zstaff_flex=old_area)
-            client.send_ooc_others(mes, is_zstaff_flex=old_area)
+            client.send_ooc_others(mes, is_zstaff_flex=old_area, in_hub=old_area.hub)
 
         if area.id not in client.remembered_locked_passages:
             client.remembered_locked_passages[area.id] = set()

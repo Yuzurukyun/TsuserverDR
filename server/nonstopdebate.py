@@ -1454,6 +1454,18 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
         except TrialMinigameError.AreaNotInGameError:
             raise NonStopDebateError.AreaNotInGameError
 
+    def requires_areas(self) -> bool:
+        """
+        Return whether the nonstop debate requires areas at all times.
+
+        Returns
+        -------
+        bool
+            Whether the nonstop debate requires areas at all times.
+        """
+
+        return super().requires_areas()
+
     def has_area(self, area: AreaManager.Area) -> bool:
         """
         If the area is part of this nonstop debate's set of areas, return True; otherwise, return
@@ -1735,6 +1747,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
         timer_limit: Union[int, None] = None,
         area_concurrent_limit: Union[int, None] = None,
         autoadd_on_client_enter: bool = False,
+        require_areas: bool = True,
         hub: _Hub = None,
         trial: _Trial = None,
         autoadd_on_trial_player_add: bool = False,
@@ -1796,6 +1809,10 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
             If True, nonplayer users that enter an area part of the nonstop debate will be
             automatically added if permitted by the conditions of the nonstop debate. If False, no
             such adding will take place. Defaults to False.
+        require_areas : bool, optional
+            If True, if at any point the nonstop debate has no areas left, the game with areas
+            will automatically be deleted. If False, no such automatic deletion will happen.
+            Defaults to True.
         hub : _Hub, optional
             Hub the nonstop debate belongs to. Defaults to None.
         trial : _Trial, optional
@@ -1843,6 +1860,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
             timer_limit=timer_limit,
             area_concurrent_limit=area_concurrent_limit,
             autoadd_on_client_enter=autoadd_on_client_enter,
+            require_areas=require_areas,
             hub=hub,
             trial=trial,
             autoadd_on_trial_player_add=autoadd_on_trial_player_add,
@@ -2693,7 +2711,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
             client.send_ooc_others(f'(X) Player {old_displayname} [{client.id}] has left to '
                                    f'an area not part of your NSD and thus was '
                                    f'automatically removed from it ({area.id}->{client.area.id}).',
-                                   pred=lambda c: c in self.get_leaders())
+                                   pred=lambda c: c in self.get_leaders(), in_hub=area.hub)
 
             nonplayers = self.get_nonplayer_users_in_areas()
             nid = self.get_id()
@@ -2705,10 +2723,10 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
                                 f'ended as it lost all its players.')
                 client.send_ooc_others(f'(X) Nonstop debate `{nid}` was automatically '
                                        f'ended as it lost all its players.',
-                                       is_zstaff_flex=True, not_to=nonplayers)
+                                       is_zstaff_flex=True, not_to=nonplayers, in_hub=area.hub)
                 client.send_ooc_others('The nonstop debate you were watching was automatically '
                                        'ended as it lost all its players.',
-                                       is_zstaff_flex=False, part_of=nonplayers)
+                                       is_zstaff_flex=False, part_of=nonplayers, in_hub=area.hub)
 
         else:
             client.send_ooc(f'You have left to an area not part of NSD '
@@ -2716,7 +2734,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
             client.send_ooc_others(f'(X) Player {old_displayname} [{client.id}] has left to an '
                                    f'area not part of your NSD '
                                    f'({area.id}->{client.area.id}).',
-                                   pred=lambda c: c in self.get_leaders())
+                                   pred=lambda c: c in self.get_leaders(), in_hub=area.hub)
             self.dismiss_user(client)
 
         self.manager._check_structure()

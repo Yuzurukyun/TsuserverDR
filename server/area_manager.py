@@ -676,9 +676,11 @@ class AreaManager(AssetManager):
                         initiator.send_ooc('You feel a light switch was flipped.')
 
                 initiator.send_ooc_others('The lights were turned {}.'.format(status[new_lights]),
-                                          is_zstaff_flex=False, in_area=area if area else True, to_blind=False)
-                initiator.send_ooc_others('You hear a flicker.', is_zstaff_flex=False, in_area=area if area else True,
-                                          to_blind=True, to_deaf=False)
+                                          is_zstaff_flex=False, to_blind=False,
+                                          in_area=area if area else True)
+                initiator.send_ooc_others('You hear a flicker.',
+                                          is_zstaff_flex=False, to_blind=True, to_deaf=False,
+                                          in_area=area if area else True)
                 initiator.send_ooc_others('(X) {} [{}] turned the lights {}.'
                                           .format(initiator.displayname, initiator.id,
                                                   status[new_lights]),
@@ -822,7 +824,7 @@ class AreaManager(AssetManager):
                 client.change_visibility(True)
                 client.send_ooc_others('(X) {} [{}] revealed themselves by playing music ({}).'
                                        .format(client.displayname, client.id, client.area.id),
-                                       is_zstaff=True)
+                                       is_zstaff_flex=True)
 
         def play_current_track(self, only_for: Set[ClientManager.Client] = None,
                                force_same_restart: int = -1):
@@ -1130,7 +1132,8 @@ class AreaManager(AssetManager):
             The string follows the convention 'A::AreaID:AreaName:ClientsInArea'
             """
 
-            return 'A::{}:{}:{}'.format(self.id, self.name, len(self.clients))
+            return 'A::{}:{}:{}:{}'.format(self.id, self.name, len(self.clients),
+                                           self.hub.get_numerical_id())
 
     def __init__(self, server: TsuserverDR, hub: Union[_Hub, None] = None):
         """
@@ -1348,12 +1351,16 @@ class AreaManager(AssetManager):
                                 'You may set it again manually.')
                 client.multi_ic_pre = ''
 
-        # And do other tasks associated with areas reloading
-        self.publisher.publish('areas_loaded', dict())
-
         # If the default area ID is now past the number of available areas, reset it back to zero
         if self._default_area_id >= len(self._areas):
             self.default_area = self.get_area_by_id(0)
+
+        # And do other tasks associated with areas reloading
+        self.publisher.publish('areas_loaded', dict())
+
+        # Add new areas to hub
+        for area in self._areas:
+            self.hub.add_area(area)
 
         for area in old_areas:
             # Decide whether the area still exists or not

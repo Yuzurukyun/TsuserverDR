@@ -386,7 +386,8 @@ class NonStopDebateError(TrialMinigameError):
 
 @recreate_subexceptions
 class HubError(GameWithAreasError):
-    pass
+    class ManagerCannotManageeNoManagees(GameWithAreasError):
+        pass
 
 @recreate_subexceptions
 class TaskError(TsuserverException):
