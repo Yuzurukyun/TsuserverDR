@@ -21,10 +21,13 @@ from __future__ import annotations
 import asyncio
 import functools
 import errno
+import hashlib
+import hmac
 import os
 import pathlib
 import random
 import re
+import secrets
 import sys
 import tempfile
 import time
@@ -1249,6 +1252,38 @@ class Constants():
         return (f'|| GO TO {view_name} VIEW\n'
                 f'|| YOU ARE HERE:\n'
                 f'|| Hub {hub.get_id()[1:]}, Area {area.id}\n')
+
+    @staticmethod
+    def secure_eq(a: str, b: str) -> bool:
+        """
+        Return whether a and b are the same, such that timing attacks are difficult to perform.
+
+        Parameters
+        ----------
+        a : str
+            First element.
+        b : str
+            Second element.
+
+        Returns
+        -------
+        bool
+            Whether `a == b`.
+        """
+
+        key = secrets.token_hex(16)
+        byte_key = bytes(key, 'utf-8')
+
+        mes_a = a.encode('utf-8')
+        mes_b = b.encode('utf-8')
+
+        enc_a = hmac.new(byte_key, mes_a, hashlib.sha256)
+        enc_b = hmac.new(byte_key, mes_b, hashlib.sha256)
+
+        return hmac.compare_digest(
+            enc_a.hexdigest(),
+            enc_b.hexdigest()
+        )
 
     @staticmethod
     async def await_cancellation(old_task: asyncio.Task):

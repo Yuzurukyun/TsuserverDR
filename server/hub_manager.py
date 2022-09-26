@@ -22,7 +22,9 @@ Module that contains the hub manager and hub modules.
 """
 
 from __future__ import annotations
+import hmac
 
+import random
 import typing
 
 from server.area_manager import AreaManager
@@ -1910,6 +1912,9 @@ class _Hub(_HubTrivialInherited):
         self.load_areas()
 
         self.trial_manager = TrialManager(self)
+
+        self._password = str(random.randint(1000, 9999))
+
         self.manager: HubManager  # Setting for typing
 
     def get_type_name(self) -> str:
@@ -1925,6 +1930,64 @@ class _Hub(_HubTrivialInherited):
         """
 
         return "hub"
+
+    def get_password(self) -> str:
+        """
+        Get the password of the hub.
+
+        Returns
+        -------
+        str
+            Password.
+        """
+
+        return self._password
+
+    def set_password(self, new_password: str):
+        """
+        Set the password of the hub.
+
+        Parameters
+        ----------
+        new_password : str
+            New password.
+        """
+
+        self.unchecked_set_password(new_password)
+        self.manager._check_structure()
+
+    def unchecked_set_password(self, new_password: str):
+        """
+        Set the password of the hub.
+
+        This method does not assert structural integrity.
+
+        Parameters
+        ----------
+        new_password : str
+            New password.
+        """
+
+        self._password = new_password
+
+    def is_password(self, guess: str) -> bool:
+        """
+        Return whether the guess is the hub password or not.
+
+        This check is secure against timing attacks.
+
+        Parameters
+        ----------
+        guess : str
+            Guess.
+
+        Returns
+        -------
+        bool
+            Whether the guess is the password or not.
+        """
+
+        return Constants.secure_eq(guess, self._password)
 
     def load_areas(self, source_file: str = 'config/areas.yaml') -> List[AreaManager.Area]:
         """
@@ -2219,10 +2282,63 @@ class _Hub(_HubTrivialInherited):
             ignore_autopass=ignore_autopass,
         )
 
-    def _on_client_change_character(self, player: ClientManager.Client, old_char_id: Union[int, None] = None, new_char_id: Union[int, None] = None):
-        return super()._on_client_change_character(player, old_char_id, new_char_id)
+    def _on_client_change_character(
+        self,
+        player: ClientManager.Client,
+        old_char_id: Union[int, None] = None,
+        new_char_id: Union[int, None] = None
+        ):
+        """
+        Default callback for hub player signaling it has changed character.
+
+        By default it only checks if the player is now no longer having a character. If that is
+        the case and the game requires all players have characters, the player is automatically
+        removed.
+
+        Parameters
+        ----------
+        player : ClientManager.Client
+            Player that signaled it has changed character.
+        old_char_id : int, optional
+            Previous character ID. The default is None.
+        new_char_id : int, optional
+            New character ID. The default is None.
+
+        Returns
+        -------
+        None.
+
+        """
+
+        super()._on_client_change_character(
+            player,
+            old_char_id=old_char_id,
+            new_char_id=new_char_id
+        )
+
+    def _check_structure(self):
+        """
+        Assert that all invariants specified in the class description are maintained.
+
+        Raises
+        ------
+        AssertionError
+            If any of the invariants are not maintained.
+
+        """
+
+        return super()._check_structure()
 
     def __str__(self) -> str:
+        """
+        Return a string representation of this hub.
+
+        Returns
+        -------
+        str
+            Representation.
+        """
+
         return (f"Hub::{self.get_id()}:"
                 f"{self.get_players()}:{self.get_leaders()}:{self.get_invitations()}"
                 f"{self.get_timers()}:"

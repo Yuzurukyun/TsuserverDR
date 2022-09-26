@@ -1928,7 +1928,7 @@ class ClientManager:
         def auth_mod(self, password: str, announce_to_officers: bool = True):
             if self.is_mod:
                 raise ClientError('Already logged in.')
-            if password == self.server.config['modpass']:
+            if Constants.secure_eq(password, self.server.config['modpass']):
                 self.is_mod = True
                 self.is_cm = False
                 self.is_gm = False
@@ -1941,7 +1941,7 @@ class ClientManager:
         def auth_cm(self, password: str, announce_to_officers: bool = True):
             if self.is_cm:
                 raise ClientError('Already logged in.')
-            if password == self.server.config['cmpass']:
+            if Constants.secure_eq(password, self.server.config['cmpass']):
                 self.is_cm = True
                 self.is_mod = False
                 self.is_gm = False
@@ -1963,24 +1963,32 @@ class ClientManager:
             if daily_gmpass is not None:
                 valid_passwords.append(daily_gmpass)
 
-            if password in valid_passwords:
-                if password == daily_gmpass:
-                    g_or_daily = 'daily password'
+            found_valid_password = False
+            for valid_password in valid_passwords:
+                if Constants.secure_eq(password, valid_password):
+                    found_valid_password = True
                 else:
-                    g_or_daily = 'global password'
-                if announce_to_officers:
-                    self.send_ooc_others('{} [{}] logged in as a game master with the {}.'
-                                         .format(self.name, self.id, g_or_daily),
-                                         is_officer=True, in_hub=None)
-                self.is_gm = True
-                self.is_mod = False
-                self.is_cm = False
-            else:
+                    found_valid_password = found_valid_password | False
+            # Code above written inefficiently deliberately to prevent timing attacks.
+
+            if not found_valid_password:
                 if announce_to_officers:
                     self.send_ooc_others('{} [{}] failed to login as a game master.'
                                          .format(self.name, self.id),
                                          is_officer=True, in_hub=None)
                 raise ClientError('Invalid password.')
+
+            if password == daily_gmpass:
+                g_or_daily = 'daily password'
+            else:
+                g_or_daily = 'global password'
+            if announce_to_officers:
+                self.send_ooc_others('{} [{}] logged in as a game master with the {}.'
+                                        .format(self.name, self.id, g_or_daily),
+                                        is_officer=True, in_hub=None)
+            self.is_gm = True
+            self.is_mod = False
+            self.is_cm = False
 
         def logout(self):
             self.is_mod = False
