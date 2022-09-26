@@ -11652,6 +11652,53 @@ def ooc_cmd_hub_info(client: ClientManager.Client, arg: str):
     client.send_ooc(info)
 
 
+def ooc_cmd_hub_password(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Changes the hub password.
+
+    SYNTAX
+    /hub_password
+
+    PARAMETERS
+    <password>: New password
+
+    EXAMPLES
+    >>> /hub_password 11037
+    Sets the hub password to 11037.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='>0')
+
+    client.hub.set_password(arg)
+    client.send_ooc('You have changed the password of your hub.')
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] changed the password of your '
+                           f'hub. Do /hub_password_info to retrieve it.',
+                           is_zstaff_flex=True, is_officer=False)
+    hid = client.hub.get_numerical_id()
+    client.send_ooc_others(f'{client.name} [{client.id}] changed the password of hub {hid}. Do '
+                           f'/hub_password_info {hid} to retrieve it.',
+                           is_officer=True, in_hub=None)
+
+
+def ooc_cmd_hub_password_info(client: ClientManager.Client, arg: str):
+    try:
+        Constants.assert_command(client, arg, is_officer=True, parameters='<2')
+    except ClientError.UnauthorizedError:
+        Constants.assert_command(client, arg, is_staff=True, parameters='=0')
+
+    if not arg:
+        arg = client.hub.get_numerical_id()
+
+    try:
+        hub = client.hub.manager.get_managee_by_numerical_id(arg)
+    except HubError.ManagerInvalidGameIDError:
+        raise ClientError(f'Hub {arg} not found.')
+
+    password = hub.get_password()
+    client.send_ooc(f'The hub password is `{password}`.')
+
+
+
 def ooc_cmd_hub_rename(client: ClientManager.Client, arg: str):
     """ (STAFF ONLY)
     Changes the name of a hub by its numerical ID if given a name, or clears it if not given one.
