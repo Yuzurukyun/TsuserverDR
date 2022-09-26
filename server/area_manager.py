@@ -1132,7 +1132,8 @@ class AreaManager(AssetManager):
             The string follows the convention 'A::AreaID:AreaName:ClientsInArea'
             """
 
-            return 'A::{}:{}:{}'.format(self.id, self.name, len(self.clients))
+            return 'A::{}:{}:{}:{}'.format(self.id, self.name, len(self.clients),
+                                           self.hub.get_numerical_id())
 
     def __init__(self, server: TsuserverDR, hub: Union[_Hub, None] = None):
         """
@@ -1350,12 +1351,16 @@ class AreaManager(AssetManager):
                                 'You may set it again manually.')
                 client.multi_ic_pre = ''
 
-        # And do other tasks associated with areas reloading
-        self.publisher.publish('areas_loaded', dict())
-
         # If the default area ID is now past the number of available areas, reset it back to zero
         if self._default_area_id >= len(self._areas):
             self.default_area = self.get_area_by_id(0)
+
+        # And do other tasks associated with areas reloading
+        self.publisher.publish('areas_loaded', dict())
+
+        # Add new areas to hub
+        for area in self._areas:
+            self.hub.add_area(area)
 
         for area in old_areas:
             # Decide whether the area still exists or not

@@ -220,6 +220,59 @@ class _HubTrivialInherited(_GameWithAreas):
         self.unchecked_add_player(user)
         self.manager._check_structure()
 
+    def unchecked_add_player(self, user: ClientManager.Client):
+        """
+        Make a user a player of the hub. By default this player will not be a leader,
+        unless the hub has no leaders and it requires a leader.
+        It will also subscribe the hub to the player so it can listen to its updates.
+
+        This method does not assert structural integrity.
+
+        Parameters
+        ----------
+        user : ClientManager.Client
+            User to add to the hub. They must be in an area part of the hub.
+
+        Raises
+        ------
+        HubError.GameIsUnmanagedError
+            If the hub was scheduled for deletion and thus does not accept any mutator
+            public method calls.
+        HubError.UserNotInAreaError
+            If the user is not in an area part of the hub.
+        HubError.UserHasNoCharacterError
+            If the user has no character but the hub requires that all players have
+            characters.
+        HubError.UserNotInvitedError
+            If the hub requires players be invited to be added and the user is not
+            invited.
+        HubError.UserAlreadyPlayerError
+            If the user to add is already a user of the hub.
+        HubError.UserHitGameConcurrentLimitError
+            If the player has reached the concurrent player membership of any of the hub
+            managed by the manager of this hub, or by virtue of joining this
+            hub they would violate this hub's concurrent player membership
+            limit.
+        HubError.GameIsFullError
+            If the hub reached its player limit.
+
+        """
+
+        try:
+            super().unchecked_add_player(user)
+        except GameWithAreasError.GameIsUnmanagedError:
+            raise HubError.GameIsUnmanagedError
+        except GameWithAreasError.UserHasNoCharacterError:
+            raise HubError.UserHasNoCharacterError
+        except GameWithAreasError.UserNotInvitedError:
+            raise HubError.UserNotInvitedError
+        except GameWithAreasError.UserAlreadyPlayerError:
+            raise HubError.UserAlreadyPlayerError
+        except GameWithAreasError.UserHitGameConcurrentLimitError:
+            raise HubError.UserHitGameConcurrentLimitError
+        except GameWithAreasError.GameIsFullError:
+            raise HubError.GameIsFullError
+
     def remove_player(self, user: ClientManager.Client):
         """
         Make a user be no longer a player of this hub. If they were part of a team
@@ -247,6 +300,39 @@ class _HubTrivialInherited(_GameWithAreas):
 
         self.unchecked_remove_player(user)
         self.manager._check_structure()
+
+    def unchecked_remove_player(self, user: ClientManager.Client):
+        """
+        Make a user be no longer a player of this hub. If they were part of a team
+        managed by this hub, they will also be removed from said team. It will also
+        unsubscribe the hub from the player so it will no longer listen to its updates.
+
+        If the hub required that there it always had players and by calling this method
+        the hub had no more players, the hub will automatically be scheduled
+        for deletion.
+
+        This method does not assert structural integrity.
+
+        Parameters
+        ----------
+        user : ClientManager.Client
+            User to remove.
+
+        Raises
+        ------
+        HubError.GameIsUnmanagedError
+            If the hub was scheduled for deletion and thus does not accept any mutator
+            public method calls.
+        HubError.UserNotPlayerError
+            If the user to remove is already not a player of this hub.
+
+        """
+        try:
+            super().unchecked_remove_player(user)
+        except GameWithAreasError.GameIsUnmanagedError:
+            raise HubError.GameIsUnmanagedError
+        except GameWithAreasError.UserNotPlayerError:
+            raise HubError.UserNotPlayerError
 
     def requires_players(self) -> bool:
         """
@@ -1784,7 +1870,7 @@ class _Hub(_HubTrivialInherited):
             added if permitted by the conditions of the hub. If False, no such adding will take
             place. Defaults to False.
         require_areas : bool, optional
-            If True, if at any point the hub has no areas left, the game with areas
+            If True, if at any point the hub has no areas left, the hub
             will automatically be deleted. If False, no such automatic deletion will happen.
             Defaults to True.
         """
@@ -1840,12 +1926,6 @@ class _Hub(_HubTrivialInherited):
 
         return "hub"
 
-    def unchecked_add_player(self, user: ClientManager.Client):
-        return super().unchecked_add_player(user)
-
-    def unchecked_remove_player(self, user: ClientManager.Client):
-        return super().unchecked_remove_player(user)
-
     def load_areas(self, source_file: str = 'config/areas.yaml') -> List[AreaManager.Area]:
         """
         Load an area list file.
@@ -1874,8 +1954,6 @@ class _Hub(_HubTrivialInherited):
         """
 
         areas = self.area_manager.load_file(source_file)
-        for area in areas:
-            self.add_area(area)
         return areas.copy()
 
     def load_backgrounds(self, source_file: str = 'config/backgrounds.yaml') -> List[str]:
@@ -2066,7 +2144,7 @@ class _Hub(_HubTrivialInherited):
 
     def __repr__(self) -> str:
         """
-        Return a representation of this game with areas.
+        Return a representation of this hub.
 
         Returns
         -------
@@ -2165,7 +2243,7 @@ class _HubManagerTrivialInherited(GameWithAreasManager):
             If the hub will attempt to add nonplayer users who were in an area added
             to the hub on creation. Defaults to False.
         require_areas : bool, optional
-            If True, if at any point the hub has no areas left, the game with areas
+            If True, if at any point the hub has no areas left, the hub
             will automatically be deleted. If False, no such automatic deletion will happen.
             Defaults to True.
 
@@ -2661,7 +2739,7 @@ class HubManager(_HubManagerTrivialInherited):
             If the hub will attempt to add nonplayer users who were in an area added
             to the hub on creation. Defaults to False.
         require_areas : bool, optional
-            If True, if at any point the hub has no areas left, the game with areas
+            If True, if at any point the hub has no areas left, the hub
             will automatically be deleted. If False, no such automatic deletion will happen.
             Defaults to True.
 

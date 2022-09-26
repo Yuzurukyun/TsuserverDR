@@ -1896,7 +1896,7 @@ class _HubbedGameTrivialInherited(_GameWithAreas):
 
         """
 
-        pass
+        super()._on_areas_loaded(area_manager)
 
 
 

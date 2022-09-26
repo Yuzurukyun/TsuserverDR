@@ -1680,6 +1680,8 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
         unless the game with areas has no leaders and it requires a leader.
         It will also subscribe the game with areas to the player so it can listen to its updates.
 
+        This method does not assert structural integrity.
+
         Parameters
         ----------
         user : ClientManager.Client

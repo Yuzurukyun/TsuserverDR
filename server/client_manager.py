@@ -2247,9 +2247,9 @@ class ClientManager:
             return self.id < other.id
 
         def __repr__(self):
-            return ('C::{}:{}:{}:{}:{}:{}:{}'
+            return ('C::{}:{}:{}:{}:{}:{}:{}:{}'
                     .format(self.id, self.ipid, self.name, self.get_char_name(), self.showname,
-                            self.is_staff(), self.area.id))
+                            self.is_staff(), self.area.id, self.hub.get_numerical_id()))
 
     def __init__(self, server: TsuserverDR, client_obj: typing.Type[ClientManager.Client] = None):
         if client_obj is None:
