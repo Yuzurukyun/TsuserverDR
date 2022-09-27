@@ -817,3 +817,6 @@
 * Changed console message indicating server address and port to reflect DRO no longer using the old syntax
 * Fixed /lasterror providing duplicate error information
 * Fixed /clock_period erroring out if a non-numerical invalid hour start or hour length was given.
+
+### 220926a (4.3.5-post1)
+* Fixed area list loading failing if there was a player in the process of joining a server

@@ -436,14 +436,14 @@ class AreaManager(AssetManager):
 
             return self.server.random.choice(tuple(available))
 
-        def is_char_available(self, char_id: int, allow_restricted: bool = False,
+        def is_char_available(self, char_id: Union[int, None], allow_restricted: bool = False,
                               more_unavail_chars: Set[int] = None) -> bool:
             """
             Decide whether a character can be selected in the current area.
 
             Parameters
             ----------
-            char_id: int
+            char_id: Union[int, None]
                 ID of the character to test.
             allow_restricted: bool, optional
                 Whether to include characters whose usage has been manually restricted in the area.
@@ -454,11 +454,12 @@ class AreaManager(AssetManager):
             Returns
             -------
             bool
-                True if tested character ID is the spectator ID (which is always available), or
-                is not found to be among the area's unusable characters.
+                True if tested character ID is the spectator ID (which is always available) or None
+                (the ID that is given when on the lobby but before getting to the character select
+                screen), or is not found to be among the area's unusable characters.
             """
 
-            if char_id < 0:
+            if char_id is None or char_id < 0:
                 return True
 
             unused = char_id in self.get_chars_unusable(allow_restricted=allow_restricted,
