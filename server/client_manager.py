@@ -29,7 +29,7 @@ from server import clients
 from server import client_changearea
 from server import logger
 
-from server.exceptions import AreaError, ClientError, PartyError, TaskError, TrialError
+from server.exceptions import AreaError, ClientError, HubError, PartyError, TaskError, TrialError
 from server.constants import TargetType, Constants
 from server.hub_manager import _Hub
 from server.music_manager import MusicManager
@@ -1116,7 +1116,16 @@ class ClientManager:
                 else:
                     self.send_ooc('After a change in the character list, your client character list '
                                 'is no longer synchronized. Please rejoin the server.')
-            self.send_music_list_view()
+
+            if self.is_officer():
+                hub.add_leader(self)
+                self.send_music_list_view()
+            elif self.is_gm:
+                self.send_ooc('Logging out of GM as you changed hub.')
+                self.logout()
+                # logout already does send_music_list_view
+            else:
+                self.send_music_list_view()
 
         def change_area(self, area: AreaManager.Area, override_all: bool = False,
                         override_passages: bool = False, override_effects: bool = False,
@@ -1925,6 +1934,12 @@ class ClientManager:
                               'staff member.')
                 self.can_bypass_iclock = False
 
+            try:
+                self.hub.add_leader(self)
+            except HubError.UserAlreadyLeaderError:
+                # E.g. logging in as cm after logging in as gm
+                pass
+
         def auth_mod(self, password: str, announce_to_officers: bool = True):
             if self.is_mod:
                 raise ClientError('Already logged in.')
@@ -2062,6 +2077,12 @@ class ClientManager:
                               f'{self.following.displayname} as you are no longer logged in and '
                               f'you are not a spectator.')
                 self.unfollow_user()
+
+            try:
+                self.hub.remove_leader(self)
+            except HubError.UserNotLeaderError:
+                # E.g. logging out as gm
+                pass
 
         def get_hdid(self) -> str:
             return self.hdid
