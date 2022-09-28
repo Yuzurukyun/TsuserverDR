@@ -11657,7 +11657,7 @@ def ooc_cmd_hub_password(client: ClientManager.Client, arg: str):
     Changes the hub password.
 
     SYNTAX
-    /hub_password
+    /hub_password <password>
 
     PARAMETERS
     <password>: New password
@@ -11681,6 +11681,24 @@ def ooc_cmd_hub_password(client: ClientManager.Client, arg: str):
 
 
 def ooc_cmd_hub_password_info(client: ClientManager.Client, arg: str):
+    """ (VARYING REQUIREMENTS)
+    (STAFF ONLY) Gets the password of the current hub or, (OFFICER ONLY) the given hub by numerical
+    ID.
+    Returns an error if given a numerical ID and it is not the numerical ID of a hub in the server.
+
+    SYNTAX
+    /hub_password_info
+    /hub_password_info <hub_id>
+
+    PARAMETERS
+    <hub_id>: Numerical ID
+
+    EXAMPLES
+    >>> /hub_password_info
+    May return something like this:
+    | $H: The hub password is `2124`.
+    """
+
     try:
         Constants.assert_command(client, arg, is_officer=True, parameters='<2')
     except ClientError.UnauthorizedError:
@@ -11696,7 +11714,6 @@ def ooc_cmd_hub_password_info(client: ClientManager.Client, arg: str):
 
     password = hub.get_password()
     client.send_ooc(f'The hub password is `{password}`.')
-
 
 
 def ooc_cmd_hub_rename(client: ClientManager.Client, arg: str):
