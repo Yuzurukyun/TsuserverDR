@@ -29,7 +29,7 @@ from server import clients
 from server import client_changearea
 from server import logger
 
-from server.exceptions import AreaError, ClientError, PartyError, TaskError, TrialError
+from server.exceptions import AreaError, ClientError, HubError, PartyError, TaskError, TrialError
 from server.constants import TargetType, Constants
 from server.hub_manager import _Hub
 from server.music_manager import MusicManager
@@ -1116,7 +1116,16 @@ class ClientManager:
                 else:
                     self.send_ooc('After a change in the character list, your client character list '
                                 'is no longer synchronized. Please rejoin the server.')
-            self.send_music_list_view()
+
+            if self.is_officer():
+                hub.add_leader(self)
+                self.send_music_list_view()
+            elif self.is_gm:
+                self.send_ooc('Logging out of GM as you changed hub.')
+                self.logout()
+                # logout already does send_music_list_view
+            else:
+                self.send_music_list_view()
 
         def change_area(self, area: AreaManager.Area, override_all: bool = False,
                         override_passages: bool = False, override_effects: bool = False,
@@ -1925,10 +1934,16 @@ class ClientManager:
                               'staff member.')
                 self.can_bypass_iclock = False
 
+            try:
+                self.hub.add_leader(self)
+            except HubError.UserAlreadyLeaderError:
+                # E.g. logging in as cm after logging in as gm
+                pass
+
         def auth_mod(self, password: str, announce_to_officers: bool = True):
             if self.is_mod:
                 raise ClientError('Already logged in.')
-            if password == self.server.config['modpass']:
+            if Constants.secure_eq(password, self.server.config['modpass']):
                 self.is_mod = True
                 self.is_cm = False
                 self.is_gm = False
@@ -1941,7 +1956,7 @@ class ClientManager:
         def auth_cm(self, password: str, announce_to_officers: bool = True):
             if self.is_cm:
                 raise ClientError('Already logged in.')
-            if password == self.server.config['cmpass']:
+            if Constants.secure_eq(password, self.server.config['cmpass']):
                 self.is_cm = True
                 self.is_mod = False
                 self.is_gm = False
@@ -1955,32 +1970,39 @@ class ClientManager:
             if self.is_gm:
                 raise ClientError('Already logged in.')
 
+            hub_pass = self.hub.get_password()
             # Obtain the daily gm pass (changes at midnight server time, gmpass1=Monday..)
             current_day = datetime.datetime.today().weekday()
             daily_gmpass = self.server.config['gmpass{}'.format((current_day % 7) + 1)]
 
-            valid_passwords = [self.server.config['gmpass']]
+            valid_passwords = [hub_pass, self.server.config['gmpass']]
             if daily_gmpass is not None:
                 valid_passwords.append(daily_gmpass)
 
-            if password in valid_passwords:
-                if password == daily_gmpass:
-                    g_or_daily = 'daily password'
-                else:
-                    g_or_daily = 'global password'
-                if announce_to_officers:
-                    self.send_ooc_others('{} [{}] logged in as a game master with the {}.'
-                                         .format(self.name, self.id, g_or_daily),
-                                         is_officer=True, in_hub=None)
-                self.is_gm = True
-                self.is_mod = False
-                self.is_cm = False
+            for valid_password in valid_passwords:
+                if Constants.secure_eq(password, valid_password):
+                    break
             else:
                 if announce_to_officers:
                     self.send_ooc_others('{} [{}] failed to login as a game master.'
-                                         .format(self.name, self.id),
-                                         is_officer=True, in_hub=None)
+                                        .format(self.name, self.id),
+                                        is_officer=True, in_hub=None)
                 raise ClientError('Invalid password.')
+
+            if password == hub_pass:
+                password_type = 'hub password'
+            elif password == daily_gmpass:
+                password_type = 'daily password'
+            else:
+                password_type = 'global password'
+
+            if announce_to_officers:
+                self.send_ooc_others('{} [{}] logged in as a game master with the {}.'
+                                        .format(self.name, self.id, password_type),
+                                        is_officer=True, in_hub=None)
+            self.is_gm = True
+            self.is_mod = False
+            self.is_cm = False
 
         def logout(self):
             self.is_mod = False
@@ -2054,6 +2076,12 @@ class ClientManager:
                               f'{self.following.displayname} as you are no longer logged in and '
                               f'you are not a spectator.')
                 self.unfollow_user()
+
+            try:
+                self.hub.remove_leader(self)
+            except HubError.UserNotLeaderError:
+                # E.g. logging out as gm
+                pass
 
         def get_hdid(self) -> str:
             return self.hdid

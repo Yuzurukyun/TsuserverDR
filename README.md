@@ -177,7 +177,7 @@ Additional notes are listed at the end of the command list. Unless otherwise spe
 * **logincm** "password"
     - Makes you a Community Manager.
 * **logingm** "password"
-    - Makes you a GM.
+    - Makes you a Game Master.
 * **logout**
     - Logs you out of the rank you have, if any.
 * **look**
@@ -435,6 +435,10 @@ GMs can:
     - Deletes your hub.
 * **hub_info**
     - Returns information about your hub.
+* **hub_password** "password"
+    - Changes the password of your hub.
+* **hub_password_info**
+    - Gets the password of your hub.
 * **hub_rename** "name"
     - Changes the name of your hub to the given name, or clears it if not given any.
 * **iclock**
@@ -720,6 +724,8 @@ GMs can:
     - Deletes the hub by numerical ID, or your hub if not given any.
 * **hub_info** "hub"
     - Returns information about the hub by numerical ID, or your hub if not given any.
+* **hub_password_info** "hub"
+    - Returns the password of the hub by numerical ID, or your hub if not given any.
 * **hub_rename** "name"
     - Changes the name of your hub to the given name, or clears it if not given any.
 * **invite** "ID/IPID/char name/edited-to character/showname/char showname/OOC name"
