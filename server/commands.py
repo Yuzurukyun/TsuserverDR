@@ -3842,7 +3842,7 @@ def ooc_cmd_logingm(client: ClientManager.Client, arg: str):
     /logingm <gm_password>
 
     PARAMETERS
-    <gm_password>: Game master password, found in config/config.yaml
+    <gm_password>: Game master password, found via /hub_info or in the config/config.yaml
 
     EXAMPLES
     >>> /logingm GM

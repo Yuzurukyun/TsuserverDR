@@ -177,7 +177,7 @@ Additional notes are listed at the end of the command list. Unless otherwise spe
 * **logincm** "password"
     - Makes you a Community Manager.
 * **logingm** "password"
-    - Makes you a GM.
+    - Makes you a Game Master.
 * **logout**
     - Logs you out of the rank you have, if any.
 * **look**

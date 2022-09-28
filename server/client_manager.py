@@ -1970,36 +1970,35 @@ class ClientManager:
             if self.is_gm:
                 raise ClientError('Already logged in.')
 
+            hub_pass = self.hub.get_password()
             # Obtain the daily gm pass (changes at midnight server time, gmpass1=Monday..)
             current_day = datetime.datetime.today().weekday()
             daily_gmpass = self.server.config['gmpass{}'.format((current_day % 7) + 1)]
 
-            valid_passwords = [self.server.config['gmpass']]
+            valid_passwords = [hub_pass, self.server.config['gmpass']]
             if daily_gmpass is not None:
                 valid_passwords.append(daily_gmpass)
 
-            found_valid_password = False
             for valid_password in valid_passwords:
                 if Constants.secure_eq(password, valid_password):
-                    found_valid_password = True
-                else:
-                    found_valid_password = found_valid_password | False
-            # Code above written inefficiently deliberately to prevent timing attacks.
-
-            if not found_valid_password:
+                    break
+            else:
                 if announce_to_officers:
                     self.send_ooc_others('{} [{}] failed to login as a game master.'
-                                         .format(self.name, self.id),
-                                         is_officer=True, in_hub=None)
+                                        .format(self.name, self.id),
+                                        is_officer=True, in_hub=None)
                 raise ClientError('Invalid password.')
 
-            if password == daily_gmpass:
-                g_or_daily = 'daily password'
+            if password == hub_pass:
+                password_type = 'hub password'
+            elif password == daily_gmpass:
+                password_type = 'daily password'
             else:
-                g_or_daily = 'global password'
+                password_type = 'global password'
+
             if announce_to_officers:
                 self.send_ooc_others('{} [{}] logged in as a game master with the {}.'
-                                        .format(self.name, self.id, g_or_daily),
+                                        .format(self.name, self.id, password_type),
                                         is_officer=True, in_hub=None)
             self.is_gm = True
             self.is_mod = False
