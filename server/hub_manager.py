@@ -23,7 +23,7 @@ Module that contains the hub manager and hub modules.
 
 from __future__ import annotations
 
-import random
+import secrets
 import typing
 
 from server.area_manager import AreaManager
@@ -1912,7 +1912,7 @@ class _Hub(_HubTrivialInherited):
 
         self.trial_manager = TrialManager(self)
 
-        self._password = str(random.randint(1000, 9999))
+        self._password = str(secrets.randbelow(9000) + 1000)  # Cute trick to get 4-digit number
 
         self.manager: HubManager  # Setting for typing
 
