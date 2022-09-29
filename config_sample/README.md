@@ -4,13 +4,10 @@
 With your copy of this software, you should check that you have the following files in `\config_sample\`:
 
 * `config.yaml`
-* `area_lists.yaml`
-* `area_templates.yaml`
 * `areas.yaml`
 * `backgrounds.yaml`
 * `gimp.yaml`
 * `music.yaml`
-* `music_lists.yaml`
 
 As well as these folders:
 
@@ -36,13 +33,6 @@ Each file contains an example configuration. Further instructions should be loca
 * **config.yaml**
     - Contains server configuration attributes such as server name, player limit, the port it should use to listen to  connections, whether it should be advertised in the AO master server list, etc.
 
-* **area_lists.yaml**
-    - Lists the area lists the server supports.
-    - This is the list that is returned when moderators use `/area_lists`. No validation is performed to check if some area list is in this list of area lists.
-
-* **area_templates.yaml**
-    - Lists the area templates area lists can use to generate areas. **Currently unused.**
-
 * **areas.yaml**
     - Contains the default server area list.
     - This is the area list that is loaded when the server starts, as well as the area list the server falls back to when moderators use `/area_list` on its own.
@@ -57,7 +47,3 @@ Each file contains an example configuration. Further instructions should be loca
 * **music.yaml**
     - Contains the default server music list.
     - This is the music list that is loaded when the server starts, as well as the music list the server sends to a client that uses `/music_list` on its own.
-
-* **music_lists.yaml**
-    - Lists the music lists the server supports.
-    - This is the list that is returned when players use `/music_lists`. No validation is performed to check if some music list is in this list of music lists.

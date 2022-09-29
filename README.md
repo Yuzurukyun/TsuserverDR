@@ -190,8 +190,6 @@ Additional notes are listed at the end of the command list. Unless otherwise spe
     - Sets your music list to the given one, or restores the original one if not given any.
 * **music_list_info**
     - Returns your current music list.
-* **music_lists**
-    - Lists all available music lists as established in `config/music_lists.yaml`.
 * **notecard** "content"
     - Sets the content of your notecard.
 * **notecard_clear**
@@ -697,8 +695,6 @@ GMs can:
 * **area_kick** "ID/IPID" "area number"
     - Kicks target from your area to the intended area and remove them from its invite-list.
     - If not given a target area, it will use the server's default area (usually area 0).
-* **area_lists**
-    - Lists all available area lists as established in `config/area_lists.yaml`.
 * **blockdj** "ID/IPID"
     - Mutes the target from changing music.
 * **charlog** "ID/IPID"
