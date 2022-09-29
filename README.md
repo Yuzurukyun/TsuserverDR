@@ -336,6 +336,11 @@ GMs can:
 * **area_kick** "ID" "area number"
     - Kicks target from your area to the intended area and remove them from its invite-list.
     - If not given a target area, it will use the server's default area (usually area 0).
+* **area_list** "area list"
+    - Sets the area list of your hub.
+    - If not given an area list, it will use the default file `config/areas.yaml`.
+* **area_list_info**
+    - Returns the area list of your hub.
 * **autopass** "ID"
     - Toggles enter/leave messages being sent automatically or not to users in the current area, including original/target areas, whenever the target moves.
     - Messages will not be sent if sneaking. Altered messages will be sent if the area's lights are turned off.
@@ -359,6 +364,11 @@ GMs can:
     - Sets the current area to have bloodtrails leading to the listed areas. If no areas are given, the area is set to have an unconnected pool of blood.
 * **bloodtrail_smear** "area 1", "area 2", ...
     - Smears the blood trails in the given areas (or the current one if not given any areas).
+* **bg_list** "list"
+    - Sets the background list of your hub.
+    - If not given a background list, it will use the default file `config/backgrounds.yaml`.
+* **bg_list_info**
+    - Returns the background list of your hub.
 * **bg_period** "period name" "bg name"
     - Sets the special background to be displayed in the area whenever there is a clock in the area with the given period.
 * **bg_period_end** "period name"
@@ -371,6 +381,11 @@ GMs can:
     - Changes the current area's setting to allow RP users to use /getarea. By default area setting is indicated in the server's area list.
 * **can_rpgetareas**
     - Changes the current area's setting to allow RP users to use /getareas. By default area setting is indicated in the server's area list.
+* **char_list** "list"
+    - Sets the character list of your hub.
+    - If not given a character list, it will use the default file `config/characters.yaml`.
+* **char_list_info**
+    - Returns the character list of your hub.
 * **char_restrict** "character name"
     - Changes the restricted status of a character in the current area.
     - If a character is restricted, only GMs and above can use the character in the current area.
@@ -682,27 +697,12 @@ GMs can:
 * **area_kick** "ID/IPID" "area number"
     - Kicks target from your area to the intended area and remove them from its invite-list.
     - If not given a target area, it will use the server's default area (usually area 0).
-* **area_list** "area list"
-    - Sets the server's current area list.
-    - If not given an area list, it will use the default file `config/areas.yaml`.
-* **area_list_info**
-    - Returns the server's current area list.
 * **area_lists**
     - Lists all available area lists as established in `config/area_lists.yaml`.
-* **bg_list** "list"
-    - Sets the server's current background list.
-    - If not given a background list, it will use the default file `config/backgrounds.yaml`.
-* **bg_list_info**
-    - Returns the server's current background list.
 * **blockdj** "ID/IPID"
     - Mutes the target from changing music.
 * **charlog** "ID/IPID"
     - Lists all character changes (including iniswaps and character name changes) a target has gone through since connecting, including the time they were changed.
-* **char_list** "list"
-    - Sets the server's current character list.
-    - If not given a character list, it will use the default file `config/characters.yaml`.
-* **char_list_info**
-    - Returns the server's current character list.
 * **cleargm** "ID"
     - Logs out the target from their GM rank, or all GMs in the server if not given a target, and puts them in RP mode if needed.
 * **g** "message"
