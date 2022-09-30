@@ -11697,6 +11697,54 @@ def ooc_cmd_hub_rename(client: ClientManager.Client, arg: str):
         target.send_music_list_view()
 
 
+def ooc_cmd_dj_list(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Sets the current DJ list of your current hub (what music list a player will see when joining an
+    area of your hub if they do not have a personal music list active).
+    If given no arguments, it will return the DJ list to its original value
+    (in config/music.yaml).
+    Returns an error if the given music list name included relative directories,
+    was not found, caused an OS error when loading, or raised a YAML or asset syntax error when
+    loading.
+
+    SYNTAX
+    /dj_list <dj_list>
+
+    PARAMETERS
+    <dj_list>: Name of the intended character list
+
+    EXAMPLES
+    >>> /dj_list Transylvania
+    Load the "trial" DJ list.
+    >>> /dj_list
+    Reset the DJ list to its original value.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True)
+
+    client.hub.music_manager.command_list_load(client, arg)
+
+
+def ooc_cmd_dj_list_info(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Returns the DJ list of your current hub.
+
+    SYNTAX
+    /dj_list_info
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    >>> /dj_list_info
+    May return something like this:
+    | $H: The current DJ list is the custom list `trial`.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
+
+    client.hub.music_manager.command_list_info(client)
+
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):
     """
     VERY DANGEROUS. SHOULD ONLY BE ENABLED FOR DEBUGGING.

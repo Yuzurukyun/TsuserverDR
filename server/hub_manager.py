@@ -2025,7 +2025,7 @@ class _Hub(_HubTrivialInherited):
         Parameters
         ----------
         source_file : str
-            Relative path from server root folder to background list file, by default
+            Relative path from server root folder to the background list file, by default
             'config/backgrounds.yaml'
 
         Returns
@@ -2071,7 +2071,7 @@ class _Hub(_HubTrivialInherited):
         Parameters
         ----------
         source_file : str, optional
-            Relative path from server root folder to character list file, by default
+            Relative path from server root folder to the character list file, by default
             'config/characters.yaml'
 
         Returns
@@ -2128,6 +2128,32 @@ class _Hub(_HubTrivialInherited):
         return characters.copy()
 
     def load_music(self, music_list_file: str = 'config/music.yaml') -> List[Dict[str, Any]]:
+        """
+        Load a music list file.
+
+        Parameters
+        ----------
+        source_file : str, optional
+            Relative path from server root folder to the music list file, by default
+            'config/music.yaml'
+
+        Returns
+        -------
+        List[Dict[str, Any]]
+            Music.
+
+        Raises
+        ------
+        ServerError.FileNotFoundError
+            If the file was not found.
+        ServerError.FileOSError
+            If there was an operating system error when opening the file.
+        ServerError.YAMLInvalidError
+            If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
+        ServerError.FileSyntaxError
+            If the file failed verification for its asset type.
+        """
+
         music = self.music_manager.load_file(music_list_file)
         return music.copy()
 
