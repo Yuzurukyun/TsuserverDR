@@ -192,10 +192,11 @@ def ooc_cmd_area_kick(client: ClientManager.Client, arg: str):
 
 
 def ooc_cmd_area_list(client: ClientManager.Client, arg: str):
-    """ (OFFICER ONLY)
-    Sets the server's current area list (what areas exist at any given time). If given no arguments,
-    it will return the area list to its original value (in areas.yaml). The list of area lists can
-    be accessed with /area_lists. Clients that do not process 'SM' packets can be in servers that
+    """ (STAFF ONLY)
+    Sets the area list of your current hub (what areas exist at any given time).
+    If given no arguments, it will return the area list to its original value
+    (in config/areas.yaml).
+    Clients that do not process 'SM' packets can be in servers that
     use this command without crashing, but they will continue to only see the areas they could see
     when joining.
     Returns an error if the given area list was not found.
@@ -213,7 +214,7 @@ def ooc_cmd_area_list(client: ClientManager.Client, arg: str):
     Reset the area list to its original value.
     """
 
-    Constants.assert_command(client, arg, is_officer=True)
+    Constants.assert_command(client, arg, is_staff=True)
 
     # lists which areas are locked before the reload
     old_locked_areas = [area.name for area in client.hub.area_manager.get_areas()
@@ -242,35 +243,6 @@ def ooc_cmd_area_list(client: ClientManager.Client, arg: str):
         # we do not need to do anything.
         except AreaError:
             pass
-
-
-def ooc_cmd_area_lists(client: ClientManager.Client, arg: str):
-    """ (OFFICER ONLY)
-    Lists all available area lists as established in config/area_lists.yaml. Note that, as this
-    file is updated independently from the other area lists, an area list does not need to be in
-    this file in order to be usable, and an area list in this list may no longer exist.
-
-    SYNTAX
-    /area_lists
-
-    PARAMETERS
-    None
-
-    EXAMPLES
-    >>> /area_lists
-    Return all available area lists.
-    """
-
-    Constants.assert_command(client, arg, is_officer=True, parameters='=0')
-
-    try:
-        with Constants.fopen('config/area_lists.yaml', 'r', encoding='utf-8') as f:
-            output = 'Available area lists:\n'
-            for line in f:
-                output += '*{}'.format(line)
-            client.send_ooc(output)
-    except ServerError.FileNotFoundError:
-        raise ClientError('Server file area_lists.yaml not found.')
 
 
 def ooc_cmd_autopass(client: ClientManager.Client, arg: str):
@@ -4349,10 +4321,12 @@ def ooc_cmd_multiclients(client: ClientManager.Client, arg: str):
 
 def ooc_cmd_music_list(client: ClientManager.Client, arg: str):
     """
-    Sets the client's current music list. This list is persistent between area changes and works on
-    a client basis. If given no arguments, it will return the music list to its default value
-    (in music.yaml). The list of music lists can be accessed with /music_lists. Clients that do not
-    process 'SM' packets can use this command without crashing, but it will have no visual effect.
+    Sets your current music list. This list is persistent between area changes and works on
+    a client basis.
+    If given no arguments, it will return the music list to its default value
+    (in config/music.yaml).
+    Clients that do not process 'SM' packets can use this command without crashing, but it will
+    have no visual effect.
     Returns an error if the given music list name included relative directories,
     was not found, caused an OS error when loading, or raised a YAML or asset syntax error when
     loading.
@@ -4374,36 +4348,6 @@ def ooc_cmd_music_list(client: ClientManager.Client, arg: str):
 
     client.music_manager.command_list_load(client, arg, notify_others=False)
     client.send_music_list_view()
-
-
-def ooc_cmd_music_lists(client: ClientManager.Client, arg: str):
-    """
-    Lists all available music lists as established in config/music_lists.yaml
-    Note that, as this file is updated independently from the other music lists,
-    some music list does not need to be in this file in order to be usable, and
-    a music list in this list may no longer exist.
-
-    SYNTAX
-    /music_lists
-
-    PARAMETERS
-    None
-
-    EXAMPLES
-    >>> /music_lists
-    Return all available music lists.
-    """
-
-    Constants.assert_command(client, arg, parameters='=0')
-
-    try:
-        with Constants.fopen('config/music_lists.yaml', 'r', encoding='utf-8') as f:
-            output = 'Available music lists:\n'
-            for line in f:
-                output += '*{}'.format(line)
-            client.send_ooc(output)
-    except ServerError.FileNotFoundError:
-        raise ClientError('Server file music_lists.yaml not found.')
 
 
 def ooc_cmd_mute(client: ClientManager.Client, arg: str):
@@ -11288,9 +11232,9 @@ def ooc_cmd_mindreader(client: ClientManager.Client, arg: str):
 
 
 def ooc_cmd_bg_list(client: ClientManager.Client, arg: str):
-    """ (OFFICER ONLY)
-    Sets the server's current background list (what backgrounds areas may normally use at any given
-    time).
+    """ (STAFF ONLY)
+    Sets the background list of your current hub (what backgrounds areas may normally use at any
+    given time).
     If given no arguments, it will return the background list to its original value
     (in config/backgrounds.yaml).
     Returns an error if the given background list name included relative directories,
@@ -11310,14 +11254,14 @@ def ooc_cmd_bg_list(client: ClientManager.Client, arg: str):
     Reset the background list to its original value.
     """
 
-    Constants.assert_command(client, arg, is_officer=True)
+    Constants.assert_command(client, arg, is_staff=True)
 
     client.hub.background_manager.command_list_load(client, arg)
 
 
 def ooc_cmd_bg_list_info(client: ClientManager.Client, arg: str):
-    """ (OFFICER ONLY)
-    Returns the current background list.
+    """ (STAFF ONLY)
+    Returns the background list of your current hub.
 
     SYNTAX
     /bg_list_info
@@ -11331,14 +11275,15 @@ def ooc_cmd_bg_list_info(client: ClientManager.Client, arg: str):
     | $H: The current background list is the custom list `custom`.
     """
 
-    Constants.assert_command(client, arg, is_officer=True, parameters='=0')
+    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
     client.hub.background_manager.command_list_info(client)
 
 
 def ooc_cmd_char_list(client: ClientManager.Client, arg: str):
-    """ (OFFICER ONLY)
-    Sets the server's current character list (what characters a player may use at any given time).
+    """ (STAFF ONLY)
+    Sets the current character list of your current hub (what characters a player may use at any
+    given time).
     If given no arguments, it will return the character list to its original value
     (in config/characters.yaml).
     Returns an error if the given character list name included relative directories,
@@ -11358,14 +11303,14 @@ def ooc_cmd_char_list(client: ClientManager.Client, arg: str):
     Reset the character list to its original value.
     """
 
-    Constants.assert_command(client, arg, is_officer=True)
+    Constants.assert_command(client, arg, is_staff=True)
 
     client.hub.character_manager.command_list_load(client, arg)
 
 
 def ooc_cmd_char_list_info(client: ClientManager.Client, arg: str):
-    """ (OFFICER ONLY)
-    Returns the current character list.
+    """ (STAFF ONLY)
+    Returns the character list of your current hub.
 
     SYNTAX
     /char_list_info
@@ -11379,14 +11324,14 @@ def ooc_cmd_char_list_info(client: ClientManager.Client, arg: str):
     | $H: The current character list is the custom list `custom`.
     """
 
-    Constants.assert_command(client, arg, is_officer=True, parameters='=0')
+    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
     client.hub.character_manager.command_list_info(client)
 
 
 def ooc_cmd_area_list_info(client: ClientManager.Client, arg: str):
-    """ (OFFICER ONLY)
-    Returns the current area list.
+    """ (STAFF ONLY)
+    Returns the area list of your current hub.
 
     SYNTAX
     /area_list_info

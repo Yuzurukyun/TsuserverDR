@@ -833,4 +833,9 @@
 * Removed RP mode: It is now assumed always on
 * Removed /gmlock and /gmunlock (different from /lock and /unlock)
 * Removed unused configuration settings from `config/config.yaml`
-* Removed allowed iniswaps override file `config/iniswaps.yaml`, as well as compatibility bridge file `config/110_new_music.yaml`
+* Removed the following configuration files:
+  - The allowed iniswaps override file `config/iniswaps.yaml`.
+  - The compatibility bridge file `config/110_new_music.yaml`.
+  - The area lists file `config/area_lists.yaml`
+  - The music lists file `config/music_lists.yaml`
+  - The area templates file `config/area_templates.yaml`
