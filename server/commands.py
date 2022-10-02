@@ -4346,7 +4346,12 @@ def ooc_cmd_music_list(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg)
 
-    client.music_manager.command_list_load(client, arg, notify_others=False)
+    client.music_manager.command_list_load(client, arg, send_notifications=False)
+
+    if arg:
+        client.send_ooc(f'You have loaded the personal music list {arg}.')
+    else:
+        client.send_ooc('You are now seeing the hub music list.')
     client.send_music_list_view()
 
 
@@ -11711,10 +11716,10 @@ def ooc_cmd_dj_list(client: ClientManager.Client, arg: str):
     /dj_list <dj_list>
 
     PARAMETERS
-    <dj_list>: Name of the intended character list
+    <dj_list>: Name of the intended music list to serve as DJ list.
 
     EXAMPLES
-    >>> /dj_list Transylvania
+    >>> /dj_list trial
     Load the "trial" DJ list.
     >>> /dj_list
     Reset the DJ list to its original value.
@@ -11724,6 +11729,14 @@ def ooc_cmd_dj_list(client: ClientManager.Client, arg: str):
 
     client.hub.music_manager.command_list_load(client, arg)
 
+    for target in client.hub.get_players():
+        if target.music_manager.is_default_file_loaded():
+            target.send_ooc('As you had no personal music list loaded, you will be shown the hub '
+                            'music list.')
+            target.send_music_list_view()
+        else:
+            target.send_ooc('As you had a personal music list loaded, you will not be shown the '
+                            'hub music list. Display the hub music list by running /music_list.')
 
 def ooc_cmd_dj_list_info(client: ClientManager.Client, arg: str):
     """ (STAFF ONLY)

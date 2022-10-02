@@ -166,8 +166,20 @@ class AssetManager(ABC):
 
         raise NotImplementedError
 
+    def is_default_file_loaded(self) -> bool:
+        """
+        Decide whether the default file as specified by self.get_default_file() is currently
+        loaded or not.
+
+        Returns
+        -------
+        bool
+            True if the default file is loaded, False otherwise
+        """
+        return self.get_source_file() == self.get_default_file()
+
     def command_list_load(self, client: ClientManager.Client, file: str,
-                          notify_others: bool = True):
+                          send_notifications: bool = True):
         """
         Load an asset given by the player and notify the player and others if indicated.
 
@@ -177,8 +189,8 @@ class AssetManager(ABC):
             Player who requested the loading.
         file : str
             Location of the file relative to the server root folder.
-        notify_others : bool, optional
-            If other players of the server should be notified if the asset is successfully loaded,
+        send_notifications : bool, optional
+            If notifications should be sent if the asset is successfully loaded,
             by default True.
 
         Raises
@@ -221,13 +233,14 @@ class AssetManager(ABC):
             raise ServerError(f'{fail_msg}: '
                               f'An asset syntax error occurred: `{exc}`.')
         else:
-            client.send_ooc(f'You have loaded {msg}.')
-            if notify_others:
-                client.send_ooc_others(f'{msg[0].upper()}{msg[1:]} has been loaded.',
-                                       is_officer=False, in_hub=True)
-                client.send_ooc_others(f'{client.name} [{client.id}] has loaded {msg}.',
-                                       is_officer=True, in_hub=True)
-                client.send_ooc_others(f'{client.name} [{client.id}] has loaded {msg} in '
+            if send_notifications:
+                client.send_ooc(f'You have loaded {msg} in your hub.')
+                client.send_ooc_others(f'{msg[0].upper()}{msg[1:]} has been loaded in your hub.',
+                                       is_staff=False, in_hub=True)
+                client.send_ooc_others(f'{client.displayname} [{client.id}] has loaded {msg} in '
+                                       f'your hub.',
+                                       is_staff=True, in_hub=True)
+                client.send_ooc_others(f'{client.displayname} [{client.id}] has loaded {msg} in '
                                        f'hub {client.hub.get_numerical_id()}',
                                        is_officer=True, in_hub=False)
 

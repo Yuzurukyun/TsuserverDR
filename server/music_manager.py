@@ -232,6 +232,15 @@ class MusicManager(AssetManager):
             return False
 
     def get_client_view(self) -> List[str]:
+        """
+        Return the list of music of the music manager in a format a client can understand.
+
+        Returns
+        -------
+        List[str]
+            List of music.
+        """
+
         prepared_music_list = list()
         for item in self._music:
             category = item['category']

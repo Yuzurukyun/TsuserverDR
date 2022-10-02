@@ -1019,7 +1019,11 @@ class ClientManager:
                 area_list = self.hub.manager.get_client_view(self)
             else:
                 area_list = self.hub.area_manager.get_client_view(self, from_area=self.area)
-            music_list = self.music_manager.get_client_view()
+
+            if self.music_manager.is_default_file_loaded():
+                music_list = self.hub.music_manager.get_client_view()
+            else:
+                music_list = self.music_manager.get_client_view()
 
             if self.packet_handler.HAS_DISTINCT_AREA_AND_MUSIC_LIST_OUTGOING_PACKETS:
                 # DRO 1.1.0+, KFO and AO2.8.4+ deals with music lists differently than older clients
