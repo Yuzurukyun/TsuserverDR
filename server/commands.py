@@ -4321,7 +4321,7 @@ def ooc_cmd_multiclients(client: ClientManager.Client, arg: str):
 
 def ooc_cmd_music_list(client: ClientManager.Client, arg: str):
     """
-    Sets your current music list. This list is persistent between area changes and works on
+    Sets your current personal music list. This list is persistent between area changes and works on
     a client basis.
     If given no arguments, it will return the music list to its default value
     (in config/music.yaml).
@@ -4349,9 +4349,12 @@ def ooc_cmd_music_list(client: ClientManager.Client, arg: str):
     client.music_manager.command_list_load(client, arg, send_notifications=False)
 
     if arg:
-        client.send_ooc(f'You have loaded the personal music list {arg}.')
+        client.send_ooc(f'You are now seeing the personal music list `{arg}`.')
     else:
-        client.send_ooc('You are now seeing the hub music list.')
+        if client.music_manager.if_default_show_hub_music:
+            client.send_ooc('You are now seeing the hub music list.')
+        else:
+            client.send_ooc('You are now seeing the default server music list.')
     client.send_music_list_view()
 
 
@@ -11757,6 +11760,22 @@ def ooc_cmd_dj_list_info(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
     client.hub.music_manager.command_list_info(client)
+
+
+def ooc_cmd_toggle_music_list_default(client: ClientManager.Client, arg: str):
+    Constants.assert_command(client, arg, parameters='=0')
+
+    new_value = not client.music_manager.if_default_show_hub_music
+    client.music_manager.if_default_show_hub_music = new_value
+
+    if new_value:
+        client.send_ooc('You will now see the hub music list whenever you do not have a '
+                        'personal music list active.')
+    else:
+        client.send_ooc('You will now see the server music list whenever you do not have a '
+                        'personal music list active.')
+    client.send_music_list_view()
+
 
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):
     """

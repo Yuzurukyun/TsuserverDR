@@ -265,3 +265,9 @@ class MusicManager(AssetManager):
 
         # At least one music track
         assert self._music
+
+
+class PersonalMusicManager(MusicManager):
+    def __init__(self, server: TsuserverDR, hub: Union[_Hub, None] = None):
+        super().__init__(server, hub)
+        self.if_default_show_hub_music = True
