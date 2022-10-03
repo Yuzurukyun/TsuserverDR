@@ -2724,10 +2724,9 @@ def ooc_cmd_globalic(client: ClientManager.Client, arg: str):
     Send client's subsequent IC messages to users only in specified areas. Can take either area IDs
     or area names. If you are not in intended destination range, it will NOT send messages
     to your area. Requires /unglobalic to undo.
-    Returns an error if the given identifier does not correspond to an area.
-
     If given two areas, it will send the IC messages to all areas between the given ones inclusive.
     If given one area, it will send the IC messages only to the given area.
+    Returns an error if the given identifier does not correspond to an area.
 
     SYNTAX
     /globalic <target_area>
@@ -11763,6 +11762,24 @@ def ooc_cmd_dj_list_info(client: ClientManager.Client, arg: str):
 
 
 def ooc_cmd_toggle_music_list_default(client: ClientManager.Client, arg: str):
+    """
+    Toggles the option that controls which music list shown when no personal music list is active:
+    the current hub music list (default), or the server default music list.
+
+    SYNTAX
+    /toggle_music_list_default
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    Assuming that the current option makes the current hub music list be shown...
+    >>> /toggle_music_list_default
+    The server default music list will now be shown when no personal music list is active.
+    >>> /toggle_music_list_default
+    The current hub music list will now be shown when no personal music list is active.
+    """
+
     Constants.assert_command(client, arg, parameters='=0')
 
     new_value = not client.music_manager.if_default_show_hub_music
