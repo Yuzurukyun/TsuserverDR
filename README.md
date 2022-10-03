@@ -289,6 +289,8 @@ Additional notes are listed at the end of the command list. Unless otherwise spe
     - Changes your setting to have forward sprites mode off (your character sprites are not sent to anyone, everyone sees the last sprites they last saw) or on (your character appears normally). By default it is on.
 * **toggle_global**
     - Changes your setting to receive global messages. By default it is on.
+* **toggle_music_list_default**
+    - Changes your setting to see which music list to see when no personal music list is active: current hub or server default. By default it is current hub.
 * **toggle_pm**
     - Changes your setting to receive PMs. By default it is on.
 * **toggle_shownames**
@@ -422,6 +424,11 @@ GMs can:
     - Obtains the last 20 rolls from a target, or your last 20 rolls if not given a target.
 * **dicelog_area** "area"
     - Obtains the last 20 rolls from an area by ID or name, or the last 20 rolls of your area if not given one.
+* **dj_list** "music list"
+    - Sets the music list of your hub.
+    - If not given a music list, it will use the default file `config/music.yaml`.
+* **dj_list_info**
+    - Returns the music list of your hub.
 * **follow** "ID"
     - Starts following a target. If the target changes areas, you will automatically follow them there.
 * **gag** "ID"

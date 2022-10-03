@@ -32,7 +32,7 @@ from server import logger
 from server.exceptions import AreaError, ClientError, HubError, PartyError, TaskError, TrialError
 from server.constants import TargetType, Constants
 from server.hub_manager import _Hub
-from server.music_manager import MusicManager
+from server.music_manager import PersonalMusicManager
 from server.subscriber import Publisher
 
 if typing.TYPE_CHECKING:
@@ -84,7 +84,7 @@ class ClientManager:
             self.ever_outbounded_gamemode = False
             self.ever_outbounded_time_of_day = False
 
-            self.music_manager = MusicManager(server, hub=None)
+            self.music_manager = PersonalMusicManager(server, hub=None)
             # Avoid doing an OS call for a new client
             self.music_manager.transfer_contents_from_manager(
                 self.server.hub_manager.get_default_managee().music_manager
@@ -1019,7 +1019,12 @@ class ClientManager:
                 area_list = self.hub.manager.get_client_view(self)
             else:
                 area_list = self.hub.area_manager.get_client_view(self, from_area=self.area)
-            music_list = self.music_manager.get_client_view()
+
+            if (self.music_manager.is_default_file_loaded()
+                and self.music_manager.if_default_show_hub_music):
+                music_list = self.hub.music_manager.get_client_view()
+            else:
+                music_list = self.music_manager.get_client_view()
 
             if self.packet_handler.HAS_DISTINCT_AREA_AND_MUSIC_LIST_OUTGOING_PACKETS:
                 # DRO 1.1.0+, KFO and AO2.8.4+ deals with music lists differently than older clients

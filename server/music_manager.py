@@ -232,6 +232,15 @@ class MusicManager(AssetManager):
             return False
 
     def get_client_view(self) -> List[str]:
+        """
+        Return the list of music of the music manager in a format a client can understand.
+
+        Returns
+        -------
+        List[str]
+            List of music.
+        """
+
         prepared_music_list = list()
         for item in self._music:
             category = item['category']
@@ -256,3 +265,9 @@ class MusicManager(AssetManager):
 
         # At least one music track
         assert self._music
+
+
+class PersonalMusicManager(MusicManager):
+    def __init__(self, server: TsuserverDR, hub: Union[_Hub, None] = None):
+        super().__init__(server, hub)
+        self.if_default_show_hub_music = True

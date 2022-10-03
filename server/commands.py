@@ -2724,10 +2724,9 @@ def ooc_cmd_globalic(client: ClientManager.Client, arg: str):
     Send client's subsequent IC messages to users only in specified areas. Can take either area IDs
     or area names. If you are not in intended destination range, it will NOT send messages
     to your area. Requires /unglobalic to undo.
-    Returns an error if the given identifier does not correspond to an area.
-
     If given two areas, it will send the IC messages to all areas between the given ones inclusive.
     If given one area, it will send the IC messages only to the given area.
+    Returns an error if the given identifier does not correspond to an area.
 
     SYNTAX
     /globalic <target_area>
@@ -4321,7 +4320,7 @@ def ooc_cmd_multiclients(client: ClientManager.Client, arg: str):
 
 def ooc_cmd_music_list(client: ClientManager.Client, arg: str):
     """
-    Sets your current music list. This list is persistent between area changes and works on
+    Sets your current personal music list. This list is persistent between area changes and works on
     a client basis.
     If given no arguments, it will return the music list to its default value
     (in config/music.yaml).
@@ -4346,7 +4345,15 @@ def ooc_cmd_music_list(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg)
 
-    client.music_manager.command_list_load(client, arg, notify_others=False)
+    client.music_manager.command_list_load(client, arg, send_notifications=False)
+
+    if arg:
+        client.send_ooc(f'You are now seeing the personal music list `{arg}`.')
+    else:
+        if client.music_manager.if_default_show_hub_music:
+            client.send_ooc('You are now seeing the hub music list.')
+        else:
+            client.send_ooc('You are now seeing the default server music list.')
     client.send_music_list_view()
 
 
@@ -11695,6 +11702,96 @@ def ooc_cmd_hub_rename(client: ClientManager.Client, arg: str):
 
     for target in client.server.get_clients():
         target.send_music_list_view()
+
+
+def ooc_cmd_dj_list(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Sets the current DJ list of your current hub (what music list a player will see when joining an
+    area of your hub if they do not have a personal music list active).
+    If given no arguments, it will return the DJ list to its original value
+    (in config/music.yaml).
+    Returns an error if the given music list name included relative directories,
+    was not found, caused an OS error when loading, or raised a YAML or asset syntax error when
+    loading.
+
+    SYNTAX
+    /dj_list <dj_list>
+
+    PARAMETERS
+    <dj_list>: Name of the intended music list to serve as DJ list.
+
+    EXAMPLES
+    >>> /dj_list trial
+    Load the "trial" DJ list.
+    >>> /dj_list
+    Reset the DJ list to its original value.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True)
+
+    client.hub.music_manager.command_list_load(client, arg)
+
+    for target in client.hub.get_players():
+        if target.music_manager.is_default_file_loaded():
+            target.send_ooc('As you had no personal music list loaded, you will be shown the hub '
+                            'music list.')
+            target.send_music_list_view()
+        else:
+            target.send_ooc('As you had a personal music list loaded, you will not be shown the '
+                            'hub music list. Display the hub music list by running /music_list.')
+
+def ooc_cmd_dj_list_info(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Returns the DJ list of your current hub.
+
+    SYNTAX
+    /dj_list_info
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    >>> /dj_list_info
+    May return something like this:
+    | $H: The current DJ list is the custom list `trial`.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
+
+    client.hub.music_manager.command_list_info(client)
+
+
+def ooc_cmd_toggle_music_list_default(client: ClientManager.Client, arg: str):
+    """
+    Toggles the option that controls which music list shown when no personal music list is active:
+    the current hub music list (default), or the server default music list.
+
+    SYNTAX
+    /toggle_music_list_default
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    Assuming that the current option makes the current hub music list be shown...
+    >>> /toggle_music_list_default
+    The server default music list will now be shown when no personal music list is active.
+    >>> /toggle_music_list_default
+    The current hub music list will now be shown when no personal music list is active.
+    """
+
+    Constants.assert_command(client, arg, parameters='=0')
+
+    new_value = not client.music_manager.if_default_show_hub_music
+    client.music_manager.if_default_show_hub_music = new_value
+
+    if new_value:
+        client.send_ooc('You will now see the hub music list whenever you do not have a '
+                        'personal music list active.')
+    else:
+        client.send_ooc('You will now see the server music list whenever you do not have a '
+                        'personal music list active.')
+    client.send_music_list_view()
 
 
 def ooc_cmd_exec(client: ClientManager.Client, arg: str):
