@@ -6,7 +6,7 @@ _standard_FL = ('yellowtext', 'customobjections', 'flipping', 'fastloading', 'no
 _standard_client_version = ('1', '2', '2')
 
 
-class TestClientConnection(_Unittest):
+class TestAAA_ClientConnection(_Unittest):
     def test_01_client0_connect(self):
         """
         Situation: Client selects the server on the lobby screen.
