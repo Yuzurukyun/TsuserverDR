@@ -71,7 +71,7 @@ class _Unittest(unittest.TestCase):
 
     @classmethod
     def setUpClients(cls, num_clients):
-        cls.server.make_clients(num_clients)
+        cls.server.make_test_clients(num_clients)
 
         err_characters = 'Invalid characters.yaml for the purposes of testing (must be original).'
 
@@ -169,7 +169,7 @@ class _Unittest(unittest.TestCase):
         for (logger, handler) in cls.server.logger_handlers:
             handler.close()
             logger.removeHandler(handler)
-        cls.server.disconnect_all()
+        cls.server.disconnect_all_test_clients()
 
 
 class _TestSituation3(_Unittest):
@@ -946,15 +946,16 @@ class _TestTsuserverDR(TsuserverDR):
         super().send_error_report(client, cmd, args, ex)
         raise ex
 
-    def create_client(self) -> _TestClientManager._TestClient:
+    def make_test_client(self, char_id: int = -1, hdid: str = 'FAKEHDID',
+                         attempts_to_fully_join: bool = True) -> _TestClientManager._TestClient:
         new_ao_protocol = AOProtocol(self)
         new_ao_protocol.connection_made(None)
-        return new_ao_protocol.client
-
-    def make_client(self, char_id, hdid='FAKEHDID'):
-        c = self.create_client()
+        c: _TestClientManager._TestClient = new_ao_protocol.client
+        if not attempts_to_fully_join:
+            return c
         if c.disconnected:
             return c
+
         c.send_command_cts("askchaa#%")
         c.send_command_cts("RC#%")
         c.send_command_cts("RM#%")
@@ -971,8 +972,8 @@ class _TestTsuserverDR(TsuserverDR):
 
         return c
 
-    def make_clients(self, number, hdid_list=None,
-                     user_list=None) -> Set[_TestClientManager._TestClient]:
+    def make_test_clients(self, number: int, hdid_list: List[str] = None,
+                          user_list: List[str] = None) -> Set[_TestClientManager._TestClient]:
         if hdid_list is None:
             hdid_list = ['FAKEHDID'] * number
         else:
@@ -993,7 +994,7 @@ class _TestTsuserverDR(TsuserverDR):
             else:
                 char_id = -1
 
-            client = self.make_client(char_id, hdid=hdid_list[i])
+            client = self.make_test_client(char_id, hdid=hdid_list[i])
             client.name = user_list[i]
 
             for j, existing_client in enumerate(self.client_list):
@@ -1004,14 +1005,14 @@ class _TestTsuserverDR(TsuserverDR):
                 j = -1
             assert j == client.id, (j, client.id)
 
-    def disconnect_client(self, client_id, assert_no_outstanding=False):
+    def disconnect_test_client(self, client_id: int, assert_no_outstanding: bool = False):
         client = self.client_list[client_id]
         if not client:
             raise KeyError(client_id)
 
         client.disconnect(assert_no_outstanding=assert_no_outstanding)
 
-    def disconnect_all(self, assert_no_outstanding=False):
+    def disconnect_all_test_clients(self, assert_no_outstanding: bool = False):
         for (i, client) in enumerate(self.client_list):
             if client:
                 client.disconnect()

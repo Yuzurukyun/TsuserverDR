@@ -12,7 +12,7 @@ class TestClientConnection(_Unittest):
         Situation: Client selects the server on the lobby screen.
         """
 
-        self.clients[0] = self.server.create_client()
+        self.clients[0] = self.server.make_test_client(attempts_to_fully_join=False)
         c = self.clients[0]
         c.assert_packet('decryptor', 34)
         c.assert_packet('ID', (0, None, None))
@@ -26,7 +26,7 @@ class TestClientConnection(_Unittest):
         Situation: Another client selects the server on the lobby screen.
         """
 
-        self.clients[1] = self.server.create_client()
+        self.clients[1] = self.server.make_test_client(attempts_to_fully_join=False)
         c = self.clients[1]
         c.assert_packet('decryptor', 34)
         c.assert_packet('ID', (1, None, None))
@@ -71,7 +71,7 @@ class TestClientConnection(_Unittest):
         """
 
         # Starts off as normal
-        self.clients[0] = self.server.create_client()
+        self.clients[0] = self.server.make_test_client(attempts_to_fully_join=False)
         c = self.clients[0]
         c.assert_packet('decryptor', 34)
         c.assert_packet('ID', (0, None, None))
@@ -121,7 +121,7 @@ class TestClientConnection(_Unittest):
         """
 
         # Starts off as normal
-        self.clients[1] = self.server.create_client()
+        self.clients[1] = self.server.make_test_client(attempts_to_fully_join=False)
         c = self.clients[1]
         c.assert_packet('decryptor', 34)
         c.assert_packet('ID', (1, None, None))
@@ -178,7 +178,7 @@ class TestClientConnection(_Unittest):
         """
 
         # Starts off as normal
-        self.clients[2] = self.server.create_client()
+        self.clients[2] = self.server.make_test_client(attempts_to_fully_join=False)
         c = self.clients[2]
         c.assert_packet('decryptor', 34)
         c.assert_packet('ID', (2, None, None))
@@ -257,7 +257,7 @@ class TestClientConnection(_Unittest):
         Situation: Player joins and picks char 2 (automated).
         """
 
-        self.clients[3] = self.server.make_client(2)
+        self.clients[3] = self.server.make_test_client(2)
         self.assertEqual(len(self.server.client_manager.clients), 4)
         self.assertEqual(self.server.get_player_count(), 4)
 
@@ -274,7 +274,7 @@ class TestClientConnection(_Unittest):
         self.assertEqual(len(self.server.client_manager.clients), 3)
         self.assertEqual(self.server.get_player_count(), 3)
 
-        self.clients[1] = self.server.make_client(0)
+        self.clients[1] = self.server.make_test_client(0)
         self.assertEqual(self.clients[1].id, 1)
         self.assertEqual(len(self.server.client_manager.clients), 4)
         self.assertEqual(self.server.get_player_count(), 4)
@@ -302,13 +302,13 @@ class TestClientConnection(_Unittest):
         self.assertEqual(self.server.get_player_count(), 2)
 
         # Now c0 picks char_id=1
-        self.clients[0] = self.server.make_client(1)
+        self.clients[0] = self.server.make_test_client(1)
         self.assertEqual(self.clients[0].id, 0)
         self.assertEqual(len(self.server.client_manager.clients), 3)
         self.assertEqual(self.server.get_player_count(), 3)
 
         # And c2 picks char_id=3
-        self.clients[2] = self.server.make_client(3)
+        self.clients[2] = self.server.make_test_client(3)
         self.assertEqual(self.clients[2].id, 2)
         self.assertEqual(len(self.server.client_manager.clients), 4)
         self.assertEqual(self.server.get_player_count(), 4)
@@ -318,11 +318,11 @@ class TestClientConnection(_Unittest):
         Situation: All clients disconnect and reconnect (automated).
         """
 
-        self.server.disconnect_all()
+        self.server.disconnect_all_test_clients()
         self.assertEqual(len(self.server.client_manager.clients), 0)
         self.assertEqual(self.server.get_player_count(), 0)
 
-        self.server.make_clients(4)
+        self.server.make_test_clients(4)
         self.assertEqual(len(self.server.client_manager.clients), 4)
         self.assertEqual(self.server.get_player_count(), 4)
 
@@ -332,7 +332,7 @@ class TestClientConnection(_Unittest):
         are forced to choose Spectator.
         """
 
-        self.server.make_clients(1)
+        self.server.make_test_clients(1)
         self.assertEqual(len(self.server.client_manager.clients), 5)
         self.assertEqual(self.server.get_player_count(), 5)
 
@@ -341,19 +341,19 @@ class TestClientConnection(_Unittest):
         Situation: Server is filled up, then more clients try to join.
         """
 
-        self.server.make_clients(95)  # Nothing should happen
+        self.server.make_test_clients(95)  # Nothing should happen
         self.assertEqual(len(self.server.client_manager.clients), 100)
         self.assertEqual(self.server.get_player_count(), 100)
 
-        self.server.make_clients(1)  # Would overlap
+        self.server.make_test_clients(1)  # Would overlap
         self.assertEqual(len(self.server.client_manager.clients), 100)
         self.assertEqual(self.server.get_player_count(), 100)
 
-        self.server.make_clients(1)  # Tries again, should still be denied
+        self.server.make_test_clients(1)  # Tries again, should still be denied
         self.assertEqual(len(self.server.client_manager.clients), 100)
         self.assertEqual(self.server.get_player_count(), 100)
 
-        self.server.disconnect_all()
+        self.server.disconnect_all_test_clients()
         self.assertEqual(len(self.server.client_manager.clients), 0)
         self.assertEqual(self.server.get_player_count(), 0)
 
@@ -361,6 +361,6 @@ class TestClientConnection(_Unittest):
         """
         Situation: Tester of test function, filling up beyond server capacity.
         """
-        self.server.make_clients(105)
+        self.server.make_test_clients(105)
         self.assertEqual(len(self.server.client_manager.clients), 100)
         self.assertEqual(self.server.get_player_count(), 100)

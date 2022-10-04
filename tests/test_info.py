@@ -102,7 +102,7 @@ class TestInfo_03_Online(_TestOOC):
         self.c1.assert_ooc('Online: {}/{}'.format(3, self.server.config['playerlimit']), over=True)
         self.c3.assert_no_ooc()
 
-        self.server.make_clients(4)
+        self.server.make_test_clients(4)
 
         self.c3.ooc('/online')
         self.c3.assert_ooc('Online: {}/{}'.format(7, self.server.config['playerlimit']), over=True)
