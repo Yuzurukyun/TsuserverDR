@@ -19,7 +19,7 @@
 from __future__ import annotations
 
 import typing
-from typing import Any, Callable, List, Optional, Set, Tuple, Dict, Union
+from typing import Any, Callable, List, Optional, Set, Tuple, Dict, Type, Union
 
 import datetime
 import random
@@ -2097,7 +2097,7 @@ class ClientManager:
             return self.ipid
 
         def get_ipreal(self) -> str:
-            return self.transport.get_extra_info('peername')[0]
+            return Constants.get_ip_of_transport(self.transport)
 
         def get_char_name(self, char_id: int = None) -> str:
             if char_id is None:
@@ -2286,14 +2286,15 @@ class ClientManager:
                     .format(self.id, self.ipid, self.name, self.get_char_name(), self.showname,
                             self.is_staff(), self.area.id, self.hub.get_numerical_id()))
 
-    def __init__(self, server: TsuserverDR, client_obj: typing.Type[ClientManager.Client] = None):
-        if client_obj is None:
-            client_obj = self.Client
+    client_factory: Type[Client] = Client
 
-        self.clients: Set[client_obj] = set()
+    def __init__(
+        self,
+        server: TsuserverDR,
+        ):
+        self.clients: Set[ClientManager.Client] = set()
         self.server = server
         self.cur_id = [False] * self.server.config['playerlimit']
-        self.client_obj = client_obj
 
         # Phantom peek timer stuff
         base_time = 300
@@ -2331,22 +2332,19 @@ class ClientManager:
     def new_client(
         self,
         hub: _Hub,
-        transport,
-        client_obj: typing.Type[ClientManager.Client] = None,
-        protocol: AOProtocol = None
-        ):
-        ip = transport.get_extra_info('peername')[0] if transport else "127.0.0.1"
+        transport: _ProactorSocketTransport,
+        protocol: AOProtocol,
+        ) -> Tuple[Client, bool]:
+        ip = Constants.get_ip_of_transport(transport)
         ipid = self.server.get_ipid(ip)
-
-        if client_obj is None:
-            client_obj = self.client_obj
 
         cur_id = -1
         for i in range(self.server.config['playerlimit']):
             if not self.cur_id[i]:
                 cur_id = i
                 break
-        c = client_obj(self.server, hub, transport, cur_id, ipid, protocol=protocol)
+
+        c = self.client_factory(self.server, hub, transport, cur_id, ipid, protocol=protocol)
         self.clients.add(c)
 
         # Check if server is full, and if so, send number of players and disconnect

@@ -895,10 +895,23 @@ class _TestClientManager(ClientManager):
             if buffer:
                 self.send_command_cts(buffer)
 
+    client_factory: Type[ClientManager.Client] = _TestClient
+
     def __init__(self, server):
         """ Overwrites client_manager.ClientManager.__init__ """
 
-        super().__init__(server, client_obj=self._TestClient)
+        super().__init__(server)
+        self.clients: Set[_TestClientManager._TestClient]  # For typing
+
+    def new_client(
+        self,
+        hub: _Hub,
+        transport: _ProactorSocketTransport,
+        protocol: AOProtocol,
+        ) -> Tuple[_TestClient, bool]:
+        """ Overwrites client_manager.ClientManager.new_client """
+
+        return super().new_client(hub, transport, protocol)
 
 
 class _TestTsuserverDR(TsuserverDR):
@@ -916,6 +929,7 @@ class _TestTsuserverDR(TsuserverDR):
             Union[_TestClientManager._TestClient, None]
             ] = [None] * self.config['playerlimit']
         self.task_manager = TaskManager(self)
+        self.client_manager: _TestClientManager  # For typing
 
     def new_client(
         self,
