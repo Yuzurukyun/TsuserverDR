@@ -20,7 +20,7 @@
 # This class will suffer major reworkings for 4.3
 
 from __future__ import annotations
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple, Type
 
 import asyncio
 import errno
@@ -50,8 +50,9 @@ from server.validate.gimp import ValidateGimp
 
 
 class TsuserverDR:
-    def __init__(self, protocol: AOProtocol = None,
-                 client_manager: ClientManager = None):
+    client_manager_factory: Type[ClientManager] = ClientManager
+
+    def __init__(self, protocol: AOProtocol = None):
         self.logged_packet_limit = 100  # Arbitrary
         self.logged_packets = []
         self.print_packets = False  # For debugging purposes
@@ -67,7 +68,6 @@ class TsuserverDR:
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
 
         self.protocol = AOProtocol if protocol is None else protocol
-        client_manager = ClientManager if client_manager is None else client_manager
         self.random = importlib.reload(random)
 
         logger.log_print('Launching {}...'.format(self.version))
@@ -89,7 +89,7 @@ class TsuserverDR:
         self.timer_manager = TimerManager(self)
         self.party_manager = PartyManager(self)
 
-        self.client_manager: ClientManager = client_manager(self)
+        self.client_manager = self.client_manager_factory(self)
         self.hub_manager = HubManager(self)
         default_hub = self.hub_manager.new_managee()
         default_hub.set_name('Main')

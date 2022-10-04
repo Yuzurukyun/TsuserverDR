@@ -20,7 +20,7 @@ import asyncio
 import random
 import unittest
 
-from typing import List, Set
+from typing import List, Set, Type
 
 from unittest.mock import Mock
 
@@ -881,13 +881,15 @@ class _TestClientManager(ClientManager):
 
 
 class _TestTsuserverDR(TsuserverDR):
+    client_manager_factory: Type[ClientManager] = _TestClientManager
+
     def __init__(self):
         """ Overwrites tsuserver.TsuserverDR.__init__ """
         self.loop = asyncio.get_event_loop()
         logger.log_print = logger.log_print2
         logger.log_server = logger.log_server2
 
-        super().__init__(client_manager=_TestClientManager)
+        super().__init__()
         self.ao_protocol = AOProtocol
         self.client_list = [None] * self.config['playerlimit']
 
