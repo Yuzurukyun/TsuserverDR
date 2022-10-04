@@ -51,7 +51,7 @@ from server.validate.gimp import ValidateGimp
 
 class TsuserverDR:
     def __init__(self, protocol: AOProtocol = None,
-                 client_manager: ClientManager = None, in_test: bool = False):
+                 client_manager: ClientManager = None):
         self.logged_packet_limit = 100  # Arbitrary
         self.logged_packets = []
         self.print_packets = False  # For debugging purposes
@@ -65,12 +65,9 @@ class TsuserverDR:
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
-        self.in_test = in_test
 
         self.protocol = AOProtocol if protocol is None else protocol
         client_manager = ClientManager if client_manager is None else client_manager
-        logger.log_print = logger.log_print2 if self.in_test else logger.log_print
-        logger.log_server = logger.log_server2 if self.in_test else logger.log_server
         self.random = importlib.reload(random)
 
         logger.log_print('Launching {}...'.format(self.version))
@@ -220,6 +217,22 @@ class TsuserverDR:
         if self.segment_version:
             mes = '{}-{}'.format(mes, self.segment_version)
         return mes
+
+    def check_exec_active(self):
+        # Determine whether /exec is active or not and warn server owner if so.
+        if getattr(self.commands, "ooc_cmd_exec")(None, "is_exec_active") == 1:
+            logger.log_print("""
+
+                  WARNING
+
+                  THE /exec COMMAND IN commands.py IS ACTIVE.
+
+                  UNLESS YOU ABSOLUTELY MEANT IT AND KNOW WHAT YOU ARE DOING,
+                  PLEASE STOP YOUR SERVER RIGHT NOW AND DEACTIVATE IT BY GOING TO THE
+                  commands.py FILE AND FOLLOWING THE INSTRUCTIONS UNDER ooc_cmd_exec.\n
+                  BAD THINGS CAN AND WILL HAPPEN OTHERWISE.
+
+                  """)
 
     def reload(self):
         default_hub = self.hub_manager.get_default_managee()
@@ -570,9 +583,6 @@ class TsuserverDR:
 
         # Log error to file
         logger.log_error(info, server=self, errortype='C')
-
-        if self.in_test:
-            raise ex
 
     def broadcast_global(self, client: ClientManager.Client, msg: str, as_mod: bool = False,
                          mtype: str = "<dollar>G",

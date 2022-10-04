@@ -31,6 +31,8 @@ from server.exceptions import ArgumentError, AreaError, ClientError, HubError, M
 from server.exceptions import PartyError, ZoneError, TrialError, NonStopDebateError
 from server.client_manager import ClientManager
 
+from typing import Union
+
 # <parameter_name>: required parameter
 # {parameter_name}: optional parameter
 
@@ -11794,7 +11796,7 @@ def ooc_cmd_toggle_music_list_default(client: ClientManager.Client, arg: str):
     client.send_music_list_view()
 
 
-def ooc_cmd_exec(client: ClientManager.Client, arg: str):
+def ooc_cmd_exec(client: Union[ClientManager.Client, None], arg: str):
     """
     VERY DANGEROUS. SHOULD ONLY BE ENABLED FOR DEBUGGING.
 
@@ -11831,6 +11833,12 @@ def ooc_cmd_exec(client: ClientManager.Client, arg: str):
     debug = 0
     if not debug:
         return None
+
+    if not client:
+        # client is None for server.check_exec_active()
+        return debug
+
+    # Code after this point assumes debug mode is on!!!
     logger.log_print("Attempting to run instruction {}".format(arg))
 
     try:

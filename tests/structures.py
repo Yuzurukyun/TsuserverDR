@@ -24,6 +24,8 @@ from typing import List, Set
 
 from unittest.mock import Mock
 
+from server import logger
+
 from server.network.ao_protocol import AOProtocol
 from server.area_manager import AreaManager
 from server.client_manager import ClientManager
@@ -882,12 +884,20 @@ class _TestTsuserverDR(TsuserverDR):
     def __init__(self):
         """ Overwrites tsuserver.TsuserverDR.__init__ """
         self.loop = asyncio.get_event_loop()
+        logger.log_print = logger.log_print2
+        logger.log_server = logger.log_server2
 
-        super().__init__(client_manager=_TestClientManager, in_test=True)
+        super().__init__(client_manager=_TestClientManager)
         self.ao_protocol = AOProtocol
         self.client_list = [None] * self.config['playerlimit']
 
         self.task_manager = TaskManager(self)
+
+    def send_error_report(self, client: ClientManager.Client, cmd: str, args: List[str],
+                          ex: Exception):
+        """ Overwrite tsuserver.TsuserverDR.send_error_report """
+        super().send_error_report(client, cmd, args, ex)
+        raise ex
 
     def create_client(self) -> _TestClientManager._TestClient:
         new_ao_protocol = self.ao_protocol(self)

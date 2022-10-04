@@ -59,22 +59,8 @@ class AOProtocol(asyncio.Protocol):
         self.client = None
         self.buffer = ''
         self.ping_timeout = None
-        logger.log_print = logger.log_print2 if self.server.in_test else logger.log_print
 
-        # Determine whether /exec is active or not and warn server owner if so.
-        if getattr(self.server.commands, "ooc_cmd_exec")(self.client, "is_exec_active") == 1:
-            logger.log_print("""
-
-                  WARNING
-
-                  THE /exec COMMAND IN commands.py IS ACTIVE.
-
-                  UNLESS YOU ABSOLUTELY MEANT IT AND KNOW WHAT YOU ARE DOING,
-                  PLEASE STOP YOUR SERVER RIGHT NOW AND DEACTIVATE IT BY GOING TO THE
-                  commands.py FILE AND FOLLOWING THE INSTRUCTIONS UNDER ooc_cmd_exec.\n
-                  BAD THINGS CAN AND WILL HAPPEN OTHERWISE.
-
-                  """)
+        self.server.check_exec_active()
 
     def connection_made(self, transport):
         """ Called upon a new client connecting
