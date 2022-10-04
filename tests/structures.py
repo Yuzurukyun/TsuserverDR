@@ -230,12 +230,11 @@ class _TestSituation6Mc1Gc25(_TestSituation6):
 
 class _TestClientManager(ClientManager):
     class _TestClient(ClientManager.Client):
-        def __init__(self, *args, protocol: AOProtocol = None):
+        def __init__(self, *args):
             """ Overwrites client_manager.ClientManager.Client.__init__ """
 
             super().__init__(*args)
 
-            self.protocol = protocol
             self.received_packets = list()
             self.received_ooc = list()
             self.received_ic = list()
