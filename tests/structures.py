@@ -230,7 +230,7 @@ class _TestSituation6Mc1Gc25(_TestSituation6):
 
 class _TestClientManager(ClientManager):
     class _TestClient(ClientManager.Client):
-        def __init__(self, *args, protocol=None):
+        def __init__(self, *args, protocol: AOProtocol = None):
             """ Overwrites client_manager.ClientManager.Client.__init__ """
 
             super().__init__(*args)
@@ -890,7 +890,6 @@ class _TestTsuserverDR(TsuserverDR):
         logger.log_server = logger.log_server2
 
         super().__init__()
-        self.ao_protocol = AOProtocol
         self.client_list = [None] * self.config['playerlimit']
 
         self.task_manager = TaskManager(self)
@@ -902,7 +901,7 @@ class _TestTsuserverDR(TsuserverDR):
         raise ex
 
     def create_client(self) -> _TestClientManager._TestClient:
-        new_ao_protocol = self.ao_protocol(self)
+        new_ao_protocol = AOProtocol(self)
         new_ao_protocol.connection_made(None)
         return new_ao_protocol.client
 

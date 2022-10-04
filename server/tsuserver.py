@@ -67,7 +67,6 @@ class TsuserverDR:
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
 
-        self.protocol = AOProtocol if protocol is None else protocol
         self.random = importlib.reload(random)
 
         logger.log_print('Launching {}...'.format(self.version))
@@ -144,7 +143,7 @@ class TsuserverDR:
         # Yes there is a race condition here (between checking if port is available, and actually
         # using it). The only side effect of a race condition is a slightly less nice error
         # message, so it's not that big of a deal.
-        self._server = await self.loop.create_server(lambda: self.protocol(self),
+        self._server = await self.loop.create_server(lambda: AOProtocol(self),
                                                      bound_ip, port,
                                                      start_serving=False)
         asyncio.create_task(self._server.serve_forever())
