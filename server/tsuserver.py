@@ -31,6 +31,7 @@ import socket
 import ssl
 import sys
 import traceback
+import typing
 import urllib.request, urllib.error
 
 from server import logger
@@ -48,11 +49,13 @@ from server.timer_manager import TimerManager
 from server.validate.config import ValidateConfig
 from server.validate.gimp import ValidateGimp
 
+if typing.TYPE_CHECKING:
+    from asyncio.proactor_events import _ProactorSocketTransport
 
 class TsuserverDR:
     client_manager_factory: Type[ClientManager] = ClientManager
 
-    def __init__(self, protocol: AOProtocol = None):
+    def __init__(self):
         self.logged_packet_limit = 100  # Arbitrary
         self.logged_packets = []
         self.print_packets = False  # For debugging purposes
@@ -266,7 +269,11 @@ class TsuserverDR:
         entry = ('R:' if incoming else 'S:', Constants.get_time_iso(), str(client.id), packet)
         self.logged_packets.append(entry)
 
-    def new_client(self, transport, protocol=None) -> Tuple[ClientManager.Client, bool]:
+    def new_client(
+        self,
+        transport: _ProactorSocketTransport,
+        protocol: AOProtocol = None,
+        ) -> Tuple[ClientManager.Client, bool]:
         c, valid = self.client_manager.new_client(
             self.hub_manager.get_default_managee(),
             transport,

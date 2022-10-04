@@ -33,6 +33,8 @@ from server.constants import ArgType, Constants
 from server.exceptions import AOProtocolError
 
 if typing.TYPE_CHECKING:
+    from asyncio.proactor_events import _ProactorSocketTransport
+
     # Avoid circular referencing
     from server.tsuserver import TsuserverDR
 
@@ -62,7 +64,7 @@ class AOProtocol(asyncio.Protocol):
 
         self.server.check_exec_active()
 
-    def connection_made(self, transport):
+    def connection_made(self, transport: _ProactorSocketTransport):
         """ Called upon a new client connecting
 
         :param transport: the transport object

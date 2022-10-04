@@ -36,11 +36,14 @@ from server.music_manager import PersonalMusicManager
 from server.subscriber import Publisher
 
 if typing.TYPE_CHECKING:
+    from asyncio.proactor_events import _ProactorSocketTransport
+
     # Avoid circular referencing
     from server.area_manager import AreaManager
     from server.network.ao_protocol import AOProtocol
     from server.tsuserver import TsuserverDR
     from server.zone_manager import ZoneManager
+
 
 class ClientManager:
     class Client:
@@ -48,7 +51,7 @@ class ClientManager:
             self,
             server: TsuserverDR,
             hub: _Hub,
-            transport,
+            transport: _ProactorSocketTransport,
             user_id: int,
             ipid: int,
             protocol: AOProtocol = None
@@ -57,7 +60,6 @@ class ClientManager:
             self.hub = hub
             self.transport = transport
             self.protocol = protocol
-            self.ip = transport.get_extra_info('peername')[0] if transport else "127.0.0.1"
             self.area_changer = client_changearea.ClientChangeArea(self)
             self.required_packets_received = set()  # Needs to have length 2 to actually connect
             self.can_askchaa = True  # Needs to be true to process an askchaa packet
@@ -2331,7 +2333,7 @@ class ClientManager:
         hub: _Hub,
         transport,
         client_obj: typing.Type[ClientManager.Client] = None,
-        protocol=None
+        protocol: AOProtocol = None
         ):
         ip = transport.get_extra_info('peername')[0] if transport else "127.0.0.1"
         ipid = self.server.get_ipid(ip)

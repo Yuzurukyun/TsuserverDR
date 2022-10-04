@@ -16,13 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 import asyncio
 import random
+import typing
 import unittest
 
-from typing import List, Set, Type
-
-from unittest.mock import Mock
+from typing import List, Set, Tuple, Type, Union
 
 from server import logger
 
@@ -34,6 +35,10 @@ from server.exceptions import TsuserverException
 from server.task_manager import TaskManager
 from server.tsuserver import TsuserverDR
 
+if typing.TYPE_CHECKING:
+    from asyncio.proactor_events import _ProactorSocketTransport
+
+    from server.hub_manager import _Hub
 
 class _Unittest(unittest.TestCase):
     @classmethod
@@ -230,14 +235,34 @@ class _TestSituation6Mc1Gc25(_TestSituation6):
 
 class _TestClientManager(ClientManager):
     class _TestClient(ClientManager.Client):
-        def __init__(self, *args):
+        def __init__(
+            self,
+            server: _TestTsuserverDR,
+            hub: _Hub,
+            transport: None,
+            user_id: int,
+            ipid: int,
+            protocol: AOProtocol = None
+            ):
             """ Overwrites client_manager.ClientManager.Client.__init__ """
 
-            super().__init__(*args)
+            super().__init__(
+                server=server,
+                hub=hub,
+                transport=transport,
+                user_id=user_id,
+                ipid=ipid,
+                protocol=protocol,
+            )
 
             self.received_packets = list()
             self.received_ooc = list()
             self.received_ic = list()
+
+            self.server: _TestTsuserverDR  # Only to indicate type
+
+        def get_ipreal(self) -> str:
+            return "127.0.0.1"
 
         def disconnect(self, assert_no_outstanding=False):
             """ Overwrites client_manager.ClientManager.Client.disconnect """
@@ -870,9 +895,6 @@ class _TestClientManager(ClientManager):
             if buffer:
                 self.send_command_cts(buffer)
 
-        def get_ipreal(self) -> str:
-            return "127.0.0.1"
-
     def __init__(self, server):
         """ Overwrites client_manager.ClientManager.__init__ """
 
@@ -889,9 +911,20 @@ class _TestTsuserverDR(TsuserverDR):
         logger.log_server = logger.log_server2
 
         super().__init__()
-        self.client_list = [None] * self.config['playerlimit']
 
+        self.client_list: List[
+            Union[_TestClientManager._TestClient, None]
+            ] = [None] * self.config['playerlimit']
         self.task_manager = TaskManager(self)
+
+    def new_client(
+        self,
+        transport: _ProactorSocketTransport,
+        protocol: AOProtocol = None,
+        ) -> Tuple[_TestClientManager._TestClient, bool]:
+        """ Overwrites new_client only to override return type """
+
+        return super().new_client(transport, protocol)
 
     def send_error_report(self, client: ClientManager.Client, cmd: str, args: List[str],
                           ex: Exception):
