@@ -53,9 +53,10 @@ if typing.TYPE_CHECKING:
     from asyncio.proactor_events import _ProactorSocketTransport
 
 class TsuserverDR:
-    client_manager_factory: Type[ClientManager] = ClientManager
+    def __init__(self, client_manager_type: Type[ClientManager] = None):
+        if client_manager_type is None:
+            client_manager_type = ClientManager
 
-    def __init__(self):
         self.logged_packet_limit = 100  # Arbitrary
         self.logged_packets = []
         self.print_packets = False  # For debugging purposes
@@ -91,7 +92,7 @@ class TsuserverDR:
         self.timer_manager = TimerManager(self)
         self.party_manager = PartyManager(self)
 
-        self.client_manager = self.client_manager_factory(self)
+        self.client_manager = client_manager_type(self)
         self.hub_manager = HubManager(self)
         default_hub = self.hub_manager.new_managee()
         default_hub.set_name('Main')
@@ -275,9 +276,9 @@ class TsuserverDR:
         protocol: AOProtocol = None,
         ) -> Tuple[ClientManager.Client, bool]:
         c, valid = self.client_manager.new_client(
-            self.hub_manager.get_default_managee(),
-            transport,
-            protocol=protocol
+            hub=self.hub_manager.get_default_managee(),
+            transport=transport,
+            protocol=protocol,
             )
         c.server = self
         c.area = self.hub_manager.get_default_managee().area_manager.default_area()

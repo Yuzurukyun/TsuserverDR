@@ -2286,15 +2286,18 @@ class ClientManager:
                     .format(self.id, self.ipid, self.name, self.get_char_name(), self.showname,
                             self.is_staff(), self.area.id, self.hub.get_numerical_id()))
 
-    client_factory: Type[Client] = Client
-
     def __init__(
         self,
         server: TsuserverDR,
+        default_client_type: Type[ClientManager.Client] = None,
         ):
-        self.clients: Set[ClientManager.Client] = set()
+        if default_client_type is None:
+            default_client_type = self.Client
+
+        self.clients: Set[default_client_type] = set()
         self.server = server
         self.cur_id = [False] * self.server.config['playerlimit']
+        self.default_client_type = default_client_type
 
         # Phantom peek timer stuff
         base_time = 300
@@ -2331,10 +2334,16 @@ class ClientManager:
 
     def new_client(
         self,
-        hub: _Hub,
-        transport: _ProactorSocketTransport,
-        protocol: AOProtocol,
+        client_type: Type[Client] = None,
+        hub: _Hub = None,
+        transport: _ProactorSocketTransport = None,
+        protocol: AOProtocol = None,
         ) -> Tuple[Client, bool]:
+        if client_type is None:
+            client_type = self.default_client_type
+        if hub is None:
+            hub = self.server.hub_manager.get_default_managee()
+
         ip = Constants.get_ip_of_transport(transport)
         ipid = self.server.get_ipid(ip)
 
@@ -2344,7 +2353,7 @@ class ClientManager:
                 cur_id = i
                 break
 
-        c = self.client_factory(self.server, hub, transport, cur_id, ipid, protocol=protocol)
+        c = client_type(self.server, hub, transport, cur_id, ipid, protocol=protocol)
         self.clients.add(c)
 
         # Check if server is full, and if so, send number of players and disconnect

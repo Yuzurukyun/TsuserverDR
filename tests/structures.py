@@ -895,35 +895,37 @@ class _TestClientManager(ClientManager):
             if buffer:
                 self.send_command_cts(buffer)
 
-    client_factory: Type[ClientManager.Client] = _TestClient
-
-    def __init__(self, server):
+    def __init__(self, server: _TestTsuserverDR):
         """ Overwrites client_manager.ClientManager.__init__ """
 
-        super().__init__(server)
+        super().__init__(server, default_client_type=_TestClientManager._TestClient)
         self.clients: Set[_TestClientManager._TestClient]  # For typing
 
     def new_client(
         self,
-        hub: _Hub,
-        transport: _ProactorSocketTransport,
-        protocol: AOProtocol,
+        client_type: Type[_TestClientManager._TestClient] = None,
+        hub: _Hub = None,
+        transport: _ProactorSocketTransport = None,
+        protocol: AOProtocol = None,
         ) -> Tuple[_TestClient, bool]:
         """ Overwrites client_manager.ClientManager.new_client """
 
-        return super().new_client(hub, transport, protocol)
+        return super().new_client(
+            client_type=client_type,
+            hub=hub,
+            transport=transport,
+            protocol=protocol
+            )
 
 
 class _TestTsuserverDR(TsuserverDR):
-    client_manager_factory: Type[ClientManager] = _TestClientManager
-
     def __init__(self):
         """ Overwrites tsuserver.TsuserverDR.__init__ """
         self.loop = asyncio.get_event_loop()
         logger.log_print = logger.log_print2
         logger.log_server = logger.log_server2
 
-        super().__init__()
+        super().__init__(client_manager_type=_TestClientManager)
 
         self.client_list: List[
             Union[_TestClientManager._TestClient, None]
