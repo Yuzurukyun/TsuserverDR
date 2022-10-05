@@ -19,11 +19,14 @@
 from __future__ import annotations
 
 import asyncio
+import pkgutil
 import random
 import typing
 import unittest
 
 from typing import List, Set, Tuple, Type, Union
+
+import server
 
 from server import logger
 
@@ -1025,3 +1028,13 @@ class _TestTsuserverDR(TsuserverDR):
 
     def get_clients(self) -> List[_TestClientManager._TestClient]:
         return super().get_clients()
+
+    def override_random(self, random_factory: Type):
+        # In today's edition of "You can do what in Python?"
+        # We will override a standard library import of files elsewhere in the project structure
+        # Where "files elsewhere" means all of the files within the `server` folder
+        module_infos = pkgutil.iter_modules(['server'])
+        for module_info in module_infos:
+            name = module_info.name
+            module = getattr(server, name)
+            module.random = random_factory

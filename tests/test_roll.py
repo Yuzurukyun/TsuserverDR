@@ -1,3 +1,5 @@
+import random
+
 from .structures import _TestSituation5Mc1Gc2
 
 class _TestRoll(_TestSituation5Mc1Gc2):
@@ -37,13 +39,16 @@ class _TestRoll_FixedRNG(_TestRoll):
                     raise KeyError('No expected rolls left for custom random object.')
                 return cls.expected_rolls.pop(0)
 
+            @staticmethod
+            def choices(*args, **kwargs):
+                return random.choices(*args, **kwargs)
+
         cls.randomer = x
-        cls.server.random = x
         cls.do_roll = None # It is expected this is replaced by public_roll or private_roll in
         # test creation
 
     def do_roll(self, arg, expected_rolls, expected_result):
-        self.roll_type(arg, expected_rolls, expected_result)
+        raise NotImplementedError
 
     def public_roll(self, arg, expected_rolls, expected_result):
         if isinstance(arg, int):
@@ -53,7 +58,7 @@ class _TestRoll_FixedRNG(_TestRoll):
         expected_num_faces = int(dice_data.split('d')[-1]) if arg else self.def_numfaces
         expected_message = 'rolled {} out of {}'.format(expected_result, expected_num_faces)
 
-        self.server.random = self.randomer(expected_rolls=expected_rolls)
+        self.server.override_random(self.randomer(expected_rolls=expected_rolls))
         self.c0.ooc('/roll {}'.format(arg))
         self.c0.assert_ooc('You {}.'.format(expected_message), over=True)
         self.c1.assert_ooc('{} {}.'.format(self.c0_dname, expected_message), over=True)
@@ -70,7 +75,7 @@ class _TestRoll_FixedRNG(_TestRoll):
         expected_message = ('privately rolled {} out of {}'
                             .format(expected_result, expected_num_faces))
 
-        self.server.random = self.randomer(expected_rolls=expected_rolls)
+        self.server.override_random(self.randomer(expected_rolls=expected_rolls))
         self.c0.ooc('/rollp {}'.format(arg))
         self.c0.assert_ooc('You {}.'.format(expected_message), over=True)
         self.c1.assert_ooc('(X) {} [{}] {}.'.format(self.c0_dname, 0, expected_message), over=True)
@@ -96,6 +101,11 @@ class _TestRoll_FixedRNG(_TestRoll):
         self.do_roll('20 +3', [19], '19:19+3=22')
         self.do_roll('20 -2', [4], '4:4-2=2')
         self.do_roll('20 -2', [2], '2:2-2=|1')
+
+    def tearDown(self):
+        super().tearDown()
+        self.server.override_random(random)
+
 
 class TestRoll_01_WrongArguments(_TestRoll):
     """
@@ -206,4 +216,3 @@ class TestRoll_03_PrivateRoll(_TestRoll_FixedRNG):
     def setUpClass(cls):
         super().setUpClass()
         cls.do_roll = cls.private_roll
-

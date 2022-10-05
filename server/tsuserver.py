@@ -71,8 +71,6 @@ class TsuserverDR:
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
 
-        self.random = importlib.reload(random)
-
         logger.log_print('Launching {}...'.format(self.version))
         logger.log_print('Loading server configurations...')
 

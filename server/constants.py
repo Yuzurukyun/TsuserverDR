@@ -774,7 +774,7 @@ class Constants():
                 # mid_roll: result after modifiers (if any) have been applied to original roll
                 # final_roll: result after previous result was capped between 1 and max_numfaces
 
-                raw_roll = str(server.random.randint(1, num_faces))
+                raw_roll = str(random.randint(1, num_faces))
                 if modifiers == '':
                     aux_modifier = ''
                     mid_roll = int(raw_roll)
