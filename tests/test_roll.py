@@ -1,4 +1,5 @@
 import random
+from typing import List
 
 from .structures import _TestSituation5Mc1Gc2
 
@@ -27,10 +28,10 @@ class _TestRoll_FixedRNG(_TestRoll):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.expected_rolls = None
+        cls.expected_rolls: List[int] = list()
 
-        class x():
-            def __init__(self, expected_rolls=None):
+        class random_factory():
+            def __init__(self, expected_rolls: List[int] = None):
                 cls.expected_rolls = expected_rolls
 
             @staticmethod
@@ -43,45 +44,10 @@ class _TestRoll_FixedRNG(_TestRoll):
             def choices(*args, **kwargs):
                 return random.choices(*args, **kwargs)
 
-        cls.randomer = x
-        cls.do_roll = None # It is expected this is replaced by public_roll or private_roll in
-        # test creation
+        cls.random_factory = random_factory
 
     def do_roll(self, arg, expected_rolls, expected_result):
         raise NotImplementedError
-
-    def public_roll(self, arg, expected_rolls, expected_result):
-        if isinstance(arg, int):
-            arg = str(arg)
-
-        dice_data = arg.split(' ')[0]
-        expected_num_faces = int(dice_data.split('d')[-1]) if arg else self.def_numfaces
-        expected_message = 'rolled {} out of {}'.format(expected_result, expected_num_faces)
-
-        self.server.override_random(self.randomer(expected_rolls=expected_rolls))
-        self.c0.ooc('/roll {}'.format(arg))
-        self.c0.assert_ooc('You {}.'.format(expected_message), over=True)
-        self.c1.assert_ooc('{} {}.'.format(self.c0_dname, expected_message), over=True)
-        self.c2.assert_no_ooc()
-        self.c3.assert_no_ooc()
-        self.c4.assert_ooc('{} {}.'.format(self.c0_dname, expected_message), over=True)
-
-    def private_roll(self, arg, expected_rolls, expected_result):
-        if isinstance(arg, int):
-            arg = str(arg)
-
-        dice_data = arg.split(' ')[0]
-        expected_num_faces = int(dice_data.split('d')[-1]) if arg else self.def_numfaces
-        expected_message = ('privately rolled {} out of {}'
-                            .format(expected_result, expected_num_faces))
-
-        self.server.override_random(self.randomer(expected_rolls=expected_rolls))
-        self.c0.ooc('/rollp {}'.format(arg))
-        self.c0.assert_ooc('You {}.'.format(expected_message), over=True)
-        self.c1.assert_ooc('(X) {} [{}] {}.'.format(self.c0_dname, 0, expected_message), over=True)
-        self.c2.assert_no_ooc()
-        self.c3.assert_no_ooc()
-        self.c4.assert_ooc('Someone rolled.', over=True)
 
     def test01_nomodifiers(self):
         """
@@ -202,17 +168,40 @@ class TestRoll_02_PublicRoll(_TestRoll_FixedRNG):
     Wrapper tester for /roll.
     """
 
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.do_roll = cls.public_roll
+    def do_roll(self, arg, expected_rolls, expected_result):
+        if isinstance(arg, int):
+            arg = str(arg)
+
+        dice_data = arg.split(' ')[0]
+        expected_num_faces = int(dice_data.split('d')[-1]) if arg else self.def_numfaces
+        expected_message = 'rolled {} out of {}'.format(expected_result, expected_num_faces)
+
+        self.server.override_random(self.random_factory(expected_rolls=expected_rolls))
+        self.c0.ooc('/roll {}'.format(arg))
+        self.c0.assert_ooc('You {}.'.format(expected_message), over=True)
+        self.c1.assert_ooc('{} {}.'.format(self.c0_dname, expected_message), over=True)
+        self.c2.assert_no_ooc()
+        self.c3.assert_no_ooc()
+        self.c4.assert_ooc('{} {}.'.format(self.c0_dname, expected_message), over=True)
 
 class TestRoll_03_PrivateRoll(_TestRoll_FixedRNG):
     """
     Wrapper tester for /rollp.
     """
 
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.do_roll = cls.private_roll
+    def do_roll(self, arg, expected_rolls, expected_result):
+        if isinstance(arg, int):
+            arg = str(arg)
+
+        dice_data = arg.split(' ')[0]
+        expected_num_faces = int(dice_data.split('d')[-1]) if arg else self.def_numfaces
+        expected_message = ('privately rolled {} out of {}'
+                            .format(expected_result, expected_num_faces))
+
+        self.server.override_random(self.random_factory(expected_rolls=expected_rolls))
+        self.c0.ooc('/rollp {}'.format(arg))
+        self.c0.assert_ooc('You {}.'.format(expected_message), over=True)
+        self.c1.assert_ooc('(X) {} [{}] {}.'.format(self.c0_dname, 0, expected_message), over=True)
+        self.c2.assert_no_ooc()
+        self.c3.assert_no_ooc()
+        self.c4.assert_ooc('Someone rolled.', over=True)
