@@ -131,15 +131,22 @@ def net_cmd_id(client: ClientManager.Client, pargs: Dict[str, Any]):
             pass
 
         if software == 'DRO':
-            if major >= 2:
-                if minor >= 2:
-                    client.packet_handler = clients.ClientDRO1d2d2()
+            if release >= 2:
+                # DRO 2???
+                # Placeholder
+                client.packet_handler = clients.ClientDRO1d2d2()
+            elif release >= 1:
+                if major >= 2:
+                    if minor >= 2:
+                        client.packet_handler = clients.ClientDRO1d2d2()
+                    else:
+                        client.packet_handler = clients.ClientDRO1d2d0()
+                elif major >= 1:
+                    client.packet_handler = clients.ClientDRO1d1d0()
                 else:
-                    client.packet_handler = clients.ClientDRO1d2d0()
-            elif major >= 1:
-                client.packet_handler = clients.ClientDRO1d1d0()
+                    client.packet_handler = clients.ClientDRO1d0d0()
             else:
-                client.packet_handler = clients.ClientDRO1d0d0()
+                return False
         elif software == 'AO2':  # AO2 protocol
             if release == 2:
                 if major >= 10:
