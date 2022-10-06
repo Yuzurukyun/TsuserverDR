@@ -1,3 +1,6 @@
+import random
+from typing import List
+
 from .test_zonebasic import _TestZone
 
 class TestZoneExtraNotifications_01_EnterLeave(_TestZone):
@@ -314,10 +317,13 @@ class TestZoneExtraNotifications_03_ChangeCharacter(_TestZone):
         cls.sc2_name = cls.default_hub.character_manager.get_characters()[2]
         cls.sc3_name = cls.default_hub.character_manager.get_characters()[3]
         cls.scs_name = cls.server.config['spectator_name']
-        cls.expected_next_results = None
+        cls.expected_next_results: List[int] = list()
 
-        class x():
-            def __init__(self, expected_next_results=None):
+        class fixed_random():
+            def __init__(self, expected_next_results: List[int] = None):
+                if expected_next_results is None:
+                    expected_next_results = list()
+
                 cls.expected_next_results = expected_next_results
 
             @staticmethod
@@ -330,7 +336,7 @@ class TestZoneExtraNotifications_03_ChangeCharacter(_TestZone):
                                      .format(to_return, seq))
                 return to_return
 
-        cls.random_factory = x
+        cls.random_factory = fixed_random
 
     def test_01_fromcharselect(self):
         """
@@ -367,7 +373,7 @@ class TestZoneExtraNotifications_03_ChangeCharacter(_TestZone):
         C0: 3   C1: 2   C2: 2   C3: 3   C4: -1  C5: -1
         """
 
-        self.server.random = self.random_factory(expected_next_results=[2]) # Force random to be 2
+        self.server.override_random(self.random_factory(expected_next_results=[2]))
 
         self.c3.move_area(self.c0.area.id, discard_trivial=True)
         self.c0.assert_no_packets()
@@ -389,7 +395,7 @@ class TestZoneExtraNotifications_03_ChangeCharacter(_TestZone):
         C0: 3   C1: 2   C2: 2   C3: 3   C4: -1  C5: -1
         """
 
-        self.server.random = self.random_factory(expected_next_results=[0]) # Force random to be 0
+        self.server.override_random(self.random_factory(expected_next_results=[0]))
         self.area6.restricted_chars = {self.sc2_name}
 
         self.c3.move_area(6, discard_trivial=True)
@@ -412,7 +418,7 @@ class TestZoneExtraNotifications_03_ChangeCharacter(_TestZone):
         C0: 3   C1: 1   C2: 2   C3: 3   C4: -1  C5: -1
         """
 
-        self.server.random = self.random_factory(expected_next_results=[3])
+        self.server.override_random(self.random_factory(expected_next_results=[3]))
         self.c1.move_area(6)
 
         self.c1.ooc('/char_restrict {}'.format(self.sc0_name))
@@ -444,7 +450,7 @@ class TestZoneExtraNotifications_03_ChangeCharacter(_TestZone):
         C0: 3   C1: 1   C2: 2   C3: 3   C4: -1  C5: -1
         """
 
-        self.server.random = self.random_factory(expected_next_results=[1])
+        self.server.override_random(self.random_factory(expected_next_results=[1]))
         self.c1.send_command_cts("CC#1#0#FAKEHDID#%") # Attempt to pick char 0
         self.c1.assert_packet('PV', (1, 'CID', 0), over=True)
         self.c2.discard_all()
@@ -471,7 +477,7 @@ class TestZoneExtraNotifications_03_ChangeCharacter(_TestZone):
         """
 
         self.area6.restricted_chars = set()
-        self.server.random = self.random_factory(expected_next_results=[0])
+        self.server.override_random(self.random_factory(expected_next_results=[0]))
 
         self.c4.ooc('/randomchar')
         self.c0.assert_no_packets()
@@ -503,6 +509,11 @@ class TestZoneExtraNotifications_03_ChangeCharacter(_TestZone):
                            .format(self.default_hub.character_manager.get_characters()[2]),
                            over=True)
         self.c5.assert_no_packets()
+
+    def tearDown(self):
+        super().tearDown()
+        self.server.override_random(random)
+
 
 class TestZoneExtraNotifications_04_Disconnection(_TestZone):
     def test_01_nonstaffleaves(self):

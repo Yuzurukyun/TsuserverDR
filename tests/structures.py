@@ -16,13 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 import asyncio
+import pkgutil
 import random
+import typing
 import unittest
 
-from typing import List, Set
+from typing import List, Set, Tuple, Type, Union
 
-from unittest.mock import Mock
+import server
+
+from server import logger
 
 from server.network.ao_protocol import AOProtocol
 from server.area_manager import AreaManager
@@ -32,6 +38,10 @@ from server.exceptions import TsuserverException
 from server.task_manager import TaskManager
 from server.tsuserver import TsuserverDR
 
+if typing.TYPE_CHECKING:
+    from asyncio.proactor_events import _ProactorSocketTransport
+
+    from server.hub_manager import _Hub
 
 class _Unittest(unittest.TestCase):
     @classmethod
@@ -64,7 +74,7 @@ class _Unittest(unittest.TestCase):
 
     @classmethod
     def setUpClients(cls, num_clients):
-        cls.server.make_clients(num_clients)
+        cls.server.make_test_clients(num_clients)
 
         err_characters = 'Invalid characters.yaml for the purposes of testing (must be original).'
 
@@ -162,7 +172,7 @@ class _Unittest(unittest.TestCase):
         for (logger, handler) in cls.server.logger_handlers:
             handler.close()
             logger.removeHandler(handler)
-        cls.server.disconnect_all()
+        cls.server.disconnect_all_test_clients()
 
 
 class _TestSituation3(_Unittest):
@@ -228,15 +238,34 @@ class _TestSituation6Mc1Gc25(_TestSituation6):
 
 class _TestClientManager(ClientManager):
     class _TestClient(ClientManager.Client):
-        def __init__(self, *args, protocol=None):
+        def __init__(
+            self,
+            server: _TestTsuserverDR,
+            hub: _Hub,
+            transport: None,
+            user_id: int,
+            ipid: int,
+            protocol: AOProtocol = None
+            ):
             """ Overwrites client_manager.ClientManager.Client.__init__ """
 
-            super().__init__(*args)
+            super().__init__(
+                server=server,
+                hub=hub,
+                transport=transport,
+                user_id=user_id,
+                ipid=ipid,
+                protocol=protocol,
+            )
 
-            self.protocol = protocol
             self.received_packets = list()
             self.received_ooc = list()
             self.received_ic = list()
+
+            self.server: _TestTsuserverDR  # Only to indicate type
+
+        def get_ipreal(self) -> str:
+            return "127.0.0.1"
 
         def disconnect(self, assert_no_outstanding=False):
             """ Overwrites client_manager.ClientManager.Client.disconnect """
@@ -869,35 +898,69 @@ class _TestClientManager(ClientManager):
             if buffer:
                 self.send_command_cts(buffer)
 
-        def get_ipreal(self) -> str:
-            return "127.0.0.1"
-
-    def __init__(self, server):
+    def __init__(self, server: _TestTsuserverDR):
         """ Overwrites client_manager.ClientManager.__init__ """
 
-        super().__init__(server, client_obj=self._TestClient)
+        super().__init__(server, default_client_type=_TestClientManager._TestClient)
+        self.clients: Set[_TestClientManager._TestClient]  # For typing
+
+    def new_client(
+        self,
+        client_type: Type[_TestClientManager._TestClient] = None,
+        hub: _Hub = None,
+        transport: _ProactorSocketTransport = None,
+        protocol: AOProtocol = None,
+        ) -> Tuple[_TestClient, bool]:
+        """ Overwrites client_manager.ClientManager.new_client """
+
+        return super().new_client(
+            client_type=client_type,
+            hub=hub,
+            transport=transport,
+            protocol=protocol
+            )
 
 
 class _TestTsuserverDR(TsuserverDR):
     def __init__(self):
         """ Overwrites tsuserver.TsuserverDR.__init__ """
         self.loop = asyncio.get_event_loop()
+        logger.log_print = logger.log_print2
+        logger.log_server = logger.log_server2
 
-        super().__init__(client_manager=_TestClientManager, in_test=True)
-        self.ao_protocol = AOProtocol
-        self.client_list = [None] * self.config['playerlimit']
+        super().__init__(client_manager_type=_TestClientManager)
 
+        self.client_list: List[
+            Union[_TestClientManager._TestClient, None]
+            ] = [None] * self.config['playerlimit']
         self.task_manager = TaskManager(self)
+        self.client_manager: _TestClientManager  # For typing
 
-    def create_client(self) -> _TestClientManager._TestClient:
-        new_ao_protocol = self.ao_protocol(self)
+    def new_client(
+        self,
+        transport: _ProactorSocketTransport,
+        protocol: AOProtocol = None,
+        ) -> Tuple[_TestClientManager._TestClient, bool]:
+        """ Overwrites new_client only to override return type """
+
+        return super().new_client(transport, protocol)
+
+    def send_error_report(self, client: ClientManager.Client, cmd: str, args: List[str],
+                          ex: Exception):
+        """ Overwrite tsuserver.TsuserverDR.send_error_report """
+        super().send_error_report(client, cmd, args, ex)
+        raise ex
+
+    def make_test_client(self, char_id: int = -1, hdid: str = 'FAKEHDID',
+                         attempts_to_fully_join: bool = True) -> _TestClientManager._TestClient:
+        new_ao_protocol = AOProtocol(self)
         new_ao_protocol.connection_made(None)
-        return new_ao_protocol.client
-
-    def make_client(self, char_id, hdid='FAKEHDID'):
-        c = self.create_client()
+        c: _TestClientManager._TestClient = new_ao_protocol.client
+        if not attempts_to_fully_join:
+            return c
         if c.disconnected:
             return c
+
         c.send_command_cts("askchaa#%")
         c.send_command_cts("RC#%")
         c.send_command_cts("RM#%")
@@ -914,8 +977,8 @@ class _TestTsuserverDR(TsuserverDR):
 
         return c
 
-    def make_clients(self, number, hdid_list=None,
-                     user_list=None) -> Set[_TestClientManager._TestClient]:
+    def make_test_clients(self, number: int, hdid_list: List[str] = None,
+                          user_list: List[str] = None) -> Set[_TestClientManager._TestClient]:
         if hdid_list is None:
             hdid_list = ['FAKEHDID'] * number
         else:
@@ -936,7 +999,7 @@ class _TestTsuserverDR(TsuserverDR):
             else:
                 char_id = -1
 
-            client = self.make_client(char_id, hdid=hdid_list[i])
+            client = self.make_test_client(char_id, hdid=hdid_list[i])
             client.name = user_list[i]
 
             for j, existing_client in enumerate(self.client_list):
@@ -947,14 +1010,14 @@ class _TestTsuserverDR(TsuserverDR):
                 j = -1
             assert j == client.id, (j, client.id)
 
-    def disconnect_client(self, client_id, assert_no_outstanding=False):
+    def disconnect_test_client(self, client_id: int, assert_no_outstanding: bool = False):
         client = self.client_list[client_id]
         if not client:
             raise KeyError(client_id)
 
         client.disconnect(assert_no_outstanding=assert_no_outstanding)
 
-    def disconnect_all(self, assert_no_outstanding=False):
+    def disconnect_all_test_clients(self, assert_no_outstanding: bool = False):
         for (i, client) in enumerate(self.client_list):
             if client:
                 client.disconnect()
@@ -965,3 +1028,13 @@ class _TestTsuserverDR(TsuserverDR):
 
     def get_clients(self) -> List[_TestClientManager._TestClient]:
         return super().get_clients()
+
+    def override_random(self, random_factory: Type):
+        # In today's edition of "You can do what in Python?"
+        # We will override a standard library import of files elsewhere in the project structure
+        # Where "files elsewhere" means all of the files within the `server` folder
+        module_infos = pkgutil.iter_modules(['server'])
+        for module_info in module_infos:
+            name = module_info.name
+            module = getattr(server, name)
+            module.random = random_factory

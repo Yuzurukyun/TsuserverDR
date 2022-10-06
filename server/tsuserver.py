@@ -20,7 +20,7 @@
 # This class will suffer major reworkings for 4.3
 
 from __future__ import annotations
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple, Type
 
 import asyncio
 import errno
@@ -31,6 +31,7 @@ import socket
 import ssl
 import sys
 import traceback
+import typing
 import urllib.request, urllib.error
 
 from server import logger
@@ -48,10 +49,14 @@ from server.timer_manager import TimerManager
 from server.validate.config import ValidateConfig
 from server.validate.gimp import ValidateGimp
 
+if typing.TYPE_CHECKING:
+    from asyncio.proactor_events import _ProactorSocketTransport
 
 class TsuserverDR:
-    def __init__(self, protocol: AOProtocol = None,
-                 client_manager: ClientManager = None, in_test: bool = False):
+    def __init__(self, client_manager_type: Type[ClientManager] = None):
+        if client_manager_type is None:
+            client_manager_type = ClientManager
+
         self.logged_packet_limit = 100  # Arbitrary
         self.logged_packets = []
         self.print_packets = False  # For debugging purposes
@@ -60,18 +65,11 @@ class TsuserverDR:
         self.release = 4
         self.major_version = 4
         self.minor_version = 0
-        self.segment_version = 'a11'
-        self.internal_version = 'M221002a'
+        self.segment_version = 'a12'
+        self.internal_version = 'M221005a'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
-        self.in_test = in_test
-
-        self.protocol = AOProtocol if protocol is None else protocol
-        client_manager = ClientManager if client_manager is None else client_manager
-        logger.log_print = logger.log_print2 if self.in_test else logger.log_print
-        logger.log_server = logger.log_server2 if self.in_test else logger.log_server
-        self.random = importlib.reload(random)
 
         logger.log_print('Launching {}...'.format(self.version))
         logger.log_print('Loading server configurations...')
@@ -92,7 +90,7 @@ class TsuserverDR:
         self.timer_manager = TimerManager(self)
         self.party_manager = PartyManager(self)
 
-        self.client_manager: ClientManager = client_manager(self)
+        self.client_manager = client_manager_type(self)
         self.hub_manager = HubManager(self)
         default_hub = self.hub_manager.new_managee()
         default_hub.set_name('Main')
@@ -147,7 +145,7 @@ class TsuserverDR:
         # Yes there is a race condition here (between checking if port is available, and actually
         # using it). The only side effect of a race condition is a slightly less nice error
         # message, so it's not that big of a deal.
-        self._server = await self.loop.create_server(lambda: self.protocol(self),
+        self._server = await self.loop.create_server(lambda: AOProtocol(self),
                                                      bound_ip, port,
                                                      start_serving=False)
         asyncio.create_task(self._server.serve_forever())
@@ -221,6 +219,22 @@ class TsuserverDR:
             mes = '{}-{}'.format(mes, self.segment_version)
         return mes
 
+    def check_exec_active(self):
+        # Determine whether /exec is active or not and warn server owner if so.
+        if getattr(self.commands, "ooc_cmd_exec")(None, "is_exec_active") == 1:
+            logger.log_print("""
+
+                  WARNING
+
+                  THE /exec COMMAND IN commands.py IS ACTIVE.
+
+                  UNLESS YOU ABSOLUTELY MEANT IT AND KNOW WHAT YOU ARE DOING,
+                  PLEASE STOP YOUR SERVER RIGHT NOW AND DEACTIVATE IT BY GOING TO THE
+                  commands.py FILE AND FOLLOWING THE INSTRUCTIONS UNDER ooc_cmd_exec.\n
+                  BAD THINGS CAN AND WILL HAPPEN OTHERWISE.
+
+                  """)
+
     def reload(self):
         default_hub = self.hub_manager.get_default_managee()
         try:
@@ -254,11 +268,15 @@ class TsuserverDR:
         entry = ('R:' if incoming else 'S:', Constants.get_time_iso(), str(client.id), packet)
         self.logged_packets.append(entry)
 
-    def new_client(self, transport, protocol=None) -> Tuple[ClientManager.Client, bool]:
+    def new_client(
+        self,
+        transport: _ProactorSocketTransport,
+        protocol: AOProtocol = None,
+        ) -> Tuple[ClientManager.Client, bool]:
         c, valid = self.client_manager.new_client(
-            self.hub_manager.get_default_managee(),
-            transport,
-            protocol=protocol
+            hub=self.hub_manager.get_default_managee(),
+            transport=transport,
+            protocol=protocol,
             )
         c.server = self
         c.area = self.hub_manager.get_default_managee().area_manager.default_area()
@@ -570,9 +588,6 @@ class TsuserverDR:
 
         # Log error to file
         logger.log_error(info, server=self, errortype='C')
-
-        if self.in_test:
-            raise ex
 
     def broadcast_global(self, client: ClientManager.Client, msg: str, as_mod: bool = False,
                          mtype: str = "<dollar>G",

@@ -19,7 +19,7 @@
 from __future__ import annotations
 
 import typing
-from typing import Any, Callable, List, Optional, Set, Tuple, Dict, Union
+from typing import Any, Callable, List, Optional, Set, Tuple, Dict, Type, Union
 
 import datetime
 import random
@@ -36,11 +36,14 @@ from server.music_manager import PersonalMusicManager
 from server.subscriber import Publisher
 
 if typing.TYPE_CHECKING:
+    from asyncio.proactor_events import _ProactorSocketTransport
+
     # Avoid circular referencing
     from server.area_manager import AreaManager
     from server.network.ao_protocol import AOProtocol
     from server.tsuserver import TsuserverDR
     from server.zone_manager import ZoneManager
+
 
 class ClientManager:
     class Client:
@@ -48,7 +51,7 @@ class ClientManager:
             self,
             server: TsuserverDR,
             hub: _Hub,
-            transport,
+            transport: _ProactorSocketTransport,
             user_id: int,
             ipid: int,
             protocol: AOProtocol = None
@@ -57,7 +60,6 @@ class ClientManager:
             self.hub = hub
             self.transport = transport
             self.protocol = protocol
-            self.ip = transport.get_extra_info('peername')[0] if transport else "127.0.0.1"
             self.area_changer = client_changearea.ClientChangeArea(self)
             self.required_packets_received = set()  # Needs to have length 2 to actually connect
             self.can_askchaa = True  # Needs to be true to process an askchaa packet
@@ -2095,7 +2097,7 @@ class ClientManager:
             return self.ipid
 
         def get_ipreal(self) -> str:
-            return self.transport.get_extra_info('peername')[0]
+            return Constants.get_ip_of_transport(self.transport)
 
         def get_char_name(self, char_id: int = None) -> str:
             if char_id is None:
@@ -2284,14 +2286,18 @@ class ClientManager:
                     .format(self.id, self.ipid, self.name, self.get_char_name(), self.showname,
                             self.is_staff(), self.area.id, self.hub.get_numerical_id()))
 
-    def __init__(self, server: TsuserverDR, client_obj: typing.Type[ClientManager.Client] = None):
-        if client_obj is None:
-            client_obj = self.Client
+    def __init__(
+        self,
+        server: TsuserverDR,
+        default_client_type: Type[ClientManager.Client] = None,
+        ):
+        if default_client_type is None:
+            default_client_type = self.Client
 
-        self.clients: Set[client_obj] = set()
+        self.clients: Set[default_client_type] = set()
         self.server = server
         self.cur_id = [False] * self.server.config['playerlimit']
-        self.client_obj = client_obj
+        self.default_client_type = default_client_type
 
         # Phantom peek timer stuff
         base_time = 300
@@ -2328,23 +2334,26 @@ class ClientManager:
 
     def new_client(
         self,
-        hub: _Hub,
-        transport,
-        client_obj: typing.Type[ClientManager.Client] = None,
-        protocol=None
-        ):
-        ip = transport.get_extra_info('peername')[0] if transport else "127.0.0.1"
-        ipid = self.server.get_ipid(ip)
+        client_type: Type[Client] = None,
+        hub: _Hub = None,
+        transport: _ProactorSocketTransport = None,
+        protocol: AOProtocol = None,
+        ) -> Tuple[Client, bool]:
+        if client_type is None:
+            client_type = self.default_client_type
+        if hub is None:
+            hub = self.server.hub_manager.get_default_managee()
 
-        if client_obj is None:
-            client_obj = self.client_obj
+        ip = Constants.get_ip_of_transport(transport)
+        ipid = self.server.get_ipid(ip)
 
         cur_id = -1
         for i in range(self.server.config['playerlimit']):
             if not self.cur_id[i]:
                 cur_id = i
                 break
-        c = client_obj(self.server, hub, transport, cur_id, ipid, protocol=protocol)
+
+        c = client_type(self.server, hub, transport, cur_id, ipid, protocol=protocol)
         self.clients.add(c)
 
         # Check if server is full, and if so, send number of players and disconnect

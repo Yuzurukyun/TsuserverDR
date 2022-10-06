@@ -43,6 +43,8 @@ from server.exceptions import ClientError, ServerError, ArgumentError, AreaError
 from server.exceptions import TsuserverException
 
 if typing.TYPE_CHECKING:
+    from asyncio.proactor_events import _ProactorSocketTransport
+
     # Avoid circular referencing
     from server.area_manager import AreaManager
     from server.client_manager import ClientManager
@@ -772,7 +774,7 @@ class Constants():
                 # mid_roll: result after modifiers (if any) have been applied to original roll
                 # final_roll: result after previous result was capped between 1 and max_numfaces
 
-                raw_roll = str(server.random.randint(1, num_faces))
+                raw_roll = str(random.randint(1, num_faces))
                 if modifiers == '':
                     aux_modifier = ''
                     mid_roll = int(raw_roll)
@@ -1284,6 +1286,13 @@ class Constants():
             enc_a.hexdigest(),
             enc_b.hexdigest()
         )
+
+    @staticmethod
+    def get_ip_of_transport(transport: Union[_ProactorSocketTransport, None]) -> str:
+        if not transport:
+            return "127.0.0.1"
+
+        return transport.get_extra_info('peername')[0]
 
     @staticmethod
     async def await_cancellation(old_task: asyncio.Task):

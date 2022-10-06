@@ -26,8 +26,10 @@ all necessary actions in order to simulate different rooms.
 from __future__ import annotations
 
 import asyncio
+import random
 import time
 import typing
+
 from typing import Any, Callable, Dict, List, Set, Tuple, Union
 
 from server import logger
@@ -437,7 +439,7 @@ class AreaManager(AssetManager):
             if not available:
                 raise AreaError('No available characters.')
 
-            return self.server.random.choice(tuple(available))
+            return random.choice(tuple(available))
 
         def is_char_available(self, char_id: int, allow_restricted: bool = False,
                               more_unavail_chars: Set[int] = None) -> bool:

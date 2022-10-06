@@ -568,8 +568,8 @@ class TestAuthorization_04_Integration(_TestAuthorization):
         """
 
         for i in range(2):
-            self.server.disconnect_client(i)
-            self.server.make_clients(1)
+            self.server.disconnect_test_client(i)
+            self.server.make_test_clients(1)
             c = self.clients[i]
             self.assertFalse(c.is_mod)
             self.assertFalse(c.is_cm)

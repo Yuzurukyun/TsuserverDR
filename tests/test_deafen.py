@@ -138,7 +138,7 @@ class TestDeafen_03_ChangeArea(_TestDeafen):
         cls.c2.ooc('/deafen 0')
         cls.c0.move_area(4)
         cls.c1.move_area(4)
-        cls.server.make_clients(1)
+        cls.server.make_test_clients(1)
         cls.c4 = cls.clients[4]
         cls.c4.ooc('/switch {}'.format(cls.server.config['spectator_name']))
         cls.c4.move_area(4)
