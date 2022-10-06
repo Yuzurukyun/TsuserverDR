@@ -30,8 +30,11 @@ class _TestRoll_FixedRNG(_TestRoll):
         super().setUpClass()
         cls.expected_rolls: List[int] = list()
 
-        class random_factory():
+        class fixed_random():
             def __init__(self, expected_rolls: List[int] = None):
+                if expected_rolls is None:
+                    expected_rolls = list()
+
                 cls.expected_rolls = expected_rolls
 
             @staticmethod
@@ -44,7 +47,7 @@ class _TestRoll_FixedRNG(_TestRoll):
             def choices(*args, **kwargs):
                 return random.choices(*args, **kwargs)
 
-        cls.random_factory = random_factory
+        cls.random_factory = fixed_random
 
     def do_roll(self, arg, expected_rolls, expected_result):
         raise NotImplementedError

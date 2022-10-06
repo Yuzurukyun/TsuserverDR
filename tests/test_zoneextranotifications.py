@@ -1,4 +1,5 @@
 import random
+from typing import List
 
 from .test_zonebasic import _TestZone
 
@@ -316,10 +317,13 @@ class TestZoneExtraNotifications_03_ChangeCharacter(_TestZone):
         cls.sc2_name = cls.default_hub.character_manager.get_characters()[2]
         cls.sc3_name = cls.default_hub.character_manager.get_characters()[3]
         cls.scs_name = cls.server.config['spectator_name']
-        cls.expected_next_results = None
+        cls.expected_next_results: List[int] = list()
 
-        class x():
-            def __init__(self, expected_next_results=None):
+        class fixed_random():
+            def __init__(self, expected_next_results: List[int] = None):
+                if expected_next_results is None:
+                    expected_next_results = list()
+
                 cls.expected_next_results = expected_next_results
 
             @staticmethod
@@ -332,7 +336,7 @@ class TestZoneExtraNotifications_03_ChangeCharacter(_TestZone):
                                      .format(to_return, seq))
                 return to_return
 
-        cls.random_factory = x
+        cls.random_factory = fixed_random
 
     def test_01_fromcharselect(self):
         """
