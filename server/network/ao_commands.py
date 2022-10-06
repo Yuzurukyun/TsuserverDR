@@ -151,10 +151,6 @@ def net_cmd_id(client: ClientManager.Client, pargs: Dict[str, Any]):
             if release == 2:
                 if major >= 10:
                     client.packet_handler = clients.ClientAO2d10()
-                elif major >= 6:
-                    client.packet_handler = clients.ClientDROLegacy()
-                elif major == 4 and minor == 8:  # Older DRO
-                    client.packet_handler = clients.ClientDROLegacy()
                 else:
                     return False  # Unrecognized
             else:
@@ -167,10 +163,10 @@ def net_cmd_id(client: ClientManager.Client, pargs: Dict[str, Any]):
         return True
 
     if not check_client_version():
-        # Warn player they are using an unknown client.
+        # Kick players that are using an unknown client.
         # Assume a legacy DRO client instruction set.
-        client.packet_handler = clients.ClientDROLegacy()
-        client.bad_version = True
+        client.disconnect()
+        return
 
     client.send_command_dict('FL', {
         'fl_ao2_list': ['yellowtext', 'customobjections', 'flipping', 'fastloading',
