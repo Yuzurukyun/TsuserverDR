@@ -107,30 +107,23 @@ def net_cmd_id(client: ClientManager.Client, pargs: Dict[str, Any]):
         version_list = raw_version.split('.')
 
         # Identify version number
-        if len(version_list) >= 3:
-            # Such versions include DRO and AO
-            release = int(version_list[0])
-            major = int(version_list[1])
-            # Strip out any extra identifiers (like -b1) from minor
-            match = re.match(r'(?P<minor>\d+)(?P<rest>.*)', version_list[2])
-            if match:
-                minor = int(match['minor'])
-                rest = match['rest']
-            else:
-                minor = 0
-                rest = version_list[2]
-            if pargs['client_software'] not in ['DRO', 'AO2']:
-                return False
+        if len(version_list) < 3:
+            return False
+
+        # Such versions include DRO and AO
+        if pargs['client_software'] not in ['DRO', 'AO2']:
+            return False
+
+        release = int(version_list[0])
+        major = int(version_list[1])
+        # Strip out any extra identifiers (like -b1) from minor
+        match = re.match(r'(?P<minor>\d+)(?P<rest>.*)', version_list[2])
+        if match:
+            minor = int(match['minor'])
+            rest = match['rest']
         else:
-            # Only such version recognized now is CC
-            # CC has args[1] == 'CC - Update (\d+\.)*\d+'
-            if pargs['client_software_version'].startswith('CC'):
-                release = 'CC'
-                major = float(raw_version.split(' ')[-1])
-                minor = 0
-                rest = ''
-            else:
-                return False
+            minor = 0
+            rest = version_list[2]
 
         # While we grab rest for the sake of the future-proofing, right now it is not used.
         # I added this useless if so my IDE wouldn't complain of an unused variable.
@@ -138,49 +131,42 @@ def net_cmd_id(client: ClientManager.Client, pargs: Dict[str, Any]):
             pass
 
         if software == 'DRO':
-            if major >= 2:
-                if minor >= 2:
-                    client.packet_handler = clients.ClientDRO1d2d2()
+            if release >= 2:
+                # DRO 2???
+                # Placeholder
+                client.packet_handler = clients.ClientDRO1d2d2()
+            elif release >= 1:
+                if major >= 2:
+                    if minor >= 2:
+                        client.packet_handler = clients.ClientDRO1d2d2()
+                    else:
+                        client.packet_handler = clients.ClientDRO1d2d0()
+                elif major >= 1:
+                    client.packet_handler = clients.ClientDRO1d1d0()
                 else:
-                    client.packet_handler = clients.ClientDRO1d2d0()
-            elif major >= 1:
-                client.packet_handler = clients.ClientDRO1d1d0()
+                    client.packet_handler = clients.ClientDRO1d0d0()
             else:
-                client.packet_handler = clients.ClientDRO1d0d0()
-        else:  # AO2 protocol
+                return False
+        elif software == 'AO2':  # AO2 protocol
             if release == 2:
                 if major >= 10:
                     client.packet_handler = clients.ClientAO2d10()
-                elif major >= 9:
-                    client.packet_handler = clients.ClientAO2d9d0()
-                elif major >= 8 and minor >= 4:
-                    client.packet_handler = clients.ClientAO2d8d4()
-                elif major >= 8:  # KFO
-                    client.packet_handler = clients.ClientKFO2d8()
-                elif major == 7:  # AO 2.7
-                    client.packet_handler = clients.ClientAO2d7()
-                elif major == 6:  # AO 2.6
-                    client.packet_handler = clients.ClientAO2d6()
-                elif major == 4 and minor == 8:  # Older DRO
-                    client.packet_handler = clients.ClientDROLegacy()
                 else:
                     return False  # Unrecognized
-            elif release == 'CC':
-                if major >= 24:
-                    client.packet_handler = clients.ClientCC24()
-                elif major >= 22:
-                    client.packet_handler = clients.ClientCC22()
-                else:
-                    return False  # Unrecognized
+            else:
+                return False  # Unrecognized
+        else:
+            raise RuntimeError(f'{software}')
+
         # The only way to make it here is if we have not returned False
         # If that is the case, we have successfully found a version
         return True
 
     if not check_client_version():
-        # Warn player they are using an unknown client.
+        # Kick players that are using an unknown client.
         # Assume a legacy DRO client instruction set.
-        client.packet_handler = clients.ClientDRO1d0d0()
-        client.bad_version = True
+        client.disconnect()
+        return
 
     client.send_command_dict('FL', {
         'fl_ao2_list': ['yellowtext', 'customobjections', 'flipping', 'fastloading',

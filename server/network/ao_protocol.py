@@ -140,7 +140,7 @@ class AOProtocol(asyncio.Protocol):
 
             dispatched = self._net_cmd_dispatcher[cmd]
             pargs = self._process_arguments(cmd, args, needs_auth=dispatched.needs_auth,
-                                            fallback_protocols=[clients.ClientDROLegacy])
+                                            fallback_protocols=[clients.ClientDRO1d0d0])
             self.client.publish_inbound_command(cmd, pargs)
 
             dispatched.function(self.client, pargs)

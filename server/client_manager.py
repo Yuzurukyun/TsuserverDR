@@ -65,7 +65,6 @@ class ClientManager:
             self.can_askchaa = True  # Needs to be true to process an askchaa packet
             self.version = ('Undefined', 'Undefined')  # AO version used established through ID pack
             self.packet_handler = clients.ClientDRO1d2d2()
-            self.bad_version = False
             self.publisher = Publisher(self)
 
             self.disconnected = False
@@ -1834,10 +1833,6 @@ class ClientManager:
             if self.char_id is None:
                 self.char_id = -1  # Set to a valid ID if still needed
             self.send_command_dict('DONE', dict())
-
-            if self.bad_version:
-                self.send_ooc(f'Unknown client detected {self.version}. '
-                              f'Assuming standard DRO client protocol.')
 
         def char_select(self):
             # By running the change_character code, all checks and actions for switching to
