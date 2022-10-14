@@ -58,6 +58,9 @@ class ClientChangeArea:
         manually send them out outside this function.
         """
 
+        if more_unavail_chars is None:
+            more_unavail_chars = set()
+
         client = self.client
         captured_messages = list()
 
@@ -99,16 +102,65 @@ class ClientChangeArea:
             raise ClientError('The passage to this area is locked.',
                               code='ChArUnreachable')
 
-        # Check if current character is taken in the new area
+        char_name = client.get_char_name()
         new_char_id = client.char_id
-        if not area.is_char_available(client.char_id, allow_restricted=client.is_staff(),
-                                      more_unavail_chars=more_unavail_chars):
+
+        def _translate_char_id(old_char_id: Union[int, None]) -> Tuple[bool, Union[int, None]]:
+            new_hub = area.hub
+            if new_hub == client.hub:
+                return True, old_char_id
+            # Check if spectator or non-selected
+            if not new_hub.character_manager.is_char_id_participant(old_char_id):
+                return True, old_char_id
+
+            new_characters = new_hub.character_manager.get_characters()
+            new_chars = {char: num for (num, char) in enumerate(new_characters)}
+            char_name = client.hub.character_manager.get_character_name(old_char_id)
+
+            if char_name in new_chars:
+                return True, new_chars[char_name]
+
+            return False, -1
+
+
+        def _update_char_id() -> Tuple[bool, Union[int, None]]:
+            # Check if using a non-participating character. Those are trivial
+            if not client.has_participant_character():
+                return True, client.char_id
+
+            # Check if hub (possibly different from old_area.hub) has character
+            # Because if not, change to spectator trivially
+            if not area.hub.character_manager.is_character(char_name):
+                return True, -1
+
+            # If in same hub, updated_more_unavail_chars
+            if area.hub == client.hub:
+                new_more_unavail_chars = more_unavail_chars
+            else:
+                new_more_unavail_chars = set(_translate_char_id(char_id)
+                                             for char_id in more_unavail_chars)
+
+            # Check if current character is not (taken or restricted) in the new area
+            if area.is_char_available(client.char_id, allow_restricted=client.is_staff(),
+                                      more_unavail_chars=new_more_unavail_chars):
+                return True, client.char_id
+
+            # Check if can pick a new character
             try:
+                # Random character rather than spectator (as would happen with hub changes)
+                # This ensures that players continue having participant characters within hubs
+                # when an attempt to change areas occurs.
+                # This allows intra-hub games that span several areas that require participant
+                # characters not have players trivially be kicked
                 new_char_id = area.get_rand_avail_char_id(allow_restricted=client.is_staff(),
-                                                          more_unavail_chars=more_unavail_chars)
+                                                          more_unavail_chars=new_more_unavail_chars)
+                return True, new_char_id
             except AreaError:
-                raise ClientError('No available characters in that area.',
-                                  code='ChArNoCharacters')
+                return False, -1
+
+        valid_new_char_id, new_char_id = _update_char_id()
+        if not valid_new_char_id:
+            raise ClientError('No available characters in that area.', code='ChArNoCharacters')
 
         return new_char_id, captured_messages
 
@@ -748,11 +800,11 @@ class ClientChangeArea:
                                         .format(client.id, old_char, new_char, area.id),
                                         is_zstaff=area, in_hub=area.hub)
             else:
-                client.send_ooc('Your character was taken in your new area, switched to `{}`.'
+                client.send_ooc('Your character was unavailable in your new area, switched to `{}`.'
                                 .format(client.get_char_name()))
                 client.send_ooc_others('(X) Client {} had their character changed from `{}` to '
                                         '`{}` in your zone as their old character was '
-                                        'taken in their new area ({}).'
+                                        'unavailable in their new area ({}).'
                                         .format(client.id, old_char, new_char, area.id),
                                         is_zstaff=area, in_hub=area.hub)
 
@@ -791,40 +843,6 @@ class ClientChangeArea:
             'ignore_autopass': ignore_autopass,
             })
         return True, found_something, ding_something
-
-    def _update_parameters_for_new_hub(
-        self,
-        new_hub: _Hub,
-        more_unavail_chars: Set[int] = None,
-        change_to: int = None,) -> Tuple[bool, int, Set[int]]:
-        if more_unavail_chars is None:
-            more_unavail_chars = set()
-
-        client = self.client
-        old_characters = client.hub.character_manager.get_characters()
-        new_characters = new_hub.character_manager.get_characters()
-        if old_characters == new_characters:
-            return False, change_to, more_unavail_chars
-
-        # Only do long work if necessary.
-
-        # Refresh current character, and change to spectator if unavailable
-        new_chars = {char: num for (num, char) in enumerate(new_characters)}
-
-        def _get_new_char_id(old_char_id: Union[int, None]) -> Tuple[bool, Union[int, None]]:
-            if not new_hub.character_manager.is_char_id_participant(old_char_id):
-                return True, old_char_id
-
-            char_name = client.hub.character_manager.get_character_name(old_char_id)
-            if char_name in new_chars:
-                return True, new_chars[char_name]
-            return False, -1
-
-        char_still_exists, new_client_char_id = _get_new_char_id(change_to)
-        new_more_unavail_chars = set(_get_new_char_id(old_char_id)[1]
-                                     for old_char_id in more_unavail_chars)
-
-        return char_still_exists, new_client_char_id, new_more_unavail_chars
 
     def change_area(
         self,

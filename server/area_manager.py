@@ -441,14 +441,14 @@ class AreaManager(AssetManager):
 
             return random.choice(tuple(available))
 
-        def is_char_available(self, char_id: int, allow_restricted: bool = False,
+        def is_char_available(self, char_id: Union[int, None], allow_restricted: bool = False,
                               more_unavail_chars: Set[int] = None) -> bool:
             """
             Decide whether a character can be selected in the current area.
 
             Parameters
             ----------
-            char_id: int
+            char_id: Union[int, None]
                 ID of the character to test.
             allow_restricted: bool, optional
                 Whether to include characters whose usage has been manually restricted in the area.
@@ -463,12 +463,12 @@ class AreaManager(AssetManager):
                 is not found to be among the area's unusable characters.
             """
 
-            if char_id < 0:
+            if not self.hub.character_manager.is_char_id_participant(char_id):
                 return True
 
-            unused = char_id in self.get_chars_unusable(allow_restricted=allow_restricted,
-                                                        more_unavail_chars=more_unavail_chars)
-            return not unused
+            unusable = self.get_chars_unusable(allow_restricted=allow_restricted,
+                                               more_unavail_chars=more_unavail_chars)
+            return char_id not in unusable
 
         def add_to_dicelog(self, client: ClientManager.Client, msg: str):
             """

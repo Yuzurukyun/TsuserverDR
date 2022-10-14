@@ -379,10 +379,10 @@ class TestZoneExtraNotifications_03_ChangeCharacter(_TestZone):
         self.c0.assert_no_packets()
         self.c1.assert_no_packets()
         self.c2.assert_ooc('(X) Client {} had their character changed from `{}` to `{}` in your '
-                           'zone as their old character was taken in their new area ({}).'
+                           'zone as their old character was unavailable in their new area ({}).'
                            .format(3, self.sc3_name, self.sc2_name, self.c0.area.id), over=True)
         self.c3.assert_packet('PV', (3, 'CID', 2))
-        self.c3.assert_ooc('Your character was taken in your new area, switched to `{}`.'
+        self.c3.assert_ooc('Your character was unavailable in your new area, switched to `{}`.'
                            .format(self.sc2_name), over=True)
         self.c4.assert_no_packets()
         self.c5.assert_no_packets()
