@@ -2021,7 +2021,7 @@ class _HubbedGame(_HubbedGameTrivialInherited):
             If False, players without a character will not be allowed to join the hubbed game,
             and players that switch to something other than a character will be automatically
             removed from the hubbed game. If False, no such checks are made. A player without a
-            character is considered one where player.has_character() returns False. Defaults to
+            character is considered one where player.has_participant_character() returns False. Defaults to
             False.
         team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the hubbed game supports. If None, it
@@ -2256,7 +2256,7 @@ class _HubbedGameManagerTrivialInherited(GameWithAreasManager):
             If False, players without a character will not be allowed to join the hubbed game,
             and players that switch to something other than a character will be automatically
             removed from the hubbed game. If False, no such checks are made. A player without a
-            character is considered one where player.has_character() returns False. Defaults to
+            character is considered one where player.has_participant_character() returns False. Defaults to
             False.
         team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the hubbed game will support. If None,
@@ -2790,7 +2790,7 @@ class HubbedGameManager(_HubbedGameManagerTrivialInherited):
             If False, players without a character will not be allowed to join the hubbed game,
             and players that switch to something other than a character will be automatically
             removed from the hubbed game. If False, no such checks are made. A player without a
-            character is considered one where player.has_character() returns False. Defaults to
+            character is considered one where player.has_participant_character() returns False. Defaults to
             False.
         team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the hubbed game will support. If None,

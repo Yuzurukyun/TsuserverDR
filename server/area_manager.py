@@ -396,7 +396,7 @@ class AreaManager(AssetManager):
             if more_unavail_chars is None:
                 more_unavail_chars = set()
 
-            unavailable = {x.char_id for x in self.clients if x.has_character()}
+            unavailable = {x.char_id for x in self.clients if x.has_participant_character()}
             unavailable |= more_unavail_chars
             restricted = {self.hub.character_manager.get_character_id_by_name(name)
                           for name in self.restricted_chars}

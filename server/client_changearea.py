@@ -17,18 +17,20 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import typing
-from typing import List, Set, Tuple, Union
-if typing.TYPE_CHECKING:
-    # Avoid circular referencing
-    from server.area_manager import AreaManager
-    from server.client_manager import ClientManager
 
-import time
+import typing
+
+from typing import List, Set, Tuple, Union
 
 from server import logger
 from server.exceptions import ClientError, AreaError, TaskError
 from server.constants import Constants
+
+if typing.TYPE_CHECKING:
+    # Avoid circular referencing
+    from server.area_manager import AreaManager
+    from server.client_manager import ClientManager
+    from server.hub_manager import _Hub
 
 
 class ClientChangeArea:
@@ -465,7 +467,7 @@ class ClientChangeArea:
         # Assuming this is not a spectator...
         # If autopassing, send OOC messages
 
-        if not ignore_autopass and client.has_character():
+        if not ignore_autopass and client.has_participant_character():
             self.notify_others_moving(client, old_area,
                                       '{} has left to the {}.'.format(old_dname, area.name),
                                       'You hear footsteps going out of the room.')
@@ -709,18 +711,18 @@ class ClientChangeArea:
             return False, False, False
 
         # It also returns the character name that the player ended up, if it changed.
-        if not ignore_checks:
+        if ignore_checks:
+            if change_to:
+                new_char_id, mes = change_to, list()
+            else:
+                new_char_id, mes = client.char_id, list()
+        else:
             new_char_id, mes = client.check_change_area(
                 area,
                 override_passages=override_passages,
                 override_effects=override_effects,
                 more_unavail_chars=more_unavail_chars
                 )
-        else:
-            if change_to:
-                new_char_id, mes = change_to, list()
-            else:
-                new_char_id, mes = client.char_id, list()
 
         # Code after this line assumes that the area change will be successful
         # (but has not yet been performed)
@@ -790,6 +792,39 @@ class ClientChangeArea:
             })
         return True, found_something, ding_something
 
+    def _update_parameters_for_new_hub(
+        self,
+        new_hub: _Hub,
+        more_unavail_chars: Set[int] = None,
+        change_to: int = None,) -> Tuple[bool, int, Set[int]]:
+        if more_unavail_chars is None:
+            more_unavail_chars = set()
+
+        client = self.client
+        old_characters = client.hub.character_manager.get_characters()
+        new_characters = new_hub.character_manager.get_characters()
+        if old_characters == new_characters:
+            return False, change_to, more_unavail_chars
+
+        # Only do long work if necessary.
+
+        # Refresh current character, and change to spectator if unavailable
+        new_chars = {char: num for (num, char) in enumerate(new_characters)}
+
+        def _get_new_char_id(old_char_id: Union[int, None]) -> Tuple[bool, Union[int, None]]:
+            if not new_hub.character_manager.is_char_id_participant(old_char_id):
+                return True, old_char_id
+
+            char_name = client.hub.character_manager.get_character_name(old_char_id)
+            if char_name in new_chars:
+                return True, new_chars[char_name]
+            return False, -1
+
+        char_still_exists, new_client_char_id = _get_new_char_id(change_to)
+        new_more_unavail_chars = set(_get_new_char_id(old_char_id)[1]
+                                     for old_char_id in more_unavail_chars)
+
+        return char_still_exists, new_client_char_id, new_more_unavail_chars
 
     def change_area(
         self,

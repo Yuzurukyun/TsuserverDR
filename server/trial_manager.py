@@ -1763,7 +1763,7 @@ class _Trial(_TrialTrivialInherited):
             If False, players without a character will not be allowed to join the trial, and
             players that switch to something other than a character will be automatically
             removed from the trial. If False, no such checks are made. A player without a
-            character is considered one where player.has_character() returns False. Defaults
+            character is considered one where player.has_participant_character() returns False. Defaults
             to False.
         team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the trial supports. If None, it
@@ -2525,7 +2525,7 @@ class _Trial(_TrialTrivialInherited):
             If False, players without a character will not be allowed to join the NSD, and
             players that switch to something other than a character will be automatically
             removed from the NSD. If False, no such checks are made. A player without a
-            character is considered one where player.has_character() returns False. Defaults
+            character is considered one where player.has_participant_character() returns False. Defaults
             to False.
         team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the NSD will support. If None, it
@@ -2948,7 +2948,7 @@ class _Trial(_TrialTrivialInherited):
             client.send_ooc_others(f'(X) Non-player {client.displayname} [{client.id}] has entered '
                                    f'an area part of your trial ({old_area_id}->{area.id}).',
                                    pred=lambda c: c in self.get_leaders())
-            if self._require_character and not client.has_character():
+            if self._require_character and not client.has_participant_character():
                 if client.is_staff():
                     client.send_ooc(f'This trial requires you have a character to join. Join this '
                                     f'trial with /trial_join {self.get_id()} after choosing a '
@@ -3030,7 +3030,7 @@ class _Trial(_TrialTrivialInherited):
         """
 
         old_char = player.get_char_name(old_char_id)
-        if self._require_character and not player.has_character():
+        if self._require_character and not player.has_participant_character():
             player.send_ooc('You were removed from your trial as it required its players to have '
                             'characters.')
             player.send_ooc_others(f'(X) Player {player.id} changed character from {old_char} to '
@@ -3361,7 +3361,7 @@ class _TrialManagerTrivialInherited(HubbedGameManager):
             If False, players without a character will not be allowed to join the trial, and
             players that switch to something other than a character will be automatically
             removed from the trial. If False, no such checks are made. A player without a
-            character is considered one where player.has_character() returns False. Defaults
+            character is considered one where player.has_participant_character() returns False. Defaults
             to False.
         team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the trial will support. If None, it
@@ -3894,7 +3894,7 @@ class TrialManager(_TrialManagerTrivialInherited):
             If False, players without a character will not be allowed to join the trial, and
             players that switch to something other than a character will be automatically
             removed from the trial. If False, no such checks are made. A player without a
-            character is considered one where player.has_character() returns False. Defaults
+            character is considered one where player.has_participant_character() returns False. Defaults
             to False.
         team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the trial will support. If None, it

@@ -283,7 +283,7 @@ class TaskManager:
                 raise ServerError(info)
             if client.area.id == afk_sendto:  # Don't try and kick back to same area
                 return
-            if not client.has_character():  # Assumes spectators are exempted from AFK kicks
+            if not client.has_participant_character():  # Assumes spectators are exempted from AFK kicks
                 return
             if client.is_staff():  # Assumes staff are exempted from AFK kicks
                 return
@@ -817,6 +817,6 @@ class TaskManager:
                 return
             if client.is_staff():
                 return
-            if not client.has_character():
+            if not client.has_participant_character():
                 return
             client.send_ooc('You feel as though you are being peeked on.')

@@ -2523,7 +2523,7 @@ def ooc_cmd_follow(client: ClientManager.Client, arg: str):
         Constants.assert_command(client, arg, is_staff=True, parameters='=1')
     except ClientError.UnauthorizedError:
         Constants.assert_command(client, arg, parameters='=1')
-        if client.has_character():
+        if client.has_participant_character():
             raise ClientError('You must be authorized to follow while having a character.')
 
     if client.party:
@@ -9157,7 +9157,7 @@ def ooc_cmd_unfollow(client: ClientManager.Client, arg: str):
         Constants.assert_command(client, arg, is_staff=True, parameters='=0')
     except ClientError.UnauthorizedError:
         Constants.assert_command(client, arg, parameters='=0')
-        if client.has_character():
+        if client.has_participant_character():
             raise ClientError('You must be authorized to unfollow while having a character.')
 
     client.unfollow_user()

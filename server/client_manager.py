@@ -873,11 +873,8 @@ class ClientManager:
                 return self.showname
             return self.char_showname
 
-        def has_character(self, char_id: int = None) -> bool:
-            if char_id is None:
-                char_id = self.char_id
-
-            return char_id is not None and char_id >= 0
+        def has_participant_character(self) -> bool:
+            return self.hub.character_manager.is_char_id_participant(self.char_id)
 
         def change_character(self, char_id: int, force: bool = False,
                              target_area: AreaManager.Area = None,
@@ -918,7 +915,10 @@ class ClientManager:
             # Code after this comment assumes the character change will be successful
             self.ever_chose_character = True
 
-            if not self.has_character() and self.has_character(char_id=char_id):
+            has_char_before = self.has_participant_character()
+            has_char_after = self.hub.character_manager.is_char_id_participant(char_id)
+
+            if has_char_after and not has_char_before:
                 # No longer spectator?
                 # Now bound by AFK rules
                 self.server.task_manager.new_task(self, 'as_afk_kick', {
@@ -935,7 +935,7 @@ class ClientManager:
                                   f'and you are not logged in.')
                     self.unfollow_user()
 
-            elif self.has_character() and not self.has_character(char_id=char_id):
+            elif has_char_before and not has_char_after:
                 # Now a spectator?
                 # No longer bound to AFK rules
                 try:
@@ -1058,7 +1058,7 @@ class ClientManager:
                 just_me=just_me)
 
         def check_lurk(self):
-            if self.area.lurk_length > 0 and not self.is_staff() and self.has_character():
+            if self.area.lurk_length > 0 and not self.is_staff() and self.has_participant_character():
                 self.server.task_manager.new_task(self, 'as_lurk', {
                     'length': self.area.lurk_length,
                 })
@@ -1090,7 +1090,7 @@ class ClientManager:
             else:
                 target_char_name = old_char_name
 
-            if not self.has_character():
+            if not self.has_participant_character():
                 # Do nothing for spectators
                 pass
             elif target_char_name not in new_chars:
@@ -1802,7 +1802,7 @@ class ClientManager:
             for x in unusable_ids:
                 char_list[x] = -1
 
-            if self.has_character():
+            if self.has_participant_character():
                 char_list[self.char_id] = 0  # Self is always available
             self.send_command_dict('CharsCheck', {
                 'chars_status_ao2_list': char_list,
@@ -1811,7 +1811,7 @@ class ClientManager:
         def refresh_visible_char_list(self):
             char_list = [0] * len(self.hub.character_manager.get_characters())
             unusable_ids = {c.char_id for c in self.get_visible_clients(self.area)
-                            if c.has_character()}
+                            if c.has_participant_character()}
             if not self.is_staff():
                 unusable_ids |= {self.hub.character_manager.get_character_id_by_name(name)
                                 for name in self.area.restricted_chars}
@@ -1820,7 +1820,7 @@ class ClientManager:
                 char_list[x] = -1
 
             # Self is always available
-            if self.has_character():
+            if self.has_participant_character():
                 char_list[self.char_id] = 0
             self.send_command_dict('CharsCheck', {
                 'chars_status_ao2_list': char_list,

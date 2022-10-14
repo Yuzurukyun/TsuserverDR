@@ -1852,7 +1852,7 @@ class _Hub(_HubTrivialInherited):
             If False, players without a character will not be allowed to join the hub, and
             players that switch to something other than a character will be automatically
             removed from the hub. If False, no such checks are made. A player without a
-            character is considered one where player.has_character() returns False. Defaults
+            character is considered one where player.has_participant_character() returns False. Defaults
             to False.
         team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the hub supports. If None, it
@@ -2103,7 +2103,7 @@ class _Hub(_HubTrivialInherited):
             target_char_id = -1
             old_char_name = client.get_char_name()
 
-            if not client.has_character():
+            if not client.has_participant_character():
                 # Do nothing for spectators
                 pass
             elif old_char_name not in new_chars:
@@ -2449,7 +2449,7 @@ class _HubManagerTrivialInherited(GameWithAreasManager):
             If False, players without a character will not be allowed to join the hub, and
             players that switch to something other than a character will be automatically
             removed from the hub. If False, no such checks are made. A player without a
-            character is considered one where player.has_character() returns False. Defaults
+            character is considered one where player.has_participant_character() returns False. Defaults
             to False.
         team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the hub will support. If None, it
@@ -2945,7 +2945,7 @@ class HubManager(_HubManagerTrivialInherited):
             If False, players without a character will not be allowed to join the hub, and
             players that switch to something other than a character will be automatically
             removed from the hub. If False, no such checks are made. A player without a
-            character is considered one where player.has_character() returns False. Defaults
+            character is considered one where player.has_participant_character() returns False. Defaults
             to False.
         team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the hub will support. If None, it

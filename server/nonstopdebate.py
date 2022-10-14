@@ -1790,7 +1790,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
             If False, players without a character will not be allowed to join the NSD, and players
             that switch to something other than a character will be automatically removed from the
             NSD. If False, no such checks are made. A player without a character is considered
-            one where player.has_character() returns False. Defaults to False.
+            one where player.has_participant_character() returns False. Defaults to False.
         team_limit : int or None, optional
             If an int, it is the maximum number of teams the NSD supports. If None, it
             indicates the NSD has no team limit. Defaults to None.
@@ -2583,7 +2583,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
         """
 
         old_char = player.get_char_name(old_char_id)
-        if self.requires_characters() and not player.has_character():
+        if self.requires_characters() and not player.has_participant_character():
             player.send_ooc('You were removed from your NSD as it required its players to have '
                             'characters.')
             player.send_ooc_others(f'(X) Player {player.id} changed character from {old_char} to a '
@@ -2792,7 +2792,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
                                        f'Add them to your trial first before attempting to add '
                                        f'them to your NSD.',
                                        pred=lambda c: c in self.get_leaders())
-            elif not self._require_character or client.has_character():
+            elif not self._require_character or client.has_participant_character():
                 if client.is_staff():
                     client.send_ooc(f'Join this NSD with /nsd_join {self.get_id()}')
                 client.send_ooc_others(f'(X) Add {client.displayname} to your NSD with '

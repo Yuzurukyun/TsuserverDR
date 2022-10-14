@@ -905,7 +905,7 @@ class _Game(_GameTrivialInherited):
             If False, players without a character will not be allowed to join the game, and
             players that switch to something other than a character will be automatically
             removed from the game. If False, no such checks are made. A player without a
-            character is considered one where player.has_character() returns False. Defaults to
+            character is considered one where player.has_participant_character() returns False. Defaults to
             False.
         team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the game supports. If None, it
@@ -997,7 +997,7 @@ class _Game(_GameTrivialInherited):
 
         if self.is_unmanaged():
             raise GameError.GameIsUnmanagedError
-        if self._require_character and not user.has_character():
+        if self._require_character and not user.has_participant_character():
             raise GameError.UserHasNoCharacterError
 
         try:
@@ -1790,7 +1790,7 @@ class _Game(_GameTrivialInherited):
         """
 
         # print('Player', player, 'changed character from', old_char_id, 'to', new_char_id)
-        if self._require_character and not player.has_character():
+        if self._require_character and not player.has_participant_character():
             self.remove_player(player)
 
     def _on_client_destroyed(self, player: ClientManager.Client):
@@ -1851,7 +1851,7 @@ class _Game(_GameTrivialInherited):
         # 3.
         if self._require_character:
             for player in self.get_players():
-                assert player.has_character(), (
+                assert player.has_participant_character(), (
                     f'For game with areas {self} that expected all its players had '
                     f'characters, found player {player} did not have a character.'
                     )
@@ -2005,7 +2005,7 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
             If False, players without a character will not be allowed to join the game, and players
             that switch to something other than a character will be automatically removed from the
             game. If False, no such checks are made. A player without a character is considered
-            one where player.has_character() returns False. Defaults to False.
+            one where player.has_participant_character() returns False. Defaults to False.
         team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the game will support. If None, it
             indicates the game will have no team limit. Defaults to None.
@@ -2096,7 +2096,7 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
             If False, players without a character will not be allowed to join the game, and players
             that switch to something other than a character will be automatically removed from the
             game. If False, no such checks are made. A player without a character is considered
-            one where player.has_character() returns False. Defaults to False.
+            one where player.has_participant_character() returns False. Defaults to False.
         team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the game will support. If None, it
             indicates the game will have no team limit. Defaults to None.
