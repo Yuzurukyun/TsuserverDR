@@ -1078,60 +1078,14 @@ class ClientManager:
             if hub == self.hub:
                 raise ClientError('User is already in target hub.')
 
-            # Refresh current character, and change to spectator if unavailable
-            old_characters = self.hub.character_manager.get_characters()
-            new_characters = hub.character_manager.get_characters()
-            new_chars = {char: num for (num, char) in enumerate(new_characters)}
-            target_char_id = -1
-            old_char_name = self.get_char_name()
-
-            if change_to is not None and change_to != self.char_id:
-                target_char_name = self.get_char_name(char_id=change_to)
-            else:
-                target_char_name = old_char_name
-
-            if not self.has_participant_character():
-                # Do nothing for spectators
-                pass
-            elif target_char_name not in new_chars:
-                # Character no longer exists, so switch to spectator
-                self.send_ooc(f'After a change in the character list, your character is no '
-                              f'longer available. Switching to '
-                              f'{self.server.config["spectator_name"]}.')
-            else:
-                target_char_id = new_chars[target_char_name]
-
             self.change_area(
                 hub.area_manager.default_area(),
                 override_passages=True,  # Overriden
                 override_effects=override_effects, ignore_bleeding=ignore_bleeding,
                 ignore_autopass=ignore_autopass,
                 ignore_followers=ignore_followers, ignore_checks=ignore_checks,
-                ignore_notifications=ignore_notifications, change_to=target_char_id,
+                ignore_notifications=ignore_notifications, change_to=change_to,
                 more_unavail_chars=more_unavail_chars, from_party=from_party)
-
-            self.hub = hub
-            self.send_ooc(f'Changed hub to hub {hub.get_numerical_id()}.')
-
-            if old_characters != new_characters:
-                if self.packet_handler.ALLOWS_CHAR_LIST_RELOAD:
-                    self.send_command_dict('SC', {
-                        'chars_ao2_list': new_characters,
-                        })
-                    self.change_character(target_char_id, force=True, old_char=old_char_name)
-                else:
-                    self.send_ooc('After a change in the character list, your client character list '
-                                'is no longer synchronized. Please rejoin the server.')
-
-            if self.is_officer():
-                hub.add_leader(self)
-                self.send_music_list_view()
-            elif self.is_gm:
-                self.send_ooc('Logging out of GM as you changed hub.')
-                self.logout()
-                # logout already does send_music_list_view
-            else:
-                self.send_music_list_view()
 
         def change_area(self, area: AreaManager.Area,
                         override_passages: bool = False, override_effects: bool = False,
@@ -1560,24 +1514,27 @@ class ClientManager:
             self.following.followedby.remove(self)
             self.following = None
 
-        def follow_area(self, area: ClientManager.Client, just_moved: bool = True):
+        def follow_area(self, area: AreaManager.Area, just_moved: bool = True):
             # just_moved if True assumes the case where the followed user just moved
             # It being false is the case where, when the following started, the followed user was
             # in another area, and thus the followee is moved automtically
+
+            name = (area.name if area.hub == self.hub
+                    else f'{area.name} in hub {area.hub.get_numerical_id()}')
+
             if just_moved:
                 if self.is_staff():
-                    self.send_ooc('Followed user moved to {} at {}'
-                                  .format(area.name, Constants.get_time()))
+                    self.send_ooc(f'Followed user moved to area {name} at {Constants.get_time()}.')
                 else:
-                    self.send_ooc(f'Followed user moved to area {area.name}.')
+                    self.send_ooc(f'Followed user moved to area {name}.')
             else:
-                self.send_ooc('Followed user was at {}'.format(area.name))
+                self.send_ooc(f'Followed user was in area {name}.')
 
             try:
                 self.change_area(area, override_passages=True, override_effects=True,
                                  ignore_bleeding=True, ignore_autopass=True, ignore_followers=True)
             except ClientError as error:
-                self.send_ooc('Unable to follow to {}: {}'.format(area.name, error))
+                self.send_ooc(f'Unable to follow to area {name}: `{error}`.')
 
         def send_area_list(self):
             msg = '=== Areas ==='

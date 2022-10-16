@@ -877,6 +877,7 @@ class ClientChangeArea:
         client = self.client
         old_area = client.area
         old_dname = client.displayname
+        old_char_name = client.get_char_name()
 
         # All the code that could raise errors goes here
         proceed, found_something, ding_something = self._do_change_area(
@@ -907,6 +908,7 @@ class ClientChangeArea:
             found_something=found_something,
             ding_something=ding_something,
             old_dname=old_dname,
+            old_char_name=old_char_name,
             override_passages=override_passages,
             override_effects=override_effects,
             ignore_bleeding=ignore_bleeding,
@@ -926,6 +928,7 @@ class ClientChangeArea:
         found_something: bool = False,
         ding_something: bool = False,
         old_dname: str = '',
+        old_char_name: str = '',
 
         override_passages: bool = False,
         override_effects: bool = False,
@@ -1026,6 +1029,35 @@ class ClientChangeArea:
             'ignore_autopass': ignore_autopass,
             'ignore_bleeding': ignore_bleeding,
             })
+
+        if old_area and old_area.hub != area.hub:
+            client.hub = area.hub
+            client.send_ooc(f'Changed hub to hub {client.hub.get_numerical_id()}.')
+
+            old_characters = old_area.hub.character_manager.get_characters()
+            new_characters = client.hub.character_manager.get_characters()
+
+            if old_characters != new_characters:
+                if client.packet_handler.ALLOWS_CHAR_LIST_RELOAD:
+                    client.send_command_dict('SC', {
+                        'chars_ao2_list': new_characters,
+                        })
+                    if client.char_id is not None:
+                        client.change_character(client.char_id, force=True, old_char=old_char_name)
+                else:
+                    client.send_ooc('After a change in the character list, your client character '
+                                    'list is no longer synchronized. Please rejoin the server.')
+
+            if client.is_officer():
+                client.hub.add_leader(client)
+                client.send_music_list_view()
+            elif client.is_staff():
+                client.send_ooc('Logging out of GM as you changed hub.')
+                client.logout()
+                # logout already does send_music_list_view
+            else:
+                client.send_music_list_view()
+
 
         if client.followedby and not ignore_followers:
             for c in client.followedby:
