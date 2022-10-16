@@ -739,7 +739,6 @@ class ClientChangeArea:
     def _do_change_area(
         self,
         area: AreaManager.Area,
-        override_all: bool = False,
         override_passages: bool = False,
         override_effects: bool = False,
         ignore_bleeding: bool = False,
@@ -751,8 +750,6 @@ class ClientChangeArea:
         change_to: int = None,
         from_party: bool = False
         ) -> Tuple[bool, bool, bool]:
-        if override_all:
-           return True, False, False
 
         client = self.client
         old_area = client.area
@@ -847,7 +844,6 @@ class ClientChangeArea:
     def change_area(
         self,
         area: AreaManager.Area,
-        override_all: bool = False,
         override_passages: bool = False,
         override_effects: bool = False,
         ignore_bleeding: bool = False,
@@ -869,9 +865,6 @@ class ClientChangeArea:
         *ignore_autopass: avoid sending autopass notifications
         *restrict_characters: additional characters to mark as restricted, others than the one
          used in the area or area restricted.
-        *override_all: perform the area change regarldess of area restrictions and send no
-         RP related notifications (only useful for complete area reload). In particular,
-         override_all being False performs all the checks and announces the area change in OOC.
         *ignore_checks: ignore the change area checks.
         *ignore_notifications: ignore the area notifications except character change.
         *more_unavail_chars: additional characters in the target area to mark as taken.
@@ -888,7 +881,6 @@ class ClientChangeArea:
         # All the code that could raise errors goes here
         proceed, found_something, ding_something = self._do_change_area(
             area,
-            override_all=override_all,
             override_passages=override_passages,
             override_effects=override_effects,
             ignore_bleeding=ignore_bleeding,
@@ -915,7 +907,6 @@ class ClientChangeArea:
             found_something=found_something,
             ding_something=ding_something,
             old_dname=old_dname,
-            override_all=override_all,
             override_passages=override_passages,
             override_effects=override_effects,
             ignore_bleeding=ignore_bleeding,
@@ -936,7 +927,6 @@ class ClientChangeArea:
         ding_something: bool = False,
         old_dname: str = '',
 
-        override_all: bool = False,
         override_passages: bool = False,
         override_effects: bool = False,
         ignore_bleeding: bool = False,
@@ -1037,6 +1027,6 @@ class ClientChangeArea:
             'ignore_bleeding': ignore_bleeding,
             })
 
-        if client.followedby and not ignore_followers and not override_all:
+        if client.followedby and not ignore_followers:
             for c in client.followedby:
                 c.follow_area(area)
