@@ -892,10 +892,11 @@ class ClientManager:
             if old_char is None:
                 old_char = self.get_char_name()
             old_char_id = self.char_id
-            new_char_name = self.hub.character_manager.get_character_name(char_id)
 
             if not target_area.hub.character_manager.is_valid_character_id(char_id):
                 raise ClientError('Invalid character ID.')
+
+            new_char = self.hub.character_manager.get_character_name(char_id)
             if not target_area.is_char_available(char_id, allow_restricted=self.is_staff()):
                 if force:
                     for client in self.area.clients:
@@ -910,7 +911,7 @@ class ClientManager:
                                                  f'{client.id} off their character.',
                                                  is_officer=True, in_hub=None, not_to={client})
                 else:
-                    raise ClientError(f'Character {new_char_name} not available.')
+                    raise ClientError(f'Character {new_char} not available.')
 
             # Code after this comment assumes the character change will be successful
             self.ever_chose_character = True
@@ -947,7 +948,7 @@ class ClientManager:
 
             self.char_id = char_id
             # Assumes players are not iniswapped initially, waiting for chrini packet
-            self.char_folder = new_char_name
+            self.char_folder = new_char
             self.char_showname = ''
             self.pos = 'wit'
 
