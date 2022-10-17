@@ -892,6 +892,7 @@ class ClientManager:
             if old_char is None:
                 old_char = self.get_char_name()
             old_char_id = self.char_id
+            new_char_name = self.hub.character_manager.get_character_name(char_id)
 
             if not target_area.hub.character_manager.is_valid_character_id(char_id):
                 raise ClientError('Invalid character ID.')
@@ -909,8 +910,7 @@ class ClientManager:
                                                  f'{client.id} off their character.',
                                                  is_officer=True, in_hub=None, not_to={client})
                 else:
-                    raise ClientError('Character {} not available.'
-                                      .format(self.get_char_name(char_id)))
+                    raise ClientError(f'Character {new_char_name} not available.')
 
             # Code after this comment assumes the character change will be successful
             self.ever_chose_character = True
@@ -947,7 +947,7 @@ class ClientManager:
 
             self.char_id = char_id
             # Assumes players are not iniswapped initially, waiting for chrini packet
-            self.char_folder = self.get_char_name()
+            self.char_folder = new_char_name
             self.char_showname = ''
             self.pos = 'wit'
 
@@ -2050,11 +2050,8 @@ class ClientManager:
         def get_ipreal(self) -> str:
             return Constants.get_ip_of_transport(self.transport)
 
-        def get_char_name(self, char_id: int = None) -> str:
-            if char_id is None:
-                char_id = self.char_id
-
-            return self.hub.character_manager.get_character_name(char_id)
+        def get_char_name(self) -> str:
+            return self.hub.character_manager.get_character_name(self.char_id)
 
         def get_showname_history(self) -> str:
             info = '== Showname history of client {} =='.format(self.id)

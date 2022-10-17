@@ -3029,7 +3029,7 @@ class _Trial(_TrialTrivialInherited):
 
         """
 
-        old_char = player.get_char_name(old_char_id)
+        old_char = player.hub.character_manager.get_character_name(old_char_id)
         if self._require_character and not player.has_participant_character():
             player.send_ooc('You were removed from your trial as it required its players to have '
                             'characters.')

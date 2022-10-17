@@ -2582,7 +2582,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
 
         """
 
-        old_char = player.get_char_name(old_char_id)
+        old_char = player.hub.character_manager.get_character_name(old_char_id)
         if self.requires_characters() and not player.has_participant_character():
             player.send_ooc('You were removed from your NSD as it required its players to have '
                             'characters.')
