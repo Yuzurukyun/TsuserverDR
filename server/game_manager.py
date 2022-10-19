@@ -294,7 +294,8 @@ class _GameTrivialInherited(_PlayerGroup):
             If the game was scheduled for deletion and thus does not accept any mutator
             public method calls.
         GameError.UserHasNoCharacterError
-            If the user has no character but the game requires that all players have characters.
+            If the user has no character but the game requires that all players have participant
+            characters.
         GameError.UserNotInvitedError
             If the game requires players be invited to be added and the user is not invited.
         GameError.UserAlreadyPlayerError
@@ -800,8 +801,8 @@ class _Game(_GameTrivialInherited):
     is at least one leader (or else one is automatically chosen between all players). Each of these
     games may also impose a concurrent player membership limit, so that every user that is a player
     of it is at most of that many games managed by this game's manager. Each game may also
-    require all its players have characters when trying to join the game, as well as remove any
-    player that switches to a non-character.
+    require all its players have participant characters when trying to join the game, as well as
+    remove any player that switches to a non-character.
 
     Each of the timers a game manages are timer_manager.Timers.
 
@@ -838,10 +839,10 @@ class _Game(_GameTrivialInherited):
 
     # (Private) Attributes
     # --------------------
-    # _require_character : bool
-    #   If False, players without a character will not be allowed to join the game, and players
-    #   that switch to something other than a character will be automatically removed from the
-    #   game. If False, no such checks are made.
+    # _require_participant_character : bool
+    #   If False, players without a participant character will not be allowed to join the game, and
+    #   players that switch to something other than a participant character will be automatically
+    #   removed from the game. If False, no such checks are made.
     # _team_manager : PlayerGroupManager
     #   Internal manager that handles the teams of the game.
     # _timer_manager: TimerManager
@@ -851,7 +852,8 @@ class _Game(_GameTrivialInherited):
     # ----------
     # 1. All players part of a team managed by this game are players of the game.
     # 2. For each player of the game, the game is subscribed to it.
-    # 3. If the game requires its players have characters, all its players do have characters.
+    # 3. If the game requires its players have participant characters, all its players do have
+    #    participant characters.
     # 4. Each internal structure satisfies its invariants.
     # 5. The invariants from the parent class _PlayerGroup are satisfied.
 
@@ -865,7 +867,7 @@ class _Game(_GameTrivialInherited):
         require_invitations: bool = False,
         require_players: bool = True,
         require_leaders: bool = True,
-        require_character: bool = False,
+        require_participant_character: bool = False,
         team_limit: Union[int, None] = None,
         timer_limit: Union[int, None] = None,
     ):
@@ -901,12 +903,12 @@ class _Game(_GameTrivialInherited):
             leader among any remaining players left; if no players are left, the next player
             added will be made leader. If False, no such automatic assignment will happen.
             Defaults to True.
-        require_character : bool, optional
-            If False, players without a character will not be allowed to join the game, and
-            players that switch to something other than a character will be automatically
-            removed from the game. If False, no such checks are made. A player without a
-            character is considered one where player.has_participant_character() returns False. Defaults to
-            False.
+        require_participant_character : bool, optional
+            If False, players without a participant character will not be allowed to join the
+            game, and players that switch to something other than a participant character
+            will be automatically removed from the game. If False, no such checks are
+            made. A player without a participant character is considered one where
+            player.has_participant_character() returns False. Defaults to False.
         team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the game supports. If None, it
             indicates the game has no team limit. Defaults to None.
@@ -936,7 +938,7 @@ class _Game(_GameTrivialInherited):
             server,
             timer_limit=timer_limit
         )
-        self._require_character = require_character
+        self._require_participant_character = require_participant_character
 
         self.publisher = Publisher(self)
         # Implementation detail: the callbacks of the internal objects of the game are (to be)
@@ -981,7 +983,8 @@ class _Game(_GameTrivialInherited):
             If the game was scheduled for deletion and thus does not accept any mutator
             public method calls.
         GameError.UserHasNoCharacterError
-            If the user has no character but the game requires that all players have characters.
+            If the user has no character but the game requires that all players have participant
+            characters.
         GameError.UserNotInvitedError
             If the game requires players be invited to be added and the user is not invited.
         GameError.UserAlreadyPlayerError
@@ -997,7 +1000,7 @@ class _Game(_GameTrivialInherited):
 
         if self.is_unmanaged():
             raise GameError.GameIsUnmanagedError
-        if self._require_character and not user.has_participant_character():
+        if self._require_participant_character and not user.has_participant_character():
             raise GameError.UserHasNoCharacterError
 
         try:
@@ -1061,17 +1064,17 @@ class _Game(_GameTrivialInherited):
 
         self.listener.unsubscribe(user)
 
-    def requires_characters(self) -> bool:
+    def requires_participant_characters(self) -> bool:
         """
-        Return whether the game requires players have a character at all times.
+        Return whether the game requires players have a participant character at all times.
 
         Returns
         -------
         bool
-            Whether the game requires players have a character at all times.
+            Whether the game requires players have a participant character at all times.
         """
 
-        return self._require_character
+        return self._require_participant_character
 
     def new_timer(
         self,
@@ -1770,9 +1773,9 @@ class _Game(_GameTrivialInherited):
         """
         Default callback for game player signaling it has changed character.
 
-        By default it only checks if the player is now no longer having a character. If that is
-        the case and the game requires all players have characters, the player is automatically
-        removed.
+        By default it only checks if the player is now no longer having a participant character.
+        If that is the case and the game requires all players have participant characters, the
+        player is automatically removed.
 
         Parameters
         ----------
@@ -1790,7 +1793,7 @@ class _Game(_GameTrivialInherited):
         """
 
         # print('Player', player, 'changed character from', old_char_id, 'to', new_char_id)
-        if self._require_character and not player.has_participant_character():
+        if self._require_participant_character and not player.has_participant_character():
             self.remove_player(player)
 
     def _on_client_destroyed(self, player: ClientManager.Client):
@@ -1849,11 +1852,11 @@ class _Game(_GameTrivialInherited):
                 )
 
         # 3.
-        if self._require_character:
+        if self._require_participant_character:
             for player in self.get_players():
                 assert player.has_participant_character(), (
-                    f'For game with areas {self} that expected all its players had '
-                    f'characters, found player {player} did not have a character.'
+                    f'For game with areas {self} that expected all its players had participant '
+                    f'characters, found player {player} did not have a participant character.'
                     )
 
         # 4.
@@ -1893,7 +1896,7 @@ class _Game(_GameTrivialInherited):
                 f'require_players={self.requires_players()}, '
                 f'require_invitations={self.requires_invitations()}, '
                 f'require_leaders={self.requires_leaders()}, '
-                f'require_character={self.requires_characters()}, '
+                f'require_participant_character={self.requires_participant_characters()}, '
                 f'team_limit={self.get_team_limit()}, '
                 f'timer_limit={self.get_timer_limit()}, '
                 f'|| '
@@ -1966,7 +1969,7 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
         require_invitations: bool = False,
         require_players: bool = True,
         require_leaders: bool = True,
-        require_character: bool = False,
+        require_participant_character: bool = False,
         team_limit: Union[int, None] = None,
         timer_limit: Union[int, None] = None,
         **kwargs,
@@ -2001,11 +2004,12 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
             If True, if at any point the game has no leaders left, the game will choose a leader
             among any remaining players left; if no players are left, the next player added will
             be made leader. If False, no such automatic assignment will happen. Defaults to True.
-        require_character : bool, optional
-            If False, players without a character will not be allowed to join the game, and players
-            that switch to something other than a character will be automatically removed from the
-            game. If False, no such checks are made. A player without a character is considered
-            one where player.has_participant_character() returns False. Defaults to False.
+        require_participant_character : bool, optional
+            If False, players without a participant character will not be allowed to join the
+            game, and players that switch to something other than a participant character
+            will be automatically removed from the game. If False, no such checks are
+            made. A player without a participant character is considered one where
+            player.has_participant_character() returns False. Defaults to False.
         team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the game will support. If None, it
             indicates the game will have no team limit. Defaults to None.
@@ -2038,7 +2042,7 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
             require_players=require_players,
             require_leaders=require_leaders,
             # kwargs
-            require_character=require_character,
+            require_participant_character=require_participant_character,
             team_limit=team_limit,
             timer_limit=timer_limit,
             **kwargs,
@@ -2055,7 +2059,7 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
         require_invitations: bool = False,
         require_players: bool = True,
         require_leaders: bool = True,
-        require_character: bool = False,
+        require_participant_character: bool = False,
         team_limit: Union[int, None] = None,
         timer_limit: Union[int, None] = None,
         **kwargs,
@@ -2092,11 +2096,12 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
             If True, if at any point the game has no leaders left, the game will choose a leader
             among any remaining players left; if no players are left, the next player added will
             be made leader. If False, no such automatic assignment will happen. Defaults to True.
-        require_character : bool, optional
-            If False, players without a character will not be allowed to join the game, and players
-            that switch to something other than a character will be automatically removed from the
-            game. If False, no such checks are made. A player without a character is considered
-            one where player.has_participant_character() returns False. Defaults to False.
+        require_participant_character : bool, optional
+            If False, players without a participant character will not be allowed to join the
+            game, and players that switch to something other than a participant character
+            will be automatically removed from the game. If False, no such checks are
+            made. A player without a participant character is considered one where
+            player.has_participant_character() returns False. Defaults to False.
         team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the game will support. If None, it
             indicates the game will have no team limit. Defaults to None.
@@ -2130,7 +2135,7 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
                 require_players=require_players,
                 require_leaders=require_leaders,
                 # kwargs
-                require_character=require_character,
+                require_participant_character=require_participant_character,
                 team_limit=team_limit,
                 timer_limit=timer_limit,
                 **kwargs,

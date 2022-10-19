@@ -681,17 +681,17 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
 
         return super().has_ever_had_players()
 
-    def requires_characters(self) -> bool:
+    def requires_participant_characters(self) -> bool:
         """
-        Return whether the nonstop debate requires players have a character at all times.
+        Return whether the nonstop debate requires players have a participant character at all times.
 
         Returns
         -------
         bool
-            Whether the nonstop debate requires players have a character at all times.
+            Whether the nonstop debate requires players have a participant character at all times.
         """
 
-        return super().requires_characters()
+        return super().requires_participant_characters()
 
     def new_timer(
         self,
@@ -1742,7 +1742,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
         require_invitations: bool = False,
         require_players: bool = True,
         require_leaders: bool = True,
-        require_character: bool = False,
+        require_participant_character: bool = False,
         team_limit: Union[int, None] = None,
         timer_limit: Union[int, None] = None,
         area_concurrent_limit: Union[int, None] = None,
@@ -1786,11 +1786,12 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
             leader among any remaining players left; if no players are left, the next player
             added will be made leader. If False, no such automatic assignment will happen.
             Defaults to True.
-        require_character : bool, optional
-            If False, players without a character will not be allowed to join the NSD, and players
-            that switch to something other than a character will be automatically removed from the
-            NSD. If False, no such checks are made. A player without a character is considered
-            one where player.has_participant_character() returns False. Defaults to False.
+        require_participant_character : bool, optional
+            If False, players without a participant character will not be allowed to join the
+            NSD, and players that switch to something other than a participant character
+            will be automatically removed from the NSD. If False, no such checks are
+            made. A player without a participant character is considered one where
+            player.has_participant_character() returns False. Defaults to False.
         team_limit : int or None, optional
             If an int, it is the maximum number of teams the NSD supports. If None, it
             indicates the NSD has no team limit. Defaults to None.
@@ -1855,7 +1856,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
             require_invitations=require_invitations,
             require_players=require_players,
             require_leaders=require_leaders,
-            require_character=require_character,
+            require_participant_character=require_participant_character,
             team_limit=team_limit,
             timer_limit=timer_limit,
             area_concurrent_limit=area_concurrent_limit,
@@ -2563,9 +2564,9 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
         new_char_id: int = None
         ):
         """
-        It checks if the player is now no longer having a character. If that is
-        the case and the NSD requires all players have characters, the player is automatically
-        removed.
+        It checks if the player is now no longer having a participant character. If that is
+        the case and the NSD requires all players have participant characters, the player is
+        automatically removed.
 
         Parameters
         ----------
@@ -2583,9 +2584,9 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
         """
 
         old_char = player.hub.character_manager.get_character_name(old_char_id)
-        if self.requires_characters() and not player.has_participant_character():
+        if self.requires_participant_characters() and not player.has_participant_character():
             player.send_ooc('You were removed from your NSD as it required its players to have '
-                            'characters.')
+                            'participant characters.')
             player.send_ooc_others(f'(X) Player {player.id} changed character from {old_char} to a '
                                    f'non-character and was removed from your NSD.',
                                    pred=lambda c: c in self.get_leaders())
@@ -2792,7 +2793,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
                                        f'Add them to your trial first before attempting to add '
                                        f'them to your NSD.',
                                        pred=lambda c: c in self.get_leaders())
-            elif not self._require_character or client.has_participant_character():
+            elif not self.requires_participant_characters() or client.has_participant_character():
                 if client.is_staff():
                     client.send_ooc(f'Join this NSD with /nsd_join {self.get_id()}')
                 client.send_ooc_others(f'(X) Add {client.displayname} to your NSD with '
@@ -2800,12 +2801,14 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
                                        pred=lambda c: c in self.get_leaders())
             else:
                 if client.is_staff():
-                    client.send_ooc(f'This NSD requires you have a character to join. Join this '
-                                    f'NSD with /nsd_join {self.get_id()} after choosing a '
-                                    f'character.')
-                client.send_ooc_others(f'(X) This NSD requires players have a character to join. '
+                    client.send_ooc(f'This NSD requires you have a participant character to join. '
+                                    f'Join this NSD with /nsd_join {self.get_id()} after choosing '
+                                    f'a participant character.')
+                client.send_ooc_others(f'(X) This NSD requires players have a participant '
+                                       f'character to join. '
                                        f'Add {client.displayname} to your NSD with '
-                                       f'/nsd_add {client.id} after they choose a character.',
+                                       f'/nsd_add {client.id} after they choose a participant '
+                                       f'character.',
                                        pred=lambda c: c in self.get_leaders())
             self.introduce_user(client)
 
@@ -3055,7 +3058,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
                 f'require_players={self.requires_players()}, '
                 f'require_invitations={self.requires_invitations()}, '
                 f'require_leaders={self.requires_leaders()}, '
-                f'require_character={self.requires_characters()}, '
+                f'require_participant_character={self.requires_participant_characters()}, '
                 f'team_limit={self._team_manager.get_managee_limit()}, '
                 f'timer_limit={self._timer_manager.get_timer_limit()}, '
                 f'areas={self.get_areas()}, '

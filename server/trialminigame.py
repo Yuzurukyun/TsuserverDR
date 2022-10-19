@@ -703,17 +703,17 @@ class _TrialMinigameTrivialInherited(_HubbedGame):
 
         return super().has_ever_had_players()
 
-    def requires_characters(self) -> bool:
+    def requires_participant_characters(self) -> bool:
         """
-        Return whether the trial minigame requires players have a character at all times.
+        Return whether the trial minigame requires players have a participant character at all times.
 
         Returns
         -------
         bool
-            Whether the trial minigame requires players have a character at all times.
+            Whether the trial minigame requires players have a participant character at all times.
         """
 
-        return super().requires_characters()
+        return super().requires_participant_characters()
 
     def new_timer(
         self,
@@ -1633,9 +1633,9 @@ class _TrialMinigameTrivialInherited(_HubbedGame):
         """
         Default callback for trial minigame player signaling it has changed character.
 
-        By default it only checks if the player is now no longer having a character. If that is
-        the case and the trial minigamerequires all players have characters, the player is automatically
-        removed.
+        By default it only checks if the player is now no longer having a participant character. If
+        that is the case and the trial minigame requires all players have participant characters,
+        the player is automatically removed.
 
         Parameters
         ----------
@@ -1810,7 +1810,7 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
         require_invitations: bool = False,
         require_players: bool = True,
         require_leaders: bool = True,
-        require_character: bool = False,
+        require_participant_character: bool = False,
         team_limit: Union[int, None] = None,
         timer_limit: Union[int, None] = None,
         area_concurrent_limit: Union[int, None] = None,
@@ -1854,12 +1854,12 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
             choose a leader among any remaining players left; if no players are left, the next
             player added will be made leader. If False, no such automatic assignment will happen.
             Defaults to True.
-        require_character : bool, optional
-            If False, players without a character will not be allowed to join the trial minigame,
-            and players that switch to something other than a character will be automatically
-            removed from the trial minigame. If False, no such checks are made. A player without a
-            character is considered one where player.has_participant_character() returns False. Defaults to
-            False.
+        require_participant_character : bool, optional
+            If False, players without a participant character will not be allowed to join the
+            trial minigame, and players that switch to something other than a participant character
+            will be automatically removed from the trial minigame. If False, no such checks are
+            made. A player without a participant character is considered one where
+            player.has_participant_character() returns False. Defaults to False.
         team_limit : int or None, optional
             If an int, it is the maximum number of teams the trial minigame supports. If None, it
             indicates the trial minigame has no team limit. Defaults to None.
@@ -1903,7 +1903,7 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
             require_invitations=require_invitations,
             require_players=require_players,
             require_leaders=require_leaders,
-            require_character=require_character,
+            require_participant_character=require_participant_character,
             team_limit=team_limit,
             timer_limit=timer_limit,
             area_concurrent_limit=area_concurrent_limit,
@@ -2301,7 +2301,7 @@ class _TrialMinigame(_TrialMinigameTrivialInherited):
                 f'require_players={self.requires_players()}, '
                 f'require_invitations={self.requires_invitations()}, '
                 f'require_leaders={self.requires_leaders()}, '
-                f'require_character={self.requires_characters()}, '
+                f'require_participant_character={self.requires_participant_characters()}, '
                 f'team_limit={self._team_manager.get_managee_limit()}, '
                 f'timer_limit={self._timer_manager.get_timer_limit()}, '
                 f'areas={self.get_areas()}, '
