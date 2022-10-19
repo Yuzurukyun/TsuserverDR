@@ -743,17 +743,17 @@ class _HubbedGameTrivialInherited(_GameWithAreas):
 
         return super().has_ever_had_players()
 
-    def requires_characters(self) -> bool:
+    def requires_participant_characters(self) -> bool:
         """
-        Return whether the hubbed game requires players have a character at all times.
+        Return whether the hubbed game requires players have a participant character at all times.
 
         Returns
         -------
         bool
-            Whether the hubbed game requires players have a character at all times.
+            Whether the hubbed game requires players have a participant character at all times.
         """
 
-        return super().requires_characters()
+        return super().requires_participant_characters()
 
     def new_timer(
         self,
@@ -1686,9 +1686,9 @@ class _HubbedGameTrivialInherited(_GameWithAreas):
         """
         Default callback for hubbed game player signaling it has changed character.
 
-        By default it only checks if the player is now no longer having a character. If that is
-        the case and the game requires all players have characters, the player is automatically
-        removed.
+        By default it only checks if the player is now no longer having a participant character.
+        If that is the case and the hubbed game requires all players have participant characters,
+        the player is automatically removed.
 
         Parameters
         ----------
@@ -1975,7 +1975,7 @@ class _HubbedGame(_HubbedGameTrivialInherited):
         require_invitations: bool = False,
         require_players: bool = True,
         require_leaders: bool = True,
-        require_character: bool = False,
+        require_participant_character: bool = False,
         team_limit: Union[int, None] = None,
         timer_limit: Union[int, None] = None,
         area_concurrent_limit: Union[int, None] = None,
@@ -2017,12 +2017,12 @@ class _HubbedGame(_HubbedGameTrivialInherited):
             will choose a leader among any remaining players left; if no players are left, the next
             player added will be made leader. If False, no such automatic assignment will happen.
             Defaults to True.
-        require_character : bool, optional
-            If False, players without a character will not be allowed to join the hubbed game,
-            and players that switch to something other than a character will be automatically
-            removed from the hubbed game. If False, no such checks are made. A player without a
-            character is considered one where player.has_character() returns False. Defaults to
-            False.
+        require_participant_character : bool, optional
+            If False, players without a participant character will not be allowed to join the
+            hubbed game, and players that switch to something other than a participant character
+            will be automatically removed from the hubbed game. If False, no such checks are
+            made. A player without a participant character is considered one where
+            player.has_participant_character() returns False. Defaults to False.
         team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the hubbed game supports. If None, it
             indicates the hubbed game has no team limit. Defaults to None.
@@ -2059,7 +2059,7 @@ class _HubbedGame(_HubbedGameTrivialInherited):
             require_invitations=require_invitations,
             require_players=require_players,
             require_leaders=require_leaders,
-            require_character=require_character,
+            require_participant_character=require_participant_character,
             team_limit=team_limit,
             timer_limit=timer_limit,
             area_concurrent_limit=area_concurrent_limit,
@@ -2182,7 +2182,7 @@ class _HubbedGame(_HubbedGameTrivialInherited):
                 f'require_players={self.requires_players()}, '
                 f'require_invitations={self.requires_invitations()}, '
                 f'require_leaders={self.requires_leaders()}, '
-                f'require_character={self.requires_characters()}, '
+                f'require_participant_character={self.requires_participant_characters()}, '
                 f'team_limit={self.get_team_limit()}, '
                 f'timer_limit={self.get_timer_limit()}, '
                 f'areas={self.get_areas()}), '
@@ -2209,7 +2209,7 @@ class _HubbedGameManagerTrivialInherited(GameWithAreasManager):
         require_invitations: bool = False,
         require_players: bool = True,
         require_leaders: bool = True,
-        require_character: bool = False,
+        require_participant_character: bool = False,
         team_limit: Union[int, None] = None,
         timer_limit: Union[int, None] = None,
         areas: Set[AreaManager.Area] = None,
@@ -2252,12 +2252,12 @@ class _HubbedGameManagerTrivialInherited(GameWithAreasManager):
             will choose a leader among any remaining players left; if no players are left, the next
             player added will be made leader. If False, no such automatic assignment will happen.
             Defaults to True.
-        require_character : bool, optional
-            If False, players without a character will not be allowed to join the hubbed game,
-            and players that switch to something other than a character will be automatically
-            removed from the hubbed game. If False, no such checks are made. A player without a
-            character is considered one where player.has_character() returns False. Defaults to
-            False.
+        require_participant_character : bool, optional
+            If False, players without a participant character will not be allowed to join the
+            hubbed game, and players that switch to something other than a participant character
+            will be automatically removed from the hubbed game. If False, no such checks are
+            made. A player without a participant character is considered one where
+            player.has_participant_character() returns False. Defaults to False.
         team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the hubbed game will support. If None,
             it indicates the hubbed game will have no team limit. Defaults to None.
@@ -2309,7 +2309,7 @@ class _HubbedGameManagerTrivialInherited(GameWithAreasManager):
             require_players=require_players,
             require_leaders=require_leaders,
             # kwargs
-            require_character=require_character,
+            require_participant_character=require_participant_character,
             team_limit=team_limit,
             timer_limit=timer_limit,
             areas=areas,
@@ -2740,7 +2740,7 @@ class HubbedGameManager(_HubbedGameManagerTrivialInherited):
         require_invitations: bool = False,
         require_players: bool = True,
         require_leaders: bool = True,
-        require_character: bool = False,
+        require_participant_character: bool = False,
         team_limit: Union[int, None] = None,
         timer_limit: Union[int, None] = None,
         areas: Set[AreaManager.Area] = None,
@@ -2786,12 +2786,12 @@ class HubbedGameManager(_HubbedGameManagerTrivialInherited):
             will choose a leader among any remaining players left; if no players are left, the next
             player added will be made leader. If False, no such automatic assignment will happen.
             Defaults to True.
-        require_character : bool, optional
-            If False, players without a character will not be allowed to join the hubbed game,
-            and players that switch to something other than a character will be automatically
-            removed from the hubbed game. If False, no such checks are made. A player without a
-            character is considered one where player.has_character() returns False. Defaults to
-            False.
+        require_participant_character : bool, optional
+            If False, players without a participant character will not be allowed to join the
+            hubbed game, and players that switch to something other than a participant character
+            will be automatically removed from the hubbed game. If False, no such checks are
+            made. A player without a participant character is considered one where
+            player.has_participant_character() returns False. Defaults to False.
         team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the hubbed game will support. If None,
             it indicates the hubbed game will have no team limit. Defaults to None.
@@ -2848,7 +2848,7 @@ class HubbedGameManager(_HubbedGameManagerTrivialInherited):
                 require_invitations=require_invitations,
                 require_players=require_players,
                 require_leaders=require_leaders,
-                require_character=require_character,
+                require_participant_character=require_participant_character,
                 team_limit=team_limit,
                 timer_limit=timer_limit,
                 area_concurrent_limit=area_concurrent_limit,

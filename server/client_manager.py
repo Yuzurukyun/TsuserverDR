@@ -873,11 +873,8 @@ class ClientManager:
                 return self.showname
             return self.char_showname
 
-        def has_character(self, char_id: int = None) -> bool:
-            if char_id is None:
-                char_id = self.char_id
-
-            return char_id is not None and char_id >= 0
+        def has_participant_character(self) -> bool:
+            return self.hub.character_manager.is_char_id_participant(self.char_id)
 
         def change_character(self, char_id: int, force: bool = False,
                              target_area: AreaManager.Area = None,
@@ -898,6 +895,8 @@ class ClientManager:
 
             if not target_area.hub.character_manager.is_valid_character_id(char_id):
                 raise ClientError('Invalid character ID.')
+
+            new_char = self.hub.character_manager.get_character_name(char_id)
             if not target_area.is_char_available(char_id, allow_restricted=self.is_staff()):
                 if force:
                     for client in self.area.clients:
@@ -912,13 +911,15 @@ class ClientManager:
                                                  f'{client.id} off their character.',
                                                  is_officer=True, in_hub=None, not_to={client})
                 else:
-                    raise ClientError('Character {} not available.'
-                                      .format(self.get_char_name(char_id)))
+                    raise ClientError(f'Character {new_char} not available.')
 
             # Code after this comment assumes the character change will be successful
             self.ever_chose_character = True
 
-            if not self.has_character() and self.has_character(char_id=char_id):
+            has_char_before = self.has_participant_character()
+            has_char_after = self.hub.character_manager.is_char_id_participant(char_id)
+
+            if has_char_after and not has_char_before:
                 # No longer spectator?
                 # Now bound by AFK rules
                 self.server.task_manager.new_task(self, 'as_afk_kick', {
@@ -935,7 +936,7 @@ class ClientManager:
                                   f'and you are not logged in.')
                     self.unfollow_user()
 
-            elif self.has_character() and not self.has_character(char_id=char_id):
+            elif has_char_before and not has_char_after:
                 # Now a spectator?
                 # No longer bound to AFK rules
                 try:
@@ -947,7 +948,7 @@ class ClientManager:
 
             self.char_id = char_id
             # Assumes players are not iniswapped initially, waiting for chrini packet
-            self.char_folder = self.get_char_name()
+            self.char_folder = new_char
             self.char_showname = ''
             self.pos = 'wit'
 
@@ -1058,7 +1059,7 @@ class ClientManager:
                 just_me=just_me)
 
         def check_lurk(self):
-            if self.area.lurk_length > 0 and not self.is_staff() and self.has_character():
+            if self.area.lurk_length > 0 and not self.is_staff() and self.has_participant_character():
                 self.server.task_manager.new_task(self, 'as_lurk', {
                     'length': self.area.lurk_length,
                 })
@@ -1068,7 +1069,7 @@ class ClientManager:
                 except TaskError.TaskNotFoundError:
                     pass
 
-        def change_hub(self, hub: _Hub, override_all: bool = False,
+        def change_hub(self, hub: _Hub,
                     override_effects: bool = False,
                     ignore_bleeding: bool = False, ignore_followers: bool = False,
                     ignore_autopass: bool = False,
@@ -1078,62 +1079,16 @@ class ClientManager:
             if hub == self.hub:
                 raise ClientError('User is already in target hub.')
 
-            # Refresh current character, and change to spectator if unavailable
-            old_characters = self.hub.character_manager.get_characters()
-            new_characters = hub.character_manager.get_characters()
-            new_chars = {char: num for (num, char) in enumerate(new_characters)}
-            target_char_id = -1
-            old_char_name = self.get_char_name()
-
-            if change_to is not None and change_to != self.char_id:
-                target_char_name = self.get_char_name(char_id=change_to)
-            else:
-                target_char_name = old_char_name
-
-            if not self.has_character():
-                # Do nothing for spectators
-                pass
-            elif target_char_name not in new_chars:
-                # Character no longer exists, so switch to spectator
-                self.send_ooc(f'After a change in the character list, your character is no '
-                              f'longer available. Switching to '
-                              f'{self.server.config["spectator_name"]}.')
-            else:
-                target_char_id = new_chars[target_char_name]
-
             self.change_area(
                 hub.area_manager.default_area(),
-                override_all=override_all, override_passages=True,  # Overriden
+                override_passages=True,  # Overriden
                 override_effects=override_effects, ignore_bleeding=ignore_bleeding,
                 ignore_autopass=ignore_autopass,
                 ignore_followers=ignore_followers, ignore_checks=ignore_checks,
-                ignore_notifications=ignore_notifications, change_to=target_char_id,
+                ignore_notifications=ignore_notifications, change_to=change_to,
                 more_unavail_chars=more_unavail_chars, from_party=from_party)
 
-            self.hub = hub
-            self.send_ooc(f'Changed hub to hub {hub.get_numerical_id()}.')
-
-            if old_characters != new_characters:
-                if self.packet_handler.ALLOWS_CHAR_LIST_RELOAD:
-                    self.send_command_dict('SC', {
-                        'chars_ao2_list': new_characters,
-                        })
-                    self.change_character(target_char_id, force=True, old_char=old_char_name)
-                else:
-                    self.send_ooc('After a change in the character list, your client character list '
-                                'is no longer synchronized. Please rejoin the server.')
-
-            if self.is_officer():
-                hub.add_leader(self)
-                self.send_music_list_view()
-            elif self.is_gm:
-                self.send_ooc('Logging out of GM as you changed hub.')
-                self.logout()
-                # logout already does send_music_list_view
-            else:
-                self.send_music_list_view()
-
-        def change_area(self, area: AreaManager.Area, override_all: bool = False,
+        def change_area(self, area: AreaManager.Area,
                         override_passages: bool = False, override_effects: bool = False,
                         ignore_bleeding: bool = False, ignore_followers: bool = False,
                         ignore_autopass: bool = False,
@@ -1141,7 +1096,7 @@ class ClientManager:
                         more_unavail_chars: Set[int] = None,
                         change_to: int = None, from_party: bool = False):
             self.area_changer.change_area(
-                area, override_all=override_all, override_passages=override_passages,
+                area, override_passages=override_passages,
                 override_effects=override_effects, ignore_bleeding=ignore_bleeding,
                 ignore_autopass=ignore_autopass,
                 ignore_followers=ignore_followers, ignore_checks=ignore_checks,
@@ -1152,7 +1107,6 @@ class ClientManager:
                               found_something: bool = False,
                               ding_something: bool = False,
                               old_dname: str = '',
-                              override_all: bool = False,
                               override_passages: bool = False, override_effects: bool = False,
                               ignore_bleeding: bool = False, ignore_followers: bool = False,
                               ignore_autopass: bool = False,
@@ -1163,7 +1117,7 @@ class ClientManager:
                 old_area, area,
                 found_something=found_something,
                 ding_something=ding_something,
-                old_dname=old_dname, override_all=override_all,
+                old_dname=old_dname,
                 override_passages=override_passages,
                 override_effects=override_effects,
                 ignore_bleeding=ignore_bleeding,
@@ -1561,24 +1515,27 @@ class ClientManager:
             self.following.followedby.remove(self)
             self.following = None
 
-        def follow_area(self, area: ClientManager.Client, just_moved: bool = True):
+        def follow_area(self, area: AreaManager.Area, just_moved: bool = True):
             # just_moved if True assumes the case where the followed user just moved
             # It being false is the case where, when the following started, the followed user was
             # in another area, and thus the followee is moved automtically
+
+            name = (area.name if area.hub == self.hub
+                    else f'{area.name} in hub {area.hub.get_numerical_id()}')
+
             if just_moved:
                 if self.is_staff():
-                    self.send_ooc('Followed user moved to {} at {}'
-                                  .format(area.name, Constants.get_time()))
+                    self.send_ooc(f'Followed user moved to area {name} at {Constants.get_time()}.')
                 else:
-                    self.send_ooc(f'Followed user moved to area {area.name}.')
+                    self.send_ooc(f'Followed user moved to area {name}.')
             else:
-                self.send_ooc('Followed user was at {}'.format(area.name))
+                self.send_ooc(f'Followed user was in area {name}.')
 
             try:
                 self.change_area(area, override_passages=True, override_effects=True,
                                  ignore_bleeding=True, ignore_autopass=True, ignore_followers=True)
             except ClientError as error:
-                self.send_ooc('Unable to follow to {}: {}'.format(area.name, error))
+                self.send_ooc(f'Unable to follow to area {name}: `{error}`.')
 
         def send_area_list(self):
             msg = '=== Areas ==='
@@ -1802,7 +1759,7 @@ class ClientManager:
             for x in unusable_ids:
                 char_list[x] = -1
 
-            if self.has_character():
+            if self.has_participant_character():
                 char_list[self.char_id] = 0  # Self is always available
             self.send_command_dict('CharsCheck', {
                 'chars_status_ao2_list': char_list,
@@ -1811,7 +1768,7 @@ class ClientManager:
         def refresh_visible_char_list(self):
             char_list = [0] * len(self.hub.character_manager.get_characters())
             unusable_ids = {c.char_id for c in self.get_visible_clients(self.area)
-                            if c.has_character()}
+                            if c.has_participant_character()}
             if not self.is_staff():
                 unusable_ids |= {self.hub.character_manager.get_character_id_by_name(name)
                                 for name in self.area.restricted_chars}
@@ -1820,7 +1777,7 @@ class ClientManager:
                 char_list[x] = -1
 
             # Self is always available
-            if self.has_character():
+            if self.has_participant_character():
                 char_list[self.char_id] = 0
             self.send_command_dict('CharsCheck', {
                 'chars_status_ao2_list': char_list,
@@ -2094,11 +2051,8 @@ class ClientManager:
         def get_ipreal(self) -> str:
             return Constants.get_ip_of_transport(self.transport)
 
-        def get_char_name(self, char_id: int = None) -> str:
-            if char_id is None:
-                char_id = self.char_id
-
-            return self.hub.character_manager.get_character_name(char_id)
+        def get_char_name(self) -> str:
+            return self.hub.character_manager.get_character_name(self.char_id)
 
         def get_showname_history(self) -> str:
             info = '== Showname history of client {} =='.format(self.id)

@@ -17,18 +17,20 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import typing
-from typing import List, Set, Tuple, Union
-if typing.TYPE_CHECKING:
-    # Avoid circular referencing
-    from server.area_manager import AreaManager
-    from server.client_manager import ClientManager
 
-import time
+import typing
+
+from typing import List, Set, Tuple, Union
 
 from server import logger
 from server.exceptions import ClientError, AreaError, TaskError
 from server.constants import Constants
+
+if typing.TYPE_CHECKING:
+    # Avoid circular referencing
+    from server.area_manager import AreaManager
+    from server.client_manager import ClientManager
+    from server.hub_manager import _Hub
 
 
 class ClientChangeArea:
@@ -55,6 +57,9 @@ class ClientChangeArea:
         notifications. Append any intended messages to the captured_messages list and then
         manually send them out outside this function.
         """
+
+        if more_unavail_chars is None:
+            more_unavail_chars = set()
 
         client = self.client
         captured_messages = list()
@@ -97,16 +102,65 @@ class ClientChangeArea:
             raise ClientError('The passage to this area is locked.',
                               code='ChArUnreachable')
 
-        # Check if current character is taken in the new area
+        char_name = client.get_char_name()
         new_char_id = client.char_id
-        if not area.is_char_available(client.char_id, allow_restricted=client.is_staff(),
-                                      more_unavail_chars=more_unavail_chars):
+
+        def _translate_char_id(old_char_id: Union[int, None]) -> Tuple[bool, Union[int, None]]:
+            new_hub = area.hub
+            if new_hub == client.hub:
+                return True, old_char_id
+            # Check if spectator or non-selected
+            if not new_hub.character_manager.is_char_id_participant(old_char_id):
+                return True, old_char_id
+
+            new_characters = new_hub.character_manager.get_characters()
+            new_chars = {char: num for (num, char) in enumerate(new_characters)}
+            char_name = client.hub.character_manager.get_character_name(old_char_id)
+
+            if char_name in new_chars:
+                return True, new_chars[char_name]
+
+            return False, -1
+
+
+        def _update_char_id() -> Tuple[bool, Union[int, None]]:
+            # Check if using a non-participating character. Those are trivial
+            if not client.has_participant_character():
+                return True, client.char_id
+
+            # Check if hub (possibly different from old_area.hub) has character
+            # Because if not, change to spectator trivially
+            if not area.hub.character_manager.is_character(char_name):
+                return True, -1
+
+            # If in same hub, updated_more_unavail_chars
+            if area.hub == client.hub:
+                new_more_unavail_chars = more_unavail_chars
+            else:
+                new_more_unavail_chars = set(_translate_char_id(char_id)
+                                             for char_id in more_unavail_chars)
+
+            # Check if current character is not (taken or restricted) in the new area
+            if area.is_char_available(client.char_id, allow_restricted=client.is_staff(),
+                                      more_unavail_chars=new_more_unavail_chars):
+                return True, client.char_id
+
+            # Check if can pick a new character
             try:
+                # Random character rather than spectator (as would happen with hub changes)
+                # This ensures that players continue having participant characters within hubs
+                # when an attempt to change areas occurs.
+                # This allows intra-hub games that span several areas that require participant
+                # characters not have players trivially be kicked
                 new_char_id = area.get_rand_avail_char_id(allow_restricted=client.is_staff(),
-                                                          more_unavail_chars=more_unavail_chars)
+                                                          more_unavail_chars=new_more_unavail_chars)
+                return True, new_char_id
             except AreaError:
-                raise ClientError('No available characters in that area.',
-                                  code='ChArNoCharacters')
+                return False, -1
+
+        valid_new_char_id, new_char_id = _update_char_id()
+        if not valid_new_char_id:
+            raise ClientError('No available characters in that area.', code='ChArNoCharacters')
 
         return new_char_id, captured_messages
 
@@ -465,7 +519,7 @@ class ClientChangeArea:
         # Assuming this is not a spectator...
         # If autopassing, send OOC messages
 
-        if not ignore_autopass and client.has_character():
+        if not ignore_autopass and client.has_participant_character():
             self.notify_others_moving(client, old_area,
                                       '{} has left to the {}.'.format(old_dname, area.name),
                                       'You hear footsteps going out of the room.')
@@ -681,13 +735,126 @@ class ClientChangeArea:
                                to_blind=False, to_deaf=True)
         client.send_ooc_others(staff, is_zstaff_flex=True, in_area=area, in_hub=area.hub)
 
-    def change_area(self, area: AreaManager.Area, override_all: bool = False,
-                    override_passages: bool = False, override_effects: bool = False,
-                    ignore_bleeding: bool = False, ignore_followers: bool = False,
-                    ignore_autopass: bool = False,
-                    ignore_checks: bool = False, ignore_notifications: bool = False,
-                    more_unavail_chars: Set[int] = None, change_to: int = None,
-                    from_party: bool = False):
+
+    def _do_change_area(
+        self,
+        area: AreaManager.Area,
+        override_passages: bool = False,
+        override_effects: bool = False,
+        ignore_bleeding: bool = False,
+        ignore_followers: bool = False,
+        ignore_autopass: bool = False,
+        ignore_checks: bool = False,
+        ignore_notifications: bool = False,
+        more_unavail_chars: Set[int] = None,
+        change_to: int = None,
+        from_party: bool = False
+        ) -> Tuple[bool, bool, bool]:
+
+        client = self.client
+        old_area = client.area
+
+        # If player is in a party, do special method instead of this
+        if from_party:
+            client.server.party_manager.move_party(client.party, client, area)
+            return False, False, False
+
+        # It also returns the character name that the player ended up, if it changed.
+        if ignore_checks:
+            if change_to:
+                new_char_id, mes = change_to, list()
+            else:
+                new_char_id, mes = client.char_id, list()
+        else:
+            new_char_id, mes = client.check_change_area(
+                area,
+                override_passages=override_passages,
+                override_effects=override_effects,
+                more_unavail_chars=more_unavail_chars
+                )
+
+        # Code after this line assumes that the area change will be successful
+        # (but has not yet been performed)
+        client.new_area = area
+
+        # Send client messages that could have been generated during the change area check
+        for message in mes:
+            client.send_ooc(message)
+
+        # Perform the character switch if new area has a player with the current char
+        # or the char is restricted there.
+        old_char = client.get_char_name()
+        old_dname = client.displayname
+        if new_char_id != client.char_id:
+            client.change_character(new_char_id, target_area=area, announce_zwatch=False)
+            new_char = client.get_char_name()
+            if old_char in area.restricted_chars:
+                client.send_ooc('Your character was restricted in your new area, switched '
+                                'to `{}`.'.format(new_char))
+                client.send_ooc_others('(X) Client {} had their character changed from `{}` to '
+                                        '`{}` in your zone as their old character was '
+                                        'restricted in their new area ({}).'
+                                        .format(client.id, old_char, new_char, area.id),
+                                        is_zstaff=area, in_hub=area.hub)
+            else:
+                client.send_ooc('Your character was unavailable in your new area, switched to `{}`.'
+                                .format(client.get_char_name()))
+                client.send_ooc_others('(X) Client {} had their character changed from `{}` to '
+                                        '`{}` in your zone as their old character was '
+                                        'unavailable in their new area ({}).'
+                                        .format(client.id, old_char, new_char, area.id),
+                                        is_zstaff=area, in_hub=area.hub)
+
+        # IC lock bypasses only last the old area
+        if client.can_bypass_iclock:
+            client.send_ooc('You have lost your IC lock bypass as you moved to a '
+                            'different area.')
+            client.send_ooc_others(f'(X) {client.displayname} [{client.id}] has lost their IC '
+                                    f'lock bypass as they moved to a different area. '
+                                    f'({area.id})',
+                                    is_zstaff_flex=old_area, in_hub=old_area.hub)
+            client.can_bypass_iclock = False
+
+        if ignore_notifications:
+            return True, False, False
+
+        client.send_ooc('Changed area to {}.[{}]'.format(area.name, area.status))
+        logger.log_server('[{}]Changed area from {} ({}) to {} ({}).'
+                            .format(client.get_char_name(), old_area.name, old_area.id,
+                                    area.name, area.id), client)
+        found_something, ding_something = client.notify_change_area(
+            area, old_dname, ignore_bleeding=ignore_bleeding,
+            ignore_autopass=ignore_autopass)
+
+        old_area.publisher.publish('area_client_left', {
+            'client': client,
+            'new_area': area,
+            'old_displayname': old_dname,
+            'ignore_bleeding': ignore_bleeding,
+            'ignore_autopass': ignore_autopass,
+            })
+        area.publisher.publish('area_client_entered', {
+            'client': client,
+            'old_displayname': old_dname,
+            'ignore_bleeding': ignore_bleeding,
+            'ignore_autopass': ignore_autopass,
+            })
+        return True, found_something, ding_something
+
+    def change_area(
+        self,
+        area: AreaManager.Area,
+        override_passages: bool = False,
+        override_effects: bool = False,
+        ignore_bleeding: bool = False,
+        ignore_followers: bool = False,
+        ignore_autopass: bool = False,
+        ignore_checks: bool = False,
+        ignore_notifications: bool = False,
+        more_unavail_chars: Set[int] = None,
+        change_to: int = None,
+        from_party: bool = False
+        ):
         """
         PARAMETERS:
         *override_passages: ignore passages existing from the source area to the target area
@@ -698,9 +865,6 @@ class ClientChangeArea:
         *ignore_autopass: avoid sending autopass notifications
         *restrict_characters: additional characters to mark as restricted, others than the one
          used in the area or area restricted.
-        *override_all: perform the area change regarldess of area restrictions and send no
-         RP related notifications (only useful for complete area reload). In particular,
-         override_all being False performs all the checks and announces the area change in OOC.
         *ignore_checks: ignore the change area checks.
         *ignore_notifications: ignore the area notifications except character change.
         *more_unavail_chars: additional characters in the target area to mark as taken.
@@ -712,127 +876,71 @@ class ClientChangeArea:
 
         client = self.client
         old_area = client.area
-        found_something, ding_something = False, False
+        old_dname = client.displayname
+        old_char_name = client.get_char_name()
 
-        if not override_all:
-            # All the code that could raise errors goes here
+        # All the code that could raise errors goes here
+        proceed, found_something, ding_something = self._do_change_area(
+            area,
+            override_passages=override_passages,
+            override_effects=override_effects,
+            ignore_bleeding=ignore_bleeding,
+            ignore_followers=ignore_followers,
+            ignore_autopass=ignore_autopass,
+            ignore_checks=ignore_checks,
+            ignore_notifications=ignore_notifications,
+            more_unavail_chars=more_unavail_chars,
+            change_to=change_to,
+            from_party=from_party
+            )
 
-            # If player is in a party, do special method instead of this
-            if from_party:
-                client.server.party_manager.move_party(client.party, client, area)
-                return
-
-            # It also returns the character name that the player ended up, if it changed.
-            if not ignore_checks:
-                new_char_id, mes = client.check_change_area(area,
-                                                            override_passages=override_passages,
-                                                            override_effects=override_effects,
-                                                            more_unavail_chars=more_unavail_chars)
-            else:
-                if change_to:
-                    new_char_id, mes = change_to, list()
-                else:
-                    new_char_id, mes = client.char_id, list()
-
-            # Code after this line assumes that the area change will be successful
-            # (but has not yet been performed)
-            client.new_area = area
-
-            # Send client messages that could have been generated during the change area check
-            for message in mes:
-                client.send_ooc(message)
-
-            # Perform the character switch if new area has a player with the current char
-            # or the char is restricted there.
-            old_char = client.get_char_name()
-            old_dname = client.displayname
-            if new_char_id != client.char_id:
-                client.change_character(new_char_id, target_area=area, announce_zwatch=False)
-                new_char = client.get_char_name()
-                if old_char in area.restricted_chars:
-                    client.send_ooc('Your character was restricted in your new area, switched '
-                                    'to `{}`.'.format(new_char))
-                    client.send_ooc_others('(X) Client {} had their character changed from `{}` to '
-                                           '`{}` in your zone as their old character was '
-                                           'restricted in their new area ({}).'
-                                           .format(client.id, old_char, new_char, area.id),
-                                           is_zstaff=area, in_hub=area.hub)
-                else:
-                    client.send_ooc('Your character was taken in your new area, switched to `{}`.'
-                                    .format(client.get_char_name()))
-                    client.send_ooc_others('(X) Client {} had their character changed from `{}` to '
-                                           '`{}` in your zone as their old character was '
-                                           'taken in their new area ({}).'
-                                           .format(client.id, old_char, new_char, area.id),
-                                           is_zstaff=area, in_hub=area.hub)
-
-            # IC lock bypasses only last the old area
-            if client.can_bypass_iclock:
-                client.send_ooc('You have lost your IC lock bypass as you moved to a '
-                                'different area.')
-                client.send_ooc_others(f'(X) {client.displayname} [{client.id}] has lost their IC '
-                                       f'lock bypass as they moved to a different area. '
-                                       f'({area.id})',
-                                       is_zstaff_flex=old_area, in_hub=old_area.hub)
-                client.can_bypass_iclock = False
-
-            if not ignore_notifications:
-                client.send_ooc('Changed area to {}.[{}]'.format(area.name, area.status))
-                logger.log_server('[{}]Changed area from {} ({}) to {} ({}).'
-                                  .format(client.get_char_name(), old_area.name, old_area.id,
-                                          area.name, area.id), client)
-                #logger.log_rp('[{}]Changed area from {} ({}) to {} ({}).'
-                #              .format(client.get_char_name(), old_area.name, old_area.id,
-                #                      old_area.name, old_area.id), client)
-
-                found_something, ding_something = client.notify_change_area(
-                    area, old_dname, ignore_bleeding=ignore_bleeding,
-                    ignore_autopass=ignore_autopass)
-
-                old_area.publisher.publish('area_client_left', {
-                    'client': client,
-                    'new_area': area,
-                    'old_displayname': old_dname,
-                    'ignore_bleeding': ignore_bleeding,
-                    'ignore_autopass': ignore_autopass,
-                    })
-                area.publisher.publish('area_client_entered', {
-                    'client': client,
-                    'old_displayname': old_dname,
-                    'ignore_bleeding': ignore_bleeding,
-                    'ignore_autopass': ignore_autopass,
-                    })
+        if not proceed:
+            return
 
         old_area.remove_client(client)
         client.area = area
-        client.new_area = area  # Update again, as the above if may not have run
+        client.new_area = area  # Update again, as it may have not been set in _do_change_area
         area.new_client(client)
-        self.post_area_changed(old_area, area,
-                               found_something=found_something,
-                               ding_something=ding_something,
-                               old_dname=old_dname, override_all=override_all,
-                               override_passages=override_passages,
-                               override_effects=override_effects,
-                               ignore_bleeding=ignore_bleeding,
-                               ignore_followers=ignore_followers,
-                               ignore_autopass=ignore_autopass,
-                               ignore_checks=ignore_checks,
-                               ignore_notifications=ignore_notifications,
-                               more_unavail_chars=more_unavail_chars,
-                               change_to=change_to,
-                               from_party=from_party)
 
-    def post_area_changed(self, old_area: Union[None, AreaManager.Area], area: AreaManager.Area,
-                          found_something: bool = False,
-                          ding_something: bool = False,
-                          old_dname: str = '',
-                          override_all: bool = False,
-                          override_passages: bool = False, override_effects: bool = False,
-                          ignore_bleeding: bool = False, ignore_followers: bool = False,
-                          ignore_autopass: bool = False,
-                          ignore_checks: bool = False, ignore_notifications: bool = False,
-                          more_unavail_chars: Set[int] = None, change_to: int = None,
-                          from_party: bool = False):
+        self.post_area_changed(
+            old_area,
+            area,
+            found_something=found_something,
+            ding_something=ding_something,
+            old_dname=old_dname,
+            old_char_name=old_char_name,
+            override_passages=override_passages,
+            override_effects=override_effects,
+            ignore_bleeding=ignore_bleeding,
+            ignore_followers=ignore_followers,
+            ignore_autopass=ignore_autopass,
+            ignore_checks=ignore_checks,
+            ignore_notifications=ignore_notifications,
+            more_unavail_chars=more_unavail_chars,
+            change_to=change_to,
+            from_party=from_party
+            )
+
+    def post_area_changed(
+        self,
+        old_area: Union[None, AreaManager.Area],
+        area: AreaManager.Area,
+        found_something: bool = False,
+        ding_something: bool = False,
+        old_dname: str = '',
+        old_char_name: str = '',
+
+        override_passages: bool = False,
+        override_effects: bool = False,
+        ignore_bleeding: bool = False,
+        ignore_followers: bool = False,
+        ignore_autopass: bool = False,
+        ignore_checks: bool = False,
+        ignore_notifications: bool = False,
+        more_unavail_chars: Set[int] = None,
+        change_to: int = None,
+        from_party: bool = False
+        ):
         client = self.client
         if not old_dname:
             old_dname = client.displayname
@@ -922,6 +1030,35 @@ class ClientChangeArea:
             'ignore_bleeding': ignore_bleeding,
             })
 
-        if client.followedby and not ignore_followers and not override_all:
+        if old_area and old_area.hub != area.hub:
+            client.hub = area.hub
+            client.send_ooc(f'Changed hub to hub {client.hub.get_numerical_id()}.')
+
+            old_characters = old_area.hub.character_manager.get_characters()
+            new_characters = client.hub.character_manager.get_characters()
+
+            if old_characters != new_characters:
+                if client.packet_handler.ALLOWS_CHAR_LIST_RELOAD:
+                    client.send_command_dict('SC', {
+                        'chars_ao2_list': new_characters,
+                        })
+                    if client.char_id is not None:
+                        client.change_character(client.char_id, force=True, old_char=old_char_name)
+                else:
+                    client.send_ooc('After a change in the character list, your client character '
+                                    'list is no longer synchronized. Please rejoin the server.')
+
+            if client.is_officer():
+                client.hub.add_leader(client)
+                client.send_music_list_view()
+            elif client.is_staff():
+                client.send_ooc('Logging out of GM as you changed hub.')
+                client.logout()
+                # logout already does send_music_list_view
+            else:
+                client.send_music_list_view()
+
+
+        if client.followedby and not ignore_followers:
             for c in client.followedby:
                 c.follow_area(area)

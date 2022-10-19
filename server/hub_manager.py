@@ -753,17 +753,17 @@ class _HubTrivialInherited(_GameWithAreas):
 
         return super().has_ever_had_players()
 
-    def requires_characters(self) -> bool:
+    def requires_participant_characters(self) -> bool:
         """
-        Return whether the hub requires players have a character at all times.
+        Return whether the hub requires players have a participant character at all times.
 
         Returns
         -------
         bool
-            Whether the hub requires players have a character at all times.
+            Whether the hub requires players have a participant character at all times.
         """
 
-        return super().requires_characters()
+        return super().requires_participant_characters()
 
     def new_timer(
         self,
@@ -1809,7 +1809,7 @@ class _Hub(_HubTrivialInherited):
         require_invitations: bool = False,
         require_players: bool = True,
         require_leaders: bool = True,
-        require_character: bool = False,
+        require_participant_character: bool = False,
         team_limit: Union[int, None] = None,
         timer_limit: Union[int, None] = None,
         area_concurrent_limit: Union[int, None] = None,
@@ -1848,12 +1848,12 @@ class _Hub(_HubTrivialInherited):
             leader among any remaining players left; if no players are left, the next player
             added will be made leader. If False, no such automatic assignment will happen.
             Defaults to True.
-        require_character : bool, optional
-            If False, players without a character will not be allowed to join the hub, and
-            players that switch to something other than a character will be automatically
-            removed from the hub. If False, no such checks are made. A player without a
-            character is considered one where player.has_character() returns False. Defaults
-            to False.
+        require_participant_character : bool, optional
+            If False, players without a participant character will not be allowed to join the
+            hub, and players that switch to something other than a participant character
+            will be automatically removed from the hub. If False, no such checks are
+            made. A player without a participant character is considered one where
+            player.has_participant_character() returns False. Defaults to False.
         team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the hub supports. If None, it
             indicates the hub has no team limit. Defaults to None.
@@ -1885,7 +1885,7 @@ class _Hub(_HubTrivialInherited):
             require_invitations=require_invitations,
             require_players=require_players,
             require_leaders=require_leaders,
-            require_character=require_character,
+            require_participant_character=require_participant_character,
             team_limit=team_limit,
             timer_limit=timer_limit,
             area_concurrent_limit=area_concurrent_limit,
@@ -2103,7 +2103,7 @@ class _Hub(_HubTrivialInherited):
             target_char_id = -1
             old_char_name = client.get_char_name()
 
-            if not client.has_character():
+            if not client.has_participant_character():
                 # Do nothing for spectators
                 pass
             elif old_char_name not in new_chars:
@@ -2317,8 +2317,8 @@ class _Hub(_HubTrivialInherited):
         Default callback for hub player signaling it has changed character.
 
         By default it only checks if the player is now no longer having a character. If that is
-        the case and the game requires all players have characters, the player is automatically
-        removed.
+        the case and the game requires all players have participant characters, the player is
+        automatically removed.
 
         Parameters
         ----------
@@ -2387,7 +2387,7 @@ class _Hub(_HubTrivialInherited):
                 f'require_players={self.requires_players()}, '
                 f'require_invitations={self.requires_invitations()}, '
                 f'require_leaders={self.requires_leaders()}, '
-                f'require_character={self.requires_characters()}, '
+                f'require_participant_character={self.requires_participant_characters()}, '
                 f'team_limit={self.get_team_limit()}, '
                 f'timer_limit={self.get_timer_limit()}, '
                 f'areas={self.get_areas()}), '
@@ -2415,7 +2415,7 @@ class _HubManagerTrivialInherited(GameWithAreasManager):
         require_invitations: bool = False,
         require_players: bool = False,  # Overriden from parent
         require_leaders: bool = False,  # Overriden from parent
-        require_character: bool = False,
+        require_participant_character: bool = False,
         team_limit: Union[int, None] = None,
         timer_limit: Union[int, None] = None,
         areas: Set[AreaManager.Area] = None,
@@ -2445,12 +2445,12 @@ class _HubManagerTrivialInherited(GameWithAreasManager):
         require_players : bool, optional
             If True, if at any point the hub loses all its players, the hub will automatically
             be deleted. If False, no such automatic deletion will happen. Defaults to True.
-        require_character : bool, optional
-            If False, players without a character will not be allowed to join the hub, and
-            players that switch to something other than a character will be automatically
-            removed from the hub. If False, no such checks are made. A player without a
-            character is considered one where player.has_character() returns False. Defaults
-            to False.
+        require_participant_character : bool, optional
+            If False, players without a participant character will not be allowed to join the
+            hub, and players that switch to something other than a participant character
+            will be automatically removed from the hub. If False, no such checks are
+            made. A player without a participant character is considered one where
+            player.has_participant_character() returns False. Defaults to False.
         team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the hub will support. If None, it
             indicates the hub will have no team limit. Defaults to None.
@@ -2500,7 +2500,7 @@ class _HubManagerTrivialInherited(GameWithAreasManager):
             require_invitations=require_invitations,
             require_players=require_players,
             require_leaders=require_leaders,
-            require_character=require_character,
+            require_participant_character=require_participant_character,
             team_limit=team_limit,
             timer_limit=timer_limit,
             areas=areas,
@@ -2909,7 +2909,7 @@ class HubManager(_HubManagerTrivialInherited):
         require_invitations: bool = False,
         require_players: bool = False,  # Overriden from parent
         require_leaders: bool = False,  # Overriden from parent
-        require_character: bool = False,
+        require_participant_character: bool = False,
         team_limit: Union[int, None] = None,
         timer_limit: Union[int, None] = None,
         areas: Set[AreaManager.Area] = None,
@@ -2941,12 +2941,12 @@ class HubManager(_HubManagerTrivialInherited):
         require_players : bool, optional
             If True, if at any point the hub loses all its players, the hub will automatically
             be deleted. If False, no such automatic deletion will happen. Defaults to False.
-        require_character : bool, optional
-            If False, players without a character will not be allowed to join the hub, and
-            players that switch to something other than a character will be automatically
-            removed from the hub. If False, no such checks are made. A player without a
-            character is considered one where player.has_character() returns False. Defaults
-            to False.
+        require_participant_character : bool, optional
+            If False, players without a participant character will not be allowed to join the
+            hub, and players that switch to something other than a participant character
+            will be automatically removed from the hub. If False, no such checks are
+            made. A player without a participant character is considered one where
+            player.has_participant_character() returns False. Defaults to False.
         team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the hub will support. If None, it
             indicates the hub will have no team limit. Defaults to None.
@@ -2997,7 +2997,7 @@ class HubManager(_HubManagerTrivialInherited):
                 require_invitations=require_invitations,
                 require_players=require_players,
                 require_leaders=require_leaders,
-                require_character=require_character,
+                require_participant_character=require_participant_character,
                 team_limit=team_limit,
                 timer_limit=timer_limit,
                 areas=areas,

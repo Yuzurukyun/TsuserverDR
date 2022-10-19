@@ -2502,11 +2502,13 @@ def ooc_cmd_files_set(client: ClientManager.Client, arg: str):
 
 
 def ooc_cmd_follow(client: ClientManager.Client, arg: str):
-    """ (STAFF ONLY)
+    """ (VARYING REQUIREMENTS)
     Starts following a user by their client ID. When the target area moves area, you will follow
-    them automatically except if disallowed by the new area.
+    them automatically except if disallowed by the new area. You must be using a non-participant
+    character to follow another user, or (STAFF ONLY) may use any character to follow another user.
     Requires /unfollow to undo.
-    Returns an error if you are part of a party.
+    Returns an error if you are part of a party or you are using a participant character with
+    insufficient permissions.
 
     SYNTAX
     /follow <client_id>
@@ -2523,8 +2525,9 @@ def ooc_cmd_follow(client: ClientManager.Client, arg: str):
         Constants.assert_command(client, arg, is_staff=True, parameters='=1')
     except ClientError.UnauthorizedError:
         Constants.assert_command(client, arg, parameters='=1')
-        if client.has_character():
-            raise ClientError('You must be authorized to follow while having a character.')
+        if client.has_participant_character():
+            raise ClientError('You must be authorized to follow while having a participant '
+                              'character.')
 
     if client.party:
         raise PartyError('You cannot follow someone while in a party.')
@@ -4716,8 +4719,8 @@ def ooc_cmd_nsd(client: ClientManager.Client, arg: str):
     character are not added to the NSD. Players added to the NSD are ordered to switch to the
     'nsd' gamemode.
     Returns an error if you are not part of a trial or leader of one, if the trial reached its
-    NSD limit, if you are already part of a minigame or do not have a character, or if the
-    time is negative or above the server time limit.
+    NSD limit, if you are already part of a minigame or do not have a participant character, or if
+    the time is negative or above the server time limit.
 
     SYNTAX
     /nsd {length}
@@ -4759,7 +4762,7 @@ def ooc_cmd_nsd(client: ClientManager.Client, arg: str):
             creator=client,
             autoadd_on_creation_existing_users=False,
             timer_start_value=seconds,
-            require_character=True,
+            require_participant_character=True,
             autoadd_on_trial_player_add=trial.get_autoadd_on_client_enter()
             )
     except TrialError.ManagerTooManyGamesError:
@@ -4770,7 +4773,7 @@ def ooc_cmd_nsd(client: ClientManager.Client, arg: str):
     except NonStopDebateError.UserHitGameConcurrentLimitError:
         raise ClientError('You are already part of another minigame in your trial.')
     except NonStopDebateError.UserHasNoCharacterError:
-        raise ClientError('You must have a character to create a nonstop debate.')
+        raise ClientError('You must have a participant character to create a nonstop debate.')
 
     if seconds > 0:
         client.send_ooc(f'You have created nonstop debate `{nsd.get_id()}` in area '
@@ -4794,7 +4797,7 @@ def ooc_cmd_nsd(client: ClientManager.Client, arg: str):
                             f'they are already part of another minigame.')
         except NonStopDebateError.UserHasNoCharacterError:
             client.send_ooc(f'Unable to add player {user.displayname} [{user.id}]: '
-                            f'they must have a character to join this minigame.')
+                            f'they must have a participant character to join this minigame.')
 
     players = sorted(nsd.get_players(), key=lambda c: c.displayname)
     player_list = '\n'.join([
@@ -4878,7 +4881,7 @@ def ooc_cmd_nsd_add(client: ClientManager.Client, arg: str):
     Adds another user to your NSD.
     Returns an error if you are not a part of a trial or an NSD or is not a leader, if the
     NSD reached its player limit, or if the target cannot be found, is not part of the trial, does
-    not have a character or is part of some NSD.
+    not have a participant character or is part of some NSD.
 
     SYNTAX
     /nsd_add <user_ID> <message>
@@ -4917,7 +4920,8 @@ def ooc_cmd_nsd_add(client: ClientManager.Client, arg: str):
     except NonStopDebateError.UserNotInAreaError:
         raise ClientError('This player is not part of an area part of this nonstop debate.')
     except NonStopDebateError.UserHasNoCharacterError:
-        raise ClientError('This player must have a character to join this nonstop debate.')
+        raise ClientError('This player must have a participant character to join this nonstop '
+                          'debate.')
     except NonStopDebateError.UserHitGameConcurrentLimitError:
         raise ClientError('This player is already part of another nonstop debate.')
     except NonStopDebateError.UserAlreadyPlayerError:
@@ -5063,8 +5067,8 @@ def ooc_cmd_nsd_join(client: ClientManager.Client, arg: str):
     """ (STAFF ONLY)
     Enrolls you into a nonstop debate by nonstop debate ID.
     Returns an error if you are not part of a trial, if the NSD ID is invalid, if you are not part
-    of an area part of the NSD, if you do not have a character when trying to join the NSD, or if
-    you are already part of this or another NSD.
+    of an area part of the NSD, if you do not have a participant character when trying to join the
+    NSD, or if you are already part of this or another NSD.
 
     SYNTAX
     /nsd_join <nsd_id>
@@ -5094,7 +5098,7 @@ def ooc_cmd_nsd_join(client: ClientManager.Client, arg: str):
     except NonStopDebateError.UserNotInAreaError:
         raise ClientError('You are not part of an area part of this nonstop debate.')
     except NonStopDebateError.UserHasNoCharacterError:
-        raise ClientError('You must have a character to join this nonstop debate.')
+        raise ClientError('You must have a participant character to join this nonstop debate.')
     except NonStopDebateError.UserHitGameConcurrentLimitError:
         raise ClientError('You are already part of another nonstop debate.')
     except NonStopDebateError.UserAlreadyPlayerError:
@@ -8429,8 +8433,8 @@ def ooc_cmd_transient(client: ClientManager.Client, arg: str):
 def ooc_cmd_trial(client: ClientManager.Client, arg: str):
     """ (STAFF ONLY)
     Starts a trial with all players in the area. Players that are already part of a trial or that
-    lack a character are not added to a trial. The trial creator is automatically added as a
-    trial leader.
+    lack a participant character are not added to a trial. The trial creator is automatically added
+    as a trial leader.
     Players added to a trial are ordered to switch to the 'trial' theme gamemode.
     Returns an error if the server has reached its trial limit, or if you are part of another
     trial or have no character.
@@ -8453,7 +8457,7 @@ def ooc_cmd_trial(client: ClientManager.Client, arg: str):
         trial = client.hub.trial_manager.new_managee(
             creator=client,
             autoadd_on_creation_existing_users=False,
-            require_character=True,
+            require_participant_character=True,
             autoadd_on_client_enter=False,
             autoadd_minigame_on_player_added=False
             )
@@ -8466,7 +8470,7 @@ def ooc_cmd_trial(client: ClientManager.Client, arg: str):
     except TrialError.UserHitGameConcurrentLimitError:
         raise ClientError('You are already part of another trial.')
     except TrialError.UserHasNoCharacterError:
-        raise ClientError('You must have a character to create a trial.')
+        raise ClientError('You must have a participant character to create a trial.')
 
     client.send_ooc(f'You have created trial `{trial.get_id()}` in area {client.area.name}.')
     trial.add_leader(client)
@@ -8481,7 +8485,7 @@ def ooc_cmd_trial(client: ClientManager.Client, arg: str):
                             f'they are already part of another trial.')
         except TrialError.UserHasNoCharacterError:
             client.send_ooc(f'Unable to add player {user.displayname} [{user.id}]: '
-                            f'they must have a character to join this trial.')
+                            f'they must have a participant character to join this trial.')
 
     players = sorted(trial.get_players(), key=lambda c: c.displayname)
     player_list = '\n'.join([
@@ -8502,8 +8506,8 @@ def ooc_cmd_trial_add(client: ClientManager.Client, arg: str):
     """ (STAFF ONLY)
     Adds another user to your the trial.
     Returns an error if you are not a part of a trial or is not a leader, if the trial
-    reached its player limit, or if the target cannot be found, does not have a character or is
-    part of some trial.
+    reached its player limit, or if the target cannot be found, does not have a participant
+    character or is part of some trial.
 
     SYNTAX
     /trial_add <user_ID> <message>
@@ -8535,7 +8539,7 @@ def ooc_cmd_trial_add(client: ClientManager.Client, arg: str):
     except TrialError.UserNotInAreaError:
         raise ClientError('This player is not part of an area part of this trial.')
     except TrialError.UserHasNoCharacterError:
-        raise ClientError('This player must have a character to join this trial.')
+        raise ClientError('This player must have a participant character to join this trial.')
     except TrialError.UserHitGameConcurrentLimitError:
         raise ClientError('This player is already part of another trial.')
     except TrialError.UserAlreadyPlayerError:
@@ -8767,8 +8771,8 @@ def ooc_cmd_trial_join(client: ClientManager.Client, arg: str):
     """ (STAFF ONLY)
     Enrolls you into a trial by trial ID.
     Returns an error if the trial ID is invalid, if you are not part of an area part of the trial,
-    if you do not have a character when trying to join the trial, or if you are already part of
-    this or another trial.
+    if you do not have a participant character when trying to join the trial, or if you are already
+    part of this or another trial.
 
     SYNTAX
     /trial_join <trial_id>
@@ -8793,7 +8797,7 @@ def ooc_cmd_trial_join(client: ClientManager.Client, arg: str):
     except TrialError.UserNotInAreaError:
         raise ClientError('You are not part of an area part of this trial.')
     except TrialError.UserHasNoCharacterError:
-        raise ClientError('You must have a character to join this trial.')
+        raise ClientError('You must have a participant character to join this trial.')
     except TrialError.UserHitGameConcurrentLimitError:
         raise ClientError('You are already part of another trial.')
     except TrialError.UserAlreadyPlayerError:
@@ -9157,8 +9161,6 @@ def ooc_cmd_unfollow(client: ClientManager.Client, arg: str):
         Constants.assert_command(client, arg, is_staff=True, parameters='=0')
     except ClientError.UnauthorizedError:
         Constants.assert_command(client, arg, parameters='=0')
-        if client.has_character():
-            raise ClientError('You must be authorized to unfollow while having a character.')
 
     client.unfollow_user()
 

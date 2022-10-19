@@ -662,17 +662,17 @@ class _TrialTrivialInherited(_HubbedGame):
 
         return super().has_ever_had_players()
 
-    def requires_characters(self) -> bool:
+    def requires_participant_characters(self) -> bool:
         """
-        Return whether the trial requires players have a character at all times.
+        Return whether the trial requires players have a participant character at all times.
 
         Returns
         -------
         bool
-            Whether the trial requires players have a character at all times.
+            Whether the trial requires players have a participant character at all times.
         """
 
-        return super().requires_characters()
+        return super().requires_participant_characters()
 
     def new_timer(
         self,
@@ -1714,7 +1714,7 @@ class _Trial(_TrialTrivialInherited):
         require_invitations: bool = False,
         require_players: bool = True,
         require_leaders: bool = True,
-        require_character: bool = False,
+        require_participant_character: bool = False,
         team_limit: Union[int, None] = None,
         timer_limit: Union[int, None] = None,
         area_concurrent_limit: Union[int, None] = None,
@@ -1759,12 +1759,12 @@ class _Trial(_TrialTrivialInherited):
             leader among any remaining players left; if no players are left, the next player
             added will be made leader. If False, no such automatic assignment will happen.
             Defaults to True.
-        require_character : bool, optional
-            If False, players without a character will not be allowed to join the trial, and
-            players that switch to something other than a character will be automatically
-            removed from the trial. If False, no such checks are made. A player without a
-            character is considered one where player.has_character() returns False. Defaults
-            to False.
+        require_participant_character : bool, optional
+            If False, players without a participant character will not be allowed to join the
+            trial, and players that switch to something other than a participant character
+            will be automatically removed from the trial. If False, no such checks are
+            made. A player without a participant character is considered one where
+            player.has_participant_character() returns False. Defaults to False.
         team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the trial supports. If None, it
             indicates the trial has no team limit. Defaults to None.
@@ -1822,7 +1822,7 @@ class _Trial(_TrialTrivialInherited):
             require_invitations=require_invitations,
             require_players=require_players,
             require_leaders=require_leaders,
-            require_character=require_character,
+            require_participant_character=require_participant_character,
             team_limit=team_limit,
             timer_limit=timer_limit,
             area_concurrent_limit=area_concurrent_limit,
@@ -2495,7 +2495,7 @@ class _Trial(_TrialTrivialInherited):
         player_limit: Union[int, None] = None,
         require_invitations: bool = False,
         require_players: bool = True,
-        require_character: bool = False,
+        require_participant_character: bool = False,
         team_limit: Union[int, None] = None,
         timer_limit: Union[int, None] = None,
         #
@@ -2521,12 +2521,12 @@ class _Trial(_TrialTrivialInherited):
         require_players : bool, optional
             If True, if at any point the NSD loses all its players, the NSD will automatically
             be deleted. If False, no such automatic deletion will happen. Defaults to True.
-        require_character : bool, optional
-            If False, players without a character will not be allowed to join the NSD, and
-            players that switch to something other than a character will be automatically
-            removed from the NSD. If False, no such checks are made. A player without a
-            character is considered one where player.has_character() returns False. Defaults
-            to False.
+        require_participant_character : bool, optional
+            If False, players without a participant character will not be allowed to join the
+            trial, and players that switch to something other than a participant character
+            will be automatically removed from the trial. If False, no such checks are
+            made. A player without a participant character is considered one where
+            player.has_participant_character() returns False. Defaults to False.
         team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the NSD will support. If None, it
             indicates the NSD will have no team limit. Defaults to None.
@@ -2574,7 +2574,7 @@ class _Trial(_TrialTrivialInherited):
                 require_invitations=require_invitations,
                 require_players=require_players,
                 require_leaders=False,
-                require_character=require_character,
+                require_participant_character=require_participant_character,
                 team_limit=team_limit,
                 timer_limit=timer_limit,
                 areas=areas,
@@ -2948,14 +2948,16 @@ class _Trial(_TrialTrivialInherited):
             client.send_ooc_others(f'(X) Non-player {client.displayname} [{client.id}] has entered '
                                    f'an area part of your trial ({old_area_id}->{area.id}).',
                                    pred=lambda c: c in self.get_leaders())
-            if self._require_character and not client.has_character():
+            if self.requires_participant_characters() and not client.has_participant_character():
                 if client.is_staff():
-                    client.send_ooc(f'This trial requires you have a character to join. Join this '
-                                    f'trial with /trial_join {self.get_id()} after choosing a '
-                                    f'character.')
-                client.send_ooc_others(f'(X) This trial requires players have a character to join. '
+                    client.send_ooc(f'This trial requires you have a participant character to '
+                                    f'join. Join this trial with /trial_join {self.get_id()} after '
+                                    f'choosing a participant character.')
+                client.send_ooc_others(f'(X) This trial requires players have a participant '
+                                       f'character to join. '
                                        f'Add {client.displayname} to your trial with '
-                                       f'/trial_add {client.id} after they choose a character.',
+                                       f'/trial_add {client.id} after they choose a participant '
+                                       f'character.',
                                        pred=lambda c: c in self.get_leaders())
                 self.introduce_user(client)
             elif self.get_autoadd_on_client_enter():
@@ -3010,9 +3012,9 @@ class _Trial(_TrialTrivialInherited):
         new_char_id: Union[int, None] = None
         ):
         """
-        It checks if the player is now no longer having a character. If that is
-        the case and the trial requires all players have characters, the player is automatically
-        removed.
+        It checks if the player is now no longer having a participant character. If that is
+        the case and the trial requires all players have participant characters, the player is
+        automatically removed.
 
         Parameters
         ----------
@@ -3029,10 +3031,10 @@ class _Trial(_TrialTrivialInherited):
 
         """
 
-        old_char = player.get_char_name(old_char_id)
-        if self._require_character and not player.has_character():
+        old_char = player.hub.character_manager.get_character_name(old_char_id)
+        if self.requires_participant_characters() and not player.has_participant_character():
             player.send_ooc('You were removed from your trial as it required its players to have '
-                            'characters.')
+                            'participant characters.')
             player.send_ooc_others(f'(X) Player {player.id} changed character from {old_char} to '
                                    f'a non-character and was removed from your trial.',
                                    pred=lambda c: c in self.get_leaders())
@@ -3296,7 +3298,7 @@ class _Trial(_TrialTrivialInherited):
                 f'require_players={self.requires_players()}, '
                 f'require_invitations={self.requires_invitations()}, '
                 f'require_leaders={self.requires_leaders()}, '
-                f'require_character={self.requires_characters()}, '
+                f'require_participant_character={self.requires_participant_characters()}, '
                 f'team_limit={self.get_team_limit()}, '
                 f'timer_limit={self.get_timer_limit()}, '
                 f'areas={self.get_areas()}), '
@@ -3325,7 +3327,7 @@ class _TrialManagerTrivialInherited(HubbedGameManager):
         require_invitations: bool = False,
         require_players: bool = True,
         require_leaders: bool = False,  # Overriden from parent
-        require_character: bool = False,
+        require_participant_character: bool = False,
         team_limit: Union[int, None] = None,
         timer_limit: Union[int, None] = None,
         areas: Set[AreaManager.Area] = None,
@@ -3357,12 +3359,12 @@ class _TrialManagerTrivialInherited(HubbedGameManager):
         require_players : bool, optional
             If True, if at any point the trial loses all its players, the trial will automatically
             be deleted. If False, no such automatic deletion will happen. Defaults to True.
-        require_character : bool, optional
-            If False, players without a character will not be allowed to join the trial, and
-            players that switch to something other than a character will be automatically
-            removed from the trial. If False, no such checks are made. A player without a
-            character is considered one where player.has_character() returns False. Defaults
-            to False.
+        require_participant_character : bool, optional
+            If False, players without a participant character will not be allowed to join the
+            trial, and players that switch to something other than a participant character
+            will be automatically removed from the trial. If False, no such checks are
+            made. A player without a participant character is considered one where
+            player.has_participant_character() returns False. Defaults to False.
         team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the trial will support. If None, it
             indicates the trial will have no team limit. Defaults to None.
@@ -3421,7 +3423,7 @@ class _TrialManagerTrivialInherited(HubbedGameManager):
             require_invitations=require_invitations,
             require_players=require_players,
             require_leaders=require_leaders,
-            require_character=require_character,
+            require_participant_character=require_participant_character,
             team_limit=team_limit,
             timer_limit=timer_limit,
             areas=areas,
@@ -3856,7 +3858,7 @@ class TrialManager(_TrialManagerTrivialInherited):
         require_invitations: bool = False,
         require_players: bool = True,
         require_leaders: bool = False,  # Overriden from parent
-        require_character: bool = False,
+        require_participant_character: bool = False,
         team_limit: Union[int, None] = None,
         timer_limit: Union[int, None] = None,
         areas: Set[AreaManager.Area] = None,
@@ -3890,12 +3892,12 @@ class TrialManager(_TrialManagerTrivialInherited):
         require_players : bool, optional
             If True, if at any point the trial loses all its players, the trial will automatically
             be deleted. If False, no such automatic deletion will happen. Defaults to True.
-        require_character : bool, optional
-            If False, players without a character will not be allowed to join the trial, and
-            players that switch to something other than a character will be automatically
-            removed from the trial. If False, no such checks are made. A player without a
-            character is considered one where player.has_character() returns False. Defaults
-            to False.
+        require_participant_character : bool, optional
+            If False, players without a participant character will not be allowed to join the
+            trial, and players that switch to something other than a participant character
+            will be automatically removed from the trial. If False, no such checks are
+            made. A player without a participant character is considered one where
+            player.has_participant_character() returns False. Defaults to False.
         team_limit : Union[int, None], optional
             If an int, it is the maximum number of teams the trial will support. If None, it
             indicates the trial will have no team limit. Defaults to None.
@@ -3955,7 +3957,7 @@ class TrialManager(_TrialManagerTrivialInherited):
                 require_invitations=require_invitations,
                 require_players=require_players,
                 require_leaders=require_leaders,
-                require_character=require_character,
+                require_participant_character=require_participant_character,
                 team_limit=team_limit,
                 timer_limit=timer_limit,
                 areas=areas,

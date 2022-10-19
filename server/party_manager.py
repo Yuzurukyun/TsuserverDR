@@ -250,7 +250,7 @@ class PartyManager:
         movers = self.check_move_party(party, initiator, new_area)
         moving, staying = movers[True], movers[False]
 
-        if not moving and staying:
+        if staying and not moving:
             raise PartyError('No one was able to move.')
 
         if moving and not staying:
