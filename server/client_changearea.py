@@ -821,9 +821,11 @@ class ClientChangeArea:
         if client.is_staff() or (not client.is_blind and area.lights):
             others_visible = client.get_visible_clients(area) - {client}
             if others_visible:
-                populated_message = '\nThe area seems populated.'
+                verb = 'is' if client.is_staff() else 'seems'
+                populated_message = f'\nThe area {verb} populated.'
             else:
-                populated_message = "\nThe area doesn't seem populated."
+                verb = "isn't" if client.is_staff() else "doesn't seem"
+                populated_message = f"\nThe area {verb} populated."
         else:
             populated_message = ''
 
