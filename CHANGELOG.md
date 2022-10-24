@@ -824,6 +824,7 @@
 * Added a first-list-item to switch between areas and hubs in the area list
 * Introduced the concept of participant and non-participant characters (currently a "character provided in a character list" and one that is not respectively)
 * Redid trial and nonstop debates
+* Json files within `storage` now use indents and new lines for better human readability (this is backwards compatible with 4.3.x)
 * Removed unused `server/area_manager_revamp.py` and `server/steptimer_manager.py`
 * Removed the old names of the following commands. Please use the new ones:
   - /clock_cancel: /clock_end

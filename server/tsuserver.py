@@ -65,8 +65,8 @@ class TsuserverDR:
         self.release = 4
         self.major_version = 4
         self.minor_version = 0
-        self.segment_version = 'a15'
-        self.internal_version = 'M221018a'
+        self.segment_version = 'a16'
+        self.internal_version = 'M221023a'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
@@ -441,7 +441,7 @@ class TsuserverDR:
                 self.ipid_list = json.load(whole_list)
         except ServerError.FileNotFoundError:
             with Constants.fopen('storage/ip_ids.json', 'w', encoding='utf-8') as whole_list:
-                json.dump(dict(), whole_list)
+                json.dump(dict(), whole_list, indent=4)
             message = 'WARNING: File not found: storage/ip_ids.json. Creating a new one...'
             logger.log_pdebug(message)
         except Exception as ex:
@@ -457,6 +457,9 @@ class TsuserverDR:
             logger.log_pdebug(message)
             self.ipid_list = dict()
             self.dump_ipids()
+        # TODO: Remove this else and the code within after next major update
+        else:
+            self.dump_ipids()
 
         # load hdids
         try:
@@ -464,7 +467,7 @@ class TsuserverDR:
                 self.hdid_list = json.loads(whole_list.read())
         except ServerError.FileNotFoundError:
             with Constants.fopen('storage/hd_ids.json', 'w', encoding='utf-8') as whole_list:
-                json.dump(dict(), whole_list)
+                json.dump(dict(), whole_list, indent=4)
             message = 'WARNING: File not found: storage/hd_ids.json. Creating a new one...'
             logger.log_pdebug(message)
         except Exception as ex:
@@ -479,6 +482,9 @@ class TsuserverDR:
                        f'{self.hdid_list}. Replacing it with a proper type.')
             logger.log_pdebug(message)
             self.hdid_list = dict()
+            self.dump_hdids()
+        # TODO: Remove this else and the code within after next major update
+        else:
             self.dump_hdids()
 
     def load_gimp(self):
@@ -517,11 +523,11 @@ class TsuserverDR:
 
     def dump_ipids(self):
         with Constants.fopen('storage/ip_ids.json', 'w', encoding='utf-8') as whole_list:
-            json.dump(self.ipid_list, whole_list)
+            json.dump(self.ipid_list, whole_list, indent=4)
 
     def dump_hdids(self):
         with Constants.fopen('storage/hd_ids.json', 'w', encoding='utf-8') as whole_list:
-            json.dump(self.hdid_list, whole_list)
+            json.dump(self.hdid_list, whole_list, indent=4)
 
     def get_ipid(self, ip: str) -> int:
         if ip not in self.ipid_list:

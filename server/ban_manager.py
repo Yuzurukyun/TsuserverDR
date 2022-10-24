@@ -16,19 +16,26 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 import ipaddress
 import json
+import typing
 
 from server import logger
 from server.constants import Constants
 from server.exceptions import ServerError
 
+if typing.TYPE_CHECKING:
+    from server.tsuserver import TsuserverDR
 
 class BanManager:
-    def __init__(self, server):
+    def __init__(self, server: TsuserverDR):
         self.bans = []
-        self.load_banlist()
         self.server = server
+
+        self.load_banlist()
+        self.write_banlist()  # TODO: Remove this after next major update
 
     def load_banlist(self):
         try:
@@ -45,7 +52,7 @@ class BanManager:
 
     def write_banlist(self):
         with open('storage/banlist.json', 'w') as banlist_file:
-            json.dump(self.bans, banlist_file)
+            json.dump(self.bans, banlist_file, indent=4)
 
     def add_ban(self, ip):
         try:
