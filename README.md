@@ -239,6 +239,7 @@ Additional notes are listed at the end of the command list. Unless otherwise spe
     - Returns "Pong", used to check for server connection.
 * **play** "song.extension"
     - Plays a song, provided the area you are in allows non-staff members to run this command.
+    - If the song is within some folders within the client music folder, such folders must be included separated by "/" (e.g. "trial/Trial Start.opus" to play "Trial Start.opus" within the "trial" folder of the client music folder).
 * **pm** "ID/char name/edited-to character/showname/char showname/OOC name" "message"
     - PMs the target.
 * **pos** "position"
@@ -551,6 +552,7 @@ GMs can:
     - Restores passage locks that start in the areas in the given area range to their original status, or just the ones in the current area if not given a range.
 * **play** "song.extension"
     - Plays a song, even if not in the server music list.
+    - If the song is within some folders within the client music folder, such folders must be included separated by "/" (e.g. "trial/Trial Start.opus" to play "Trial Start.opus" within the "trial" folder of the client music folder).
 * **poison** "ID" "initials of effects" "length"
     - Applies a poison to the target that will inflict them in the given length of time in seconds the given effects.
 * **pos_force** "position" "ID"
@@ -561,6 +563,7 @@ GMs can:
     - If no ID is given, target is yourself.
 * **rplay** "song.extension"
     - Plays a song in all areas reachable from the current one.
+    - If the song is within some folders within the client music folder, such folders must be included separated by "/" (e.g. "trial/Trial Start.opus" to play "Trial Start.opus" within the "trial" folder of the client music folder).
 * **rpmode** "on/off"
     - Toggles RP mode.
 * **scream_range**
@@ -684,6 +687,7 @@ GMs can:
     - Gets the zone paranoia level of the zone you are watching.
 * **zone_play**
     - Plays a track in all areas in the zone you are watching.
+    - If the song is within some folders within the client music folder, such folders must be included separated by "/" (e.g. "trial/Trial Start.opus" to play "Trial Start.opus" within the "trial" folder of the client music folder).
 * **zone_remove** "area"
     - Removes an area by name or ID from the zone you are watching.
 * **zone_tick** "chat tick rate"
