@@ -94,7 +94,6 @@ class AreaManager(AssetManager):
             self.hp_def = 10
             self.hp_pro = 10
             self.doc = 'No document.'
-            self.status = 'IDLE'
             self.judgelog = []
             self.shoutlog = []
             self.current_music = ''
@@ -505,13 +504,14 @@ class AreaManager(AssetManager):
 
         def change_doc(self, doc: str = 'No document.'):
             """
-            Changes the casing document of the area, usually a URL.
+            Changes the RP document of the area, usually a URL.
 
             Parameters
             ----------
             doc: str, optional
-                New casing document of the area. Defaults to 'No document.'
+                New RP document of the area. Defaults to 'No document.'
             """
+
             self.doc = doc
 
         def get_evidence_list(self, client: ClientManager.Client):
@@ -918,28 +918,6 @@ class AreaManager(AssetManager):
                 for log in self.shoutlog:
                     info += '\r\n*{}'.format(log)
             return info
-
-        def change_status(self, value: str):
-            """
-            Change the casing status of the area to one of predetermined values.
-
-            Parameters
-            ----------
-            value: str
-                New casing status of the area.
-
-            Raises
-            ------
-            AreaError
-                If the new casing status is not among the allowed values.
-            """
-
-            allowed_values = ['idle', 'building-open', 'building-full', 'casing-open',
-                              'casing-full', 'recess']
-            if value.lower() not in allowed_values:
-                raise AreaError('Invalid status. Possible values: {}'
-                                .format(', '.join(allowed_values)))
-            self.status = value.upper()
 
         def get_clock_creator(self) -> ClientManager.Client:
             """
