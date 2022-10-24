@@ -810,18 +810,23 @@ class ClientChangeArea:
             client.send_ooc('You have lost your IC lock bypass as you moved to a '
                             'different area.')
             client.send_ooc_others(f'(X) {client.displayname} [{client.id}] has lost their IC '
-                                    f'lock bypass as they moved to a different area. '
-                                    f'({area.id})',
-                                    is_zstaff_flex=old_area, in_hub=old_area.hub)
+                                   f'lock bypass as they moved to a different area. '
+                                   f'({area.id})',
+                                   is_zstaff_flex=old_area, in_hub=old_area.hub)
             client.can_bypass_iclock = False
 
         if ignore_notifications:
             return True, False, False
 
-        client.send_ooc(f'Changed area to {area.name}.')
-        logger.log_server('[{}]Changed area from {} ({}) to {} ({}).'
-                            .format(client.get_char_name(), old_area.name, old_area.id,
-                                    area.name, area.id), client)
+        others_visible = client.get_visible_clients(area) - {client}
+        if others_visible:
+            populated_message = 'The area seems populated'
+        else:
+            populated_message = "The area doesn't seem populated"
+        client.send_ooc(f'Changed area to {area.name}. {populated_message}.')
+        logger.log_server(f'[{client.get_char_name()}]Changed area from '
+                          f'{old_area.name} ({old_area.id}) to '
+                          f'{area.name} ({area.id}).', client)
         found_something, ding_something = client.notify_change_area(
             area, old_dname, ignore_bleeding=ignore_bleeding,
             ignore_autopass=ignore_autopass)
