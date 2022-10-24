@@ -818,7 +818,7 @@
 * Fixed /lasterror providing duplicate error information
 * Fixed /clock_period erroring out if a non-numerical invalid hour start or hour length was given.
 
-## (4.4.0)
+## (5.0.0)
 * Increased minimum Python version required to 3.9
 * Fixed timer end notification showing the OOC name of the timer initiator as the timer name rather than the actual name
 * Added a first-list-item to switch between areas and hubs in the area list
