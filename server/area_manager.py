@@ -968,7 +968,8 @@ class AreaManager(AssetManager):
                 period = task.parameters['period']
                 return period
 
-        def get_look_output_for(self, client: ClientManager.Client) -> Tuple[bool, str, str]:
+        def get_look_output_for(self,
+                                client: ClientManager.Client) -> Tuple[bool, bool, str, bool, str]:
             """
             Return information about the visual aspect of the current area in accordance to
             a particular player's perspective.
@@ -980,20 +981,26 @@ class AreaManager(AssetManager):
 
             Returns
             -------
-            Tuple[bool, str, str]
+            Tuple[bool, bool, str, bool, str]
                 - First argument is True if information that only GM+ could have obtained is
                   included in the return, False otherwise.
-                - Second argument is a description of the current area (ignoring whether `client` is
-                  blind or lights are off)
-                - Third argument is a description of the players in the current area that `client`
+                - Second argument is whether a non-default description is stated in the next
+                  argument.
+                - Third argument is a description of the current area (ignoring whether `client` is
+                  blind or lights are off).
+                - Fourth argument is whether a non-default description is stated in the next
+                  argument and the player does not see another player in the target area.
+                - Fifth argument is a description of the players in the current area that `client`
                   is entitled to see.
             """
 
             elevated = False
 
             if self.description == self.server.config['default_area_description']:
+                has_area_description = False
                 area_description = 'Nothing particularly interesting.'
             else:
+                has_area_description = True
                 area_description = self.description
 
             players = client.get_visible_clients(self)
@@ -1036,11 +1043,15 @@ class AreaManager(AssetManager):
                     elevated = True
                     player_description += ' (S)'
 
-            if not player_description:
+            if player_description and (players-{player}):
+                has_other_players = True
+            else:
                 # This could happen for example, when a player peeks into an area where they cannot
                 # see any player.
+                has_other_players = False
                 player_description = 'no one'
-            return elevated, area_description, player_description
+            return (elevated, has_area_description, area_description,
+                    has_other_players, player_description)
 
 
         def unlock(self):

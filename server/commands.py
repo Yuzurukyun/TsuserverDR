@@ -3945,7 +3945,7 @@ def ooc_cmd_look(client: ClientManager.Client, arg: str):
         else:
             msg += f'You look at {target.displayname} and note this: {target.status}'
     else:
-        _, area_description, player_description = client.area.get_look_output_for(client)
+        _, _, area_description, _, player_description = client.area.get_look_output_for(client)
 
         msg += (
             f'=== Look results for {client.area.name} ===\r\n'
@@ -6364,7 +6364,7 @@ def ooc_cmd_peek(client: ClientManager.Client, arg: str):
 
     if area_lock_ok and reachable_ok:
         if target_area.lights:
-            _, area_description, player_description = target_area.get_look_output_for(client)
+            _, _, area_description, _, player_description = target_area.get_look_output_for(client)
             client.send_ooc(
                 f'You peek into area {target_area.name} and note the following:\r\n'
                 f'*About the people in there: you see {player_description}\r\n'
