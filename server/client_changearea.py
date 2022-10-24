@@ -818,7 +818,7 @@ class ClientChangeArea:
         if ignore_notifications:
             return True, False, False
 
-        client.send_ooc('Changed area to {}.[{}]'.format(area.name, area.status))
+        client.send_ooc(f'Changed area to {area.name}.')
         logger.log_server('[{}]Changed area from {} ({}) to {} ({}).'
                             .format(client.get_char_name(), old_area.name, old_area.id,
                                     area.name, area.id), client)
