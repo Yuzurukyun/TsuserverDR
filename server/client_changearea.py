@@ -818,12 +818,16 @@ class ClientChangeArea:
         if ignore_notifications:
             return True, False, False
 
-        others_visible = client.get_visible_clients(area) - {client}
-        if others_visible:
-            populated_message = 'The area seems populated'
+        if client.is_staff() or (not client.is_blind and area.lights):
+            others_visible = client.get_visible_clients(area) - {client}
+            if others_visible:
+                populated_message = '\nThe area seems populated.'
+            else:
+                populated_message = "\nThe area doesn't seem populated."
         else:
-            populated_message = "The area doesn't seem populated"
-        client.send_ooc(f'Changed area to {area.name}. {populated_message}.')
+            populated_message = ''
+
+        client.send_ooc(f'Changed area to {area.name}.{populated_message}')
         logger.log_server(f'[{client.get_char_name()}]Changed area from '
                           f'{old_area.name} ({old_area.id}) to '
                           f'{area.name} ({area.id}).', client)
