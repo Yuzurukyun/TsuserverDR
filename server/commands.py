@@ -247,6 +247,54 @@ def ooc_cmd_area_list(client: ClientManager.Client, arg: str):
             pass
 
 
+def ooc_cmd_autolook(client: ClientManager.Client, arg: str):
+    """ (VARYING REQUIREMENTS)
+    Toggles look messages being activated automatically or not to whenever you move,
+    or (STAFF ONLY) when a target by client ID moves.
+
+    SYNTAX
+    /autolook
+    /autolook <client_id>
+
+    PARAMETERS
+    <client_id>: Client identifier (number in brackets in /getarea)
+
+    EXAMPLES
+    Assuming /autolook for you and for client 1 is off...
+    >>> /autolook
+    Turns autolook on.
+    >>> /autolook
+    Turns autolook off.
+    >>> /autolook 1
+    Turns autolook for client 1 on.
+    >>> /autolook 1
+    Turns autolook for client 1 off.
+    """
+
+    Constants.assert_command(client, arg, parameters='<2')
+    if arg and not client.is_staff():
+        raise ClientError.UnauthorizedError('You must be authorized to use the one-parameter '
+                                            'version of this command.')
+    if arg:
+        target = Constants.parse_id(client, arg)
+    else:
+        target = client
+
+    target.autolook = not target.autolook
+    status = {False: 'off', True: 'on'}
+
+    if client == target:
+        client.send_ooc(f'You turned {status[client.autolook]} your autolook.')
+    else:
+        client.send_ooc(f'You turned {status[target.autolook]} the autolook for '
+                        f'{target.displayname} [{target.id}].')
+        target.send_ooc(f'Your autolook was turned {status[target.autolook]}.')
+        client.send_ooc_others(f'(X) {client.displayname} [{client.id}] turned '
+                               f'{status[target.autolook]} the autolook for '
+                               f'{target.displayname} [{target.id}] ({client.area.id}).',
+                               is_zstaff_flex=True, not_to={target})
+
+
 def ooc_cmd_autopass(client: ClientManager.Client, arg: str):
     """ (VARYING REQUIREMENTS)
     Toggles enter/leave messages being sent automatically or not to users in the current area
@@ -262,7 +310,7 @@ def ooc_cmd_autopass(client: ClientManager.Client, arg: str):
     <client_id>: Client identifier (number in brackets in /getarea)
 
     EXAMPLES
-    Assuming /autopass for you and for client 1is off...
+    Assuming /autopass for you and for client 1 is off...
     >>> /autopass
     Turns autopass on.
     >>> /autopass
