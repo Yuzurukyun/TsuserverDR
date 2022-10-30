@@ -111,8 +111,11 @@ Additional notes are listed at the end of the command list. Unless otherwise spe
     - Displays the current area ambient sound effect.
 * **area** "area number"
     - Moves you to an area by its numerical ID if it is reachable from your own, or displays all areas if not given a number.
+* **autoglance**
+    - Toggles area descriptions (if present) being sent automatically or not when you move areas.
+    - No messages will be sent if your area's lights are turned off or you are blind.
 * **autopass**
-    - Toggles enter/leave messages being sent automatically or not to users in the current area, including original/target areas.
+    - Toggles enter/leave messages being sent automatically or not to users in your area, including original/target areas.
     - Messages will not be sent if sneaking. Altered messages will be sent if the area's lights are turned off.
 * **bg** "background"
     - Changes the current background.
@@ -655,6 +658,8 @@ GMs can:
     - Changes the ambient sound effect of all areas of the zone you are watching.
 * **zone_ambient_end**
     - Clears the ambient sound effect of all areas of the zone you are watching.
+* **zone_autoglance**
+    - Changes the autoglance status of the zone you are watching. If turned on, turns autoglance on for players in an area part of a zone and players that later join; otherwise, it turns it off for players in an area part of the zone
 * **zone_autopass**
     - Changes the autopass status of the zone you are watching. If turned on, turns autopass on for players in an area part of a zone and players that later join; otherwise, it turns it off for players in an area part of the zone
 * **zone_end**

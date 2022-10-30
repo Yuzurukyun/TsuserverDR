@@ -148,6 +148,7 @@ class ClientManager:
             self.paranoia = 2
             self.notecard = ''
             self.is_mindreader = False
+            self.autoglance = False
 
             # Pairing stuff
             self.charid_pair = -1
@@ -1541,11 +1542,6 @@ class ClientManager:
             msg = '=== Areas ==='
             lock = {True: '[LOCKED]', False: ''}
             for i, area in enumerate(self.hub.area_manager.get_areas()):
-                owner = 'FREE'
-                if area.owned:
-                    for client in [x for x in area.clients if x.is_cm]:
-                        owner = 'MASTER: {}'.format(client.get_char_name())
-                        break
                 locked = area.is_modlocked or area.is_locked
 
                 if self.is_staff():

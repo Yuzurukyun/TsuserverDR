@@ -393,6 +393,12 @@ class ZoneManager:
                     user.autopass = True
                     user.send_ooc('Your autopass was automatically turned on.')
 
+            if self.is_property('Autoglance'):
+                autoglance = self.get_property('Autoglance')
+                if autoglance and not user.autoglance:
+                    user.autoglance = True
+                    user.send_ooc('Your autoglance was automatically turned on.')
+
         def get_players(self) -> Set[ClientManager.Client]:
             """
             Return the set of players in an area part of the current zone.
@@ -658,7 +664,7 @@ class ZoneManager:
             return self._is_deleted
 
         def _on_area_client_left_final(self, area, client=None, old_displayname=None,
-                                    ignore_bleeding=False, ignore_autopass=False):
+                                       ignore_bleeding=False, ignore_autopass=False):
             """
             Default callback for zone signaling a client left. This is executed after all other
             actions related to moving the player to a new area have been executed: in particular,

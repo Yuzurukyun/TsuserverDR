@@ -247,6 +247,54 @@ def ooc_cmd_area_list(client: ClientManager.Client, arg: str):
             pass
 
 
+def ooc_cmd_autoglance(client: ClientManager.Client, arg: str):
+    """ (VARYING REQUIREMENTS)
+    Toggles look messages being activated automatically or not to whenever you move,
+    or (STAFF ONLY) when a target by client ID moves.
+
+    SYNTAX
+    /autoglance
+    /autoglance <client_id>
+
+    PARAMETERS
+    <client_id>: Client identifier (number in brackets in /getarea)
+
+    EXAMPLES
+    Assuming /autoglance for you and for client 1 is off...
+    >>> /autoglance
+    Turns autoglance on.
+    >>> /autoglance
+    Turns autoglance off.
+    >>> /autoglance 1
+    Turns autoglance for client 1 on.
+    >>> /autoglance 1
+    Turns autoglance for client 1 off.
+    """
+
+    Constants.assert_command(client, arg, parameters='<2')
+    if arg and not client.is_staff():
+        raise ClientError.UnauthorizedError('You must be authorized to use the one-parameter '
+                                            'version of this command.')
+    if arg:
+        target = Constants.parse_id(client, arg)
+    else:
+        target = client
+
+    target.autoglance = not target.autoglance
+    status = {False: 'off', True: 'on'}
+
+    if client == target:
+        client.send_ooc(f'You turned {status[client.autoglance]} your autoglance.')
+    else:
+        client.send_ooc(f'You turned {status[target.autoglance]} the autoglance for '
+                        f'{target.displayname} [{target.id}].')
+        target.send_ooc(f'Your autoglance was turned {status[target.autoglance]}.')
+        client.send_ooc_others(f'(X) {client.displayname} [{client.id}] turned '
+                               f'{status[target.autoglance]} the autoglance for '
+                               f'{target.displayname} [{target.id}] ({client.area.id}).',
+                               is_zstaff_flex=True, not_to={target})
+
+
 def ooc_cmd_autopass(client: ClientManager.Client, arg: str):
     """ (VARYING REQUIREMENTS)
     Toggles enter/leave messages being sent automatically or not to users in the current area
@@ -262,7 +310,7 @@ def ooc_cmd_autopass(client: ClientManager.Client, arg: str):
     <client_id>: Client identifier (number in brackets in /getarea)
 
     EXAMPLES
-    Assuming /autopass for you and for client 1is off...
+    Assuming /autopass for you and for client 1 is off...
     >>> /autopass
     Turns autopass on.
     >>> /autopass
@@ -3897,7 +3945,7 @@ def ooc_cmd_look(client: ClientManager.Client, arg: str):
         else:
             msg += f'You look at {target.displayname} and note this: {target.status}'
     else:
-        _, area_description, player_description = client.area.get_look_output_for(client)
+        _, _, area_description, _, player_description = client.area.get_look_output_for(client)
 
         msg += (
             f'=== Look results for {client.area.name} ===\r\n'
@@ -6316,7 +6364,7 @@ def ooc_cmd_peek(client: ClientManager.Client, arg: str):
 
     if area_lock_ok and reachable_ok:
         if target_area.lights:
-            _, area_description, player_description = target_area.get_look_output_for(client)
+            _, _, area_description, _, player_description = target_area.get_look_output_for(client)
             client.send_ooc(
                 f'You peek into area {target_area.name} and note the following:\r\n'
                 f'*About the people in there: you see {player_description}\r\n'
@@ -11796,6 +11844,65 @@ def ooc_cmd_toggle_music_list_default(client: ClientManager.Client, arg: str):
         client.send_ooc('You will now see the server music list whenever you do not have a '
                         'personal music list active.')
     client.send_music_list_view()
+
+
+def ooc_cmd_zone_autoglance(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Changes the zone autoglance automatic setting of the zone you are watching from False to True,
+    or True to False, and warns all players in an area part of the zone (as well as zone watchers)
+    about the change in OOC. Newly created zones have such setting set to False.
+    If set to True, the autoglance setting of all players in an area part of the zone will be turned
+    on, and so will the autoglance setting of any player who later joins an area part of the zone.
+    If such player already had autoglance on, there is no effect. Players are free to change their
+    autoglance setting manually via /autoglance. Players who go on to an area part of the zone will
+    not have the zone change their autoglance setting on departure.
+    If set to False, the autoglance setting of all players in an area part of the zone will be
+    turned off. If such player already had autoglance off, there is no effect.
+    Returns an error if you are not watching a zone.
+
+    SYNTAX
+    /zone_autoglance
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    Assuming you are watching newly created zome z0...
+    >>> /zone_autoglance
+    Sets the zone autoglance automatic setting of the zone z0 to True.
+    >>> /zone_autoglance
+    Sets the zone autoglance automatic setting of the zone z0 to False.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
+
+    if not client.zone_watched:
+        raise ZoneError('You are not watching a zone.')
+
+    zone = client.zone_watched
+    status = {False: 'off', True: 'on'}
+
+    try:
+        zone_autoglance = zone.get_property('Autoglance')
+    except ZoneError.PropertyNotFoundError:
+        zone_autoglance = False
+
+    zone_autoglance = not zone_autoglance
+    zone.set_property('Autoglance', zone_autoglance)
+
+    status = {True: 'on', False: 'off'}
+    client.send_ooc(f'You turned {status[zone_autoglance]} autoglance in your zone.')
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] has turned '
+                           f'{status[zone_autoglance]} autoglance in your zone '
+                           f'({client.area.id}).', is_zstaff=True)
+    client.send_ooc_others(f'Autoglance was automatically turned {status[zone_autoglance]} in your '
+                           f'zone.', is_zstaff=False, pred=lambda c: c.area.in_zone == zone)
+
+    for player in zone.get_players():
+        player.autoglance = zone_autoglance
+
+    logger.log_server(f'[{client.area.id}][{client.get_char_name()}]Changed autoglance in zone '
+                      f'{zone.get_id()} to {zone_autoglance}.', client)
 
 
 def ooc_cmd_exec(client: Union[ClientManager.Client, None], arg: str):

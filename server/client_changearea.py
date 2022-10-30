@@ -1069,6 +1069,18 @@ class ClientChangeArea:
             else:
                 client.send_music_list_view()
 
+        if client.autoglance and (client.is_staff() or (area.lights and not client.is_blind)):
+            (elevated, has_area_description, area_description,
+             _, _) = client.area.get_look_output_for(client)
+            msg = ''
+            if elevated:
+                msg += '(X) '
+
+            if (has_area_description and
+                (client.is_staff() or (not client.is_blind and area.lights))):
+                msg += f'You note this about the area: `{area_description}`.'
+                client.send_ooc(msg)
+
 
         if client.followedby and not ignore_followers:
             for c in client.followedby:
