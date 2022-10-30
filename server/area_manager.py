@@ -101,7 +101,6 @@ class AreaManager(AssetManager):
             self.current_music_source = ''
             self.evi_list = EvidenceList()
             self.recorded_messages = []
-            self.owned = False
             self.ic_lock = False
             self.is_locked = False
             self.is_modlocked = False
