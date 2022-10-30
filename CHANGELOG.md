@@ -819,7 +819,7 @@
 * Fixed /clock_period erroring out if a non-numerical invalid hour start or hour length was given.
 
 ## (5.0.0)
-* Increased minimum Python version required to 3.9
+* Increased minimum Python version required to 3.9, added support for Python 3.11.
 * Fixed timer end notification showing the OOC name of the timer initiator as the timer name rather than the actual name
 * Added a first-list-item to switch between areas and hubs in the area list
 * Introduced the concept of participant and non-participant characters (currently a "character provided in a character list" and one that is not respectively)
