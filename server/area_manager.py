@@ -457,8 +457,9 @@ class AreaManager(AssetManager):
             Returns
             -------
             bool
-                True if tested character ID is the spectator ID (which is always available), or
-                is not found to be among the area's unusable characters.
+                True if tested character ID is the spectator ID (which is always available) or None
+                (the ID that is given when on the lobby but before getting to the character select
+                screen), or is not found to be among the area's unusable characters.
             """
 
             if not self.hub.character_manager.is_char_id_participant(char_id):

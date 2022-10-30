@@ -818,6 +818,9 @@
 * Fixed /lasterror providing duplicate error information
 * Fixed /clock_period erroring out if a non-numerical invalid hour start or hour length was given.
 
+### 220926a (4.3.5-post1)
+* Fixed area list loading failing if there was a player in the process of joining a server
+
 ## (5.0.0)
 * Increased minimum Python version required to 3.9, added support for Python 3.11.
 * Fixed timer end notification showing the OOC name of the timer initiator as the timer name rather than the actual name
