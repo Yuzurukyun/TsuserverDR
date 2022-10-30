@@ -11846,6 +11846,65 @@ def ooc_cmd_toggle_music_list_default(client: ClientManager.Client, arg: str):
     client.send_music_list_view()
 
 
+def ooc_cmd_zone_autoglance(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Changes the zone autoglance automatic setting of the zone you are watching from False to True,
+    or True to False, and warns all players in an area part of the zone (as well as zone watchers)
+    about the change in OOC. Newly created zones have such setting set to False.
+    If set to True, the autoglance setting of all players in an area part of the zone will be turned
+    on, and so will the autoglance setting of any player who later joins an area part of the zone.
+    If such player already had autoglance on, there is no effect. Players are free to change their
+    autoglance setting manually via /autoglance. Players who go on to an area part of the zone will
+    not have the zone change their autoglance setting on departure.
+    If set to False, the autoglance setting of all players in an area part of the zone will be
+    turned off. If such player already had autoglance off, there is no effect.
+    Returns an error if you are not watching a zone.
+
+    SYNTAX
+    /zone_autoglance
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    Assuming you are watching newly created zome z0...
+    >>> /zone_autoglance
+    Sets the zone autoglance automatic setting of the zone z0 to True.
+    >>> /zone_autoglance
+    Sets the zone autoglance automatic setting of the zone z0 to False.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
+
+    if not client.zone_watched:
+        raise ZoneError('You are not watching a zone.')
+
+    zone = client.zone_watched
+    status = {False: 'off', True: 'on'}
+
+    try:
+        zone_autoglance = zone.get_property('Autoglance')
+    except ZoneError.PropertyNotFoundError:
+        zone_autoglance = False
+
+    zone_autoglance = not zone_autoglance
+    zone.set_property('Autoglance', zone_autoglance)
+
+    status = {True: 'on', False: 'off'}
+    client.send_ooc(f'You turned {status[zone_autoglance]} autoglance in your zone.')
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] has turned '
+                           f'{status[zone_autoglance]} autoglance in your zone '
+                           f'({client.area.id}).', is_zstaff=True)
+    client.send_ooc_others(f'Autoglance was automatically turned {status[zone_autoglance]} in your '
+                           f'zone.', is_zstaff=False, pred=lambda c: c.area.in_zone == zone)
+
+    for player in zone.get_players():
+        player.autoglance = zone_autoglance
+
+    logger.log_server(f'[{client.area.id}][{client.get_char_name()}]Changed autoglance in zone '
+                      f'{zone.get_id()} to {zone_autoglance}.', client)
+
+
 def ooc_cmd_exec(client: Union[ClientManager.Client, None], arg: str):
     """
     VERY DANGEROUS. SHOULD ONLY BE ENABLED FOR DEBUGGING.
