@@ -151,10 +151,16 @@ class _Unittest(unittest.TestCase):
         Check if any packets were unaccounted for. Only do so if test passed.
         """
 
-        # Test checker by hynekcer (2016): https://stackoverflow.com/a/39606065
+        # Test checker by hynekcer (2022): https://stackoverflow.com/a/39606065
 
-        result = self.defaultTestResult()  # these 2 methods have no side effects
-        self._feedErrorsToResult(result, self._outcome.errors)
+        if hasattr(self._outcome, 'errors'):
+            # Python 3.4 - 3.10  (These two methods have no side effects)
+            result = self.defaultTestResult()  # these 2 methods have no side effects
+            self._feedErrorsToResult(result, self._outcome.errors)
+        else:
+            # Python 3.11+
+            result = self._outcome.result
+
         error = self.list2reason(result.errors)
         failure = self.list2reason(result.failures)
 
