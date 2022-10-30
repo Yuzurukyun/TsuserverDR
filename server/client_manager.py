@@ -148,7 +148,7 @@ class ClientManager:
             self.paranoia = 2
             self.notecard = ''
             self.is_mindreader = False
-            self.autolook = False
+            self.autoglance = False
 
             # Pairing stuff
             self.charid_pair = -1

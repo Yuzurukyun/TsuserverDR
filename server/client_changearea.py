@@ -1069,7 +1069,7 @@ class ClientChangeArea:
             else:
                 client.send_music_list_view()
 
-        if client.autolook and (client.is_staff() or (area.lights and not client.is_blind)):
+        if client.autoglance and (client.is_staff() or (area.lights and not client.is_blind)):
             (elevated, has_area_description, area_description,
              _, _) = client.area.get_look_output_for(client)
             msg = ''

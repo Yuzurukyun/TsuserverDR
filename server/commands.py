@@ -247,28 +247,28 @@ def ooc_cmd_area_list(client: ClientManager.Client, arg: str):
             pass
 
 
-def ooc_cmd_autolook(client: ClientManager.Client, arg: str):
+def ooc_cmd_autoglance(client: ClientManager.Client, arg: str):
     """ (VARYING REQUIREMENTS)
     Toggles look messages being activated automatically or not to whenever you move,
     or (STAFF ONLY) when a target by client ID moves.
 
     SYNTAX
-    /autolook
-    /autolook <client_id>
+    /autoglance
+    /autoglance <client_id>
 
     PARAMETERS
     <client_id>: Client identifier (number in brackets in /getarea)
 
     EXAMPLES
-    Assuming /autolook for you and for client 1 is off...
-    >>> /autolook
-    Turns autolook on.
-    >>> /autolook
-    Turns autolook off.
-    >>> /autolook 1
-    Turns autolook for client 1 on.
-    >>> /autolook 1
-    Turns autolook for client 1 off.
+    Assuming /autoglance for you and for client 1 is off...
+    >>> /autoglance
+    Turns autoglance on.
+    >>> /autoglance
+    Turns autoglance off.
+    >>> /autoglance 1
+    Turns autoglance for client 1 on.
+    >>> /autoglance 1
+    Turns autoglance for client 1 off.
     """
 
     Constants.assert_command(client, arg, parameters='<2')
@@ -280,17 +280,17 @@ def ooc_cmd_autolook(client: ClientManager.Client, arg: str):
     else:
         target = client
 
-    target.autolook = not target.autolook
+    target.autoglance = not target.autoglance
     status = {False: 'off', True: 'on'}
 
     if client == target:
-        client.send_ooc(f'You turned {status[client.autolook]} your autolook.')
+        client.send_ooc(f'You turned {status[client.autoglance]} your autoglance.')
     else:
-        client.send_ooc(f'You turned {status[target.autolook]} the autolook for '
+        client.send_ooc(f'You turned {status[target.autoglance]} the autoglance for '
                         f'{target.displayname} [{target.id}].')
-        target.send_ooc(f'Your autolook was turned {status[target.autolook]}.')
+        target.send_ooc(f'Your autoglance was turned {status[target.autoglance]}.')
         client.send_ooc_others(f'(X) {client.displayname} [{client.id}] turned '
-                               f'{status[target.autolook]} the autolook for '
+                               f'{status[target.autoglance]} the autoglance for '
                                f'{target.displayname} [{target.id}] ({client.area.id}).',
                                is_zstaff_flex=True, not_to={target})
 
