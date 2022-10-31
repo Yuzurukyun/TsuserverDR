@@ -113,6 +113,7 @@ class AreaManager(AssetManager):
             self.lurk_length = 0
             self._in_zone = None
             self.noteworthy = False
+            self.noteworthy_text = '(Something catches your attention)'
             self.ambient = ''
 
             self.name = parameters['area']

@@ -702,7 +702,7 @@ class ClientManager:
 
         def send_ic_attention(self, ding: bool = True):
             int_ding = 1 if ding else 0
-            self.send_ic(msg='(Something catches your attention)', ding=int_ding, hide_character=1)
+            self.send_ic(msg=self.area.noteworthy_text, ding=int_ding, hide_character=1)
 
         def send_ic_blankpost(self):
             if self.packet_handler.ALLOWS_INVISIBLE_BLANKPOSTS:
