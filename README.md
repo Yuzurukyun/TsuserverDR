@@ -21,6 +21,11 @@ It is highly recommended you read through all the installation steps first befor
   - On Windows 10 or higher, go up one folder above the TsuserverDR folder, Shift + right click the TsuserverDR folder, and click `Open PowerShell window here` or `Open in Terminal`. This is the easiest method. Alternatively...
   - On most operating systems, copy the path of the TsuserverDR folder, open the terminal, and type in `cd "[paste here]"`, excluding the brackets, but including the quotation marks if the path contains spaces.
 
+* Make sure Python is properly installed by typing `python` in the terminal and pushing Enter.
+  - If text that starts with `Python 3.11.0 (main, ` or similar appears, you are all set with this step. Push Ctrl+Z followed by Enter to continue to the next step if you are on Windows; and Ctrl+D if you are on Linux.
+  - If text that starts with `The term 'python' is not recognized as the name of a cmdlet` or similar, Python wasn't properly added to path. Follow the instructions [here](https://realpython.com/add-python-to-path/#how-to-add-python-to-path-on-windows) to try and fix the issue (this is for Windows, instructions for other operating systems are also available in the same website if you scroll further down).
+  - If on Windows and a separate window opens that leads to the Microsoft Store, Windows may have added an execution alias. Follow the instructions [here](https://stackoverflow.com/a/58773979) to try and remove this alias.
+
 * Install all dependencies by typing in the following two commands in the terminal you just opened:
   ```
   python -m pip install --upgrade pip
@@ -53,7 +58,7 @@ It is highly recommended you read through all the installation steps first befor
 
 ```
 [2022-10-31T10:20:20]: Starting...
-[2022-10-31T10:20:20]: Launching TsuserverDR 5.0.0-b1 (PO221031a)...
+[2022-10-31T10:20:20]: Launching TsuserverDR 5.0.0-b1 (PO221031c)...
 [2022-10-31T10:20:20]: Loading server configurations...
 [2022-10-31T10:20:20]: Server configurations loaded successfully!
 [2022-10-31T10:20:20]: Starting a nonlocal server...
@@ -71,7 +76,7 @@ It is highly recommended you read through all the installation steps first befor
 ```
 
   - The server will make a single ping to [ipify](https://api.ipify.org) in order to obtain its public IP address. If it fails to do that, it will let you know that, as it means there is probably something wrong with your internet connection and that other players may not be able to connect to your server.
-  - Successful connection or getting a spot in the master server list does not imply that your server will be accessible to other players. In particular, you must make sure that your external port in `config\config.yaml` is open and accepting connections, which usually involves a combination of router and firewall settings. In case of doubt, you can use websites such as [Can You See Me](https://canyouseeme.org) to check if your port is visible.
+  - Successful connection or getting a spot in the master server list does not imply that your server will be accessible to other players. In particular, you must make sure that your external port in `config/config.yaml` is open and accepting connections, which usually involves a combination of router and firewall settings. In case of doubt, you can use websites such as [Can You See Me](https://canyouseeme.org) to check if your port is visible.
 
 * To stop the server, press Ctrl+C once from your terminal. This will initiate a shutdown sequence and notify you when it is done. If the shutdown finished successfully, you will see something like this appear:
 
