@@ -7740,7 +7740,7 @@ def ooc_cmd_st(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True)
 
     pre = '{} [Staff] {}'.format(client.server.config['hostname'], client.name)
-    for c in client.server.get_clients():
+    for c in client.hub.get_players():
         c.send_ooc(arg, username=pre, pred=lambda c: c.is_staff())
     logger.log_server('[{}][STAFFCHAT][{}][{}]{}.'
                       .format(client.area.id, client.get_char_name(), client.name, arg), client)

@@ -936,7 +936,7 @@ class AreaManager(AssetManager):
                 If no client has an active day cycle involving the current area.
             """
 
-            for client in self.server.get_clients():
+            for client in self.hub.get_players():
                 try:
                     task = self.server.task_manager.get_task(client, 'as_day_cycle')
                 except TaskError.TaskNotFoundError:
