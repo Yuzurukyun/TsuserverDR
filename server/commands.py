@@ -11995,6 +11995,28 @@ def ooc_cmd_noteworthy_set(client: ClientManager.Client, arg: str):
                           .format(client.area.id, client.get_char_name(), arg), client)
 
 
+def ooc_cmd_noteworthy_info(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Gets the noteworthiness and noteworthy text of the current area.
+
+    SYNTAX
+    /noteworthy_info
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    >>> /noteworthy_info
+    | $H: The current area is currently noteworthy. The current noteworthy text is `[Test]`.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
+
+    status = {True: 'is', False: 'is not'}
+    client.send_ooc(f'The current area {status[client.area.noteworthy]} currently noteworthy. '
+                    f'The current noteworthy text is `{client.area.noteworthy_text}`.')
+
+
 def ooc_cmd_exec(client: Union[ClientManager.Client, None], arg: str):
     """
     VERY DANGEROUS. SHOULD ONLY BE ENABLED FOR DEBUGGING.
