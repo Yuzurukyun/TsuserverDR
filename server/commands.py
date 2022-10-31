@@ -11942,6 +11942,59 @@ def ooc_cmd_pm_gms(client: ClientManager.Client, arg: str):
                         f'({client.area.id}) to all GMs in your hub: {msg}')
 
 
+def ooc_cmd_noteworthy_set(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Sets (and replaces!) the noteworthy text of the current area to the given one.
+    If not given any text, it will set the text to be the area's default noteworthy text.
+    The noteworthy text does not reset or change if the noteworthy status of an area changes.
+
+    SYNTAX
+    /noteworthy_set {text}
+
+    PARAMETERS
+    None
+
+    OPTIONAL PARAMETERS
+    {text}: New noteworthy text.
+
+    EXAMPLES
+    Assuming you are in area 0
+    >>> /noteworthy_set [You notice some broken glass on the floor]
+    Sets the area noteworthy text in area 0 to be "[You notice some broken glass on the floor]".
+    >>> /noteworthy_set
+    Sets the area noteworthy text in area 0 to be the default text.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True)
+
+    if not arg:
+        client.area.noteworthy_text = client.area.default_noteworthy_text
+        client.send_ooc('Reset the area noteworthy text to its original value.')
+        client.send_ooc_others('(X) {} [{}] reset the area noteworthy text of your area to its '
+                               'original value.'
+                               .format(client.displayname, client.id),
+                               is_zstaff_flex=True, in_area=True)
+        client.send_ooc_others('(X) {} [{}] reset the area noteworthy text of area {} to its '
+                               'original value.'
+                               .format(client.displayname, client.id, client.area.name),
+                               is_zstaff_flex=True, in_area=False)
+        logger.log_server('[{}][{}]Reset the area noteworthy text in {}.'
+                          .format(client.area.id, client.get_char_name(), client.area.name), client)
+
+    else:
+        client.area.noteworthy_text = arg
+        client.send_ooc('Updated the area noteworthy text to `{}`.'.format(arg))
+        client.send_ooc_others('(X) {} [{}] set the area noteworthy text of your area to `{}`.'
+                               .format(client.displayname, client.id, client.area.noteworthy_text),
+                               is_zstaff_flex=True, in_area=True)
+        client.send_ooc_others('(X) {} [{}] set the area noteworthy text of area {} to `{}`.'
+                               .format(client.displayname, client.id, client.area.name,
+                                       client.area.noteworthy_text),
+                               is_zstaff_flex=True, in_area=False)
+        logger.log_server('[{}][{}]Set the area noteworthy text to {}.'
+                          .format(client.area.id, client.get_char_name(), arg), client)
+
+
 def ooc_cmd_exec(client: Union[ClientManager.Client, None], arg: str):
     """
     VERY DANGEROUS. SHOULD ONLY BE ENABLED FOR DEBUGGING.
