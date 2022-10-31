@@ -507,7 +507,12 @@ GMs can:
     - Tallies the contents of all notecards of players in the area and reveals the count to all players in your current area.
     - This does not reveal the people who wrote particular notecards.
 * **noteworthy**
-   - Changes the noteworthy status of the area.
+    - Changes the noteworthy status of the area.
+* **noteworthy_info**
+    - Returns the noteworthy status and noteworthy text of an area.
+* **noteworthy_set** "text"
+    - Changes the noteworthy text of the area to the given text, or a default one if not given any.
+    - Noteworthy text can be changed independently of the noteworthy status of an area.
 * **nsd** "time"
     - Starts an NSD part of your current trial with all players in the area part of your trial, making you leader of the NSD.
     - The NSD will have a given time limit in seconds, or no time limit if not given a time. Debates with a time limit will be automatically halted once the timer runs out.

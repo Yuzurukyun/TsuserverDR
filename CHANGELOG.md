@@ -834,6 +834,9 @@
   - /autoglance
   - /zone_autoglance
 * Added /pm_gms, which sends a personal message to all other GMs in the hub that have not muted PMs
+* Added commands to modify the IC text that appears if an area is marked as noteworthy via
+  - /noteworthy_set
+  - /noteworthy_info
 * Removed unused `server/area_manager_revamp.py` and `server/steptimer_manager.py`
 * Removed the old names of the following commands. Please use the new ones:
   - /clock_cancel: /clock_end
