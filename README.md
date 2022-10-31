@@ -337,14 +337,14 @@ GMs can:
     - Changes the ambient sound effect of your current area.
 * **ambient_end**
     - Clears the ambient sound effect of your current area.
-* **area_kick** "ID" "area number"
-    - Kicks target from your area to the intended area and remove them from its invite-list.
-    - If not given a target area, it will use the server's default area (usually area 0).
 * **area_list** "area list"
     - Sets the area list of your hub.
     - If not given an area list, it will use the default file `config/areas.yaml`.
 * **area_list_info**
     - Returns the area list of your hub.
+* **area_move** "ID" "area number"
+    - Moves target from your area to the intended area and remove them from its invite-list.
+    - If not given a target area, it will use your hub's default area (usually area 0).
 * **autopass** "ID"
     - Toggles enter/leave messages being sent automatically or not to users in the current area, including original/target areas, whenever the target moves.
     - Messages will not be sent if sneaking. Altered messages will be sent if the area's lights are turned off.
@@ -713,9 +713,9 @@ GMs can:
 
 ### Community Manager Commands
 
-* **area_kick** "ID/IPID" "area number"
-    - Kicks target from your area to the intended area and remove them from its invite-list.
-    - If not given a target area, it will use the server's default area (usually area 0).
+* **area_move** "ID/IPID" "area number"
+    - Moves target from your area to the intended area and remove them from its invite-list.
+    - If not given a target area, it will use your hub's default area (usually area 0).
 * **blockdj** "ID/IPID"
     - Mutes the target from changing music.
 * **charlog** "ID/IPID"
@@ -871,6 +871,7 @@ Commands without (D) are aliases to commands and can be freely used (subject to 
 
 #### GM+
 
+* **area_kick**: Same as /area_move.
 * **loginrp**: Same as /logingm.
 * **slit**: Same as /bloodtrail.
 * **unsneak**: Same as /reveal.

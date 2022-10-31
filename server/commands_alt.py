@@ -60,6 +60,7 @@ command_aliases = {
     'showname_areas': 'getareas',
     'ga': 'getarea',
     'gas': 'getareas',
+    'area_kick': 'area_move',
 }
 
 command_deprecated = dict()
