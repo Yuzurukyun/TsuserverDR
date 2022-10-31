@@ -11997,7 +11997,7 @@ def ooc_cmd_noteworthy_set(client: ClientManager.Client, arg: str):
 
 def ooc_cmd_noteworthy_info(client: ClientManager.Client, arg: str):
     """ (STAFF ONLY)
-    Gets the noteworthiness and noteworthy text of the current area.
+    Gets the noteworthy status and noteworthy text of the current area.
 
     SYNTAX
     /noteworthy_info
