@@ -4453,7 +4453,8 @@ def ooc_cmd_notecard(client: ClientManager.Client, arg: str):
     <content>: Content of your notecard
 
     EXAMPLE
-    /notecard Hello world    :: Sets the content of your notecard to `Hello world`.
+    >>> /notecard Hello world
+    Sets the content of your notecard to `Hello world`.
     """
 
     Constants.assert_command(client, arg, parameters='>0')
@@ -4480,8 +4481,10 @@ def ooc_cmd_notecard_clear(client: ClientManager.Client, arg: str):
     {client_id}: Client identifier (number in brackets in /getarea)
 
     EXAMPLES
-    /notecard_clear   :: Clears your own notecard
-    /notecard_clear 2 :: Clears the notecard of player with client ID 2.
+    >>> /notecard_clear
+    Clears your own notecard
+    >>> /notecard_clear 2
+    Clears the notecard of player with client ID 2.
     """
 
     Constants.assert_command(client, arg, parameters='<2')
@@ -4524,7 +4527,8 @@ def ooc_cmd_notecard_clear_area(client: ClientManager.Client, arg: str):
     None
 
     EXAMPLES
-    /notecard_clear_area   :: Clears the notecards of all players in your current area.
+    >>> /notecard_clear_area
+    Clears the notecards of all players in your current area.
     """
 
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
@@ -4560,8 +4564,10 @@ def ooc_cmd_notecard_info(client: ClientManager.Client, arg: str):
     {client_id}: Client identifier (number in brackets in /getarea)
 
     EXAMPLES
-    /notecard_info   :: Gets the content of your own notecard
-    /notecard_info 2 :: Gets the content of the notecard of player with client ID 2.
+    >>> /notecard_info
+    Gets the content of your own notecard.
+    >>> /notecard_info 2
+    Gets the content of the notecard of player with client ID 2.
     """
 
     Constants.assert_command(client, arg, parameters='<2')
@@ -4597,7 +4603,8 @@ def ooc_cmd_notecard_check(client: ClientManager.Client, arg: str):
     None
 
     EXAMPLES
-    /notecard_check  :: Returns the contents of all notecards set by players in the current area.
+    >>> /notecard_check
+    Returns the contents of all notecards set by players in the current area.
     """
 
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
@@ -4626,7 +4633,8 @@ def ooc_cmd_notecard_list(client: ClientManager.Client, arg: str):
     None
 
     EXAMPLES
-    /notecard_list  :: Returns the contents of all notecards set by players in the hub.
+    >>> /notecard_list
+    Returns the contents of all notecards set by players in the hub.
     """
 
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
@@ -4655,7 +4663,8 @@ def ooc_cmd_notecard_reveal(client: ClientManager.Client, arg: str):
     None
 
     EXAMPLES
-    /notecard_reveal  :: Reveals the contents of all notecards set by players in the area.
+    >>> /notecard_reveal
+    Reveals the contents of all notecards set by players in the area.
     """
 
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
@@ -4689,7 +4698,8 @@ def ooc_cmd_notecard_reveal_count(client: ClientManager.Client, arg: str):
     None
 
     EXAMPLES
-    /notecard_reveal_count  :: Reveals the frequency of each notecard.
+    >>> /notecard_reveal_count
+    Reveals the frequency of each notecard.
     """
 
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
