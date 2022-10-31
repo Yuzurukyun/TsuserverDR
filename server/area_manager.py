@@ -310,7 +310,7 @@ class AreaManager(AssetManager):
             Raises
             ------
             AreaError
-                If the server attempted to validate the background name and failed.
+                If the hub attempted to validate the background name and failed.
             """
 
             if validate and not self.hub.background_manager.is_background(bg):
@@ -342,13 +342,13 @@ class AreaManager(AssetManager):
                 Whether to first determine if background name is listed as a server background
                 before changing. Defaults to True.
             override_blind: bool, optional
-                Whether to send the intended background to blind people as opposed to the server
+                Whether to send the intended background to blind people as opposed to the hub
                 blackout one. Defaults to False (send blackout).
 
             Raises
             ------
             AreaError
-                If the background name is non-empty and the server attempted to validate the
+                If the background name is non-empty and the hub attempted to validate the
                 background name and failed, or if the background name is empty and the area already
                 has no backgroudn associated with the given period.
             """
@@ -592,8 +592,7 @@ class AreaManager(AssetManager):
             -------
             bool
                 True if either anim1 or anim2 point to an external location through '../../' or
-                their claimed character folder does not match the expected server name and the
-                performed iniswap is not in the list of allowed iniswaps by the server.
+                their claimed character folder does not match the expected server name.
             """
 
             if char == client.get_char_name():
@@ -745,7 +744,7 @@ class AreaManager(AssetManager):
             effect : int, optional
                 Accompanying effect to the track (only used by AO 2.8.4+). Defaults to 0.
             raise_if_not_found : bool, optional
-                If True, it will raise ServerError if the track name is not in the server's music
+                If True, it will raise ServerError if the track name is not in the hub's music
                 list nor the client's music list. If False, it will not care about it. Defaults to
                 False.
             reveal_sneaked : bool, optional
@@ -765,7 +764,7 @@ class AreaManager(AssetManager):
             ServerError.FileInvalidNameError:
                 If `name` references parent or current directories (e.g. "../hi.opus")
             MusicError.MusicNotFoundError:
-                If `name` is not a music track in the server or client's music list and
+                If `name` is not a music track in the hub's music list and
                 `raise_if_not_found` is True.
             """
 
@@ -1380,7 +1379,7 @@ class AreaManager(AssetManager):
                     message = 'Area list reload. Moving you to the new {}.'
                 else:
                     message = ('Area list reload. Your previous area no longer exists. Moving you '
-                               'to the server default area {}.')
+                               'to the hub default area {}.')
 
                 client.send_ooc(message.format(new_area.name))
                 client.change_area(new_area, ignore_checks=True, change_to=new_char_id,
@@ -1400,7 +1399,7 @@ class AreaManager(AssetManager):
 
     def default_area(self) -> AreaManager.Area:
         """
-        Return the Area object corresponding to the server's default area.
+        Return the Area object corresponding to the hub's default area.
         """
 
         return self._areas[self._default_area_id]

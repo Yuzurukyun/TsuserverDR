@@ -15,7 +15,7 @@
 # *background_tod: Backgrounds per time of day.
 # *bglock: If false, only moderators can lock the area background; if true, no one can lock it.
 # *bullet: If false, only GM+ can send IC messages with bullets/shouts. If true, no such restriction is imposed.
-# *cbg_allowed: If false, only GM+ can set the area's background to one not in the server's list. If true, no such restriction is imposed.
+# *cbg_allowed: If false, only GM+ can set the area's background to one not in the hub's list. If true, no such restriction is imposed.
 # *change_reachability_allowed: If false, only GM+ may /unilock or /bilock passages affecting this area. If true, no such restriction is imposed.
 # *default_description: Output of /look in the area if no custom description is in place via /look_set
 # *evidence_mod: Unused (do not include)
@@ -29,8 +29,8 @@
 # *reachable_areas: If <ALL>, a passage will be created from this area to every other area. If it is a comma-separated list of areas (by name), a passage will be created from this area only to the listed areas.
 # *restricted_chars: If a list of folder names, it prevents non-GMs using said characters from joining the area, and prompts them to choose another one if they are kicked to the area, they attempt to switch to that character while in the area, or their character is marked as restricted while they are in the area.
 # *rollp_allowed: If false, only GM+ may /rollp. If true, everyone can /rollp.
-# *rp_getarea_allowed: If false, if the server is in RP mode, only GM+ can /getarea and similar. If true, no such restriction is imposed.
-# *rp_getareas_allowed: If false, if the server is in RP mode, only GM+ can /getareas and similar. If true, no such restriction is imposed.
+# *rp_getarea_allowed: If false, only GM+ can /getarea and similar. If true, no such restriction is imposed.
+# *rp_getareas_allowed: If false, only GM+ can /getareas and similar. If true, no such restriction is imposed.
 # *scream_range: If <ALL>, all areas can receive a /scream message sent from this area. If <REACHABLE_AREAS>, all areas defined in reachable_areas can receive a /scream message sent from this area. If it is a comma-separated list of areas (by name), only said areas can receive /scream messages.
 # *song_switch_allowed: If false, only GM+ can do /play. If true, no such restriction is imposed.
 # *visible_areas: If <ALL>, a passage will be set as visible (but not necessarily reachable) from this area to every other area. If <REACHABLE_AREAS>, the procedure will be done to exactly all areas described in the areas' `reachable_areas` key. If it is a comma-separated list of areas (by name), the procedure will be done to the listed areas.

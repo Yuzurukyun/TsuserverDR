@@ -42,7 +42,7 @@ if typing.TYPE_CHECKING:
 class ZoneManager:
     """
     A mutable data type for a manager for the zones in a server.
-    Contains the Zone object definition, as well as the server's zone list.
+    Contains the Zone object definition, as well as the hub's zone list.
     """
 
     class Zone:
@@ -934,13 +934,13 @@ class ZoneManager:
 
     def get_info(self) -> str:
         """
-        List all zones in the server, as well as some of their properties.
+        List all zones in the hub, as well as some of their properties.
         If there are no zones, return a special message instead.
 
         Returns
         -------
         str:
-            All zones in the server.
+            All zones in the hub.
         """
 
         if not self._zones:

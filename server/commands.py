@@ -70,7 +70,7 @@ def ooc_cmd_announce(client: ClientManager.Client, arg: str):
 
 def ooc_cmd_area(client: ClientManager.Client, arg: str):
     """
-    Either lists all areas in the server or changes your area to a new given area.
+    Either lists all areas in the hub or changes your area to a new given area.
     Returns an error if you are unathorized to list all areas, already in the new area, or
     unable to move to the intended new area.
 
@@ -86,7 +86,7 @@ def ooc_cmd_area(client: ClientManager.Client, arg: str):
 
     EXAMPLES
     >>> /area
-    Lists all areas in the server.
+    Lists all areas in the hub.
     >>> /area 1
     Moves you to area 1.
     """
@@ -188,7 +188,7 @@ def ooc_cmd_area_move(client: ClientManager.Client, arg: str):
     {target_area}: Intended area to move the user, by area ID or name
 
     EXAMPLES
-    Assuming the default area of the server is area 0...
+    Assuming the default area of the hub is area 0...
     >>> /area_move 1
     Moves the user with client ID 1 to area 0.
     >>> /area_move 1234567890 3
@@ -1477,8 +1477,7 @@ def ooc_cmd_cleardoc(client: ClientManager.Client, arg: str):
 
 def ooc_cmd_cleargm(client: ClientManager.Client, arg: str):
     """ (OFFICER ONLY)
-    Logs out a game master by client ID or all game masters in the server if not given an ID and puts
-    them in RP mode if needed.
+    Logs out a game master by client ID or all game masters in the server if not given an ID.
     Returns an error if the given identifier does not correspond to a user, if given a target
     they are already not a GM, or if no GMs are currently logged in.
 
@@ -2147,7 +2146,7 @@ def ooc_cmd_deafen(client: ClientManager.Client, arg: str):
 
 def ooc_cmd_defaultarea(client: ClientManager.Client, arg: str):
     """ (MOD ONLY)
-    Set the default area by area ID for all future clients to join when connecting to the server.
+    Set the default area by area ID for all future clients to join when joining your hub.
     Returns an error if the area ID is invalid.
 
     SYNTAX
@@ -2171,7 +2170,7 @@ def ooc_cmd_defaultarea(client: ClientManager.Client, arg: str):
         raise ClientError('ID {} does not correspond to a valid area ID.'.format(arg))
 
     client.hub.area_manager.set_default_area(area)
-    client.send_ooc('Set default area to {}.'.format(arg))
+    client.send_ooc('Set default area of your hub to {}.'.format(arg))
 
 
 def ooc_cmd_dicelog(client: ClientManager.Client, arg: str):
@@ -4617,8 +4616,8 @@ def ooc_cmd_notecard_check(client: ClientManager.Client, arg: str):
 
 def ooc_cmd_notecard_list(client: ClientManager.Client, arg: str):
     """ (STAFF ONLY)
-    Returns the contents of all notecards set by players in the server.
-    Returns an error if no player in the server have any notecards set.
+    Returns the contents of all notecards set by players in the hub.
+    Returns an error if no player in the hub have any notecards set.
 
     SYNTAX
     /notecard_list
@@ -4627,14 +4626,14 @@ def ooc_cmd_notecard_list(client: ClientManager.Client, arg: str):
     None
 
     EXAMPLES
-    /notecard_list  :: Returns the contents of all notecards set by players in the server.
+    /notecard_list  :: Returns the contents of all notecards set by players in the hub.
     """
 
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
     with_notecards = [target for target in client.hub.get_players() if target.notecard]
     if not with_notecards:
-        raise ClientError('No players in the server have any notecards set.')
+        raise ClientError('No players in the hub have any notecards set.')
 
     output = ''
     for target in sorted(with_notecards):
@@ -6482,7 +6481,7 @@ def ooc_cmd_play(client: ClientManager.Client, arg: str):
         client.music_manager.get_music_data(arg)
     except MusicError.MusicNotFoundError:
         client.send_ooc(f'Warning: `{arg}` is not a recognized track name, so the server will not '
-                        'loop it.')
+                        f'loop it.')
 
 
 def ooc_cmd_pm(client: ClientManager.Client, arg: str):
@@ -7308,7 +7307,7 @@ def ooc_cmd_scream_set_range(client: ClientManager.Client, arg: str):
     Passing in no arguments sets the scream range to nothing (i.e. a soundproof room).
     Note that scream ranges are unidirectional, so if you want two areas to hear one another, you
     must use this command twice.
-    The special keyword <ALL> means all areas in the server should be able to listen to screams
+    The special keyword <ALL> means all areas in the hub should be able to listen to screams
     from the current area. The special keyword <REACHABLE_AREAS> means all areas reachable from
     the current area.
     Returns an error if an invalid area name or area ID is given, if the current area is part of
@@ -8484,7 +8483,7 @@ def ooc_cmd_trial(client: ClientManager.Client, arg: str):
     lack a participant character are not added to a trial. The trial creator is automatically added
     as a trial leader.
     Players added to a trial are ordered to switch to the 'trial' theme gamemode.
-    Returns an error if the server has reached its trial limit, or if you are part of another
+    Returns an error if the hub has reached its trial limit, or if you are part of another
     trial or have no character.
 
     SYNTAX
@@ -8514,7 +8513,7 @@ def ooc_cmd_trial(client: ClientManager.Client, arg: str):
     except TrialError.AreaHitGameConcurrentLimitError:
         raise ClientError('This area already hosts another trial.')
     except TrialError.ManagerTooManyGamesError:
-        raise ClientError('The server has reached its trial limit.')
+        raise ClientError('The hub has reached its trial limit.')
     except TrialError.UserHitGameConcurrentLimitError:
         raise ClientError('You are already part of another trial.')
     except TrialError.UserHasNoCharacterError:
@@ -10054,7 +10053,7 @@ def ooc_cmd_zone_autopass(client: ClientManager.Client, arg: str):
 
 def ooc_cmd_zone_end(client: ClientManager.Client, arg: str):
     """ (VARYING REQUIREMENTS)
-    Deletes the zone you are watching, so that it is no longer part of the server's zone list,
+    Deletes the zone you are watching, so that it is no longer part of the hub's zone list,
     if no argument is given (GM OR ABOVE ONLY), or deletes the zone by its name (CM OR MOD ONLY).
     Returns an error if you are not watching a zone and do not provide a zone ID.
 
@@ -10453,7 +10452,7 @@ def ooc_cmd_zone_lights(client: ClientManager.Client, arg: str):
 
 def ooc_cmd_zone_list(client: ClientManager.Client, arg: str):
     """ (STAFF ONLY)
-    Lists all active zones in the server. For each zone, it lists details such as: zone ID,
+    Lists all active zones in the hub. For each zone, it lists details such as: zone ID,
     the number of players it has, the areas it contains, and who is watching it.
     Returns an error if there are no active zones.
 

@@ -29,7 +29,7 @@ class _TestZone(_TestSituation6Mc1Gc25):
 
     def assert_zones(self, expected_zones):
         """
-        Assert that the set of zone IDs matches exactly to the server's zone manager's zones
+        Assert that the set of zone IDs matches exactly to the hub's zone manager's zones
         """
 
         self.assertEqual(len(expected_zones), len(self.zm.get_zones()))

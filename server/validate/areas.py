@@ -244,7 +244,7 @@ class ValidateAreas(Validate):
         if found_uncheckable_restricted_chars:
             info = ('WARNING: Some areas provided default restricted characters. However, no '
                     'server character list was provided, so no checks whether restricted '
-                    'characters were in the character list of the server were performed.')
+                    'characters were in the default character list of the server were performed.')
             print(info)
 
         return area_parameters

@@ -574,8 +574,6 @@ GMs can:
 * **rplay** "song.extension"
     - Plays a song in all areas reachable from the current one.
     - If the song is within some folders within the client music folder, such folders must be included separated by "/" (e.g. "trial/Trial Start.opus" to play "Trial Start.opus" within the "trial" folder of the client music folder).
-* **rpmode** "on/off"
-    - Toggles RP mode.
 * **scream_range**
     - Returns the areas that can listen to screams sent from the current area.
 * **scream_set** "area"
