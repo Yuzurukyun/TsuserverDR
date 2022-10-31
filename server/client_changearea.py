@@ -871,7 +871,7 @@ class ClientChangeArea:
         *override_passages: ignore passages existing from the source area to the target area
         *override_effects: ignore current effects, such as movement handicaps
         *ignore_bleeding: not add blood to the area if the character is moving,
-         such as from /area_move or AFK kicks
+         such as from /summon or AFK kicks
         *ignore_followers: avoid sending the follow command to followers (e.g. using /follow)
         *ignore_autopass: avoid sending autopass notifications
         *restrict_characters: additional characters to mark as restricted, others than the one

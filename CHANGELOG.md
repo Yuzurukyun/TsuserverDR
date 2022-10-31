@@ -848,6 +848,8 @@
   - /noteworthy_set
   - /noteworthy_info
 * Made /refresh a GM+ command rather than a mod command (but it only affects your current hub)
+* Made /area_kick with a single argument move the target to your area rather than the hub default area
+* Renamed /area_kick to /summon, and replaced all "kicking" indications it generated with "summoning" indications
 * Fixed timer end notification showing the OOC name of the timer initiator as the timer name rather than the actual name
 * Fixed all notecard commands having an inconsistent output when used with /help_more
 * Removed unused `server/area_manager_revamp.py` and `server/steptimer_manager.py`

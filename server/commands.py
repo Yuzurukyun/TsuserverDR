@@ -167,86 +167,6 @@ def ooc_cmd_area_list(client: ClientManager.Client, arg: str):
             pass
 
 
-def ooc_cmd_area_move(client: ClientManager.Client, arg: str):
-    """ (STAFF ONLY+VARYING REQUIREMENTS)
-    Moves a user by client ID or IPID to a given area by area ID or name, or the default area if not
-    given an area. GMs cannot perform this command on users in lobby areas.
-    If given IPID, it will move all clients you opened. Otherwise, it will just move the given user.
-    Search by IPID can only be performed by CMs and mods.
-    Returns an error if the given identifier does not correspond to a user, or if there was some
-    sort of error in the process of moving the user to the area (e.g. full area).
-
-    SYNTAX
-    /area_move <client_id> {target_area}
-    /area_move <client_ipid> {target_area}
-
-    PARAMETERS
-    <client_id>: Client identifier (number in brackets in /getarea)
-    <client_ipid>: IPID for the client (number in parentheses in /getarea)
-
-    OPTIONAL PARAMETERS
-    {target_area}: Intended area to move the user, by area ID or name
-
-    EXAMPLES
-    Assuming the default area of the hub is area 0...
-    >>> /area_move 1
-    Moves the user with client ID 1 to area 0.
-    >>> /area_move 1234567890 3
-    Moves all the clients opened by the user with IPID 1234567890 to area 3.
-    >>> /area_move 0987654321 Lobby
-    Moves all the clients opened by the user with IPID 0987654321 to Lobby.
-    >>> /area_move 3 Class Trial Room,\ 2
-    Moves the user with client ID 1 to Class Trial Room, 2 (note the ,\).
-    """
-
-    Constants.assert_command(client, arg, is_staff=True, parameters='&1-2', split_spaces=True)
-
-    arg = arg.split(' ')
-
-    if client.area.lobby_area and not client.is_officer():
-        raise ClientError('You must be authorized to move clients in lobby areas.')
-
-    if len(arg) == 1:
-        area = client.hub.area_manager.default_area()
-    else:
-        area = Constants.parse_area_names(client, [" ".join(arg[1:])])[0]
-
-    for c in Constants.parse_id_or_ipid(client, arg[0]):
-        # Failsafe in case moved player has their character changed during the area move
-        displayname = c.displayname
-        old_area = c.area
-
-        try:
-            c.change_area(area, override_passages=True, override_effects=True, ignore_bleeding=True,
-                          ignore_autopass=True)
-        except ClientError as error:
-            error_mes = ", ".join([str(s) for s in error.args])
-            client.send_ooc('Unable to move {} [{}] to area {}: {}'
-                            .format(displayname, c.id, area.id, error_mes))
-        else:
-            client.send_ooc('You moved {} [{}] from area {} to area {}.'
-                            .format(displayname, c.id, old_area.id, area.id))
-            c.send_ooc('You were moved from the area to area {}.'.format(area.id))
-            client.send_ooc_others('(X) {} [{}] moved {} [{}] from area {} to area {}.'
-                                   .format(client.displayname, client.id, displayname, c.id,
-                                           old_area.id, area.id),
-                                   not_to={c}, is_staff=True)
-
-            if old_area.is_locked or old_area.is_modlocked:
-                try:  # Try and remove the IPID from the area's invite list
-                    old_area.invite_list.pop(c.ipid)
-                except KeyError:
-                    # only happens if target joined the locked area through mod powers
-                    pass
-
-            if client.party:
-                party = client.party
-                party.remove_member(client)
-                client.send_ooc('You were also kicked off your party.')
-                for member in party.get_members():
-                    member.send_ooc('{} was area moved off your party.'.format(displayname))
-
-
 def ooc_cmd_autoglance(client: ClientManager.Client, arg: str):
     """ (VARYING REQUIREMENTS)
     Toggles look messages being activated automatically or not to whenever you move,
@@ -7728,6 +7648,86 @@ def ooc_cmd_spectate(client: ClientManager.Client, arg: str):
     # Change the character to SPECTATOR
     client.change_character(-1)
     client.send_ooc('You are now spectating.')
+
+
+def ooc_cmd_summon(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY+VARYING REQUIREMENTS)
+    Summons a user by client ID or IPID to a given area by area ID or name, or your area if
+    not given an area. GMs cannot perform this command on users in lobby areas.
+    If given IPID, it will summon all clients you opened. Otherwise, it will just summon the given
+    user. Search by IPID can only be performed by CMs and mods.
+    Returns an error if the given identifier does not correspond to a user, or if there was some
+    sort of error in the process of summoning the user to the area (e.g. full area).
+
+    SYNTAX
+    /summon <client_id> {target_area}
+    /summon <client_ipid> {target_area}
+
+    PARAMETERS
+    <client_id>: Client identifier (number in brackets in /getarea)
+    <client_ipid>: IPID for the client (number in parentheses in /getarea)
+
+    OPTIONAL PARAMETERS
+    {target_area}: Intended area to summon the user to, by area ID or name
+
+    EXAMPLES
+    Assuming yo are in area 0...
+    >>> /summon 1
+    Summons the user with client ID 1 to area 0.
+    >>> /summon 1234567890 3
+    Summons all the clients opened by the user with IPID 1234567890 to area 3.
+    >>> /summon 0987654321 Lobby
+    Summons all the clients opened by the user with IPID 0987654321 to Lobby.
+    >>> /summon 3 Class Trial Room,\ 2
+    Summons the user with client ID 1 to Class Trial Room, 2 (note the ,\).
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='>0', split_spaces=True)
+
+    arg = arg.split(' ')
+
+    if client.area.lobby_area and not client.is_officer():
+        raise ClientError('You must be authorized to summon clients in lobby areas.')
+
+    if len(arg) == 1:
+        area = client.area
+    else:
+        area = Constants.parse_area_names(client, [" ".join(arg[1:])])[0]
+
+    for c in Constants.parse_id_or_ipid(client, arg[0]):
+        # Failsafe in case summoned player has their character changed during the summon
+        old_displayname = c.displayname
+        old_area = c.area
+
+        try:
+            c.change_area(area, override_passages=True, override_effects=True, ignore_bleeding=True,
+                          ignore_autopass=True)
+        except ClientError as error:
+            error_mes = ", ".join([str(s) for s in error.args])
+            client.send_ooc('Unable to summon {} [{}] to area {}: {}'
+                            .format(old_displayname, c.id, area.id, error_mes))
+        else:
+            client.send_ooc('You summoned {} [{}] from area {} to area {}.'
+                            .format(old_displayname, c.id, old_area.id, area.id))
+            c.send_ooc('You were summoned from the area to area {}.'.format(area.id))
+            client.send_ooc_others('(X) {} [{}] summoned {} [{}] from area {} to area {}.'
+                                   .format(client.displayname, client.id, old_displayname, c.id,
+                                           old_area.id, area.id),
+                                   not_to={c}, is_staff=True)
+
+            if old_area.is_locked or old_area.is_modlocked:
+                try:  # Try and remove the IPID from the area's invite list
+                    old_area.invite_list.pop(c.ipid)
+                except KeyError:
+                    # only happens if target joined the locked area through mod powers
+                    pass
+
+            if client.party:
+                party = client.party
+                party.remove_member(client)
+                client.send_ooc('You were also kicked off your party.')
+                for member in party.get_members():
+                    member.send_ooc('{} was summoned off your party.'.format(old_displayname))
 
 
 def ooc_cmd_st(client: ClientManager.Client, arg: str):

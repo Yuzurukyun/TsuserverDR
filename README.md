@@ -342,9 +342,6 @@ GMs can:
     - If not given an area list, it will use the default file `config/areas.yaml`.
 * **area_list_info**
     - Returns the area list of your hub.
-* **area_move** "ID" "area number"
-    - Moves target from your area to the intended area and remove them from its invite-list.
-    - If not given a target area, it will use your hub's default area (usually area 0).
 * **autopass** "ID"
     - Toggles enter/leave messages being sent automatically or not to users in the current area, including original/target areas, whenever the target moves.
     - Messages will not be sent if sneaking. Altered messages will be sent if the area's lights are turned off.
@@ -595,6 +592,8 @@ GMs can:
     - If no ID is given, target is yourself.
 * **sneakself**
     - Sneaks all opened multiclients that can be sneaked.
+* **summon** "ID" "area number"
+    - Summons target from their area to the intended area, or to your area if not given an area, and remove them from the invite list of their old area.
 * **st** "message"
     - Sends a message to all active staff members.
 * **status_set_other** "ID/char name/edited-to character/showname/char showname/OOC name" "status"
@@ -713,9 +712,6 @@ GMs can:
 
 ### Community Manager Commands
 
-* **area_move** "ID/IPID" "area number"
-    - Moves target from your area to the intended area and remove them from its invite-list.
-    - If not given a target area, it will use your hub's default area (usually area 0).
 * **blockdj** "ID/IPID"
     - Mutes the target from changing music.
 * **charlog** "ID/IPID"
@@ -769,6 +765,8 @@ GMs can:
 * **sneak** "ID/IPID"
     - Sets a target to be sneaking if they were visible.
     - If the target was subject to a handicap shorter than the server's automatic sneak handicap length, they will be imposed this handicap.
+* **summon** "ID/IPID" "area number"
+    - Summons target from their area to the intended area, or to your area if not given an area, and remove them from the invite list of their old area.
 * **transient** "ID/IPID"
     - Changes a player's ability to ignore passage locks and thus access all areas from any given area. By default it is off.
 * **unblockdj** "ID/IPID"
@@ -869,7 +867,7 @@ Commands without (D) are aliases to commands and can be freely used (subject to 
 
 #### GM+
 
-* **area_kick**: Same as /area_move.
+* **area_kick**: Same as /summon.
 * **loginrp**: Same as /logingm.
 * **slit**: Same as /bloodtrail.
 * **unsneak**: Same as /reveal.
