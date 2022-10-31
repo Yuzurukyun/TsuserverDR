@@ -557,7 +557,7 @@ class ClientManager:
                         (not pargs['msg'].startswith(allowed_starters) and
                          not pargs['msg'] in allowed_messages) or
                         (sender and sender.is_gagged and gag_replaced)):
-                        pargs['msg'] = '(Your ears are ringing)'
+                        pargs['msg'] = '[Your ears are ringing]'
                         if (not self.packet_handler.ALLOWS_REPEATED_MESSAGES_FROM_SAME_CHAR
                             and self.send_deaf_space):
                             pargs['msg'] = pargs['msg'] + ' '
