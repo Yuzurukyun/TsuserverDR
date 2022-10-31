@@ -11905,6 +11905,43 @@ def ooc_cmd_zone_autoglance(client: ClientManager.Client, arg: str):
                       f'{zone.get_id()} to {zone_autoglance}.', client)
 
 
+def ooc_cmd_pm_gms(client: ClientManager.Client, arg: str):
+    """
+    Sends a personal message to all users with rank of GM or above other than yourself in your hub.
+    Returns an error if no such users could be found, or if you or all such users muted PMs.
+
+    SYNTAX
+    /pm <message>
+
+    PARAMETERS
+    <message>: Message to be sent.
+
+    EXAMPLES
+    >>> /pm_gms What will I get for Christmas?
+    Sends that message to all GMs in your hub.
+    """
+
+    Constants.assert_command(client, arg, parameters='>0')
+    if client.pm_mute:
+        raise ClientError('You have muted all PM conversations.')
+
+    targets = {target for target in client.hub.get_players() if target.is_staff()}
+    targets = targets-{client}
+    if not targets:
+        raise ClientError('No GMs are available in your hub.')
+
+    # Only send messages to targets who have not muted PMs
+    targets = {target for target in targets if not target.pm_mute}
+    if not targets:
+        raise ClientError('No GMs available in your hub have PMs enabled.')
+
+    msg = arg
+    client.send_ooc(f'PM sent to all GMs in hub {client.hub.get_numerical_id()}. Message: {msg}.')
+    for target in targets:
+        target.send_ooc(f'(X) PM from {client.displayname} [{client.id}] in {client.area.name} '
+                        f'({client.area.id}) to all GMs in your hub: {msg}')
+
+
 def ooc_cmd_exec(client: Union[ClientManager.Client, None], arg: str):
     """
     VERY DANGEROUS. SHOULD ONLY BE ENABLED FOR DEBUGGING.

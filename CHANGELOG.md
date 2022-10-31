@@ -830,6 +830,10 @@
 * Json files within `storage` now use indents and new lines for better human readability (this is backwards compatible with 4.3.x)
 * Removed leftover concepts of an area casing status and area ownership
 * Added text in change area message indicating whether the area seems populated or not. Populated means being able to see at least one player othen than yourself in /look
+* Added commands to automatically get area descriptions if possible when moving to a new area (all off by default) via
+  - /autoglance
+  - /zone_autoglance
+* Added /pm_gms, which sends a personal message to all other GMs in the hub that have not muted PMs
 * Removed unused `server/area_manager_revamp.py` and `server/steptimer_manager.py`
 * Removed the old names of the following commands. Please use the new ones:
   - /clock_cancel: /clock_end
