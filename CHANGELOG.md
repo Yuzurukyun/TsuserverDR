@@ -822,9 +822,19 @@
 * Fixed area list loading failing if there was a player in the process of joining a server
 
 ## (5.0.0)
-* Increased minimum Python version required to 3.9, added support for Python 3.11.
-* Fixed timer end notification showing the OOC name of the timer initiator as the timer name rather than the actual name
-* Added a first-list-item to switch between areas and hubs in the area list
+* Increased minimum Python version required to 3.9, added support for Python 3.11
+* Added hubs. Each hub has a unique numerical ID and may have its own areas, backgrounds, characters, music, zones and trials. Changes to any of these in a particular hub do not affect other hubs. Commands associated include
+  - /hub_create
+  - /hub_end
+  - /hub_info
+  - /hub_rename
+* All commands that are run that involve IDs or names of players, areas, backgrounds, characters, music, zones and trials as arguments (either explicitly or implicitly) now assume those IDs or names are IDs or names within the current hub
+* Added a first-list-item to switch between areas in hub view and hubs view in the area list
+* A player may change between hubs by running /hub followed by the hub ID, or by double-clicking their hub of interest in the hubs view. Changing hub is equivalent to changing to the default area of a hub
+* Players may now log in as GMs of a hub if they put in the hub password after /logingm. Hubs generate a random password when created that can be distributed and changed. Commands associated include
+  - /hub_password
+  - /hub_password_info
+* GMs are now tied to the hub they logged in at. GMs that change hubs will lose their GM status automatically
 * Introduced the concept of participant and non-participant characters (currently a "character provided in a character list" and one that is not respectively)
 * Redid trial and nonstop debates
 * Json files within `storage` now use indents and new lines for better human readability (this is backwards compatible with 4.3.x)
@@ -837,6 +847,7 @@
 * Added commands to modify the IC text that appears if an area is marked as noteworthy via
   - /noteworthy_set
   - /noteworthy_info
+* Fixed timer end notification showing the OOC name of the timer initiator as the timer name rather than the actual name
 * Removed unused `server/area_manager_revamp.py` and `server/steptimer_manager.py`
 * Removed the old names of the following commands. Please use the new ones:
   - /clock_cancel: /clock_end

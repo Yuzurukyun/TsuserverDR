@@ -241,7 +241,7 @@ class AssetManager(ABC):
                                        f'your hub.',
                                        is_staff=True, in_hub=True)
                 client.send_ooc_others(f'{client.displayname} [{client.id}] has loaded {msg} in '
-                                       f'hub {client.hub.get_numerical_id()}',
+                                       f'hub {client.hub.get_numerical_id()}.',
                                        is_officer=True, in_hub=False)
 
     def command_list_info(self, client: ClientManager.Client):
