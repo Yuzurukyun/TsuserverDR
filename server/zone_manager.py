@@ -1080,7 +1080,7 @@ class ZoneManager:
                 )
 
         # 8.
-        for watcher in self.server.get_clients():
+        for watcher in self.hub.get_players():
             if watcher in watchers_so_far:
                 continue
             assert watcher.zone_watched is None, (
