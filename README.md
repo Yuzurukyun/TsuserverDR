@@ -378,13 +378,13 @@ GMs can:
 * **bg_period_end** "period name"
     - Removes the special background to be displayed in the area whenever there is a clock in the area with the given period, so that it instead displays the normal background of the area.
 * **can_passagelock**
-    - Changes the current area's setting to allow non-staff members to change passages starting in the area with /bilock or /unilock. By default area setting is indicated in the server's area list.
+    - Changes the current area's setting to allow non-staff members to change passages starting in the area with /bilock or /unilock. By default area setting is indicated in your hub's area list.
 * **can_rollp**
-    - Changes the current area's setting to allow non-staff members to do /rollp. By default area setting is indicated in the server's area list.
+    - Changes the current area's setting to allow non-staff members to do /rollp. By default area setting is indicated in your hub's area list.
 * **can_rpgetarea**
-    - Changes the current area's setting to allow RP users to use /getarea. By default area setting is indicated in the server's area list.
+    - Changes the current area's setting to allow RP users to use /getarea. By default area setting is indicated in your hub's area list.
 * **can_rpgetareas**
-    - Changes the current area's setting to allow RP users to use /getareas. By default area setting is indicated in the server's area list.
+    - Changes the current area's setting to allow RP users to use /getareas. By default area setting is indicated in your hub's area list.
 * **char_list** "list"
     - Sets the character list of your hub.
     - If not given a character list, it will use the default file `config/characters.yaml`.
@@ -565,6 +565,8 @@ GMs can:
     - Applies a poison to the target that will inflict them in the given length of time in seconds the given effects.
 * **pos_force** "position" "ID"
     - Changes the IC position of a target by ID to the given one, or the one of all players in an area if not given a target.
+* **refresh**
+    - Reloads your hub's character, music and background lists.
 * **reveal** "ID"
     - Reveals a target if they were previously sneaking.
     - Also restores their formerly assigned handicap if they had one that was shorter than the server's automatic sneaking handicap.
@@ -816,8 +818,6 @@ GMs can:
     - Sends an area OOC message with mod tag.
 * **modlock**
     - Locks your area. Prevents GMs, CMs and normal users from entering.
-* **refresh**
-    - Reloads the server's default character, music and background lists.
 * **showname_freeze**
     - Changes the ability of non-staff members of being able to change or remove their own shownames.
 * **showname_nuke**

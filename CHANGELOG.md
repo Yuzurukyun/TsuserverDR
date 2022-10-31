@@ -847,6 +847,7 @@
 * Added commands to modify the IC text that appears if an area is marked as noteworthy via
   - /noteworthy_set
   - /noteworthy_info
+* Made /refresh a GM+ command rather than a mod command (but it only affects your current hub)
 * Fixed timer end notification showing the OOC name of the timer initiator as the timer name rather than the actual name
 * Removed unused `server/area_manager_revamp.py` and `server/steptimer_manager.py`
 * Removed the old names of the following commands. Please use the new ones:

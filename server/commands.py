@@ -6788,8 +6788,8 @@ def ooc_cmd_randommusic(client: ClientManager.Client, arg: str):
 
 
 def ooc_cmd_refresh(client: ClientManager.Client, arg: str):
-    """ (MOD ONLY)
-    Reloads the following files for the server: characters, default music list, and background list.
+    """ (STAFF ONLY)
+    Reloads the following files for your hub: characters, default music list, and background list.
 
     SYNTAX
     /refresh
@@ -6799,13 +6799,13 @@ def ooc_cmd_refresh(client: ClientManager.Client, arg: str):
 
     EXAMPLE
     >>> /refresh
-    Reloads server assets.
+    Reloads hub assets.
     """
 
-    Constants.assert_command(client, arg, is_mod=True, parameters='=0')
+    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
-    client.server.reload()
-    client.send_ooc('You have reloaded the server.')
+    client.hub.refresh()
+    client.send_ooc('You have refreshed your hub.')
 
 
 def ooc_cmd_reload(client: ClientManager.Client, arg: str):

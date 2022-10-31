@@ -65,8 +65,8 @@ class TsuserverDR:
         self.release = 5
         self.major_version = 0
         self.minor_version = 0
-        self.segment_version = 'a23'
-        self.internal_version = 'P221030e'
+        self.segment_version = 'a24'
+        self.internal_version = 'P221030f'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
@@ -234,26 +234,6 @@ class TsuserverDR:
                   BAD THINGS CAN AND WILL HAPPEN OTHERWISE.
 
                   """)
-
-    def reload(self):
-        default_hub = self.hub_manager.get_default_managee()
-        try:
-            default_hub.background_manager.validate_file()
-            default_hub.character_manager.validate_file()
-            default_hub.music_manager.validate_file()
-        except ServerError.YAMLInvalidError as exc:
-            # The YAML exception already provides a full description. Just add the fact the
-            # reload was undone to ease the person who ran the command's nerves.
-            msg = (f'{exc} Reload was undone.')
-            raise ServerError.YAMLInvalidError(msg)
-        except ServerError.FileSyntaxError as exc:
-            msg = f'{exc} Reload was undone.'
-            raise ServerError(msg)
-
-        # Only on success reload
-        default_hub.load_backgrounds()
-        default_hub.load_characters()
-        default_hub.load_music()
 
     def reload_commands(self):
         try:

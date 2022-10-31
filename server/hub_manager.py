@@ -30,7 +30,7 @@ from server.area_manager import AreaManager
 from server.background_manager import BackgroundManager
 from server.character_manager import CharacterManager
 from server.constants import Constants
-from server.exceptions import AreaError, HubError, GameWithAreasError
+from server.exceptions import AreaError, HubError, GameWithAreasError, ServerError
 from server.gamewithareas_manager import _GameWithAreas, GameWithAreasManager
 from server.music_manager import MusicManager
 
@@ -2165,6 +2165,25 @@ class _Hub(_HubTrivialInherited):
         output += f'\r\n*Character list: {self.character_manager.get_source_file()}'
         output += f'\r\n*DJ list: {self.music_manager.get_source_file()}'
         return output
+
+    def refresh(self):
+        try:
+            self.background_manager.validate_file()
+            self.character_manager.validate_file()
+            self.music_manager.validate_file()
+        except ServerError.YAMLInvalidError as exc:
+            # The YAML exception already provides a full description. Just add the fact the
+            # refresh was undone to ease the nerves of the person who ran the command.
+            msg = (f'{exc} Refresh was undone.')
+            raise ServerError.YAMLInvalidError(msg)
+        except ServerError.FileSyntaxError as exc:
+            msg = f'{exc} Refresh was undone.'
+            raise ServerError.FileSyntaxError(msg)
+
+        # Only on success refresh
+        self.load_backgrounds()
+        self.load_characters()
+        self.load_music()
 
     def unchecked_destroy(self):
         """
