@@ -11753,12 +11753,12 @@ def ooc_cmd_hub_rename(client: ClientManager.Client, arg: str):
     hub.set_name(arg)
 
     if arg:
-        client.send_ooc('You have cleared the name of your hub.')
-        client.send_ooc_others(f'{client.displayname} [{client.id}] cleared the name of your hub '
-                               f'({client.area.id}).', is_zstaff_flex=True)
-    else:
         client.send_ooc(f'You have renamed your hub to `{arg}`.')
         client.send_ooc_others(f'{client.displayname} [{client.id}] renamed your hub to `{arg}` '
+                               f'({client.area.id}).', is_zstaff_flex=True)
+    else:
+        client.send_ooc('You have cleared the name of your hub.')
+        client.send_ooc_others(f'{client.displayname} [{client.id}] cleared the name of your hub '
                                f'({client.area.id}).', is_zstaff_flex=True)
 
     for target in client.server.get_clients():
