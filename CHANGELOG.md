@@ -853,6 +853,7 @@
 * Improved README installation instructions so that it prompts users to try and test whether Python was properly set up in path.
 * Fixed timer end notification showing the OOC name of the timer initiator as the timer name rather than the actual name
 * Fixed all notecard commands having an inconsistent output when used with /help_more
+* Fixed /showname_set erroring out if it attempted to show an error message
 * Removed unused `server/area_manager_revamp.py` and `server/steptimer_manager.py`
 * Removed the old names of the following commands. Please use the new ones:
   - /clock_cancel: /clock_end
