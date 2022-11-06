@@ -65,8 +65,8 @@ class TsuserverDR:
         self.release = 5
         self.major_version = 0
         self.minor_version = 0
-        self.segment_version = 'b3'
-        self.internal_version = 'P221103b'
+        self.segment_version = 'b4'
+        self.internal_version = 'P221106a'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
@@ -577,7 +577,10 @@ class TsuserverDR:
 
     def broadcast_global(self, client: ClientManager.Client, msg: str, as_mod: bool = False,
                          mtype: str = "<dollar>G",
-                         condition: Constants.ClientBool = lambda x: not x.muted_global):
+                         condition: Callable[[ClientManager.Client,], bool] = None):
+        if condition is None:
+            condition = lambda x: not x.muted_global
+
         username = client.name
         ooc_name = '{}[{}][{}]'.format(mtype, client.area.id, username)
         if as_mod:
@@ -589,14 +592,3 @@ class TsuserverDR:
                 c.send_ooc(msg, username=ooc_name_ipid)
             else:
                 c.send_ooc(msg, username=ooc_name)
-
-    def broadcast_need(self, client: ClientManager.Client, msg: str):
-        char_name = client.displayname
-        area_name = client.area.name
-        area_id = client.area.id
-
-        targets = [c for c in self.get_clients() if not c.muted_adverts]
-        msg = ('=== Advert ===\r\n{} in {} [{}] needs {}\r\n==============='
-               .format(char_name, area_name, area_id, msg))
-        for c in targets:
-            c.send_ooc(msg)

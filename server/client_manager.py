@@ -1721,30 +1721,6 @@ class ClientManager:
 
             return info
 
-        def send_area_hdid(self, area_id):
-            info = self.get_area_hdid(area_id)
-            self.send_ooc(info)
-
-        def get_area_hdid(self, area_id):
-            raise NotImplementedError
-
-        def send_all_area_hdid(self):
-            info = '== HDID List =='
-            for i in range(len(self.hub.area_manager.get_areas())):
-                if len(self.hub.area_manager.get_areas()[i].clients) > 0:
-                    info += '\r\n{}'.format(self.get_area_hdid(i))
-            self.send_ooc(info)
-
-        def send_all_area_ip(self):
-            info = '== IP List =='
-            for i in range(len(self.hub.area_manager.get_areas())):
-                if len(self.hub.area_manager.get_areas()[i].clients) > 0:
-                    info += '\r\n{}'.format(self.get_area_ip(i))
-            self.send_ooc(info)
-
-        def get_area_ip(self, ip):
-            raise NotImplementedError
-
         def refresh_char_list(self):
             char_list = [0] * len(self.hub.character_manager.get_characters())
             unusable_ids = self.area.get_chars_unusable(allow_restricted=self.is_staff())

@@ -110,7 +110,7 @@ class AOProtocol(asyncio.Protocol):
 
         return f'{short_buffer} ({len(self.buffer)} bytes)'
 
-    def _process_message(self, msg):
+    def _process_message(self, msg: str) -> bool:
         if len(msg) < 2:
             # This immediatelly kills any client that does not even try to follow the proper
             # client protocol
@@ -153,7 +153,7 @@ class AOProtocol(asyncio.Protocol):
             self.server.send_error_report(self.client, cmd, args, ex)
         return True
 
-    def data_received(self, data):
+    def data_received(self, data: bytearray):
         """ Handles any data received from the network.
 
         Receives data, parses them into a command and passes it

@@ -251,11 +251,11 @@ class TestZoneExtraNotifications_02_ChangeShowname(_TestZone):
         # Removing custom showname altogether
         self.c1.ooc('/showname_set {}'.format(3))
         self.c0.assert_no_packets()
-        self.c1.assert_ooc('You have removed the showname of client {}.'.format(3), over=True)
-        self.c2.assert_ooc('(X) {} [{}] removed the showname `{}` of client {} in your zone ({}).'
+        self.c1.assert_ooc('You have cleared the showname of client {}.'.format(3), over=True)
+        self.c2.assert_ooc('(X) {} [{}] cleared the showname `{}` of client {} in your zone ({}).'
                            .format(self.c1_dname, 1, n_showname, 3, self.c3.area.id), over=True)
         self.c3.assert_packet('SN', '')
-        self.c3.assert_ooc('Your showname `{}` was removed by a staff member.'
+        self.c3.assert_ooc('Your showname `{}` was cleared by a staff member.'
                            .format(n_showname), over=True)
         self.c4.assert_no_packets()
         self.c5.assert_no_packets()
