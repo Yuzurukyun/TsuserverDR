@@ -2323,6 +2323,138 @@ class _HubbedGameManagerTrivialInherited(GameWithAreasManager):
         self._check_structure()
         return game
 
+    def unchecked_new_managee(
+        self,
+        managee_type: Type[_HubbedGame] = None,
+        creator: Union[ClientManager.Client, None] = None,
+        player_limit: Union[int, None] = None,
+        player_concurrent_limit: Union[int, None] = 1,
+        require_invitations: bool = False,
+        require_players: bool = True,
+        require_leaders: bool = True,
+        require_participant_character: bool = False,
+        team_limit: Union[int, None] = None,
+        timer_limit: Union[int, None] = None,
+        areas: Set[AreaManager.Area] = None,
+        area_concurrent_limit: Union[int, None] = None,
+        autoadd_on_client_enter: bool = False,
+        autoadd_on_creation_existing_users: bool = False,
+        require_areas: bool = True,
+        hub: Union[_Hub, None] = None,
+        **kwargs: Any,
+        ) -> _HubbedGame:
+
+        """
+        Create a new hubbed game managed by this manager.
+
+        This method does not assert structural integrity.
+
+        Parameters
+        ----------
+        managee_type : Type[_HubbedGame], optional
+            Class of hubbed game that will be produced. Defaults to None (and converted to the
+            default hubbed game created by this hubbed game manager).
+        creator : Union[ClientManager.Client, None], optional
+            The player who created this hubbed game. If set, they will also be added to the
+            hubbed game. Defaults to None.
+        player_limit : Union[int, None], optional
+            If an int, it is the maximum number of players the hubbed game supports. If None, it
+            indicates the hubbed game has no player limit. Defaults to None.
+        player_concurrent_limit : Union[int, None], optional
+            If an int, it is the maximum number of hubbed games managed by `self` that any
+            player of this hubbed game to create may belong to, including this hubbed game
+            to create. If None, it indicates that this hubbed game does not care about how many
+            other hubbed games managed by `self` each of its players belongs to. Defaults to 1
+            (a player may not be in another game managed by `self` while in this game).
+        require_invitations : bool, optional
+            If True, users can only be added to the hubbed game if they were previously invited.
+            If False, no checking for invitations is performed. Defaults to False.
+        require_players : bool, optional
+            If True, if at any point the hubbed game loses all its players, the hubbed game
+            will automatically be deleted. If False, no such automatic deletion will happen.
+            Defaults to True.
+        require_leaders : bool, optional
+            If True, if at any point the hubbed game has no leaders left, the hubbed game
+            will choose a leader among any remaining players left; if no players are left, the next
+            player added will be made leader. If False, no such automatic assignment will happen.
+            Defaults to True.
+        require_participant_character : bool, optional
+            If False, players without a participant character will not be allowed to join the
+            hubbed game, and players that switch to something other than a participant character
+            will be automatically removed from the hubbed game. If False, no such checks are
+            made. A player without a participant character is considered one where
+            player.has_participant_character() returns False. Defaults to False.
+        team_limit : Union[int, None], optional
+            If an int, it is the maximum number of teams the hubbed game will support. If None,
+            it indicates the hubbed game will have no team limit. Defaults to None.
+        timer_limit : Union[int, None], optional
+            If an int, it is the maximum number of timers the hubbed game will support. If None,
+            it indicates the hubbed game will have no timer limit. Defaults to None.
+        areas : Set[AreaManager.Area], optional
+            The areas to add to the hubbed game when creating it. Defaults to None (and
+            converted to a set containing the creator's area if given a creator, and the empty set
+            otherwise).
+        area_concurrent_limit : Union[int, None]
+            The concurrent area membership limit of this hubbed game. Defaults to None.
+        autoadd_on_client_enter: bool, optional
+            If the hubbed game will always attempt to add nonplayer users who enter an area
+            part of the hubbed game. Defaults to False.
+        autoadd_on_creation_existing_users : bool, optional
+            If the hubbed game will attempt to add nonplayer users who were in an area added
+            to the hubbed game on creation. Defaults to False.
+        require_areas : bool, optional
+            If True, if at any point the hubbed game has no areas left, the game with areas
+            will automatically be deleted. If False, no such automatic deletion will happen.
+            Defaults to True.
+        hub : _Hub, optional
+            Hub of the hubbed game. Defaults to None (and converted to the creator's hub if given a
+            creator, and None otherwise).
+        **kwargs : Any
+            Additional arguments to consider when producing the hubbed game.
+
+        Returns
+        -------
+        _HubbedGame
+            The created hubbed game.
+
+        Raises
+        ------
+        HubbedGameError.ManagerTooManyGamesError
+            If the manager is already managing its maximum number of games.
+        Any error from the created hubbed game's add_player(creator)
+            If the hubbed game cannot add `creator` as a player if given one.
+
+        """
+
+        if managee_type is None:
+            managee_type = self.get_managee_type()
+        if not hub:
+            hub = creator.hub if creator else None
+
+        try:
+            return super().unchecked_new_managee(
+                managee_type=managee_type,
+                creator=creator,
+                player_limit=player_limit,
+                player_concurrent_limit=player_concurrent_limit,
+                require_invitations=require_invitations,
+                require_players=require_players,
+                require_leaders=require_leaders,
+                require_participant_character=require_participant_character,
+                team_limit=team_limit,
+                timer_limit=timer_limit,
+                areas=areas,
+                area_concurrent_limit=area_concurrent_limit,
+                autoadd_on_client_enter=autoadd_on_client_enter,
+                autoadd_on_creation_existing_users=autoadd_on_creation_existing_users,
+                require_areas=require_areas,
+                # kwargs
+                hub=hub,
+                **kwargs,
+            )
+        except GameWithAreasError.ManagerTooManyGamesError:
+            raise HubbedGameError.ManagerTooManyGamesError
+
     def get_managee_type(self) -> Type[_HubbedGame]:
         """
         Return the type of the hubbed game that will be constructed by default with a call of
@@ -2730,169 +2862,6 @@ class HubbedGameManager(_HubbedGameManagerTrivialInherited):
             managee_limit=managee_limit,
             default_managee_type=default_managee_type
         )
-
-    def unchecked_new_managee(
-        self,
-        managee_type: Type[_HubbedGame] = None,
-        creator: Union[ClientManager.Client, None] = None,
-        player_limit: Union[int, None] = None,
-        player_concurrent_limit: Union[int, None] = 1,
-        require_invitations: bool = False,
-        require_players: bool = True,
-        require_leaders: bool = True,
-        require_participant_character: bool = False,
-        team_limit: Union[int, None] = None,
-        timer_limit: Union[int, None] = None,
-        areas: Set[AreaManager.Area] = None,
-        area_concurrent_limit: Union[int, None] = None,
-        autoadd_on_client_enter: bool = False,
-        autoadd_on_creation_existing_users: bool = False,
-        require_areas: bool = True,
-        hub: Union[_Hub, None] = None,
-        **kwargs: Any,
-        ) -> _HubbedGame:
-
-        """
-        Create a new hubbed game managed by this manager.
-
-        This method does not assert structural integrity.
-
-        Parameters
-        ----------
-        managee_type : Type[_HubbedGame], optional
-            Class of hubbed game that will be produced. Defaults to None (and converted to the
-            default hubbed game created by this hubbed game manager).
-        creator : Union[ClientManager.Client, None], optional
-            The player who created this hubbed game. If set, they will also be added to the
-            hubbed game. Defaults to None.
-        player_limit : Union[int, None], optional
-            If an int, it is the maximum number of players the hubbed game supports. If None, it
-            indicates the hubbed game has no player limit. Defaults to None.
-        player_concurrent_limit : Union[int, None], optional
-            If an int, it is the maximum number of hubbed games managed by `self` that any
-            player of this hubbed game to create may belong to, including this hubbed game
-            to create. If None, it indicates that this hubbed game does not care about how many
-            other hubbed games managed by `self` each of its players belongs to. Defaults to 1
-            (a player may not be in another game managed by `self` while in this game).
-        require_invitations : bool, optional
-            If True, users can only be added to the hubbed game if they were previously invited.
-            If False, no checking for invitations is performed. Defaults to False.
-        require_players : bool, optional
-            If True, if at any point the hubbed game loses all its players, the hubbed game
-            will automatically be deleted. If False, no such automatic deletion will happen.
-            Defaults to True.
-        require_leaders : bool, optional
-            If True, if at any point the hubbed game has no leaders left, the hubbed game
-            will choose a leader among any remaining players left; if no players are left, the next
-            player added will be made leader. If False, no such automatic assignment will happen.
-            Defaults to True.
-        require_participant_character : bool, optional
-            If False, players without a participant character will not be allowed to join the
-            hubbed game, and players that switch to something other than a participant character
-            will be automatically removed from the hubbed game. If False, no such checks are
-            made. A player without a participant character is considered one where
-            player.has_participant_character() returns False. Defaults to False.
-        team_limit : Union[int, None], optional
-            If an int, it is the maximum number of teams the hubbed game will support. If None,
-            it indicates the hubbed game will have no team limit. Defaults to None.
-        timer_limit : Union[int, None], optional
-            If an int, it is the maximum number of timers the hubbed game will support. If None,
-            it indicates the hubbed game will have no timer limit. Defaults to None.
-        areas : Set[AreaManager.Area], optional
-            The areas to add to the hubbed game when creating it. Defaults to None (and
-            converted to a set containing the creator's area if given a creator, and the empty set
-            otherwise).
-        area_concurrent_limit : Union[int, None]
-            The concurrent area membership limit of this hubbed game. Defaults to None.
-        autoadd_on_client_enter: bool, optional
-            If the hubbed game will always attempt to add nonplayer users who enter an area
-            part of the hubbed game. Defaults to False.
-        autoadd_on_creation_existing_users : bool, optional
-            If the hubbed game will attempt to add nonplayer users who were in an area added
-            to the hubbed game on creation. Defaults to False.
-        require_areas : bool, optional
-            If True, if at any point the hubbed game has no areas left, the game with areas
-            will automatically be deleted. If False, no such automatic deletion will happen.
-            Defaults to True.
-        hub : _Hub, optional
-            Hub of the hubbed game. Defaults to None (and converted to the creator's hub if given a
-            creator, and None otherwise).
-        **kwargs : Any
-            Additional arguments to consider when producing the hubbed game.
-
-        Returns
-        -------
-        _HubbedGame
-            The created hubbed game.
-
-        Raises
-        ------
-        HubbedGameError.ManagerTooManyGamesError
-            If the manager is already managing its maximum number of games.
-        Any error from the created hubbed game's add_player(creator)
-            If the hubbed game cannot add `creator` as a player if given one.
-
-        """
-
-        if managee_type is None:
-            managee_type = self.get_managee_type()
-        if not hub:
-            hub = creator.hub if creator else None
-
-        try:
-            game: _HubbedGame = super().unchecked_new_managee(
-                managee_type=managee_type,
-                creator=None,  # Manually none
-                player_limit=player_limit,
-                player_concurrent_limit=player_concurrent_limit,
-                require_invitations=require_invitations,
-                require_players=require_players,
-                require_leaders=require_leaders,
-                require_participant_character=require_participant_character,
-                team_limit=team_limit,
-                timer_limit=timer_limit,
-                area_concurrent_limit=area_concurrent_limit,
-                autoadd_on_client_enter=autoadd_on_client_enter,
-                require_areas=require_areas,
-                # kwargs
-                hub=hub,
-                **kwargs,
-            )
-        except GameWithAreasError.ManagerTooManyGamesError:
-            raise HubbedGameError.ManagerTooManyGamesError
-
-        areas = game.get_areas()
-        try:
-            for area in areas:
-                game.unchecked_add_area(area)
-        except HubbedGameError as ex:
-            # Discard game
-            self.unchecked_delete_managee(game)
-            raise ex
-
-        # Add creator manually. This is because adding it via .new_game will yield errors because
-        # the areas are not added until the section before.
-        try:
-            if creator:
-                game.unchecked_add_player(creator)
-        except HubbedGameError as ex:
-            # Discard game
-            self.unchecked_delete_managee(game)
-            raise ex
-
-        if autoadd_on_creation_existing_users:
-            clients_to_add = {client for area in areas for client in area.clients}
-            if creator:
-                clients_to_add.discard(creator)
-            for client in clients_to_add:
-                try:
-                    game.add_player(client)
-                except HubbedGameError as ex:
-                    # Discard game
-                    self.unchecked_delete_managee(game)
-                    raise ex
-
-        return game
 
     def get_available_managee_id(self):
         """

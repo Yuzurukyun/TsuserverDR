@@ -2804,7 +2804,6 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
         if not areas:
             areas = {creator.area} if creator else set()
 
-
         try:
             game: _GameWithAreas = super().unchecked_new_managee(
                 managee_type=managee_type,
