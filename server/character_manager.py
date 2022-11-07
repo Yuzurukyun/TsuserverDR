@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import typing
 
-from typing import Callable, List, Union
+from typing import Callable, List, Tuple, Union
 
 from server.asset_manager import AssetManager
 from server.exceptions import CharacterError
@@ -28,6 +28,7 @@ from server.validate.characters import ValidateCharacters
 
 if typing.TYPE_CHECKING:
     from server.hub_manager import _Hub
+    from server.client_manager import ClientManager
     from server.tsuserver import TsuserverDR
 
 class CharacterManager(AssetManager):
@@ -232,6 +233,24 @@ class CharacterManager(AssetManager):
             if ch.lower() == name.lower():
                 return i
         raise CharacterError.CharacterNotFoundError(f'Character {name} not found.')
+
+    def translate_character_id(self, client: ClientManager.Client,
+                               old_char_name: str = None) -> Tuple[bool, Union[int, None]]:
+        if old_char_name is None:
+            old_char_name = client.get_char_name()
+
+        if not client.has_participant_character():
+            # Do nothing for spectators
+            return (False, client.char_id)
+        if old_char_name not in self._characters:
+            # Character no longer exists, so switch to spectator
+            client.send_ooc(f'After a change in the character list, your character is no '
+                            f'longer available. Switching to '
+                            f'{self.server.config["spectator_name"]}.')
+            return (True, -1)
+
+        target_char_id = self._characters.index(old_char_name)
+        return (client.char_id != target_char_id, target_char_id)
 
     def _check_structure(self):
         """

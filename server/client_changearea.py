@@ -1053,8 +1053,14 @@ class ClientChangeArea:
                     client.send_command_dict('SC', {
                         'chars_ao2_list': new_characters,
                         })
-                    if client.char_id is not None:
-                        client.change_character(client.char_id, force=True, old_char=old_char_name)
+
+                    should_change, change_to_char_id = (
+                        client.hub.character_manager.translate_character_id(
+                            client, old_char_name=old_char_name
+                        ))
+                    if should_change:
+                        client.change_character(change_to_char_id, force=True,
+                                                old_char=old_char_name)
                 else:
                     client.send_ooc('After a change in the character list, your client character '
                                     'list is no longer synchronized. Please rejoin the server.')

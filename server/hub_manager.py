@@ -2097,34 +2097,24 @@ class _Hub(_HubTrivialInherited):
             return characters.copy()
 
         # Inconsistent character list, so change to spectator those who lost their character.
-        new_chars = {char: num for (num, char) in enumerate(characters)}
+        old_client_char_names = {client: client.get_char_name() for client in self.get_players()}
 
+        # Only now update internally. This is to allow `change_character` to work properly.
+        self.character_manager.load_file(source_file)
         for client in self.get_players():
-            target_char_id = -1
-            old_char_name = client.get_char_name()
-
-            if not client.has_participant_character():
-                # Do nothing for spectators
-                pass
-            elif old_char_name not in new_chars:
-                # Character no longer exists, so switch to spectator
-                client.send_ooc(f'After a change in the character list, your character is no '
-                                f'longer available. Switching to '
-                                f'{self.server.config["spectator_name"]}.')
-            else:
-                target_char_id = new_chars[old_char_name]
-
             if client.packet_handler.ALLOWS_CHAR_LIST_RELOAD:
                 client.send_command_dict('SC', {
                     'chars_ao2_list': characters,
                     })
-                client.change_character(target_char_id, force=True, old_char=old_char_name)
+                old_char_name = old_client_char_names[client]
+                should_change, change_to_char_id = self.character_manager.translate_character_id(
+                    client, old_char_name=old_char_name,
+                )
+                if should_change:
+                    client.change_character(change_to_char_id, force=True, old_char=old_char_name)
             else:
                 client.send_ooc('After a change in the character list, your client character list '
                                 'is no longer synchronized. Please rejoin the server.')
-
-        # Only now update internally. This is to allow `change_character` to work properly.
-        self.character_manager.load_file(source_file)
         return characters.copy()
 
     def load_music(self, music_list_file: str = 'config/music.yaml') -> List[Dict[str, Any]]:
