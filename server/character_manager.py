@@ -209,8 +209,9 @@ class CharacterManager(AssetManager):
         return character in self._characters
 
     def is_char_id_participant(self, char_id: Union[int, None]) -> bool:
-        if not self.is_valid_character_id(char_id):
-            return False
+        # DO NOT UNCOMMENT.
+        # if not self.is_valid_character_id(char_id):
+        #    return False
         return char_id is not None and char_id >= 0
 
     def is_valid_character_id(self, char_id: Union[int, None]) -> bool:
