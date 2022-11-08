@@ -649,19 +649,6 @@ class _TrialTrivialInherited(_HubbedGame):
 
         return super().requires_leaders()
 
-    def has_ever_had_players(self):
-        """
-        Return True if a player has ever been added to this trial, False otherwise.
-
-        Returns
-        -------
-        bool
-            True if the trial has ever had a player added, False otherwise.
-
-        """
-
-        return super().has_ever_had_players()
-
     def requires_participant_characters(self) -> bool:
         """
         Return whether the trial requires players have a participant character at all times.
@@ -3008,22 +2995,34 @@ class _Trial(_TrialTrivialInherited):
     def _on_client_change_character(
         self,
         player: ClientManager.Client,
-        old_char_id: Union[int, None] = None,
-        new_char_id: Union[int, None] = None
+        old_char_id: int = -1,
+        old_char_name: str = '',
+        new_char_id: int = -1,
+        new_char_name: str = '',
         ):
         """
         It checks if the player is now no longer having a participant character. If that is
         the case and the trial requires all players have participant characters, the player is
         automatically removed.
 
+        Note that it may not necessarily be the case that the following hold:
+        1. `old_char_name == player.hub.character_manager.get_character_name(old_char_id)`.
+        2. `new_char_name == player.hub.character_manager.get_character_name(new_char_id)`.
+        This can occur for example if the character list changes, which prompts the player to
+        change character.
+
         Parameters
         ----------
         player : ClientManager.Client
             Player that signaled it has changed character.
         old_char_id : int, optional
-            Previous character ID. The default is None.
+            Previous character ID. The default is -1.
+        old_char_name : str, optional
+            Previous character name. The default is the empty string.
         new_char_id : int, optional
-            New character ID. The default is None.
+            New character ID. The default is -1.
+        new_char_name : int, optional
+            New character name. The default is the empty string.
 
         Returns
         -------
@@ -3031,12 +3030,12 @@ class _Trial(_TrialTrivialInherited):
 
         """
 
-        old_char = player.hub.character_manager.get_character_name(old_char_id)
         if self.requires_participant_characters() and not player.has_participant_character():
             player.send_ooc('You were removed from your trial as it required its players to have '
                             'participant characters.')
-            player.send_ooc_others(f'(X) Player {player.id} changed character from {old_char} to '
-                                   f'a non-character and was removed from your trial.',
+            player.send_ooc_others(f'(X) Player {player.id} changed character from {old_char_name} '
+                                   f'to a non-participant character and was thus removed from your '
+                                   f'trial.',
                                    pred=lambda c: c in self.get_leaders())
 
             nonplayers = self.get_nonplayer_users_in_areas()
@@ -3054,7 +3053,7 @@ class _Trial(_TrialTrivialInherited):
                                        'as it lost all its players.',
                                        is_zstaff_flex=False, part_of=nonplayers)
         else:
-            player.send_ooc_others(f'(X) Player {player.id} changed character from {old_char} '
+            player.send_ooc_others(f'(X) Player {player.id} changed character from {old_char_name} '
                                    f'to {player.get_char_name()} in your trial.',
                                    pred=lambda c: c in self.get_leaders())
         self.manager._check_structure()

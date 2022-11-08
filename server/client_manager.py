@@ -968,7 +968,9 @@ class ClientManager:
                 })
             self.publisher.publish('client_change_character', {
                 'old_char_id': old_char_id,
+                'old_char_name': old_char,
                 'new_char_id': char_id,
+                'new_char_name': new_char,
                 })
             logger.log_server('[{}]Changed character from {} to {}.'
                               .format(self.area.id, old_char, self.get_char_name()), self)

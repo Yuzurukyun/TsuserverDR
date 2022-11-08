@@ -730,19 +730,6 @@ class _HubbedGameTrivialInherited(_GameWithAreas):
 
         return super().requires_leaders()
 
-    def has_ever_had_players(self):
-        """
-        Return True if a player has ever been added to this hubbed game, False otherwise.
-
-        Returns
-        -------
-        bool
-            True if the hubbed game has ever had a player added, False otherwise.
-
-        """
-
-        return super().has_ever_had_players()
-
     def requires_participant_characters(self) -> bool:
         """
         Return whether the hubbed game requires players have a participant character at all times.
@@ -1680,8 +1667,10 @@ class _HubbedGameTrivialInherited(_GameWithAreas):
     def _on_client_change_character(
         self,
         player: ClientManager.Client,
-        old_char_id: Union[int, None] = None,
-        new_char_id: Union[int, None] = None
+        old_char_id: int = -1,
+        old_char_name: str = '',
+        new_char_id: int = -1,
+        new_char_name: str = '',
         ):
         """
         Default callback for hubbed game player signaling it has changed character.
@@ -1690,14 +1679,24 @@ class _HubbedGameTrivialInherited(_GameWithAreas):
         If that is the case and the hubbed game requires all players have participant characters,
         the player is automatically removed.
 
+        Note that it may not necessarily be the case that the following hold:
+        1. `old_char_name == player.hub.character_manager.get_character_name(old_char_id)`.
+        2. `new_char_name == player.hub.character_manager.get_character_name(new_char_id)`.
+        This can occur for example if the character list changes, which prompts the player to
+        change character.
+
         Parameters
         ----------
         player : ClientManager.Client
             Player that signaled it has changed character.
         old_char_id : int, optional
-            Previous character ID. The default is None.
+            Previous character ID. The default is -1.
+        old_char_name : str, optional
+            Previous character name. The default is the empty string.
         new_char_id : int, optional
-            New character ID. The default is None.
+            New character ID. The default is -1.
+        new_char_name : int, optional
+            New character name. The default is the empty string.
 
         Returns
         -------
@@ -1708,7 +1707,9 @@ class _HubbedGameTrivialInherited(_GameWithAreas):
         super()._on_client_change_character(
             player,
             old_char_id=old_char_id,
-            new_char_id=new_char_id
+            old_char_name=old_char_name,
+            new_char_id=new_char_id,
+            new_char_name=new_char_name,
         )
 
     def _on_client_destroyed(self, player: ClientManager.Client):

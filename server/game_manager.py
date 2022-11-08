@@ -1754,8 +1754,10 @@ class _Game(_GameTrivialInherited):
     def _on_client_change_character(
         self,
         player: ClientManager.Client,
-        old_char_id: Union[int, None] = None,
-        new_char_id: Union[int, None] = None
+        old_char_id: int = -1,
+        old_char_name: str = '',
+        new_char_id: int = -1,
+        new_char_name: str = '',
         ):
         """
         Default callback for game player signaling it has changed character.
@@ -1764,14 +1766,24 @@ class _Game(_GameTrivialInherited):
         If that is the case and the game requires all players have participant characters, the
         player is automatically removed.
 
+        Note that it may not necessarily be the case that the following hold:
+        1. `old_char_name == player.hub.character_manager.get_character_name(old_char_id)`.
+        2. `new_char_name == player.hub.character_manager.get_character_name(new_char_id)`.
+        This can occur for example if the character list changes, which prompts the player to
+        change character.
+
         Parameters
         ----------
         player : ClientManager.Client
             Player that signaled it has changed character.
         old_char_id : int, optional
-            Previous character ID. The default is None.
+            Previous character ID. The default is -1.
+        old_char_name : str, optional
+            Previous character name. The default is the empty string.
         new_char_id : int, optional
-            New character ID. The default is None.
+            New character ID. The default is -1.
+        new_char_name : int, optional
+            New character name. The default is the empty string.
 
         Returns
         -------
