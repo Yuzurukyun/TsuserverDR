@@ -1343,7 +1343,7 @@ class AreaManager(AssetManager):
 
         # If the default area ID is now past the number of available areas, reset it back to zero
         if self._default_area_id >= len(self._areas):
-            self.default_area = self.get_area_by_id(0)
+            self._default_area_id = 0
 
         # And do other tasks associated with areas reloading
         self.publisher.publish('areas_loaded', dict())
