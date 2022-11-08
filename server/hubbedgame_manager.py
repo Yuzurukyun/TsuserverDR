@@ -27,7 +27,6 @@ from typing import Callable, Dict, Set, Any, Tuple, Type, Union
 
 from server.exceptions import HubbedGameError, GameWithAreasError
 from server.gamewithareas_manager import _GameWithAreas, GameWithAreasManager
-from server.timer_manager import Timer
 
 if typing.TYPE_CHECKING:
     # Avoid circular referencing
@@ -2883,7 +2882,7 @@ class HubbedGameManager(_HubbedGameManagerTrivialInherited):
         game_number = 0
         game_limit = self.get_managee_limit()
         while game_limit is None or game_number < game_limit:
-            new_game_id = "hg{}".format(game_number)
+            new_game_id = f'hg{game_number}'
             if new_game_id not in self.get_managee_ids():
                 return new_game_id
             game_number += 1

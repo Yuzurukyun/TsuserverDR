@@ -779,7 +779,7 @@ class AreaManager(AssetManager):
             except MusicError.MusicNotFoundError:
                 if raise_if_not_found:
                     raise
-                name, length, source = name, -1, ''
+                length, source = -1, ''
 
             if 'name' not in pargs:
                 pargs['name'] = name
@@ -1251,7 +1251,6 @@ class AreaManager(AssetManager):
             'server_default_area_description': self.server.config['default_area_description']
             })
         areas = self._load_areas(areas, source_file)
-        self.ever_loaded_assets = True
         self._check_structure()
 
         return areas
@@ -1287,7 +1286,6 @@ class AreaManager(AssetManager):
             'server_default_area_description': self.server.config['default_area_description']
             })
         areas = self._load_areas(areas, None)
-        self.ever_loaded_assets = True
         self._check_structure()
 
         return areas

@@ -24,7 +24,6 @@ Module that contains the PlayerGroupManager class and the _PlayerGroup subclass.
 from __future__ import annotations
 
 import random
-from re import M
 import typing
 
 from typing import Callable, Dict, Tuple, Type, Union, Set
@@ -1688,8 +1687,8 @@ class PlayerGroupManager:
         group_number = 0
         limit = self.get_managee_limit()
         while limit is None or group_number < limit:
-            new_managee_id = "pg{}".format(group_number)
-            if new_managee_id not in self._id_to_group.keys():
+            new_managee_id = f'pg{group_number}'
+            if new_managee_id not in self._id_to_group:
                 return new_managee_id
             group_number += 1
         raise PlayerGroupError.ManagerTooManyGroupsError

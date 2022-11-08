@@ -149,20 +149,10 @@ def log_server(msg, client=None):
     logging.getLogger('server').info(msg)
 
 
-def log_server2(msg, client=None):
-    # Empty for test.py purposes
-    pass
-
-
 def log_print(msg, client=None):
     msg = f'{parse_client_info(client)}{msg}'
     current_time = Constants.get_time_iso()
     print('{}: {}'.format(current_time, msg))
-
-
-def log_print2(msg, client=None):
-    # Empty for test.py purposes
-    pass
 
 
 def log_pdebug(msg, client=None):

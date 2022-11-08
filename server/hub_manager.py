@@ -3108,7 +3108,7 @@ class HubManager(_HubManagerTrivialInherited):
         game_number = 0
         game_limit = self.get_managee_limit()
         while game_limit is None or game_number < game_limit:
-            new_game_id = "H{}".format(game_number)
+            new_game_id = f'H{game_number}'
             if new_game_id not in self.get_managee_ids():
                 return new_game_id
             game_number += 1

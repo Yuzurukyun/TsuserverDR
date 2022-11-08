@@ -51,7 +51,7 @@ class BanManager:
             logger.log_pdebug(message)
 
     def write_banlist(self):
-        with open('storage/banlist.json', 'w') as banlist_file:
+        with open('storage/banlist.json', 'w', encoding='utf-8') as banlist_file:
             json.dump(self.bans, banlist_file, indent=4)
 
     def add_ban(self, ip):

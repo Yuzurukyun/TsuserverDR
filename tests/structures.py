@@ -175,9 +175,9 @@ class _Unittest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        for (logger, handler) in cls.server.logger_handlers:
+        for (_logger, handler) in cls.server.logger_handlers:
             handler.close()
-            logger.removeHandler(handler)
+            _logger.removeHandler(handler)
         cls.server.disconnect_all_test_clients()
 
 
@@ -418,13 +418,11 @@ class _TestClientManager(ClientManager):
                 for packet in packets_to_discard:
                     self.discard_packet(packet, somewhere=True)
 
-                """
-                # Discard IC blankpost and OOC standard notification
-                _, x = self.search_match(['MS', None],
-                                         self.received_packets, somewhere=True, remove_match=True,
-                                         allow_partial_match=True)
-                self.discard_ic(x[1])
-                """
+                # # Discard IC blankpost and OOC standard notification
+                # _, x = self.search_match(['MS', None],
+                #                          self.received_packets, somewhere=True, remove_match=True,
+                #                          allow_partial_match=True)
+                # self.discard_ic(x[1])
 
                 host = self.convert_word_to_symbol(self.server.config['hostname'])
                 _, x = self.search_match(['CT', (host, 'Changed area to')],
@@ -931,8 +929,8 @@ class _TestTsuserverDR(TsuserverDR):
     def __init__(self):
         """ Overwrites tsuserver.TsuserverDR.__init__ """
         self.loop = asyncio.get_event_loop()
-        logger.log_print = logger.log_print2
-        logger.log_server = logger.log_server2
+        logger.log_print = (lambda *args, **kwargs: None)
+        logger.log_server = (lambda *args, **kwargs: None)
 
         super().__init__(client_manager_type=_TestClientManager)
 

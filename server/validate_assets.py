@@ -136,7 +136,7 @@ class Validate():
 
                 except OSError as exc:
                     # Should only land here for paths that cannot be resolved
-                    print(f'Invalid file name {file_name}.')
+                    print(f'Invalid file name {file_name}: {exc}.')
                 else:
                     if not file_name.upper().endswith('.YAML'):
                         msg = f'Invalid file name {file_name} (file extension must be .yaml)'

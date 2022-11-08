@@ -75,12 +75,6 @@ class AOProtocolError(TsuserverException):
 
 
 @recreate_subexceptions
-class BackgroundError(TsuserverException):
-    class BackgroundNotFoundError(TsuserverException):
-        pass
-
-
-@recreate_subexceptions
 class AreaError(TsuserverException):
     class ClientNotFound(TsuserverException):
         pass

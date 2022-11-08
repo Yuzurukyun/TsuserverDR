@@ -270,18 +270,17 @@ class PartyManager:
             return
 
         # Some people move, some stay behind case
-        """
-        If initiator is not sneaking
-        1. Visible who moved
-        2. Visible who stayed as they were not allowed
-        3. Sneaked who stayed
-        Party ID is assigned to the formed party that contains initiator
 
-        If initiator is sneaking
-        1. Sneaked who moved
-        2. Sneaked who stayed as they were not allowed
-        3. Visible who stayed (keeps party ID)
-        """
+        # If initiator is not sneaking
+        # 1. Visible who moved
+        # 2. Visible who stayed as they were not allowed
+        # 3. Sneaked who stayed
+        # Party ID is assigned to the formed party that contains initiator
+
+        # If initiator is sneaking
+        # 1. Sneaked who moved
+        # 2. Sneaked who stayed as they were not allowed
+        # 3. Visible who stayed (keeps party ID)
         split = list()
         split.append({c: i for c, i in moving.items()}) # Guaranteed non-empty
         split.append({c: i for c, i in staying.items() if c.is_visible})

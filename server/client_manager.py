@@ -429,7 +429,7 @@ class ClientManager:
             # Remove None values from pargs, which could have happened while setting default values
             # from the function call
             to_pop = list()
-            for (key, value) in pargs.items():
+            for key in pargs:
                 if pargs[key] is None:
                     to_pop.append(key)
             for key in to_pop:
@@ -607,7 +607,7 @@ class ClientManager:
 
             # This step also takes care of filtering out the packet arguments that the client
             # cannot parse, and also make sure they are in the correct order.
-            final_pargs, to_send = self.prepare_command('ms', pargs)
+            final_pargs, _ = self.prepare_command('ms', pargs)
 
             # Keep track of packet details in case this was sent by someone else
             # This is used, for example, for first person mode
@@ -854,12 +854,10 @@ class ClientManager:
             name_ws = name.replace(' ', '')
             if not name_ws or name_ws.isdigit():
                 return False
-            """
-            for client in self.hub.get_players():
-                print(client.name == name)
-                if client.name == name:
-                    return False
-            """
+            # for client in self.hub.get_players():
+            #     print(client.name == name)
+            #     if client.name == name:
+            #         return False
             return True
 
         @property

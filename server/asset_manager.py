@@ -131,7 +131,7 @@ class AssetManager(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def load_file(source_file: str) -> List:
+    def load_file(self, source_file: str) -> List:
         """
         Load assets from a file relative to the server root directory.
 
@@ -149,13 +149,13 @@ class AssetManager(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def load_raw(raw: Any) -> List:
+    def load_raw(self, yaml_contents: Any) -> List:
         """
         Load assets from a Python representation.
 
         Parameters
         ----------
-        raw : Any
+        yaml_contents : Any
             Assets to load
 
         Returns

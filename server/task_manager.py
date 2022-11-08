@@ -412,7 +412,7 @@ class TaskManager:
                         for c in targets:
                             task.parameters['period'] = ''
                             c.send_time_of_day(name='')
-                            c.send_ooc(f'It is no longer some particular period of day.')
+                            c.send_ooc('It is no longer some particular period of day.')
                     current_period = find_period_of_hour(hour)
                     hour_length = main_hour_length
                 else:
@@ -639,7 +639,7 @@ class TaskManager:
                             else:
                                 for c in targets:
                                     c.send_time_of_day(name='')
-                                    c.send_ooc(f'It is no longer some particular period of day.')
+                                    c.send_ooc('It is no longer some particular period of day.')
 
                         # Send notifications appropriately
                         if start >= 0:

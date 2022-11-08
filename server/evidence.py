@@ -89,16 +89,16 @@ class EvidenceList:
                 evi_list.append(self.evidences[i].to_string())
         return nums_list, evi_list
 
-    def del_evidence(self, client, id):
+    def del_evidence(self, client, evi_id):
         if self.login(client):
-            self.evidences.pop(id)
+            self.evidences.pop(evi_id)
 
-    def edit_evidence(self, client, id, arg):
+    def edit_evidence(self, client, evi_id, arg):
         if self.login(client):
             if client.area.evidence_mod == 'HiddenCM' and self.correct_format(client, arg[1]):
-                self.evidences[id] = self.Evidence(arg[0], arg[1][14:], arg[2], arg[1][9:12])
+                self.evidences[evi_id] = self.Evidence(arg[0], arg[1][14:], arg[2], arg[1][9:12])
                 return
             if client.area.evidence_mod == 'HiddenCM':
                 client.send_ooc('You entered a wrong pos.')
                 return
-            self.evidences[id] = self.Evidence(arg[0], arg[1], arg[2], arg[3])
+            self.evidences[evi_id] = self.Evidence(arg[0], arg[1], arg[2], arg[3])

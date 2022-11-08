@@ -1032,7 +1032,7 @@ class _Game(_GameTrivialInherited):
         """
 
         if self.is_unmanaged():
-           raise GameError.GameIsUnmanagedError
+            raise GameError.GameIsUnmanagedError
         if not self.is_player(user):
             raise GameError.UserNotPlayerError
 
@@ -2464,7 +2464,7 @@ class GameManager(_GameManagerTrivialInherited):
         game_number = 0
         game_limit = self.get_managee_limit()
         while game_limit is None or game_number < game_limit:
-            new_game_id = "g{}".format(game_number)
+            new_game_id = f'g{game_number}'
             if new_game_id not in self.get_managee_ids():
                 return new_game_id
             game_number += 1
