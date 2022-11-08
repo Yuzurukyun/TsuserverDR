@@ -741,19 +741,6 @@ class _GameTrivialInherited(_PlayerGroup):
 
         return super().requires_leaders()
 
-    def has_ever_had_players(self):
-        """
-        Return True if a player has ever been added to this game, False otherwise.
-
-        Returns
-        -------
-        bool
-            True if the game has ever had a player added, False otherwise.
-
-        """
-
-        return super().has_ever_had_players()
-
     def is_unmanaged(self):
         """
         Return True if this game is unmanaged, False otherwise.
@@ -839,7 +826,7 @@ class _Game(_GameTrivialInherited):
 
     # (Private) Attributes
     # --------------------
-    # _require_participant_character : bool
+    # _require_participant_characters : bool
     #   If False, players without a participant character will not be allowed to join the game, and
     #   players that switch to something other than a participant character will be automatically
     #   removed from the game. If False, no such checks are made.
@@ -938,7 +925,7 @@ class _Game(_GameTrivialInherited):
             server,
             timer_limit=timer_limit
         )
-        self._require_participant_character = require_participant_character
+        self._require_participant_characters = require_participant_character
 
         self.publisher = Publisher(self)
         # Implementation detail: the callbacks of the internal objects of the game are (to be)
@@ -1000,7 +987,7 @@ class _Game(_GameTrivialInherited):
 
         if self.is_unmanaged():
             raise GameError.GameIsUnmanagedError
-        if self._require_participant_character and not user.has_participant_character():
+        if self._require_participant_characters and not user.has_participant_character():
             raise GameError.UserHasNoCharacterError
 
         try:
@@ -1074,7 +1061,7 @@ class _Game(_GameTrivialInherited):
             Whether the game requires players have a participant character at all times.
         """
 
-        return self._require_participant_character
+        return self._require_participant_characters
 
     def new_timer(
         self,
@@ -1793,7 +1780,7 @@ class _Game(_GameTrivialInherited):
         """
 
         # print('Player', player, 'changed character from', old_char_id, 'to', new_char_id)
-        if self._require_participant_character and not player.has_participant_character():
+        if self._require_participant_characters and not player.has_participant_character():
             self.remove_player(player)
 
     def _on_client_destroyed(self, player: ClientManager.Client):
@@ -1852,7 +1839,7 @@ class _Game(_GameTrivialInherited):
                 )
 
         # 3.
-        if self._require_participant_character:
+        if self._require_participant_characters:
             for player in self.get_players():
                 assert player.has_participant_character(), (
                     f'For game with areas {self} that expected all its players had participant '
@@ -2499,5 +2486,5 @@ class GameManager(_GameManagerTrivialInherited):
                 f"|| "
                 f"_user_to_managees={self.get_player_to_managees_map()}, "
                 f"_id_to_managee={self.get_managee_ids_to_managees()}, "
-                f"id={self.get_id()}), ",
+                f"id={self.get_id()}), "
                 f')')

@@ -34,7 +34,6 @@ if typing.TYPE_CHECKING:
     from server.area_manager import AreaManager
     from server.client_manager import ClientManager
     from server.game_manager import _Team
-    from server.timer_manager import Timer
     from server.tsuserver import TsuserverDR
 
 
@@ -676,19 +675,6 @@ class _GameWithAreasTrivialInherited(_Game):
 
         return super().requires_leaders()
 
-    def has_ever_had_players(self):
-        """
-        Return True if a player has ever been added to this game with areas, False otherwise.
-
-        Returns
-        -------
-        bool
-            True if the game with areas has ever had a player added, False otherwise.
-
-        """
-
-        return super().has_ever_had_players()
-
     def requires_participant_characters(self) -> bool:
         """
         Return whether the game with areas requires players have a participant character at all times.
@@ -699,7 +685,7 @@ class _GameWithAreasTrivialInherited(_Game):
             Whether the game with areas requires players have a participant character at all times.
         """
 
-        return super().requires_participant_character()
+        return super().requires_participant_characters()
 
     def new_timer(
         self,
