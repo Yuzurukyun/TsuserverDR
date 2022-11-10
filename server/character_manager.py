@@ -117,15 +117,15 @@ class CharacterManager(AssetManager):
 
     def get_custom_folder(self) -> str:
         """
-        Return `'config/character_lists'`.
+        Return `'config/char_lists'`.
 
         Returns
         -------
         str
-            `'config/character_lists'`.
+            `'config/char_lists'`.
         """
 
-        return 'config/character_lists'
+        return 'config/char_lists'
 
     def validate_file(self, source_file: Union[str, None] = None) -> List[str]:
         if source_file is None:

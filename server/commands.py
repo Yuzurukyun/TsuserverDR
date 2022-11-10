@@ -11642,8 +11642,8 @@ def ooc_cmd_hub_info(client: ClientManager.Client, arg: str):
     | [17:34] $H: == Hub 0 ==
     | *GMs: 1. NonGMs: 0
     | *Area list: config/areas.yaml
-    | *Background list: config/backgrounds.yaml
-    | *Character list: config/character_lists/custom.yaml
+    | *Background list: config/bg_lists/beach.yaml
+    | *Character list: config/char_lists/custom.yaml
     | *DJ list: config/music.yaml
     """
 

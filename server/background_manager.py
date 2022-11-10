@@ -121,15 +121,15 @@ class BackgroundManager(AssetManager):
 
     def get_custom_folder(self) -> str:
         """
-        Return `'config/background_lists'`.
+        Return `'config/bg_lists'`.
 
         Returns
         -------
         str
-            `'config/background_lists'`.
+            `'config/bg_lists'`.
         """
 
-        return 'config/background_lists'
+        return 'config/bg_lists'
 
     def get_default_background(self) -> str:
         return self._default_background

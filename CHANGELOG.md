@@ -850,6 +850,7 @@
 * Made /refresh a GM+ command rather than a mod command (but it only affects your current hub)
 * Made /area_kick with a single argument move the target to your area rather than the hub default area
 * Renamed /area_kick to /summon, and replaced all "kicking" indications it generated with "summoning" indications
+* Renamed the folders `config/background_lists` and `config/character_lists` to `config/bg_lists` and `config/char_lists` respectively to maintain consistency with several existing commands
 * Improved README installation instructions so that it prompts users to try and test whether Python was properly set up in path.
 * Fixed timer end notification showing the OOC name of the timer initiator as the timer name rather than the actual name
 * Fixed all notecard commands having an inconsistent output when used with /help_more

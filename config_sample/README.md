@@ -12,8 +12,8 @@ With your copy of this software, you should check that you have the following fi
 As well as these folders:
 
 * `area_lists`
-* `background_lists`
-* `character_lists`
+* `bg_lists`
+* `char_lists`
 * `music_lists`
 
 Make sure you have all of the above inside this folder (otherwise, the server may hang or crash while starting).
