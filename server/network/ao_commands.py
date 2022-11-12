@@ -21,18 +21,18 @@ File that contains behavior for all supported client commands.
 """
 
 from __future__ import annotations
-from multiprocessing.connection import Client
 
 import random
 import re
 import time
 import typing
-
 from typing import Any, Dict
 
-from server import logger, clients
+from server import clients, logger
 from server.constants import Constants
-from server.exceptions import AreaError, ClientError, HubError, MusicError, ServerError, PartyError, TsuserverException
+from server.exceptions import (AreaError, ClientError, HubError, MusicError,
+                               PartyError, ServerError, TsuserverException)
+
 # from server.evidence import EvidenceList
 
 if typing.TYPE_CHECKING:
@@ -243,9 +243,7 @@ def net_cmd_rc(client: ClientManager.Client, pargs: Dict[str, Any]):
     # Check if client is ready to actually join, and did not do weird packet shenanigans before
     if client.required_packets_received != {'HI', 'ID'}:
         return
-    client.send_command_dict('SC', {
-        'chars_ao2_list': client.hub.character_manager.get_characters(),
-        })
+    client.send_character_list()
 
 
 def net_cmd_rm(client: ClientManager.Client, pargs: Dict[str, Any]):

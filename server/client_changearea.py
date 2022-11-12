@@ -19,12 +19,11 @@
 from __future__ import annotations
 
 import typing
-
 from typing import List, Set, Tuple, Union
 
 from server import logger
-from server.exceptions import ClientError, AreaError, TaskError
 from server.constants import Constants
+from server.exceptions import AreaError, ClientError, TaskError
 
 if typing.TYPE_CHECKING:
     # Avoid circular referencing
@@ -1050,9 +1049,7 @@ class ClientChangeArea:
 
             if old_characters != new_characters:
                 if client.packet_handler.ALLOWS_CHAR_LIST_RELOAD:
-                    client.send_command_dict('SC', {
-                        'chars_ao2_list': new_characters,
-                        })
+                    client.send_character_list(characters=new_characters)
 
                     should_change, change_to_char_id = (
                         client.hub.character_manager.translate_character_id(

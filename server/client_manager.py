@@ -18,19 +18,16 @@
 
 from __future__ import annotations
 
-import typing
-from typing import Any, Callable, List, Optional, Set, Tuple, Dict, Type, Union
-
 import datetime
 import random
 import time
+import typing
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, TypeVar, Union
 
-from server import clients
-from server import client_changearea
-from server import logger
-
-from server.exceptions import AreaError, ClientError, HubError, PartyError, TaskError, TrialError
-from server.constants import TargetType, Constants
+from server import client_changearea, clients, logger
+from server.constants import Constants, TargetType
+from server.exceptions import (AreaError, ClientError, HubError, PartyError,
+                               TaskError, TrialError)
 from server.hub_manager import _Hub
 from server.music_manager import PersonalMusicManager
 from server.subscriber import Publisher
@@ -44,6 +41,7 @@ if typing.TYPE_CHECKING:
     from server.tsuserver import TsuserverDR
     from server.zone_manager import ZoneManager
 
+# SelfClient = TypeVar("SelfClient", bound="Client")
 
 class ClientManager:
     class Client:
@@ -707,6 +705,13 @@ class ClientManager:
         def send_ic_blankpost(self):
             if self.packet_handler.ALLOWS_INVISIBLE_BLANKPOSTS:
                 self.send_ic(msg='', hide_character=1, bypass_text_replace=True)
+
+        def send_character_list(self, characters: List[str] = None):
+            if characters is None:
+                characters = self.hub.character_manager.get_characters()
+            self.send_command_dict('SC', {
+                'chars_ao2_list': characters,
+                })
 
         def send_background(self, name: str = None, pos: str = None,
                             tod_backgrounds: Dict[str, str] = None):

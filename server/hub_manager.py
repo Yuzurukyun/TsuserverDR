@@ -2090,9 +2090,7 @@ class _Hub(_HubTrivialInherited):
         self.character_manager.load_file(source_file)
         for client in self.get_players():
             if client.packet_handler.ALLOWS_CHAR_LIST_RELOAD:
-                client.send_command_dict('SC', {
-                    'chars_ao2_list': characters,
-                    })
+                client.send_character_list(characters=characters)
                 old_char_name = old_client_char_names[client]
                 should_change, change_to_char_id = self.character_manager.translate_character_id(
                     client, old_char_name=old_char_name,
