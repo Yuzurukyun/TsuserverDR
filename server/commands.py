@@ -10106,7 +10106,7 @@ def ooc_cmd_zone_end(client: ClientManager.Client, arg: str):
     backup_watchers = target_zone.get_watchers()  # Keep backup reference to send to others
     backup_id = target_zone.get_id()
 
-    client.hub.zone_manager.delete_zone(backup_id)
+    target_zone.manager.delete_zone(backup_id)
 
     if arg:
         client.send_ooc('You have ended zone `{}`.'.format(backup_id))
