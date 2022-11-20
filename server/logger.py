@@ -127,7 +127,7 @@ def _log_error(server: TsuserverDR) -> str:
             msg += f'\n\n== Hub {hub.get_id()} =='
 
             try:
-                msg += '\n=== Area list ==='
+                msg += '\n\n=== Area list ==='
                 try:
                     msg += (f'\n*Current area list file: '
                             f'{hub.area_manager.get_source_file()}')
@@ -141,10 +141,10 @@ def _log_error(server: TsuserverDR) -> str:
                             msg += f'\n***{c}'
                 except Exception:
                     etype, evalue, etraceback = sys.exc_info()
-                    msg += f'\nError generating dump of areas for hub {hub.get_id()}.'
+                    msg += f'\nError generating dump of area list for hub {hub.get_id()}.'
                     msg += _print_exception(etype, evalue, etraceback)
 
-                msg += '\n=== Background list ==='
+                msg += '\n\n=== Background list ==='
                 try:
                     msg += (f'\n*Current background list file: '
                             f'{hub.background_manager.get_source_file()}')
@@ -156,7 +156,22 @@ def _log_error(server: TsuserverDR) -> str:
                         msg += f'\n**{i}: {background}'
                 except Exception:
                     etype, evalue, etraceback = sys.exc_info()
-                    msg += f'\nError generating dump of backgrounds for hub {hub.get_id()}.'
+                    msg += f'\nError generating dump of background list for hub {hub.get_id()}.'
+                    msg += _print_exception(etype, evalue, etraceback)
+
+                msg += '\n\n=== Character list ==='
+                try:
+                    msg += (f'\n*Current character list file: '
+                            f'{hub.character_manager.get_source_file()}')
+                    msg += (f'\n*Previous character list file: '
+                            f'{hub.character_manager.get_previous_source_file()}')
+
+                    msg += '\n*Current characters:'
+                    for (i, character) in enumerate(hub.character_manager.get_characters()):
+                        msg += f'\n**{i}: {character}'
+                except Exception:
+                    etype, evalue, etraceback = sys.exc_info()
+                    msg += f'\nError generating dump of character list for hub {hub.get_id()}.'
                     msg += _print_exception(etype, evalue, etraceback)
 
             except Exception:
