@@ -6290,8 +6290,8 @@ def ooc_cmd_paranoia(client: ClientManager.Client, arg: str):
     which the server, with probability "player paranoia + zone paranoia", starts a timer of length
     a random number less than 150 seconds, after which it sends the user a phantom peek message
     if they are not blind and not staff, in an area that is not a lobby or private area, and they
-    have a valid character selected. A new phantom peek cycle is restarted regardless of success
-    after the old one expires.
+    have a participant character selected. A new phantom peek cycle is restarted regardless of
+    success after the old one expires.
     Returns an error if the given identifier does not correspond to a user, or if the new player
     paranoia level is not a number from -100 to 100.
 
@@ -11524,8 +11524,8 @@ def ooc_cmd_zone_paranoia(client: ClientManager.Client, arg: str):
     which the server, with probability "player paranoia + zone paranoia", starts a timer of length
     a random number less than 150 seconds, after which it sends the user a phantom peek message
     if they are not blind and not staff, in an area that is not a lobby or private area, and they
-    have a valid character selected. A new phantom peek cycle is restarted regardless of success
-    after the old one expires.
+    have a participant character selected. A new phantom peek cycle is restarted regardless of
+    success after the old one expires.
     Returns an error if you are not watching a zone, or if the new zone paranoia level is not a
     number from -100 to 100.
 
