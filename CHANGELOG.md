@@ -860,6 +860,7 @@
 * Fixed /zone_paranoia having an inconsistent parameter description when used with /help_more
 * Fixed server dumps not attempting to show more information about remaining objects in some object list if it failed to display some object
 * Fixed players with client versions that do not allow character list reloading not being forced to spectator after a different character list was loaded
+* Fixed AO 2.10 being marked as not supporting character list reloading
 * Removed unused `server/area_manager_revamp.py` and `server/steptimer_manager.py`
 * Removed the old names of the following commands. Please use the new ones:
   - /clock_cancel: /clock_end

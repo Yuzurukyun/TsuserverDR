@@ -409,7 +409,7 @@ class ClientAO2d10(DefaultDROProtocol):
     ALLOWS_CLEARING_MODIFIED_MESSAGE_FROM_SELF = False
     ALLOWS_INVISIBLE_BLANKPOSTS = False
     REPLACES_BASE_OPUS_FOR_MP3 = True
-    ALLOWS_CHAR_LIST_RELOAD = False
+    ALLOWS_CHAR_LIST_RELOAD = True
 
     MS_INBOUND = [
         ('msg_type', ArgType.STR),  # 0
