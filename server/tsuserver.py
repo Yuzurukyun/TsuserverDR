@@ -52,6 +52,7 @@ from server.validate.gimp import ValidateGimp
 if typing.TYPE_CHECKING:
     from asyncio.proactor_events import _ProactorSocketTransport
 
+
 class TsuserverDR:
     def __init__(self, client_manager_type: Type[ClientManager] = None):
         if client_manager_type is None:
@@ -65,8 +66,8 @@ class TsuserverDR:
         self.release = 5
         self.major_version = 0
         self.minor_version = 0
-        self.segment_version = 'b15'
-        self.internal_version = 'P221113a'
+        self.segment_version = 'b16'
+        self.internal_version = 'P221119a'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)

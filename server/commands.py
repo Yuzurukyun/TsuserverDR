@@ -40,6 +40,95 @@ from typing import Union
 # (OFFICER ONLY): need to be logged in as CM or mod
 
 
+def ooc_cmd_ambient(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Sets up the ambient sound effect of the current area. Players in the current area, and players
+    that later join the area, will be ordered to play the area ambient sound effect.
+
+    SYNTAX
+    /ambient <ambient_name>
+
+    PARAMETERS
+    <ambient_name>: Name of the ambient sound effect
+
+    EXAMPLES
+    >>> /ambient wind.wav
+    Sets the ambient sound effect of the area to `wind.wav`.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='>0')
+
+    client.area.ambient = arg
+
+    for target in client.area.clients:
+        target.send_area_ambient(name=arg)
+
+    client.send_ooc(f'You have set the ambient sound effect of your area to `{arg}`.')
+    client.send_ooc_others(f'The ambient sound effect of your area was set to `{arg}`.',
+                           in_area=True, is_zstaff_flex=False)
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] set the ambient sound effect '
+                           f'of their area to `{arg}` ({client.area.id}).', is_zstaff_flex=True)
+
+
+def ooc_cmd_ambient_end(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Clears the ambient sound effect of the current area. Players in the current area will be ordered
+    to stop playing the former area ambient sound effect, and players that later join the area will
+    not play the former area ambient sound effect.
+    Returns an error if no ambient sound effect is playing in the area.
+
+    SYNTAX
+    /ambient
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    >>> /ambient_end
+    Clears the ambient sound effect of the area.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
+
+    if not client.area.ambient:
+        raise ClientError('There already is no ambient sound effect in your area.')
+
+    client.area.ambient = ''
+
+    for target in client.area.clients:
+        target.send_area_ambient(name='')
+
+    client.send_ooc('You have cleared the ambient sound effect of your area.')
+    client.send_ooc_others('The ambient sound effect of your area was cleared.', in_area=True,
+                           is_zstaff_flex=False)
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] cleared the ambient sound '
+                           f'effect of their area ({client.area.id}).', is_zstaff_flex=True)
+
+
+def ooc_cmd_ambient_info(client: ClientManager.Client, arg: str):
+    """
+    Displays the current area ambient sound effect.
+    Returns an error if no area ambient sound effect is playing.
+
+    SYNTAX
+    /ambient_info
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    Assuming the ambient sound effect of the current area is `wind.wav`...
+    >>> /ambient_info
+    Returns 'The current ambient sound effect of your area is `wind.wav`'.
+    """
+    Constants.assert_command(client, arg, parameters='=0')
+
+    if not client.area.ambient:
+        raise ClientError('There already is no ambient sound effect in your area.')
+
+    client.send_ooc(f'The current ambient sound effect of your area is `{client.area.ambient}`.')
+
+
 def ooc_cmd_announce(client: ClientManager.Client, arg: str):
     """ (MOD ONLY)
     Sends an "announcement" to all users in the server, regardless of whether they have global chat
@@ -165,6 +254,27 @@ def ooc_cmd_area_list(client: ClientManager.Client, arg: str):
         # we do not need to do anything.
         except AreaError:
             pass
+
+
+def ooc_cmd_area_list_info(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Returns the area list of your current hub.
+
+    SYNTAX
+    /area_list_info
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    >>> /area_list_info
+    May return something like this:
+    | $H: The current area list is the custom list `beach`.
+    """
+
+    Constants.assert_command(client, arg, is_officer=True, parameters='=0')
+
+    client.hub.area_manager.command_list_info(client)
 
 
 def ooc_cmd_autoglance(client: ClientManager.Client, arg: str):
@@ -415,6 +525,55 @@ def ooc_cmd_bg(client: ClientManager.Client, arg: str):
                       .format(client.area.id, client.get_char_name(), arg), client)
 
 
+def ooc_cmd_bg_list(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Sets the background list of your current hub (what backgrounds areas may normally use at any
+    given time).
+    If given no arguments, it will return the background list to its original value
+    (in config/backgrounds.yaml).
+    Returns an error if the given background list name included relative directories,
+    was not found, caused an OS error when loading, or raised a YAML or asset syntax error when
+    loading.
+
+    SYNTAX
+    /bg_list <bg_list>
+
+    PARAMETERS
+    <bg_list>: Name of the intended background list
+
+    EXAMPLES
+    >>> /bg_list beach
+    Load the "beach" background list.
+    >>> /bg_list
+    Reset the background list to its original value.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True)
+
+    client.hub.background_manager.command_list_load(client, arg)
+
+
+def ooc_cmd_bg_list_info(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Returns the background list of your current hub.
+
+    SYNTAX
+    /bg_list_info
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    >>> /bg_list_info
+    May return something like this:
+    | $H: The current background list is the custom list `custom`.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
+
+    client.hub.background_manager.command_list_info(client)
+
+
 def ooc_cmd_bglock(client: ClientManager.Client, arg: str):
     """ (MOD ONLY)
     Toggles background changes by non-mods in the current area being allowed/disallowed.
@@ -440,6 +599,72 @@ def ooc_cmd_bglock(client: ClientManager.Client, arg: str):
                               .format(client.area.bg_lock))
     logger.log_server('[{}][{}]Changed bglock to {}'
                       .format(client.area.id, client.get_char_name(), client.area.bg_lock), client)
+
+
+def ooc_cmd_bg_period(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Changes the background of the current area associated with the given period.
+    Returns an error if area background is locked and you are unathorized or if the sought
+    background does not exist.
+
+    SYNTAX
+    /bg_period <period_name> <background_name>
+
+    PARAMETERS
+    <period_name>: Period name
+    <background_name>: New background name, possibly with spaces (e.g. Principal's Room)
+
+    EXAMPLES
+    >>> /bg_period night Beach (night)
+    Changes background to Beach (night) whenever the area has a night period active.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='>1')
+    if not client.is_mod and client.area.bg_lock:
+        raise AreaError("This area's background is locked.")
+
+    args = arg.split()
+    tod_name = args[0]
+    bg_name = ' '.join(args[1:])
+
+    client.area.change_background_tod(bg_name, tod_name, validate=False)
+    client.send_ooc(f'You changed the background associated with period `{tod_name}` to '
+                    f'`{bg_name}`.')
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] changed the background '
+                            f'associated with period `{tod_name}` to `{bg_name}`.',
+                            is_zstaff_flex=True)
+    logger.log_server('[{}][{}]Changed background associated with period `{}` to {}'
+                      .format(client.area.id, client.get_char_name(), tod_name, bg_name), client)
+
+
+def ooc_cmd_bg_period_end(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Removes the background of the current area associated with the given period
+    Returns an error if area background is locked and you are unathorized or if the sought
+    background does not exist.
+
+    SYNTAX
+    /bg_period_end <period_name>
+
+    PARAMETERS
+    <period_name>: Period name
+
+    EXAMPLES
+    >>> /bg_period_end night
+    Removes the background associated with the night period of the current area.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='=1')
+    if not client.is_mod and client.area.bg_lock:
+        raise AreaError("This area's background is locked.")
+
+    client.area.change_background_tod('', arg, validate=False)
+    client.send_ooc(f'You removed the background associated with period `{arg}`.')
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] removed the background '
+                            f'associated with period `{arg}`.',
+                            is_zstaff_flex=True)
+    logger.log_server('[{}][{}]Removed background associated with period `{}`'
+                      .format(client.area.id, client.get_char_name(), arg), client)
 
 
 def ooc_cmd_bilock(client: ClientManager.Client, arg: str):
@@ -1163,6 +1388,55 @@ def ooc_cmd_can_rpgetareas(client: ClientManager.Client, arg: str):
     logger.log_server('[{}][{}]{} /getareas in this area.'
                       .format(client.area.id, client.get_char_name(),
                               status[client.area.rp_getareas_allowed].capitalize()), client)
+
+
+def ooc_cmd_char_list(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Sets the current character list of your current hub (what characters a player may use at any
+    given time).
+    If given no arguments, it will return the character list to its original value
+    (in config/characters.yaml).
+    Returns an error if the given character list name included relative directories,
+    was not found, caused an OS error when loading, or raised a YAML or asset syntax error when
+    loading.
+
+    SYNTAX
+    /char_list <char_list>
+
+    PARAMETERS
+    <char_list>: Name of the intended character list
+
+    EXAMPLES
+    >>> /char_list Transylvania
+    Load the "Transylvania" character list.
+    >>> /char_list
+    Reset the character list to its original value.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True)
+
+    client.hub.character_manager.command_list_load(client, arg)
+
+
+def ooc_cmd_char_list_info(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Returns the character list of your current hub.
+
+    SYNTAX
+    /char_list_info
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    >>> /char_list_info
+    May return something like this:
+    | $H: The current character list is the custom list `custom`.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
+
+    client.hub.character_manager.command_list_info(client)
 
 
 def ooc_cmd_charlog(client: ClientManager.Client, arg: str):
@@ -2240,6 +2514,63 @@ def ooc_cmd_disemvowel(client: ClientManager.Client, arg: str):
         client.area.broadcast_ooc("{} was disemvowelled.".format(c.displayname))
 
 
+def ooc_cmd_dj_list(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Sets the current DJ list of your current hub (what music list a player will see when joining an
+    area of your hub if they do not have a personal music list active).
+    If given no arguments, it will return the DJ list to its original value
+    (in config/music.yaml).
+    Returns an error if the given music list name included relative directories,
+    was not found, caused an OS error when loading, or raised a YAML or asset syntax error when
+    loading.
+
+    SYNTAX
+    /dj_list <dj_list>
+
+    PARAMETERS
+    <dj_list>: Name of the intended music list to serve as DJ list.
+
+    EXAMPLES
+    >>> /dj_list trial
+    Load the "trial" DJ list.
+    >>> /dj_list
+    Reset the DJ list to its original value.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True)
+
+    client.hub.music_manager.command_list_load(client, arg)
+
+    for target in client.hub.get_players():
+        if target.music_manager.is_default_file_loaded():
+            target.send_ooc('As you had no personal music list loaded, you will be shown the hub '
+                            'music list.')
+            target.send_music_list_view()
+        else:
+            target.send_ooc('As you had a personal music list loaded, you will not be shown the '
+                            'hub music list. Display the hub music list by running /music_list.')
+
+def ooc_cmd_dj_list_info(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Returns the DJ list of your current hub.
+
+    SYNTAX
+    /dj_list_info
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    >>> /dj_list_info
+    May return something like this:
+    | $H: The current DJ list is the custom list `trial`.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
+
+    client.hub.music_manager.command_list_info(client)
+
+
 def ooc_cmd_doc(client: ClientManager.Client, arg: str):
     """
     Returns the area's current doc link, or sets it to a new one.
@@ -3173,6 +3504,266 @@ def ooc_cmd_help_more(client: ClientManager.Client, arg: str):
         else:
             output += line + ' '
     client.send_ooc(output.replace('\r\n\r\n', '\r\n').strip())
+
+
+def ooc_cmd_hub(client: ClientManager.Client, arg: str):
+    """
+    Either lists all hubs in the server or changes your area to a new given area.
+    Returns an error if you are already in the target hub or you are unable to move to the default
+    area of the new hub.
+
+    SYNTAX
+    /hub
+    /hub <new_hub_numerical_id>
+
+    PARAMETERS
+    <new_hub_numerical_id>: Numerical ID of the hub
+
+    EXAMPLES
+    >>> /hub
+    Lists all hubs in the server.
+    >>> /hub 1
+    Moves you to hub 1.
+    """
+
+    Constants.assert_command(client, arg, parameters='<2')
+
+    args = arg.split()
+    # List all hubs
+    if not args:
+        client.send_limited_hub_list()
+
+    # Switch to new area
+    else:
+        try:
+            numerical_id = int(args[0])
+        except ValueError:
+            raise ArgumentError('Hub ID must be a number.')
+
+        try:
+            hub = client.hub.manager.get_managee_by_numerical_id(numerical_id)
+        except HubError.ManagerInvalidGameIDError:
+            raise HubError.ManagerInvalidGameIDError('Hub not found.')
+
+        client.change_hub(hub, from_party=(client.party is not None))
+
+def ooc_cmd_hub_create(client: ClientManager.Client, arg: str):
+    """ (OFFICER ONLY)
+    Creates a new hub. The numerical ID of the hub will be the lowest non-taken numerical hub ID.
+
+    SYNTAX
+    /hub_create
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    Assuming that two hubs with numerical IDs 0 and 2 respectively exist...
+    >>> /hub_create
+    Creates hub with numerical ID 1.
+    >>> /hub_create
+    Creates hub with numerical ID 3.
+    """
+
+    Constants.assert_command(client, arg, is_officer=True, parameters='=0')
+
+    hub = client.hub.manager.new_managee()
+
+    for target in client.server.get_clients():
+        target.send_music_list_view()
+
+    client.send_ooc(f'You created hub {hub.get_numerical_id()}.')
+    client.send_ooc_others(f'{client.name} [{client.id}] created hub {hub.get_numerical_id()}.',
+                           is_officer=True, in_hub=None)
+
+
+def ooc_cmd_hub_end(client: ClientManager.Client, arg: str):
+    """ (VARYING REQUIREMENTS)
+    (STAFF ONLY) Deletes the current hub if not given a numerical ID, or
+    (OFFICER ONLY) of the given hub by numerical ID.
+    Players in the deleted hub are moved to the default hub of the server.
+    Returns an error if given a numerical ID and it is not the numerical ID of a hub in the server,
+    or if the server has only one hub.
+
+    SYNTAX
+    /hub_end
+    /hub_end <hub_id>
+
+    PARAMETERS
+    <hub_id>: Numerical ID
+
+    EXAMPLES
+    >>> /hub_end
+    Deletes the current hub.
+    >>> /hub_end 2
+    Deletes the hub with numerical ID 2.
+    """
+
+    try:
+        Constants.assert_command(client, arg, is_officer=True, parameters='<2')
+    except ClientError.UnauthorizedError:
+        Constants.assert_command(client, arg, is_staff=True, parameters='=0')
+
+    if not arg:
+        arg = client.hub.get_numerical_id()
+
+    try:
+        hub = client.hub.manager.get_managee_by_numerical_id(arg)
+    except HubError.ManagerInvalidGameIDError:
+        raise ClientError(f'Hub {arg} not found.')
+
+    try:
+        client.hub.manager.delete_managee(hub)
+    except HubError.ManagerCannotManageeNoManagees:
+        raise ClientError(f'You cannot delete a hub when it is the only one of the server.')
+
+    for target in client.server.get_clients():
+        target.send_music_list_view()
+
+    client.send_ooc(f'You deleted hub {hub.get_numerical_id()}.')
+    client.send_ooc_others(f'{client.name} [{client.id}] deleted hub {hub.get_numerical_id()}.',
+                           is_officer=True, in_hub=None)
+
+
+def ooc_cmd_hub_info(client: ClientManager.Client, arg: str):
+    """ (VARYING REQUIREMENTS)
+    (STAFF ONLY) Return information about the current hub if not given a numerical ID, or
+    (OFFICER ONLY) of the given hub by numerical ID.
+    Returns an error if given a numerical ID and it is not the numerical ID of a hub in the server.
+
+    SYNTAX
+    /hub_info
+    /hub_info <hub_id>
+
+    PARAMETERS
+    <hub_id>: Numerical ID
+
+    EXAMPLES
+    >>> /hub_info
+    May return something like this:
+    | [17:34] $H: == Hub 0 ==
+    | *GMs: 1. NonGMs: 0
+    | *Area list: config/areas.yaml
+    | *Background list: config/bg_lists/beach.yaml
+    | *Character list: config/char_lists/custom.yaml
+    | *DJ list: config/music.yaml
+    """
+
+    try:
+        Constants.assert_command(client, arg, is_officer=True, parameters='<2')
+    except ClientError.UnauthorizedError:
+        Constants.assert_command(client, arg, is_staff=True, parameters='=0')
+
+    if not arg:
+        arg = client.hub.get_numerical_id()
+
+    try:
+        hub = client.hub.manager.get_managee_by_numerical_id(arg)
+    except HubError.ManagerInvalidGameIDError:
+        raise ClientError(f'Hub {arg} not found.')
+
+    info = hub.get_info()
+    client.send_ooc(info)
+
+
+def ooc_cmd_hub_password(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Changes the hub password.
+
+    SYNTAX
+    /hub_password <password>
+
+    PARAMETERS
+    <password>: New password
+
+    EXAMPLES
+    >>> /hub_password 11037
+    Sets the hub password to 11037.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='>0')
+
+    client.hub.set_password(arg)
+    client.send_ooc('You have changed the password of your hub.')
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] changed the password of your '
+                           f'hub. Do /hub_password_info to retrieve it.',
+                           is_zstaff_flex=True, is_officer=False)
+    hid = client.hub.get_numerical_id()
+    client.send_ooc_others(f'{client.name} [{client.id}] changed the password of hub {hid}. Do '
+                           f'/hub_password_info {hid} to retrieve it.',
+                           is_officer=True, in_hub=None)
+
+
+def ooc_cmd_hub_password_info(client: ClientManager.Client, arg: str):
+    """ (VARYING REQUIREMENTS)
+    (STAFF ONLY) Gets the password of the current hub or, (OFFICER ONLY) the given hub by numerical
+    ID.
+    Returns an error if given a numerical ID and it is not the numerical ID of a hub in the server.
+
+    SYNTAX
+    /hub_password_info
+    /hub_password_info <hub_id>
+
+    PARAMETERS
+    <hub_id>: Numerical ID
+
+    EXAMPLES
+    >>> /hub_password_info
+    May return something like this:
+    | $H: The hub password is `2124`.
+    """
+
+    try:
+        Constants.assert_command(client, arg, is_officer=True, parameters='<2')
+    except ClientError.UnauthorizedError:
+        Constants.assert_command(client, arg, is_staff=True, parameters='=0')
+
+    if not arg:
+        arg = client.hub.get_numerical_id()
+
+    try:
+        hub = client.hub.manager.get_managee_by_numerical_id(arg)
+    except HubError.ManagerInvalidGameIDError:
+        raise ClientError(f'Hub {arg} not found.')
+
+    password = hub.get_password()
+    client.send_ooc(f'The hub password is `{password}`.')
+
+
+def ooc_cmd_hub_rename(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Changes the name of a hub by its numerical ID if given a name, or clears it if not given one.
+
+    SYNTAX
+    /hub_rename
+    /hub_rename <name>
+
+    PARAMETERS
+    <name>: Name
+
+    EXAMPLES
+    >>> /hub_rename Great Hub
+    Changes the name of the hub to Great Hub.
+    >>> /hub_rename
+    Clears the name of the hub.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True)
+
+    hub = client.hub
+    hub.set_name(arg)
+
+    if arg:
+        client.send_ooc(f'You have renamed your hub to `{arg}`.')
+        client.send_ooc_others(f'{client.displayname} [{client.id}] renamed your hub to `{arg}` '
+                               f'({client.area.id}).', is_zstaff_flex=True)
+    else:
+        client.send_ooc('You have cleared the name of your hub.')
+        client.send_ooc_others(f'{client.displayname} [{client.id}] cleared the name of your hub '
+                               f'({client.area.id}).', is_zstaff_flex=True)
+
+    for target in client.server.get_clients():
+        target.send_music_list_view()
 
 
 def ooc_cmd_iclock(client: ClientManager.Client, arg: str):
@@ -4149,6 +4740,52 @@ def ooc_cmd_make_gm(client: ClientManager.Client, arg: str):
                            is_officer=True, in_hub=None)
 
 
+def ooc_cmd_mindreader(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Toggles a client by ID being a mind reader or not (i.e. can read all thoughts caused by /think,
+    not just those initiated by the player), or yourself if not given an argument.
+    Returns an error if the given identifier does not correspond to a user.
+
+    SYNTAX
+    /mindreader
+    /mindreader <client_id>
+
+    OPTIONAL PARAMETERS
+    {client_id}: Client identifier (number in brackets in /getarea)
+
+    EXAMPLE
+    Assuming a user with client ID 0 starts as not being a mind reader...
+    >>> /mindreader 0
+    This user can now read all thoughts.
+    >>> /mindreader 0
+    This user can no longer read thoughts not initiated by the user.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='<2')
+
+    # Invert current mindreader status of matching targets
+    if not arg:
+        target = client
+    else:
+        target = Constants.parse_id(client, arg)
+    target.is_mindreader = not target.is_mindreader
+
+    status = {False: 'no longer', True: 'now'}
+    status2 = {False: 'no longer a', True: 'a'}
+    if client != target:
+        client.send_ooc(f'{target.displayname} ({target.id}) is {status[target.is_mindreader]} a '
+                        f'mind reader.')
+        client.send_ooc_others(f'(X) {client.displayname} ({client.id}) made {target.displayname} '
+                               f'({target.id}) be {status2[target.is_mindreader]} mind reader '
+                               f'({client.area.id}).', is_zstaff_flex=True)
+        target.send_ooc(f'You are {status[target.is_transient]} a mind reader.')
+    else:
+        client.send_ooc(f'You made yourself be {status2[target.is_mindreader]} mind reader.')
+        client.send_ooc_others(f'(X) {client.displayname} ({client.id}) made themselves be '
+                               f'{status2[target.is_mindreader]} mind reader '
+                               f'({client.area.id}).', is_zstaff_flex=True)
+
+
 def ooc_cmd_minimap(client: ClientManager.Client, arg: str):
     """
     Lists all areas that can be reached from the current area according to areas.yaml and passages
@@ -4327,6 +4964,27 @@ def ooc_cmd_music_list(client: ClientManager.Client, arg: str):
         else:
             client.send_ooc('You are now seeing the default server music list.')
     client.send_music_list_view()
+
+
+def ooc_cmd_music_list_info(client: ClientManager.Client, arg: str):
+    """
+    Returns your current music list.
+
+    SYNTAX
+    /music_list_info
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    >>> /music_list_info
+    May return something like this:
+    | $H: The current music list is the custom list `trial`.
+    """
+
+    Constants.assert_command(client, arg,  parameters='=0')
+
+    client.music_manager.command_list_info(client)
 
 
 def ooc_cmd_mute(client: ClientManager.Client, arg: str):
@@ -4686,6 +5344,81 @@ def ooc_cmd_noteworthy(client: ClientManager.Client, arg: str):
     logger.log_server('[{}][{}]Set noteworthy status to {}'
                       .format(client.area.id, client.get_char_name(), client.area.noteworthy),
                       client)
+
+
+def ooc_cmd_noteworthy_info(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Gets the noteworthy status and noteworthy text of the current area.
+
+    SYNTAX
+    /noteworthy_info
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    >>> /noteworthy_info
+    | $H: The current area is currently noteworthy. The current noteworthy text is `[Test]`.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
+
+    status = {True: 'is', False: 'is not'}
+    client.send_ooc(f'The current area {status[client.area.noteworthy]} currently noteworthy. '
+                    f'The current noteworthy text is `{client.area.noteworthy_text}`.')
+
+
+def ooc_cmd_noteworthy_set(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Sets (and replaces!) the noteworthy text of the current area to the given one.
+    If not given any text, it will set the text to be the area's default noteworthy text.
+    The noteworthy text does not reset or change if the noteworthy status of an area changes.
+
+    SYNTAX
+    /noteworthy_set {text}
+
+    PARAMETERS
+    None
+
+    OPTIONAL PARAMETERS
+    {text}: New noteworthy text.
+
+    EXAMPLES
+    Assuming you are in area 0
+    >>> /noteworthy_set [You notice some broken glass on the floor]
+    Sets the area noteworthy text in area 0 to be "[You notice some broken glass on the floor]".
+    >>> /noteworthy_set
+    Sets the area noteworthy text in area 0 to be the default text.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True)
+
+    if not arg:
+        client.area.noteworthy_text = client.area.default_noteworthy_text
+        client.send_ooc('Reset the area noteworthy text to its original value.')
+        client.send_ooc_others('(X) {} [{}] reset the area noteworthy text of your area to its '
+                               'original value.'
+                               .format(client.displayname, client.id),
+                               is_zstaff_flex=True, in_area=True)
+        client.send_ooc_others('(X) {} [{}] reset the area noteworthy text of area {} to its '
+                               'original value.'
+                               .format(client.displayname, client.id, client.area.name),
+                               is_zstaff_flex=True, in_area=False)
+        logger.log_server('[{}][{}]Reset the area noteworthy text in {}.'
+                          .format(client.area.id, client.get_char_name(), client.area.name), client)
+
+    else:
+        client.area.noteworthy_text = arg
+        client.send_ooc('Updated the area noteworthy text to `{}`.'.format(arg))
+        client.send_ooc_others('(X) {} [{}] set the area noteworthy text of your area to `{}`.'
+                               .format(client.displayname, client.id, client.area.noteworthy_text),
+                               is_zstaff_flex=True, in_area=True)
+        client.send_ooc_others('(X) {} [{}] set the area noteworthy text of area {} to `{}`.'
+                               .format(client.displayname, client.id, client.area.name,
+                                       client.area.noteworthy_text),
+                               is_zstaff_flex=True, in_area=False)
+        logger.log_server('[{}][{}]Set the area noteworthy text to {}.'
+                          .format(client.area.id, client.get_char_name(), arg), client)
 
 
 def ooc_cmd_nsd(client: ClientManager.Client, arg: str):
@@ -6457,6 +7190,43 @@ def ooc_cmd_pm(client: ClientManager.Client, arg: str):
                     .format(client.name, client.area.name, client.displayname, msg))
 
 
+def ooc_cmd_pm_gms(client: ClientManager.Client, arg: str):
+    """
+    Sends a personal message to all users with rank of GM or above other than yourself in your hub.
+    Returns an error if no such users could be found, or if you or all such users muted PMs.
+
+    SYNTAX
+    /pm <message>
+
+    PARAMETERS
+    <message>: Message to be sent.
+
+    EXAMPLES
+    >>> /pm_gms What will I get for Christmas?
+    Sends that message to all GMs in your hub.
+    """
+
+    Constants.assert_command(client, arg, parameters='>0')
+    if client.pm_mute:
+        raise ClientError('You have muted all PM conversations.')
+
+    targets = {target for target in client.hub.get_players() if target.is_staff()}
+    targets = targets-{client}
+    if not targets:
+        raise ClientError('No GMs are available in your hub.')
+
+    # Only send messages to targets who have not muted PMs
+    targets = {target for target in targets if not target.pm_mute}
+    if not targets:
+        raise ClientError('No GMs available in your hub have PMs enabled.')
+
+    msg = arg
+    client.send_ooc(f'PM sent to all GMs in hub {client.hub.get_numerical_id()}. Message: {msg}.')
+    for target in targets:
+        target.send_ooc(f'(X) PM from {client.displayname} [{client.id}] in {client.area.name} '
+                        f'({client.area.id}) to all GMs in your hub: {msg}')
+
+
 def ooc_cmd_poison(client: ClientManager.Client, arg: str):
     """ (STAFF ONLY)
     Poisons the target with some of three effects (blindness, deafened or gagged) that kick in
@@ -7622,6 +8392,47 @@ def ooc_cmd_sneak(client: ClientManager.Client, arg: str):
         c.change_visibility(False)
 
 
+def ooc_cmd_sneakself(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY+VARYING REQUIREMENTS)
+    Makes all opened multiclients be sneaked without having to manually sneak them.
+    Opened multiclients that are already sneaked are unaffected.
+    If a multiclient is in a private area, or in a lobby area and you are not an officer, or is
+    already sneaked, the sneak will fail for that multiclient.
+    Returns an error if no opened multiclients can successfully be sneaked.
+
+    SYNTAX
+    /sneakself
+
+    EXAMPLES
+    If user with client ID 0 is GM has multiclients with ID 1 and 3, neither sneaked, and runs...
+    >>> /sneakself
+    Sneaks clients 0, 1 and 3.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True)
+
+    targets = [c for c in client.get_multiclients() if c.is_visible]
+    targets = [c for c in targets if not c.area.private_area]
+    if not client.is_officer():
+        targets = [c for c in targets if c.area.lobby_area]
+    if not targets:
+        raise ClientError('No opened clients can be sneaked.')
+
+    # Sneak matching targets
+    for c in targets:
+        c.change_visibility(False)
+
+    client.send_ooc("You sneaked all of your valid multiclients.")
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] sneaked all their valid '
+                           f'multiclients [{client.id}] ({client.area.id}).',
+                           not_to=set(targets), is_zstaff=True)
+
+    non_targets = [c for c in client.get_multiclients() if c not in targets]
+    if non_targets:
+        s_non_targets = Constants.cjoin([f'{c.displayname} [{c.id}]' for c in non_targets])
+        client.send_ooc(f'The following clients could not be sneaked: {s_non_targets}')
+
+
 def ooc_cmd_spectate(client: ClientManager.Client, arg: str):
     """
     Switches your current character to the SPECTATOR character.
@@ -8393,6 +9204,39 @@ def ooc_cmd_toggle_global(client: ClientManager.Client, arg: str):
     status = {True: 'no longer', False: 'now'}
 
     client.send_ooc('You will {} receive global messages.'.format(status[client.muted_global]))
+
+
+def ooc_cmd_toggle_music_list_default(client: ClientManager.Client, arg: str):
+    """
+    Toggles the option that controls which music list shown when no personal music list is active:
+    the current hub music list (default), or the server default music list.
+
+    SYNTAX
+    /toggle_music_list_default
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    Assuming that the current option makes the current hub music list be shown...
+    >>> /toggle_music_list_default
+    The server default music list will now be shown when no personal music list is active.
+    >>> /toggle_music_list_default
+    The current hub music list will now be shown when no personal music list is active.
+    """
+
+    Constants.assert_command(client, arg, parameters='=0')
+
+    new_value = not client.music_manager.if_default_show_hub_music
+    client.music_manager.if_default_show_hub_music = new_value
+
+    if new_value:
+        client.send_ooc('You will now see the hub music list whenever you do not have a '
+                        'personal music list active.')
+    else:
+        client.send_ooc('You will now see the server music list whenever you do not have a '
+                        'personal music list active.')
+    client.send_music_list_view()
 
 
 def ooc_cmd_toggle_pm(client: ClientManager.Client, arg: str):
@@ -10001,6 +10845,146 @@ def ooc_cmd_zone_add(client: ClientManager.Client, arg: str):
             c.send_ooc('Your area has been made part of zone `{}`.'.format(zone_id))
 
 
+def ooc_cmd_zone_ambient(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Sets up the ambient sound effect of all areas in the zone you are watching. Players in areas
+    part of the zone, and players that later join an area of the zone, will be ordered to play the
+    area ambient sound effect.
+    This command is equivalent to calling /ambient in every area of the zone you are watching.
+    GMs may still individually change or clear ambient sound effects for areas of the zone after
+    running the command, and such actions will override the "zone ambient".
+
+    SYNTAX
+    /zone_ambient <ambient_name>
+
+    PARAMETERS
+    <ambient_name>: Name of the ambient sound effect
+
+    EXAMPLES
+    >>> /zone_ambient wind.wav
+    Sets the ambient sound effect of all areas of the current zone to `wind.wav`.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='>0')
+
+    if not client.zone_watched:
+        raise ZoneError('You are not watching a zone.')
+
+    zone = client.zone_watched
+
+    targets = zone.get_players()
+    client.send_ooc(f'You have set the ambient sound effect of all areas of your zone to `{arg}`.')
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] have set the ambient sound '
+                           f'effect of all areas of your zone to `{arg}` ({client.area.id}).',
+                           is_zstaff=True)
+
+    for c in targets:
+        c.send_area_ambient(name=arg)
+    for a in zone.get_areas():
+        a.ambient = arg
+
+
+def ooc_cmd_zone_ambient_end(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Clears the ambient sound effect of all areas of the zone you are watching. Players in an area
+    part of the zone will be ordered to stop playing the former area ambient sound effect, and
+    players that later join some area of the zone will not play the former area ambient sound
+    effect.
+    This command is equivalent to calling /ambient_end in every area of the zone you are watching,
+    without displaying error messages if it happened to be the case no ambient sound effect was set
+    for some (or all) of the areas of the zone.
+    GMs may still individually change or clear ambient sound effects for areas of the zone after
+    running the command, and such actions will override the "zone ambient".
+    Returns an error if you are not watching a zone.
+
+    SYNTAX
+    /zone_ambient
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    >>> /zone_ambient_end
+    Clears the ambient sound effect of all areas of the zone you are watching.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
+
+    if not client.zone_watched:
+        raise ZoneError('You are not watching a zone.')
+
+    zone = client.zone_watched
+
+    targets = zone.get_players()
+    client.send_ooc('You have removed the area ambient sound effect of all areas of your zone.')
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] removed the area ambient sound '
+                           f'effect of all areas of your zone ({client.area.id}).', is_zstaff=True)
+
+    for c in targets:
+        c.send_area_ambient(name='')
+    for a in zone.get_areas():
+        a.ambient = ''
+
+
+def ooc_cmd_zone_autoglance(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Changes the zone autoglance automatic setting of the zone you are watching from False to True,
+    or True to False, and warns all players in an area part of the zone (as well as zone watchers)
+    about the change in OOC. Newly created zones have such setting set to False.
+    If set to True, the autoglance setting of all players in an area part of the zone will be turned
+    on, and so will the autoglance setting of any player who later joins an area part of the zone.
+    If such player already had autoglance on, there is no effect. Players are free to change their
+    autoglance setting manually via /autoglance. Players who go on to an area part of the zone will
+    not have the zone change their autoglance setting on departure.
+    If set to False, the autoglance setting of all players in an area part of the zone will be
+    turned off. If such player already had autoglance off, there is no effect.
+    Returns an error if you are not watching a zone.
+
+    SYNTAX
+    /zone_autoglance
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    Assuming you are watching newly created zome z0...
+    >>> /zone_autoglance
+    Sets the zone autoglance automatic setting of the zone z0 to True.
+    >>> /zone_autoglance
+    Sets the zone autoglance automatic setting of the zone z0 to False.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
+
+    if not client.zone_watched:
+        raise ZoneError('You are not watching a zone.')
+
+    zone = client.zone_watched
+    status = {False: 'off', True: 'on'}
+
+    try:
+        zone_autoglance = zone.get_property('Autoglance')
+    except ZoneError.PropertyNotFoundError:
+        zone_autoglance = False
+
+    zone_autoglance = not zone_autoglance
+    zone.set_property('Autoglance', zone_autoglance)
+
+    status = {True: 'on', False: 'off'}
+    client.send_ooc(f'You turned {status[zone_autoglance]} autoglance in your zone.')
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] has turned '
+                           f'{status[zone_autoglance]} autoglance in your zone '
+                           f'({client.area.id}).', is_zstaff=True)
+    client.send_ooc_others(f'Autoglance was automatically turned {status[zone_autoglance]} in your '
+                           f'zone.', is_zstaff=False, pred=lambda c: c.area.in_zone == zone)
+
+    for player in zone.get_players():
+        player.autoglance = zone_autoglance
+
+    logger.log_server(f'[{client.area.id}][{client.get_char_name()}]Changed autoglance in zone '
+                      f'{zone.get_id()} to {zone_autoglance}.', client)
+
+
 def ooc_cmd_zone_autopass(client: ClientManager.Client, arg: str):
     """ (STAFF ONLY)
     Changes the zone autopass automatic setting of the zone you are watching from False to True,
@@ -11039,990 +12023,6 @@ def ooc_cmd_mod_narrate(client: ClientManager.Client, arg: str):
 
     for c in client.area.clients:
         c.send_ic(msg=arg, color=5, hide_character=1, bypass_text_replace=True)
-
-
-def ooc_cmd_ambient(client: ClientManager.Client, arg: str):
-    """ (STAFF ONLY)
-    Sets up the ambient sound effect of the current area. Players in the current area, and players
-    that later join the area, will be ordered to play the area ambient sound effect.
-
-    SYNTAX
-    /ambient <ambient_name>
-
-    PARAMETERS
-    <ambient_name>: Name of the ambient sound effect
-
-    EXAMPLES
-    >>> /ambient wind.wav
-    Sets the ambient sound effect of the area to `wind.wav`.
-    """
-
-    Constants.assert_command(client, arg, is_staff=True, parameters='>0')
-
-    client.area.ambient = arg
-
-    for target in client.area.clients:
-        target.send_area_ambient(name=arg)
-
-    client.send_ooc(f'You have set the ambient sound effect of your area to `{arg}`.')
-    client.send_ooc_others(f'The ambient sound effect of your area was set to `{arg}`.',
-                           in_area=True, is_zstaff_flex=False)
-    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] set the ambient sound effect '
-                           f'of their area to `{arg}` ({client.area.id}).', is_zstaff_flex=True)
-
-
-def ooc_cmd_ambient_end(client: ClientManager.Client, arg: str):
-    """ (STAFF ONLY)
-    Clears the ambient sound effect of the current area. Players in the current area will be ordered
-    to stop playing the former area ambient sound effect, and players that later join the area will
-    not play the former area ambient sound effect.
-    Returns an error if no ambient sound effect is playing in the area.
-
-    SYNTAX
-    /ambient
-
-    PARAMETERS
-    None
-
-    EXAMPLES
-    >>> /ambient_end
-    Clears the ambient sound effect of the area.
-    """
-
-    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
-
-    if not client.area.ambient:
-        raise ClientError('There already is no ambient sound effect in your area.')
-
-    client.area.ambient = ''
-
-    for target in client.area.clients:
-        target.send_area_ambient(name='')
-
-    client.send_ooc('You have cleared the ambient sound effect of your area.')
-    client.send_ooc_others('The ambient sound effect of your area was cleared.', in_area=True,
-                           is_zstaff_flex=False)
-    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] cleared the ambient sound '
-                           f'effect of their area ({client.area.id}).', is_zstaff_flex=True)
-
-
-def ooc_cmd_ambient_info(client: ClientManager.Client, arg: str):
-    """
-    Displays the current area ambient sound effect.
-    Returns an error if no area ambient sound effect is playing.
-
-    SYNTAX
-    /ambient_info
-
-    PARAMETERS
-    None
-
-    EXAMPLES
-    Assuming the ambient sound effect of the current area is `wind.wav`...
-    >>> /ambient_info
-    Returns 'The current ambient sound effect of your area is `wind.wav`'.
-    """
-    Constants.assert_command(client, arg, parameters='=0')
-
-    if not client.area.ambient:
-        raise ClientError('There already is no ambient sound effect in your area.')
-
-    client.send_ooc(f'The current ambient sound effect of your area is `{client.area.ambient}`.')
-
-
-def ooc_cmd_zone_ambient(client: ClientManager.Client, arg: str):
-    """ (STAFF ONLY)
-    Sets up the ambient sound effect of all areas in the zone you are watching. Players in areas
-    part of the zone, and players that later join an area of the zone, will be ordered to play the
-    area ambient sound effect.
-    This command is equivalent to calling /ambient in every area of the zone you are watching.
-    GMs may still individually change or clear ambient sound effects for areas of the zone after
-    running the command, and such actions will override the "zone ambient".
-
-    SYNTAX
-    /zone_ambient <ambient_name>
-
-    PARAMETERS
-    <ambient_name>: Name of the ambient sound effect
-
-    EXAMPLES
-    >>> /zone_ambient wind.wav
-    Sets the ambient sound effect of all areas of the current zone to `wind.wav`.
-    """
-
-    Constants.assert_command(client, arg, is_staff=True, parameters='>0')
-
-    if not client.zone_watched:
-        raise ZoneError('You are not watching a zone.')
-
-    zone = client.zone_watched
-
-    targets = zone.get_players()
-    client.send_ooc(f'You have set the ambient sound effect of all areas of your zone to `{arg}`.')
-    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] have set the ambient sound '
-                           f'effect of all areas of your zone to `{arg}` ({client.area.id}).',
-                           is_zstaff=True)
-
-    for c in targets:
-        c.send_area_ambient(name=arg)
-    for a in zone.get_areas():
-        a.ambient = arg
-
-
-def ooc_cmd_zone_ambient_end(client: ClientManager.Client, arg: str):
-    """ (STAFF ONLY)
-    Clears the ambient sound effect of all areas of the zone you are watching. Players in an area
-    part of the zone will be ordered to stop playing the former area ambient sound effect, and
-    players that later join some area of the zone will not play the former area ambient sound
-    effect.
-    This command is equivalent to calling /ambient_end in every area of the zone you are watching,
-    without displaying error messages if it happened to be the case no ambient sound effect was set
-    for some (or all) of the areas of the zone.
-    GMs may still individually change or clear ambient sound effects for areas of the zone after
-    running the command, and such actions will override the "zone ambient".
-    Returns an error if you are not watching a zone.
-
-    SYNTAX
-    /zone_ambient
-
-    PARAMETERS
-    None
-
-    EXAMPLES
-    >>> /zone_ambient_end
-    Clears the ambient sound effect of all areas of the zone you are watching.
-    """
-
-    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
-
-    if not client.zone_watched:
-        raise ZoneError('You are not watching a zone.')
-
-    zone = client.zone_watched
-
-    targets = zone.get_players()
-    client.send_ooc('You have removed the area ambient sound effect of all areas of your zone.')
-    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] removed the area ambient sound '
-                           f'effect of all areas of your zone ({client.area.id}).', is_zstaff=True)
-
-    for c in targets:
-        c.send_area_ambient(name='')
-    for a in zone.get_areas():
-        a.ambient = ''
-
-
-def ooc_cmd_sneakself(client: ClientManager.Client, arg: str):
-    """ (STAFF ONLY+VARYING REQUIREMENTS)
-    Makes all opened multiclients be sneaked without having to manually sneak them.
-    Opened multiclients that are already sneaked are unaffected.
-    If a multiclient is in a private area, or in a lobby area and you are not an officer, or is
-    already sneaked, the sneak will fail for that multiclient.
-    Returns an error if no opened multiclients can successfully be sneaked.
-
-    SYNTAX
-    /sneakself
-
-    EXAMPLES
-    If user with client ID 0 is GM has multiclients with ID 1 and 3, neither sneaked, and runs...
-    >>> /sneakself
-    Sneaks clients 0, 1 and 3.
-    """
-
-    Constants.assert_command(client, arg, is_staff=True)
-
-    targets = [c for c in client.get_multiclients() if c.is_visible]
-    targets = [c for c in targets if not c.area.private_area]
-    if not client.is_officer():
-        targets = [c for c in targets if c.area.lobby_area]
-    if not targets:
-        raise ClientError('No opened clients can be sneaked.')
-
-    # Sneak matching targets
-    for c in targets:
-        c.change_visibility(False)
-
-    client.send_ooc("You sneaked all of your valid multiclients.")
-    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] sneaked all their valid '
-                           f'multiclients [{client.id}] ({client.area.id}).',
-                           not_to=set(targets), is_zstaff=True)
-
-    non_targets = [c for c in client.get_multiclients() if c not in targets]
-    if non_targets:
-        s_non_targets = Constants.cjoin([f'{c.displayname} [{c.id}]' for c in non_targets])
-        client.send_ooc(f'The following clients could not be sneaked: {s_non_targets}')
-
-
-def ooc_cmd_mindreader(client: ClientManager.Client, arg: str):
-    """ (STAFF ONLY)
-    Toggles a client by ID being a mind reader or not (i.e. can read all thoughts caused by /think,
-    not just those initiated by the player), or yourself if not given an argument.
-    Returns an error if the given identifier does not correspond to a user.
-
-    SYNTAX
-    /mindreader
-    /mindreader <client_id>
-
-    OPTIONAL PARAMETERS
-    {client_id}: Client identifier (number in brackets in /getarea)
-
-    EXAMPLE
-    Assuming a user with client ID 0 starts as not being a mind reader...
-    >>> /mindreader 0
-    This user can now read all thoughts.
-    >>> /mindreader 0
-    This user can no longer read thoughts not initiated by the user.
-    """
-
-    Constants.assert_command(client, arg, is_staff=True, parameters='<2')
-
-    # Invert current mindreader status of matching targets
-    if not arg:
-        target = client
-    else:
-        target = Constants.parse_id(client, arg)
-    target.is_mindreader = not target.is_mindreader
-
-    status = {False: 'no longer', True: 'now'}
-    status2 = {False: 'no longer a', True: 'a'}
-    if client != target:
-        client.send_ooc(f'{target.displayname} ({target.id}) is {status[target.is_mindreader]} a '
-                        f'mind reader.')
-        client.send_ooc_others(f'(X) {client.displayname} ({client.id}) made {target.displayname} '
-                               f'({target.id}) be {status2[target.is_mindreader]} mind reader '
-                               f'({client.area.id}).', is_zstaff_flex=True)
-        target.send_ooc(f'You are {status[target.is_transient]} a mind reader.')
-    else:
-        client.send_ooc(f'You made yourself be {status2[target.is_mindreader]} mind reader.')
-        client.send_ooc_others(f'(X) {client.displayname} ({client.id}) made themselves be '
-                               f'{status2[target.is_mindreader]} mind reader '
-                               f'({client.area.id}).', is_zstaff_flex=True)
-
-
-def ooc_cmd_bg_list(client: ClientManager.Client, arg: str):
-    """ (STAFF ONLY)
-    Sets the background list of your current hub (what backgrounds areas may normally use at any
-    given time).
-    If given no arguments, it will return the background list to its original value
-    (in config/backgrounds.yaml).
-    Returns an error if the given background list name included relative directories,
-    was not found, caused an OS error when loading, or raised a YAML or asset syntax error when
-    loading.
-
-    SYNTAX
-    /bg_list <bg_list>
-
-    PARAMETERS
-    <bg_list>: Name of the intended background list
-
-    EXAMPLES
-    >>> /bg_list beach
-    Load the "beach" background list.
-    >>> /bg_list
-    Reset the background list to its original value.
-    """
-
-    Constants.assert_command(client, arg, is_staff=True)
-
-    client.hub.background_manager.command_list_load(client, arg)
-
-
-def ooc_cmd_bg_list_info(client: ClientManager.Client, arg: str):
-    """ (STAFF ONLY)
-    Returns the background list of your current hub.
-
-    SYNTAX
-    /bg_list_info
-
-    PARAMETERS
-    None
-
-    EXAMPLES
-    >>> /bg_list_info
-    May return something like this:
-    | $H: The current background list is the custom list `custom`.
-    """
-
-    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
-
-    client.hub.background_manager.command_list_info(client)
-
-
-def ooc_cmd_char_list(client: ClientManager.Client, arg: str):
-    """ (STAFF ONLY)
-    Sets the current character list of your current hub (what characters a player may use at any
-    given time).
-    If given no arguments, it will return the character list to its original value
-    (in config/characters.yaml).
-    Returns an error if the given character list name included relative directories,
-    was not found, caused an OS error when loading, or raised a YAML or asset syntax error when
-    loading.
-
-    SYNTAX
-    /char_list <char_list>
-
-    PARAMETERS
-    <char_list>: Name of the intended character list
-
-    EXAMPLES
-    >>> /char_list Transylvania
-    Load the "Transylvania" character list.
-    >>> /char_list
-    Reset the character list to its original value.
-    """
-
-    Constants.assert_command(client, arg, is_staff=True)
-
-    client.hub.character_manager.command_list_load(client, arg)
-
-
-def ooc_cmd_char_list_info(client: ClientManager.Client, arg: str):
-    """ (STAFF ONLY)
-    Returns the character list of your current hub.
-
-    SYNTAX
-    /char_list_info
-
-    PARAMETERS
-    None
-
-    EXAMPLES
-    >>> /char_list_info
-    May return something like this:
-    | $H: The current character list is the custom list `custom`.
-    """
-
-    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
-
-    client.hub.character_manager.command_list_info(client)
-
-
-def ooc_cmd_area_list_info(client: ClientManager.Client, arg: str):
-    """ (STAFF ONLY)
-    Returns the area list of your current hub.
-
-    SYNTAX
-    /area_list_info
-
-    PARAMETERS
-    None
-
-    EXAMPLES
-    >>> /area_list_info
-    May return something like this:
-    | $H: The current area list is the custom list `beach`.
-    """
-
-    Constants.assert_command(client, arg, is_officer=True, parameters='=0')
-
-    client.hub.area_manager.command_list_info(client)
-
-
-def ooc_cmd_music_list_info(client: ClientManager.Client, arg: str):
-    """
-    Returns your current music list.
-
-    SYNTAX
-    /music_list_info
-
-    PARAMETERS
-    None
-
-    EXAMPLES
-    >>> /music_list_info
-    May return something like this:
-    | $H: The current music list is the custom list `trial`.
-    """
-
-    Constants.assert_command(client, arg,  parameters='=0')
-
-    client.music_manager.command_list_info(client)
-
-
-def ooc_cmd_bg_period(client: ClientManager.Client, arg: str):
-    """ (STAFF ONLY)
-    Changes the background of the current area associated with the given period.
-    Returns an error if area background is locked and you are unathorized or if the sought
-    background does not exist.
-
-    SYNTAX
-    /bg_period <period_name> <background_name>
-
-    PARAMETERS
-    <period_name>: Period name
-    <background_name>: New background name, possibly with spaces (e.g. Principal's Room)
-
-    EXAMPLES
-    >>> /bg_period night Beach (night)
-    Changes background to Beach (night) whenever the area has a night period active.
-    """
-
-    Constants.assert_command(client, arg, is_staff=True, parameters='>1')
-    if not client.is_mod and client.area.bg_lock:
-        raise AreaError("This area's background is locked.")
-
-    args = arg.split()
-    tod_name = args[0]
-    bg_name = ' '.join(args[1:])
-
-    client.area.change_background_tod(bg_name, tod_name, validate=False)
-    client.send_ooc(f'You changed the background associated with period `{tod_name}` to '
-                    f'`{bg_name}`.')
-    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] changed the background '
-                            f'associated with period `{tod_name}` to `{bg_name}`.',
-                            is_zstaff_flex=True)
-    logger.log_server('[{}][{}]Changed background associated with period `{}` to {}'
-                      .format(client.area.id, client.get_char_name(), tod_name, bg_name), client)
-
-
-def ooc_cmd_bg_period_end(client: ClientManager.Client, arg: str):
-    """ (STAFF ONLY)
-    Removes the background of the current area associated with the given period
-    Returns an error if area background is locked and you are unathorized or if the sought
-    background does not exist.
-
-    SYNTAX
-    /bg_period_end <period_name>
-
-    PARAMETERS
-    <period_name>: Period name
-
-    EXAMPLES
-    >>> /bg_period_end night
-    Removes the background associated with the night period of the current area.
-    """
-
-    Constants.assert_command(client, arg, is_staff=True, parameters='=1')
-    if not client.is_mod and client.area.bg_lock:
-        raise AreaError("This area's background is locked.")
-
-    client.area.change_background_tod('', arg, validate=False)
-    client.send_ooc(f'You removed the background associated with period `{arg}`.')
-    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] removed the background '
-                            f'associated with period `{arg}`.',
-                            is_zstaff_flex=True)
-    logger.log_server('[{}][{}]Removed background associated with period `{}`'
-                      .format(client.area.id, client.get_char_name(), arg), client)
-
-
-def ooc_cmd_hub(client: ClientManager.Client, arg: str):
-    """
-    Either lists all hubs in the server or changes your area to a new given area.
-    Returns an error if you are already in the target hub or you are unable to move to the default
-    area of the new hub.
-
-    SYNTAX
-    /hub
-    /hub <new_hub_numerical_id>
-
-    PARAMETERS
-    <new_hub_numerical_id>: Numerical ID of the hub
-
-    EXAMPLES
-    >>> /hub
-    Lists all hubs in the server.
-    >>> /hub 1
-    Moves you to hub 1.
-    """
-
-    Constants.assert_command(client, arg, parameters='<2')
-
-    args = arg.split()
-    # List all hubs
-    if not args:
-        client.send_limited_hub_list()
-
-    # Switch to new area
-    else:
-        try:
-            numerical_id = int(args[0])
-        except ValueError:
-            raise ArgumentError('Hub ID must be a number.')
-
-        try:
-            hub = client.hub.manager.get_managee_by_numerical_id(numerical_id)
-        except HubError.ManagerInvalidGameIDError:
-            raise HubError.ManagerInvalidGameIDError('Hub not found.')
-
-        client.change_hub(hub, from_party=(client.party is not None))
-
-def ooc_cmd_hub_create(client: ClientManager.Client, arg: str):
-    """ (OFFICER ONLY)
-    Creates a new hub. The numerical ID of the hub will be the lowest non-taken numerical hub ID.
-
-    SYNTAX
-    /hub_create
-
-    PARAMETERS
-    None
-
-    EXAMPLES
-    Assuming that two hubs with numerical IDs 0 and 2 respectively exist...
-    >>> /hub_create
-    Creates hub with numerical ID 1.
-    >>> /hub_create
-    Creates hub with numerical ID 3.
-    """
-
-    Constants.assert_command(client, arg, is_officer=True, parameters='=0')
-
-    hub = client.hub.manager.new_managee()
-
-    for target in client.server.get_clients():
-        target.send_music_list_view()
-
-    client.send_ooc(f'You created hub {hub.get_numerical_id()}.')
-    client.send_ooc_others(f'{client.name} [{client.id}] created hub {hub.get_numerical_id()}.',
-                           is_officer=True, in_hub=None)
-
-
-def ooc_cmd_hub_end(client: ClientManager.Client, arg: str):
-    """ (VARYING REQUIREMENTS)
-    (STAFF ONLY) Deletes the current hub if not given a numerical ID, or
-    (OFFICER ONLY) of the given hub by numerical ID.
-    Players in the deleted hub are moved to the default hub of the server.
-    Returns an error if given a numerical ID and it is not the numerical ID of a hub in the server,
-    or if the server has only one hub.
-
-    SYNTAX
-    /hub_end
-    /hub_end <hub_id>
-
-    PARAMETERS
-    <hub_id>: Numerical ID
-
-    EXAMPLES
-    >>> /hub_end
-    Deletes the current hub.
-    >>> /hub_end 2
-    Deletes the hub with numerical ID 2.
-    """
-
-    try:
-        Constants.assert_command(client, arg, is_officer=True, parameters='<2')
-    except ClientError.UnauthorizedError:
-        Constants.assert_command(client, arg, is_staff=True, parameters='=0')
-
-    if not arg:
-        arg = client.hub.get_numerical_id()
-
-    try:
-        hub = client.hub.manager.get_managee_by_numerical_id(arg)
-    except HubError.ManagerInvalidGameIDError:
-        raise ClientError(f'Hub {arg} not found.')
-
-    try:
-        client.hub.manager.delete_managee(hub)
-    except HubError.ManagerCannotManageeNoManagees:
-        raise ClientError(f'You cannot delete a hub when it is the only one of the server.')
-
-    for target in client.server.get_clients():
-        target.send_music_list_view()
-
-    client.send_ooc(f'You deleted hub {hub.get_numerical_id()}.')
-    client.send_ooc_others(f'{client.name} [{client.id}] deleted hub {hub.get_numerical_id()}.',
-                           is_officer=True, in_hub=None)
-
-
-def ooc_cmd_hub_info(client: ClientManager.Client, arg: str):
-    """ (VARYING REQUIREMENTS)
-    (STAFF ONLY) Return information about the current hub if not given a numerical ID, or
-    (OFFICER ONLY) of the given hub by numerical ID.
-    Returns an error if given a numerical ID and it is not the numerical ID of a hub in the server.
-
-    SYNTAX
-    /hub_info
-    /hub_info <hub_id>
-
-    PARAMETERS
-    <hub_id>: Numerical ID
-
-    EXAMPLES
-    >>> /hub_info
-    May return something like this:
-    | [17:34] $H: == Hub 0 ==
-    | *GMs: 1. NonGMs: 0
-    | *Area list: config/areas.yaml
-    | *Background list: config/bg_lists/beach.yaml
-    | *Character list: config/char_lists/custom.yaml
-    | *DJ list: config/music.yaml
-    """
-
-    try:
-        Constants.assert_command(client, arg, is_officer=True, parameters='<2')
-    except ClientError.UnauthorizedError:
-        Constants.assert_command(client, arg, is_staff=True, parameters='=0')
-
-    if not arg:
-        arg = client.hub.get_numerical_id()
-
-    try:
-        hub = client.hub.manager.get_managee_by_numerical_id(arg)
-    except HubError.ManagerInvalidGameIDError:
-        raise ClientError(f'Hub {arg} not found.')
-
-    info = hub.get_info()
-    client.send_ooc(info)
-
-
-def ooc_cmd_hub_password(client: ClientManager.Client, arg: str):
-    """ (STAFF ONLY)
-    Changes the hub password.
-
-    SYNTAX
-    /hub_password <password>
-
-    PARAMETERS
-    <password>: New password
-
-    EXAMPLES
-    >>> /hub_password 11037
-    Sets the hub password to 11037.
-    """
-
-    Constants.assert_command(client, arg, is_staff=True, parameters='>0')
-
-    client.hub.set_password(arg)
-    client.send_ooc('You have changed the password of your hub.')
-    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] changed the password of your '
-                           f'hub. Do /hub_password_info to retrieve it.',
-                           is_zstaff_flex=True, is_officer=False)
-    hid = client.hub.get_numerical_id()
-    client.send_ooc_others(f'{client.name} [{client.id}] changed the password of hub {hid}. Do '
-                           f'/hub_password_info {hid} to retrieve it.',
-                           is_officer=True, in_hub=None)
-
-
-def ooc_cmd_hub_password_info(client: ClientManager.Client, arg: str):
-    """ (VARYING REQUIREMENTS)
-    (STAFF ONLY) Gets the password of the current hub or, (OFFICER ONLY) the given hub by numerical
-    ID.
-    Returns an error if given a numerical ID and it is not the numerical ID of a hub in the server.
-
-    SYNTAX
-    /hub_password_info
-    /hub_password_info <hub_id>
-
-    PARAMETERS
-    <hub_id>: Numerical ID
-
-    EXAMPLES
-    >>> /hub_password_info
-    May return something like this:
-    | $H: The hub password is `2124`.
-    """
-
-    try:
-        Constants.assert_command(client, arg, is_officer=True, parameters='<2')
-    except ClientError.UnauthorizedError:
-        Constants.assert_command(client, arg, is_staff=True, parameters='=0')
-
-    if not arg:
-        arg = client.hub.get_numerical_id()
-
-    try:
-        hub = client.hub.manager.get_managee_by_numerical_id(arg)
-    except HubError.ManagerInvalidGameIDError:
-        raise ClientError(f'Hub {arg} not found.')
-
-    password = hub.get_password()
-    client.send_ooc(f'The hub password is `{password}`.')
-
-
-def ooc_cmd_hub_rename(client: ClientManager.Client, arg: str):
-    """ (STAFF ONLY)
-    Changes the name of a hub by its numerical ID if given a name, or clears it if not given one.
-
-    SYNTAX
-    /hub_rename
-    /hub_rename <name>
-
-    PARAMETERS
-    <name>: Name
-
-    EXAMPLES
-    >>> /hub_rename Great Hub
-    Changes the name of the hub to Great Hub.
-    >>> /hub_rename
-    Clears the name of the hub.
-    """
-
-    Constants.assert_command(client, arg, is_staff=True)
-
-    hub = client.hub
-    hub.set_name(arg)
-
-    if arg:
-        client.send_ooc(f'You have renamed your hub to `{arg}`.')
-        client.send_ooc_others(f'{client.displayname} [{client.id}] renamed your hub to `{arg}` '
-                               f'({client.area.id}).', is_zstaff_flex=True)
-    else:
-        client.send_ooc('You have cleared the name of your hub.')
-        client.send_ooc_others(f'{client.displayname} [{client.id}] cleared the name of your hub '
-                               f'({client.area.id}).', is_zstaff_flex=True)
-
-    for target in client.server.get_clients():
-        target.send_music_list_view()
-
-
-def ooc_cmd_dj_list(client: ClientManager.Client, arg: str):
-    """ (STAFF ONLY)
-    Sets the current DJ list of your current hub (what music list a player will see when joining an
-    area of your hub if they do not have a personal music list active).
-    If given no arguments, it will return the DJ list to its original value
-    (in config/music.yaml).
-    Returns an error if the given music list name included relative directories,
-    was not found, caused an OS error when loading, or raised a YAML or asset syntax error when
-    loading.
-
-    SYNTAX
-    /dj_list <dj_list>
-
-    PARAMETERS
-    <dj_list>: Name of the intended music list to serve as DJ list.
-
-    EXAMPLES
-    >>> /dj_list trial
-    Load the "trial" DJ list.
-    >>> /dj_list
-    Reset the DJ list to its original value.
-    """
-
-    Constants.assert_command(client, arg, is_staff=True)
-
-    client.hub.music_manager.command_list_load(client, arg)
-
-    for target in client.hub.get_players():
-        if target.music_manager.is_default_file_loaded():
-            target.send_ooc('As you had no personal music list loaded, you will be shown the hub '
-                            'music list.')
-            target.send_music_list_view()
-        else:
-            target.send_ooc('As you had a personal music list loaded, you will not be shown the '
-                            'hub music list. Display the hub music list by running /music_list.')
-
-def ooc_cmd_dj_list_info(client: ClientManager.Client, arg: str):
-    """ (STAFF ONLY)
-    Returns the DJ list of your current hub.
-
-    SYNTAX
-    /dj_list_info
-
-    PARAMETERS
-    None
-
-    EXAMPLES
-    >>> /dj_list_info
-    May return something like this:
-    | $H: The current DJ list is the custom list `trial`.
-    """
-
-    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
-
-    client.hub.music_manager.command_list_info(client)
-
-
-def ooc_cmd_toggle_music_list_default(client: ClientManager.Client, arg: str):
-    """
-    Toggles the option that controls which music list shown when no personal music list is active:
-    the current hub music list (default), or the server default music list.
-
-    SYNTAX
-    /toggle_music_list_default
-
-    PARAMETERS
-    None
-
-    EXAMPLES
-    Assuming that the current option makes the current hub music list be shown...
-    >>> /toggle_music_list_default
-    The server default music list will now be shown when no personal music list is active.
-    >>> /toggle_music_list_default
-    The current hub music list will now be shown when no personal music list is active.
-    """
-
-    Constants.assert_command(client, arg, parameters='=0')
-
-    new_value = not client.music_manager.if_default_show_hub_music
-    client.music_manager.if_default_show_hub_music = new_value
-
-    if new_value:
-        client.send_ooc('You will now see the hub music list whenever you do not have a '
-                        'personal music list active.')
-    else:
-        client.send_ooc('You will now see the server music list whenever you do not have a '
-                        'personal music list active.')
-    client.send_music_list_view()
-
-
-def ooc_cmd_zone_autoglance(client: ClientManager.Client, arg: str):
-    """ (STAFF ONLY)
-    Changes the zone autoglance automatic setting of the zone you are watching from False to True,
-    or True to False, and warns all players in an area part of the zone (as well as zone watchers)
-    about the change in OOC. Newly created zones have such setting set to False.
-    If set to True, the autoglance setting of all players in an area part of the zone will be turned
-    on, and so will the autoglance setting of any player who later joins an area part of the zone.
-    If such player already had autoglance on, there is no effect. Players are free to change their
-    autoglance setting manually via /autoglance. Players who go on to an area part of the zone will
-    not have the zone change their autoglance setting on departure.
-    If set to False, the autoglance setting of all players in an area part of the zone will be
-    turned off. If such player already had autoglance off, there is no effect.
-    Returns an error if you are not watching a zone.
-
-    SYNTAX
-    /zone_autoglance
-
-    PARAMETERS
-    None
-
-    EXAMPLES
-    Assuming you are watching newly created zome z0...
-    >>> /zone_autoglance
-    Sets the zone autoglance automatic setting of the zone z0 to True.
-    >>> /zone_autoglance
-    Sets the zone autoglance automatic setting of the zone z0 to False.
-    """
-
-    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
-
-    if not client.zone_watched:
-        raise ZoneError('You are not watching a zone.')
-
-    zone = client.zone_watched
-    status = {False: 'off', True: 'on'}
-
-    try:
-        zone_autoglance = zone.get_property('Autoglance')
-    except ZoneError.PropertyNotFoundError:
-        zone_autoglance = False
-
-    zone_autoglance = not zone_autoglance
-    zone.set_property('Autoglance', zone_autoglance)
-
-    status = {True: 'on', False: 'off'}
-    client.send_ooc(f'You turned {status[zone_autoglance]} autoglance in your zone.')
-    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] has turned '
-                           f'{status[zone_autoglance]} autoglance in your zone '
-                           f'({client.area.id}).', is_zstaff=True)
-    client.send_ooc_others(f'Autoglance was automatically turned {status[zone_autoglance]} in your '
-                           f'zone.', is_zstaff=False, pred=lambda c: c.area.in_zone == zone)
-
-    for player in zone.get_players():
-        player.autoglance = zone_autoglance
-
-    logger.log_server(f'[{client.area.id}][{client.get_char_name()}]Changed autoglance in zone '
-                      f'{zone.get_id()} to {zone_autoglance}.', client)
-
-
-def ooc_cmd_pm_gms(client: ClientManager.Client, arg: str):
-    """
-    Sends a personal message to all users with rank of GM or above other than yourself in your hub.
-    Returns an error if no such users could be found, or if you or all such users muted PMs.
-
-    SYNTAX
-    /pm <message>
-
-    PARAMETERS
-    <message>: Message to be sent.
-
-    EXAMPLES
-    >>> /pm_gms What will I get for Christmas?
-    Sends that message to all GMs in your hub.
-    """
-
-    Constants.assert_command(client, arg, parameters='>0')
-    if client.pm_mute:
-        raise ClientError('You have muted all PM conversations.')
-
-    targets = {target for target in client.hub.get_players() if target.is_staff()}
-    targets = targets-{client}
-    if not targets:
-        raise ClientError('No GMs are available in your hub.')
-
-    # Only send messages to targets who have not muted PMs
-    targets = {target for target in targets if not target.pm_mute}
-    if not targets:
-        raise ClientError('No GMs available in your hub have PMs enabled.')
-
-    msg = arg
-    client.send_ooc(f'PM sent to all GMs in hub {client.hub.get_numerical_id()}. Message: {msg}.')
-    for target in targets:
-        target.send_ooc(f'(X) PM from {client.displayname} [{client.id}] in {client.area.name} '
-                        f'({client.area.id}) to all GMs in your hub: {msg}')
-
-
-def ooc_cmd_noteworthy_set(client: ClientManager.Client, arg: str):
-    """ (STAFF ONLY)
-    Sets (and replaces!) the noteworthy text of the current area to the given one.
-    If not given any text, it will set the text to be the area's default noteworthy text.
-    The noteworthy text does not reset or change if the noteworthy status of an area changes.
-
-    SYNTAX
-    /noteworthy_set {text}
-
-    PARAMETERS
-    None
-
-    OPTIONAL PARAMETERS
-    {text}: New noteworthy text.
-
-    EXAMPLES
-    Assuming you are in area 0
-    >>> /noteworthy_set [You notice some broken glass on the floor]
-    Sets the area noteworthy text in area 0 to be "[You notice some broken glass on the floor]".
-    >>> /noteworthy_set
-    Sets the area noteworthy text in area 0 to be the default text.
-    """
-
-    Constants.assert_command(client, arg, is_staff=True)
-
-    if not arg:
-        client.area.noteworthy_text = client.area.default_noteworthy_text
-        client.send_ooc('Reset the area noteworthy text to its original value.')
-        client.send_ooc_others('(X) {} [{}] reset the area noteworthy text of your area to its '
-                               'original value.'
-                               .format(client.displayname, client.id),
-                               is_zstaff_flex=True, in_area=True)
-        client.send_ooc_others('(X) {} [{}] reset the area noteworthy text of area {} to its '
-                               'original value.'
-                               .format(client.displayname, client.id, client.area.name),
-                               is_zstaff_flex=True, in_area=False)
-        logger.log_server('[{}][{}]Reset the area noteworthy text in {}.'
-                          .format(client.area.id, client.get_char_name(), client.area.name), client)
-
-    else:
-        client.area.noteworthy_text = arg
-        client.send_ooc('Updated the area noteworthy text to `{}`.'.format(arg))
-        client.send_ooc_others('(X) {} [{}] set the area noteworthy text of your area to `{}`.'
-                               .format(client.displayname, client.id, client.area.noteworthy_text),
-                               is_zstaff_flex=True, in_area=True)
-        client.send_ooc_others('(X) {} [{}] set the area noteworthy text of area {} to `{}`.'
-                               .format(client.displayname, client.id, client.area.name,
-                                       client.area.noteworthy_text),
-                               is_zstaff_flex=True, in_area=False)
-        logger.log_server('[{}][{}]Set the area noteworthy text to {}.'
-                          .format(client.area.id, client.get_char_name(), arg), client)
-
-
-def ooc_cmd_noteworthy_info(client: ClientManager.Client, arg: str):
-    """ (STAFF ONLY)
-    Gets the noteworthy status and noteworthy text of the current area.
-
-    SYNTAX
-    /noteworthy_info
-
-    PARAMETERS
-    None
-
-    EXAMPLES
-    >>> /noteworthy_info
-    | $H: The current area is currently noteworthy. The current noteworthy text is `[Test]`.
-    """
-
-    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
-
-    status = {True: 'is', False: 'is not'}
-    client.send_ooc(f'The current area {status[client.area.noteworthy]} currently noteworthy. '
-                    f'The current noteworthy text is `{client.area.noteworthy_text}`.')
 
 
 def ooc_cmd_exec(client: Union[ClientManager.Client, None], arg: str):
