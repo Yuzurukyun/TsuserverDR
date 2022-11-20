@@ -51,6 +51,7 @@ class MusicManager(AssetManager):
         super().__init__(server, hub=hub)
         self._music = []
         self._source_file = 'config/music.yaml'
+        self._previous_source_file = None
 
     def get_type_name(self) -> str:
         """
@@ -112,6 +113,20 @@ class MusicManager(AssetManager):
         """
 
         return self._source_file
+
+    def get_previous_source_file(self) -> Union[str, None]:
+        """
+        Return the output that self.get_source_file() would have returned *before* the last
+        successful time a music list was successfully loaded.
+        If no such call was ever made, return None.
+
+        Returns
+        -------
+        Union[str, None]
+            Previous source file or None.
+        """
+
+        return self._previous_source_file
 
     def get_custom_folder(self) -> str:
         """
@@ -206,7 +221,10 @@ class MusicManager(AssetManager):
 
         return output
 
-    def _load_music(self, new_list: List[Dict[str, Any]], source_file: Union[str, None]) -> List[Dict[str, Any]]:
+    def _load_music(self, new_list: List[Dict[str, Any]],
+                    source_file: Union[str, None]) -> List[Dict[str, Any]]:
+        self._previous_source_file = self._source_file
+
         self._music = new_list.copy()
         self._source_file = source_file
 

@@ -55,6 +55,8 @@ class BackgroundManager(AssetManager):
         super().__init__(server, hub=hub)
         self._backgrounds = ['default']
         self._source_file = 'config/backgrounds.yaml'
+        self._previous_source_file = None
+
         self._default_background = self._backgrounds[0]
 
     def get_type_name(self) -> str:
@@ -118,6 +120,20 @@ class BackgroundManager(AssetManager):
         """
 
         return self._source_file
+
+    def get_previous_source_file(self) -> Union[str, None]:
+        """
+        Return the output that self.get_source_file() would have returned *before* the last
+        successful time a background list was successfully loaded.
+        If no such call was ever made, return None.
+
+        Returns
+        -------
+        Union[str, None]
+            Previous source file or None.
+        """
+
+        return self._previous_source_file
 
     def get_custom_folder(self) -> str:
         """
@@ -214,6 +230,8 @@ class BackgroundManager(AssetManager):
         return output
 
     def _load_backgrounds(self, new_list: List[str], source_file: Union[str, None]) -> List[str]:
+        self._previous_source_file = self._source_file
+
         lower = [name.lower() for name in new_list]
         self._backgrounds = lower
         self._source_file = source_file

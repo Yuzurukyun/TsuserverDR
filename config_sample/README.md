@@ -1,7 +1,7 @@
 # Server configuration files
 
 ## Before you get started...
-With your copy of this software, you should check that you have the following files in `\config_sample\`:
+With your copy of this software, you should check that you have the following files in `/config_sample/`:
 
 * `config.yaml`
 * `areas.yaml`

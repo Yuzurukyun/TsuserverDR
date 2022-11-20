@@ -52,6 +52,7 @@ class CharacterManager(AssetManager):
         super().__init__(server, hub=hub)
         self._characters = []
         self._source_file = 'config/characters.yaml'
+        self._previous_source_file = None
 
     def get_type_name(self) -> str:
         """
@@ -114,6 +115,20 @@ class CharacterManager(AssetManager):
         """
 
         return self._source_file
+
+    def get_previous_source_file(self) -> Union[str, None]:
+        """
+        Return the output that self.get_source_file() would have returned *before* the last
+        successful time a character list was successfully loaded.
+        If no such call was ever made, return None.
+
+        Returns
+        -------
+        Union[str, None]
+            Previous source file or None.
+        """
+
+        return self._previous_source_file
 
     def get_custom_folder(self) -> str:
         """
@@ -200,6 +215,8 @@ class CharacterManager(AssetManager):
         return output
 
     def _load_characters(self, new_list: List[str], source_file: Union[str, None]) -> List[str]:
+        self._previous_source_file = self._source_file
+
         self._characters = new_list.copy()
         self._source_file = source_file
 
