@@ -78,6 +78,9 @@ def log_debug(msg: str, client: Union[ClientManager.Client, None] = None):
     logging.getLogger('debug').debug(msg)
 
 
+def _print_exception(etype, evalue, etraceback):
+    return f'\n{"".join(traceback.format_exception(etype, evalue, etraceback))}'
+
 def _log_error(server: TsuserverDR) -> str:
     msg = ''
 
@@ -92,7 +95,7 @@ def _log_error(server: TsuserverDR) -> str:
 
     # Add list of clients to error log
     try:
-        msg += '\n\n\n= Client dump. ='
+        msg += '\n\n\n= Dump of clients ='
         msg += f'\n*Number of clients: {len(server.get_clients())}'
         msg += '\n*Current clients'
         clients = sorted(server.get_clients(), key=lambda c: c.id)
@@ -102,31 +105,45 @@ def _log_error(server: TsuserverDR) -> str:
                 msg += f'\n\n{c.get_info(as_mod=True)}'
             except Exception:
                 etype, evalue, etraceback = sys.exc_info()
-                msg += f'\n\nError generating client dump for client {c.id}.'
-                msg += f'\n{"".join(traceback.format_exception(etype, evalue, etraceback))}'
+                msg += f'\n\nError generating dump of clients for client {c.id}.'
+                msg += _print_exception(etype, evalue, etraceback)
     except Exception:
         etype, evalue, etraceback = sys.exc_info()
-        msg += '\nError generating rest of client dump.'
-        msg += f'\n{"".join(traceback.format_exception(etype, evalue, etraceback))}'
+        msg += '\nError generating rest of dump of clients.'
+        msg += _print_exception(etype, evalue, etraceback)
 
 
-    # Add list of areas to error log
-    msg += '\n\n\n= Area dump ='
-    for hub in server.hub_manager.get_managees():
-        msg += f'\n\n== Hub {hub.get_id()} =='
-        try:
-            msg += f'\n*Current area list: {hub.area_manager.get_source_file()}'
-            msg += f'\n*Previous area list: {hub.area_manager.get_previous_source_file()}'
-            msg += '\n*Current areas:'
+    # Add list of hubs to error log
+    try:
+        msg += '\n\n\n= Dump of hubs ='
+        msg += f'\n*Number of hubs: {len(server.hub_manager.get_managees())}'
+        msg += '\n*Current hubs'
+        hubs = sorted(server.hub_manager.get_managees(),
+                      key=lambda hub: hub.get_numerical_id())
 
-            for area in hub.area_manager.get_areas():
-                msg += '\n**{}'.format(area)
-                for c in area.clients:
-                    msg += '\n***{}'.format(c)
-        except Exception:
-            etype, evalue, etraceback = sys.exc_info()
-            msg += '\nError generating area dump.'
-            msg += '\n{}'.format("".join(traceback.format_exception(etype, evalue, etraceback)))
+        for hub in hubs:
+            msg += f'\n\n== Hub {hub.get_id()} =='
+
+            msg += f'\n=== Area list ==='
+            try:
+                msg += f'\n*Current area list: {hub.area_manager.get_source_file()}'
+                msg += f'\n*Previous area list: {hub.area_manager.get_previous_source_file()}'
+                msg += '\n*Current areas:'
+
+                for area in hub.area_manager.get_areas():
+                    msg += f'\n**{area}'
+                    for c in area.clients:
+                        msg += f'\n***{c}'
+            except Exception:
+                etype, evalue, etraceback = sys.exc_info()
+                msg += '\nError generating area dump.'
+                msg += _print_exception(etype, evalue, etraceback)
+
+
+    except Exception:
+        etype, evalue, etraceback = sys.exc_info()
+        msg += '\nError generating rest of dump of hubs.'
+        msg += _print_exception(etype, evalue, etraceback)
 
     return msg
 
