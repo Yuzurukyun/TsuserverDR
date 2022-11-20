@@ -119,8 +119,8 @@ def log_error(msg, server: Union[TsuserverDR, None], errortype='P') -> str:
         for hub in server.hub_manager.get_managees():
             msg += f'\n\n== Hub {hub.get_id()} =='
             try:
-                msg += '\n*Current area list: {}'.format(hub.area_manager.get_source_file())
-                msg += '\n*Old area list: {}'.format(hub.area_manager.old_area_list_file)
+                msg += f'\n*Current area list: {hub.area_manager.get_source_file()}'
+                msg += f'\n*Previous area list: {hub.area_manager.get_previous_source_file()}'
                 msg += '\n*Current areas:'
 
                 for area in hub.area_manager.get_areas():

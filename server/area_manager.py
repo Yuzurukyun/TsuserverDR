@@ -1144,7 +1144,6 @@ class AreaManager(AssetManager):
         self._source_file = 'config/areas.yaml'
         self._previous_source_file = None
         self.area_names = set()
-        self.old_area_list_file = None
 
         self._default_area_id = 0
 
@@ -1307,7 +1306,6 @@ class AreaManager(AssetManager):
 
     def _load_areas(self, areas: List[Area], source_file: Union[str, None]) -> List[Area]:
         self._previous_source_file = self._source_file
-        self.old_area_list_file = self._source_file
 
         # Now we are ready to create the areas
         self._source_file = source_file
