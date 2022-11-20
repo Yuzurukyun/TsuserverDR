@@ -30,6 +30,7 @@ from typing import Union
 from server.constants import Constants
 
 if typing.TYPE_CHECKING:
+    from server.client_manager import ClientManager
     from server.tsuserver import TsuserverDR
 
 def setup_logger(debug):
@@ -72,18 +73,70 @@ def setup_logger(debug):
     return (debug_log, debug_handler), (server_log, server_handler)
 
 
-def log_debug(msg, client=None):
+def log_debug(msg: str, client: Union[ClientManager.Client, None] = None):
     msg = parse_client_info(client) + msg
     logging.getLogger('debug').debug(msg)
 
 
-def log_error(msg, server: Union[TsuserverDR, None], errortype='P') -> str:
+def _log_error(server: TsuserverDR) -> str:
+    msg = ''
+
+    # Add list of most recent packets
+    msg += f'\n\n\n= {server.logged_packet_limit} most recent packets dump ='
+    if not server.logged_packets:
+        msg += '\nNo logged packets.'
+    else:
+        for logged_packet in server.logged_packets:
+            str_logged_packet = ' '.join(logged_packet)
+            msg += f'\n{str_logged_packet}'
+
+    # Add list of clients to error log
+    try:
+        msg += '\n\n\n= Client dump. ='
+        msg += f'\n*Number of clients: {len(server.get_clients())}'
+        msg += '\n*Current clients'
+        clients = sorted(server.get_clients(), key=lambda c: c.id)
+
+        for c in clients:
+            try:
+                msg += f'\n\n{c.get_info(as_mod=True)}'
+            except Exception:
+                etype, evalue, etraceback = sys.exc_info()
+                msg += f'\n\nError generating client dump for client {c.id}.'
+                msg += f'\n{"".join(traceback.format_exception(etype, evalue, etraceback))}'
+    except Exception:
+        etype, evalue, etraceback = sys.exc_info()
+        msg += '\nError generating rest of client dump.'
+        msg += f'\n{"".join(traceback.format_exception(etype, evalue, etraceback))}'
+
+
+    # Add list of areas to error log
+    msg += '\n\n\n= Area dump ='
+    for hub in server.hub_manager.get_managees():
+        msg += f'\n\n== Hub {hub.get_id()} =='
+        try:
+            msg += f'\n*Current area list: {hub.area_manager.get_source_file()}'
+            msg += f'\n*Previous area list: {hub.area_manager.get_previous_source_file()}'
+            msg += '\n*Current areas:'
+
+            for area in hub.area_manager.get_areas():
+                msg += '\n**{}'.format(area)
+                for c in area.clients:
+                    msg += '\n***{}'.format(c)
+        except Exception:
+            etype, evalue, etraceback = sys.exc_info()
+            msg += '\nError generating area dump.'
+            msg += '\n{}'.format("".join(traceback.format_exception(etype, evalue, etraceback)))
+
+    return msg
+
+def log_error(msg: str, server: Union[TsuserverDR, None], errortype='P') -> str:
     # errortype "C" if server raised an error as a result of a client packet.
     # errortype "D" if player manually requested an error dump
     # errortype "P" if server raised an error for any other reason
     error_log = logging.getLogger('error')
 
-    file = 'logs/{}{}.log'.format(Constants.get_time_iso(), errortype)
+    file = f'logs/{Constants.get_time_iso()}{errortype}.log'
     file = file.replace(':', '')
     error_handler = logging.FileHandler(file, encoding='utf-8')
 
@@ -92,45 +145,7 @@ def log_error(msg, server: Union[TsuserverDR, None], errortype='P') -> str:
     error_log.addHandler(error_handler)
 
     if server:
-        # Add list of most recent packets
-        msg += f'\n\n\n= {server.logged_packet_limit} most recent packets dump ='
-        if not server.logged_packets:
-            msg += '\nNo logged packets.'
-        else:
-            for logged_packet in server.logged_packets:
-                str_logged_packet = ' '.join(logged_packet)
-                msg += f'\n{str_logged_packet}'
-
-        # Add list of clients to error log
-        try:
-            msg += '\n\n\n= Client dump. ='
-            msg += '\n*Number of clients: {}'.format(len(server.get_clients()))
-            msg += '\n*Current clients'
-            clients = sorted(server.get_clients(), key=lambda c: c.id)
-            for c in clients:
-                msg += '\n\n{}'.format(c.get_info(as_mod=True))
-        except Exception:
-            etype, evalue, etraceback = sys.exc_info()
-            msg += '\nError generating client dump.'
-            msg += '\n{}'.format("".join(traceback.format_exception(etype, evalue, etraceback)))
-
-        # Add list of areas to error log
-        msg += '\n\n\n= Area dump ='
-        for hub in server.hub_manager.get_managees():
-            msg += f'\n\n== Hub {hub.get_id()} =='
-            try:
-                msg += f'\n*Current area list: {hub.area_manager.get_source_file()}'
-                msg += f'\n*Previous area list: {hub.area_manager.get_previous_source_file()}'
-                msg += '\n*Current areas:'
-
-                for area in hub.area_manager.get_areas():
-                    msg += '\n**{}'.format(area)
-                    for c in area.clients:
-                        msg += '\n***{}'.format(c)
-            except Exception:
-                etype, evalue, etraceback = sys.exc_info()
-                msg += '\nError generating area dump.'
-                msg += '\n{}'.format("".join(traceback.format_exception(etype, evalue, etraceback)))
+        msg += _log_error(server)
     else:
         # Case server was not initialized properly, so areas and clients are not set
         msg += ('\nServer was not initialized, so packet, client and area dumps could not be '
