@@ -144,6 +144,21 @@ def _log_error(server: TsuserverDR) -> str:
                     msg += f'\nError generating dump of areas for hub {hub.get_id()}.'
                     msg += _print_exception(etype, evalue, etraceback)
 
+                msg += '\n=== Background list ==='
+                try:
+                    msg += (f'\n*Current background list file: '
+                            f'{hub.background_manager.get_source_file()}')
+                    msg += (f'\n*Previous background list file: '
+                            f'{hub.background_manager.get_previous_source_file()}')
+
+                    msg += '\n*Current backgrounds:'
+                    for (i, background) in enumerate(hub.background_manager.get_backgrounds()):
+                        msg += f'\n**{i}: {background}'
+                except Exception:
+                    etype, evalue, etraceback = sys.exc_info()
+                    msg += f'\nError generating dump of backgrounds for hub {hub.get_id()}.'
+                    msg += _print_exception(etype, evalue, etraceback)
+
             except Exception:
                 etype, evalue, etraceback = sys.exc_info()
                 msg += f'\nError generating dump of hub {hub.get_id()}.'
