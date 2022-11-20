@@ -50,7 +50,7 @@ class MusicManager(AssetManager):
 
         super().__init__(server, hub=hub)
         self._music = []
-        self._source_file = 'config/music.yaml'
+        self._source_file = None
         self._previous_source_file = None
 
     def get_type_name(self) -> str:

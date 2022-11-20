@@ -51,7 +51,7 @@ class CharacterManager(AssetManager):
 
         super().__init__(server, hub=hub)
         self._characters = []
-        self._source_file = 'config/characters.yaml'
+        self._source_file = None
         self._previous_source_file = None
 
     def get_type_name(self) -> str:

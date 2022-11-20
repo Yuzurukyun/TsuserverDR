@@ -97,7 +97,8 @@ def _log_error(server: TsuserverDR) -> str:
     try:
         msg += '\n\n\n= Dump of clients ='
         msg += f'\n*Number of clients: {len(server.get_clients())}'
-        msg += '\n*Current clients'
+
+        msg += '\n*Current clients:'
         clients = sorted(server.get_clients(), key=lambda c: c.id)
 
         for c in clients:
@@ -117,7 +118,8 @@ def _log_error(server: TsuserverDR) -> str:
     try:
         msg += '\n\n\n= Dump of hubs ='
         msg += f'\n*Number of hubs: {len(server.hub_manager.get_managees())}'
-        msg += '\n*Current hubs'
+
+        msg += '\n*Current hubs:'
         hubs = sorted(server.hub_manager.get_managees(),
                       key=lambda hub: hub.get_id())
 
@@ -127,10 +129,12 @@ def _log_error(server: TsuserverDR) -> str:
             try:
                 msg += '\n=== Area list ==='
                 try:
-                    msg += f'\n*Current area list: {hub.area_manager.get_source_file()}'
-                    msg += f'\n*Previous area list: {hub.area_manager.get_previous_source_file()}'
-                    msg += '\n*Current areas:'
+                    msg += (f'\n*Current area list file: '
+                            f'{hub.area_manager.get_source_file()}')
+                    msg += (f'\n*Previous area list file: '
+                            f'{hub.area_manager.get_previous_source_file()}')
 
+                    msg += '\n*Current areas:'
                     for area in hub.area_manager.get_areas():
                         msg += f'\n**{area}'
                         for c in area.clients:

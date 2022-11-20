@@ -1141,7 +1141,7 @@ class AreaManager(AssetManager):
 
         super().__init__(server, hub=hub)
         self._areas = []
-        self._source_file = 'config/areas.yaml'
+        self._source_file = None
         self._previous_source_file = None
         self.area_names = set()
 

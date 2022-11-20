@@ -54,7 +54,7 @@ class BackgroundManager(AssetManager):
 
         super().__init__(server, hub=hub)
         self._backgrounds = ['default']
-        self._source_file = 'config/backgrounds.yaml'
+        self._source_file = None
         self._previous_source_file = None
 
         self._default_background = self._backgrounds[0]

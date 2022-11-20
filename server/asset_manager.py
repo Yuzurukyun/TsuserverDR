@@ -191,6 +191,7 @@ class AssetManager(ABC):
         bool
             True if the default file is loaded, False otherwise
         """
+
         return self.get_source_file() == self.get_default_file()
 
     def command_list_load(self, client: ClientManager.Client, file: str,
