@@ -855,6 +855,8 @@
 * Fixed timer end notification showing the OOC name of the timer initiator as the timer name rather than the actual name
 * Fixed all notecard commands having an inconsistent output when used with /help_more
 * Fixed /showname_set erroring out if it attempted to show an error message
+* Fixed /paranoia showing an error message with wrong valid percentage boundaries if an out of bounds paranoia level was input
+* Fixed /zone_paranoia having an inconsistent parameter description when used with /help_more
 * Removed unused `server/area_manager_revamp.py` and `server/steptimer_manager.py`
 * Removed the old names of the following commands. Please use the new ones:
   - /clock_cancel: /clock_end

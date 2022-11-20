@@ -6318,7 +6318,7 @@ def ooc_cmd_paranoia(client: ClientManager.Client, arg: str):
     except ValueError:
         raise ClientError('New player paranoia value must be a number.')
     if not (-100 <= paranoia <= 100):
-        raise ClientError('New player paranoia value must be a number from 0 to 100.')
+        raise ClientError('New player paranoia value must be a number from -100 to 100.')
 
     target.paranoia = paranoia
     client.send_ooc(f'You set the player paranoia level of {target.displayname} [{target.id}] to '
@@ -11533,7 +11533,7 @@ def ooc_cmd_zone_paranoia(client: ClientManager.Client, arg: str):
     /zone_paranoia <zone_paranoia_level>
 
     PARAMETERS
-    <zone_paranoia_level>: New intended player paranoia level
+    <zone_paranoia_level>: New intended zone paranoia level
 
     EXAMPLES
     Assuming you are watching zome z0...
