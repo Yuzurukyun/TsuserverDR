@@ -134,7 +134,7 @@ def _log_error(server: TsuserverDR) -> str:
                     msg += (f'\n*Previous area list file: '
                             f'{hub.area_manager.get_previous_source_file()}')
 
-                    msg += '\n*Current areas:'
+                    msg += '\n*Current area list:'
                     for area in hub.area_manager.get_areas():
                         msg += f'\n**{area}'
                         for c in area.clients:
@@ -151,7 +151,7 @@ def _log_error(server: TsuserverDR) -> str:
                     msg += (f'\n*Previous background list file: '
                             f'{hub.background_manager.get_previous_source_file()}')
 
-                    msg += '\n*Current backgrounds:'
+                    msg += '\n*Current background list:'
                     for (i, background) in enumerate(hub.background_manager.get_backgrounds()):
                         msg += f'\n**{i}: {background}'
                 except Exception:
@@ -166,12 +166,30 @@ def _log_error(server: TsuserverDR) -> str:
                     msg += (f'\n*Previous character list file: '
                             f'{hub.character_manager.get_previous_source_file()}')
 
-                    msg += '\n*Current characters:'
+                    msg += '\n*Current character list:'
                     for (i, character) in enumerate(hub.character_manager.get_characters()):
                         msg += f'\n**{i}: {character}'
                 except Exception:
                     etype, evalue, etraceback = sys.exc_info()
                     msg += f'\nError generating dump of character list for hub {hub.get_id()}.'
+                    msg += _print_exception(etype, evalue, etraceback)
+
+                msg += '\n\n=== DJ list ==='
+                try:
+                    msg += (f'\n*Current DJ list file: '
+                            f'{hub.music_manager.get_source_file()}')
+                    msg += (f'\n*Previous DJ list file: '
+                            f'{hub.music_manager.get_previous_source_file()}')
+
+                    msg += '\n*Current music:'
+                    for (i, category_songs) in enumerate(hub.music_manager.get_music()):
+                        category, songs = category_songs['category'], category_songs['songs']
+                        msg += f'\n**{i}: {category}'
+                        for (j, song) in enumerate(songs):
+                            msg += f'\n***{j}: {song}'
+                except Exception:
+                    etype, evalue, etraceback = sys.exc_info()
+                    msg += f'\nError generating dump of DJ list for hub {hub.get_id()}.'
                     msg += _print_exception(etype, evalue, etraceback)
 
             except Exception:
