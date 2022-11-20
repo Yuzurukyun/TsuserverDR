@@ -1141,9 +1141,9 @@ class AreaManager(AssetManager):
 
         super().__init__(server, hub=hub)
         self._areas = []
-        self._source_file = 'config/areas.yaml'
+        self._source_file = None
+        self._previous_source_file = None
         self.area_names = set()
-        self.old_area_list_file = None
 
         self._default_area_id = 0
 
@@ -1195,6 +1195,20 @@ class AreaManager(AssetManager):
         """
 
         return self._source_file
+
+    def get_previous_source_file(self) -> Union[str, None]:
+        """
+        Return the output that self.get_source_file() would have returned *before* the last
+        successful time an area list was successfully loaded.
+        If no such call was ever made, return None.
+
+        Returns
+        -------
+        Union[str, None]
+            Previous source file or None.
+        """
+
+        return self._previous_source_file
 
     def get_custom_folder(self) -> str:
         """
@@ -1291,7 +1305,7 @@ class AreaManager(AssetManager):
         return areas
 
     def _load_areas(self, areas: List[Area], source_file: Union[str, None]) -> List[Area]:
-        self.old_area_list_file = self._source_file
+        self._previous_source_file = self._source_file
 
         # Now we are ready to create the areas
         self._source_file = source_file

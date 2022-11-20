@@ -1688,7 +1688,7 @@ class ClientManager:
                 getarea_restricted = (area_id >= 0 and not self.area.rp_getarea_allowed)
                 if getareas_restricted or getarea_restricted:
                     raise ClientError('This command has been restricted to authorized users only '
-                                      'in this area while in RP mode.')
+                                      'in this area.')
                 if not self.area.lights:
                     raise ClientError('The lights are off, so you cannot see anything.')
 

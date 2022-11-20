@@ -1332,7 +1332,7 @@ def ooc_cmd_can_rollp(client: ClientManager.Client, arg: str):
 
 def ooc_cmd_can_rpgetarea(client: ClientManager.Client, arg: str):
     """ (STAFF ONLY)
-    Toggles users subject to RP mode being able/unable to use /getarea in the current area.
+    Toggles users being able/unable to use /getarea in the current area.
 
     SYNTAX
     /can_rpgetarea
@@ -1341,7 +1341,7 @@ def ooc_cmd_can_rpgetarea(client: ClientManager.Client, arg: str):
     None
 
     EXAMPLES
-    Assuming the current area is currently allowing /getarea in RP mode...
+    Assuming the current area is currently allowing /getarea...
     >>> /can_rpgetarea
     Non-staff members can no longer use /getarea.
     >>> /can_rpgetarea
@@ -1362,7 +1362,7 @@ def ooc_cmd_can_rpgetarea(client: ClientManager.Client, arg: str):
 
 def ooc_cmd_can_rpgetareas(client: ClientManager.Client, arg: str):
     """ (STAFF ONLY)
-    Toggles users subject to RP mode being able/unable to use /getareas in the current area.
+    Toggles users being able/unable to use /getareas in the current area.
 
     SYNTAX
     /can_rpgetareas
@@ -1371,7 +1371,7 @@ def ooc_cmd_can_rpgetareas(client: ClientManager.Client, arg: str):
     None
 
     EXAMPLES
-    Assuming the current area is currently allowing /getareas in RP mode...
+    Assuming the current area is currently allowing /getareas...
     >>> /can_rpgetareas
     Non-staff members can no longer use /getareas.
     >>> /can_rpgetareas
@@ -2922,7 +2922,7 @@ def ooc_cmd_getarea(client: ClientManager.Client, arg: str):
     Lists the characters (and associated client IDs) in the current area
     OR (STAFF ONLY) lists the character (and associated client IDs) in the given area by area ID
     or name.
-    Returns an error if you are subject to RP mode and is in an area that disables /getarea, if
+    Returns an error if you are in an area that disables /getarea, if
     you are blind and not staff, or if the given identifier does not correspond to an area.
 
     SYNTAX
@@ -2962,8 +2962,8 @@ def ooc_cmd_getarea(client: ClientManager.Client, arg: str):
 def ooc_cmd_getareas(client: ClientManager.Client, arg: str):
     """
     List the characters (and associated client IDs) in each area.
-    Returns an error if you are subject to RP mode and is in an area that disables /getareas,
-    or if they are blind and not staff.
+    Returns an error if you are in an area that disables /getareas,
+    or if you are blind and not staff.
 
     SYNTAX
     /getareas
@@ -4376,7 +4376,7 @@ def ooc_cmd_logingm(client: ClientManager.Client, arg: str):
     /logingm <gm_password>
 
     PARAMETERS
-    <gm_password>: Game master password, found via /hub_info or in the config/config.yaml
+    <gm_password>: Game master password, found via /hub_password_info or in config/config.yaml
 
     EXAMPLES
     >>> /logingm GM
@@ -4388,7 +4388,7 @@ def ooc_cmd_logingm(client: ClientManager.Client, arg: str):
 
 def ooc_cmd_logout(client: ClientManager.Client, arg: str):
     """ (STAFF ONLY)
-    Logs you out from all staff roles and puts you in RP mode if needed.
+    Logs you out from all staff roles.
 
     SYNTAX
     /logout
@@ -6290,8 +6290,8 @@ def ooc_cmd_paranoia(client: ClientManager.Client, arg: str):
     which the server, with probability "player paranoia + zone paranoia", starts a timer of length
     a random number less than 150 seconds, after which it sends the user a phantom peek message
     if they are not blind and not staff, in an area that is not a lobby or private area, and they
-    have a valid character selected. A new phantom peek cycle is restarted regardless of success
-    after the old one expires.
+    have a participant character selected. A new phantom peek cycle is restarted regardless of
+    success after the old one expires.
     Returns an error if the given identifier does not correspond to a user, or if the new player
     paranoia level is not a number from -100 to 100.
 
@@ -11524,8 +11524,8 @@ def ooc_cmd_zone_paranoia(client: ClientManager.Client, arg: str):
     which the server, with probability "player paranoia + zone paranoia", starts a timer of length
     a random number less than 150 seconds, after which it sends the user a phantom peek message
     if they are not blind and not staff, in an area that is not a lobby or private area, and they
-    have a valid character selected. A new phantom peek cycle is restarted regardless of success
-    after the old one expires.
+    have a participant character selected. A new phantom peek cycle is restarted regardless of
+    success after the old one expires.
     Returns an error if you are not watching a zone, or if the new zone paranoia level is not a
     number from -100 to 100.
 

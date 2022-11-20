@@ -835,6 +835,7 @@
   - /hub_password
   - /hub_password_info
 * GMs are now tied to the hub they logged in at. GMs that change hubs will lose their GM status automatically
+* Server dumps now also include background, character, and DJ list information for each hub, including current file, previous file, and file contents
 * Introduced the concept of participant and non-participant characters (currently a "character provided in a character list" and one that is not respectively)
 * Redid trial and nonstop debates
 * Json files within `storage` now use indents and new lines for better human readability (this is backwards compatible with 4.3.x)
@@ -851,12 +852,13 @@
 * Made /area_kick with a single argument move the target to your area rather than the hub default area
 * Renamed /area_kick to /summon, and replaced all "kicking" indications it generated with "summoning" indications
 * Renamed the folders `config/background_lists` and `config/character_lists` to `config/bg_lists` and `config/char_lists` respectively to maintain consistency with several existing commands
-* Improved README installation instructions so that it prompts users to try and test whether Python was properly set up in path.
+* Improved README installation instructions so that it prompts users to try and test whether Python was properly set up in path
 * Fixed timer end notification showing the OOC name of the timer initiator as the timer name rather than the actual name
 * Fixed all notecard commands having an inconsistent output when used with /help_more
 * Fixed /showname_set erroring out if it attempted to show an error message
 * Fixed /paranoia showing an error message with wrong valid percentage boundaries if an out of bounds paranoia level was input
 * Fixed /zone_paranoia having an inconsistent parameter description when used with /help_more
+* Fixed server dumps not attempting to show more information about remaining objects in some object list if it failed to display some object
 * Removed unused `server/area_manager_revamp.py` and `server/steptimer_manager.py`
 * Removed the old names of the following commands. Please use the new ones:
   - /clock_cancel: /clock_end

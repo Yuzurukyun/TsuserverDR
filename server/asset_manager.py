@@ -105,13 +105,28 @@ class AssetManager(ABC):
     @abstractmethod
     def get_source_file(self) -> Union[str, None]:
         """
-        Return the source file of the last asset the manager successfully loaded relative to the
-        root directory of the server, or None if the latest loaded asset was loaded raw.
+        Return the source file of the last asset list the manager successfully loaded relative to
+        the root directory of the server, or None if the latest loaded asset list was loaded raw.
 
         Returns
         -------
         Union[str, None]
             Source file or None.
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_previous_source_file(self) -> Union[str, None]:
+        """
+        Return the output that self.get_source_file() would have returned *before* the last
+        successful time an asset list was successfully loaded.
+        If no such call was ever made, return None.
+
+        Returns
+        -------
+        Union[str, None]
+            Previous source file or None.
         """
 
         raise NotImplementedError
@@ -176,6 +191,7 @@ class AssetManager(ABC):
         bool
             True if the default file is loaded, False otherwise
         """
+
         return self.get_source_file() == self.get_default_file()
 
     def command_list_load(self, client: ClientManager.Client, file: str,
