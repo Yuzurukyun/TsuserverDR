@@ -722,7 +722,7 @@ GMs can:
 * **charlog** "ID/IPID"
     - Lists all character changes (including iniswaps and character name changes) a target has gone through since connecting, including the time they were changed.
 * **cleargm** "ID"
-    - Logs out the target from their GM rank, or all GMs in the server if not given a target, and puts them in RP mode if needed.
+    - Logs out the target from their GM rank, or all GMs in the server if not given a target.
 * **g** "message"
     - Sends a serverwide message, even if the current area disallows sending global messages.
 * **getarea**
