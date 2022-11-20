@@ -2089,9 +2089,9 @@ class _Hub(_HubTrivialInherited):
         # Only now update internally. This is to allow `change_character` to work properly.
         self.character_manager.load_file(source_file)
         for client in self.get_players():
+            old_char_name = old_client_char_names[client]
             if client.packet_handler.ALLOWS_CHAR_LIST_RELOAD:
                 client.send_character_list(characters=characters)
-                old_char_name = old_client_char_names[client]
                 should_change, change_to_char_id = self.character_manager.translate_character_id(
                     client, old_char_name=old_char_name,
                 )
@@ -2100,6 +2100,7 @@ class _Hub(_HubTrivialInherited):
             else:
                 client.send_ooc('After a change in the character list, your client character list '
                                 'is no longer synchronized. Please rejoin the server.')
+                client.change_character(-1, old_char=old_char_name)
         return characters.copy()
 
     def load_music(self, music_list_file: str = 'config/music.yaml') -> List[Dict[str, Any]]:

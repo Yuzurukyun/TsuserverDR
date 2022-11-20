@@ -1061,6 +1061,7 @@ class ClientChangeArea:
                 else:
                     client.send_ooc('After a change in the character list, your client character '
                                     'list is no longer synchronized. Please rejoin the server.')
+                    client.change_character(-1, old_char=old_char_name)
 
             if client.is_officer():
                 client.hub.add_leader(client)
