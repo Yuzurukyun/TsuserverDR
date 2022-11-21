@@ -179,11 +179,9 @@ class TaskManager:
             If no such task exists.
         """
 
-        try:
-            task = self.get_task(owner, name)
-        except TaskError.TaskNotFoundError:
-            raise TaskError.TaskNotFoundError
-
+        task = self.get_task(owner, name)
+        owner_tasks = self.tasks[owner]
+        owner_tasks.pop(name)
         self.force_asyncio_cancelled_error(task)
 
     def get_task(
