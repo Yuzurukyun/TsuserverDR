@@ -348,7 +348,7 @@ class Constants():
         return ('.' in folders or '..' in folders)
 
     @staticmethod
-    def includes_omniwhy_exploit(name: str) -> bool:
+    def is_aoprotocol_injection_vulnerable(name: str) -> bool:
         return name.startswith('%') or '#' in name
 
     @staticmethod

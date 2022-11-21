@@ -263,9 +263,10 @@ class TaskManager:
         try:
             delay = int(afk_delay)*60  # afk_delay is in minutes, so convert to seconds
         except (TypeError, ValueError):
+            # This shouldn't happen with a well-verified area list
             info = ('The area file contains an invalid AFK kick delay for area {}: {}'.
                     format(client.area.id, afk_delay))
-            raise ServerError(info)
+            raise RuntimeError(info)
 
         if delay <= 0:  # Assumes 0-minute delay means that AFK kicking is disabled
             return
@@ -278,9 +279,10 @@ class TaskManager:
             try:
                 area = client.hub.area_manager.get_area_by_id(int(afk_sendto))
             except Exception:
+                # This shouldn't happen with a well-verified area list
                 info = ('The area file contains an invalid AFK kick destination area for area {}: '
                         '{}'.format(client.area.id, afk_sendto))
-                raise ServerError(info)
+                raise RuntimeError(info)
             if client.area.id == afk_sendto:  # Don't try and kick back to same area
                 return
             if not client.has_participant_character():  # Assumes spectators are exempted from AFK kicks

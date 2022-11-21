@@ -848,6 +848,7 @@
 * Added commands to modify the IC text that appears if an area is marked as noteworthy via
   - /noteworthy_set
   - /noteworthy_info
+* Added additional restrictions to the range of allowed values for "afk_sendto" and "afk_delay"
 * Made /refresh a GM+ command rather than a mod command (but it only affects your current hub)
 * Made /area_kick with a single argument move the target to your area rather than the hub default area
 * Renamed /area_kick to /summon, and replaced all "kicking" indications it generated with "summoning" indications
