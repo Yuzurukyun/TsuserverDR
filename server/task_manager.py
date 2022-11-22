@@ -331,7 +331,7 @@ class TaskManager:
         periods = list()
         force_period_refresh = False
         current_period = (-1, '', main_hour_length)
-        notify_normies = False
+        notify_others = False
 
         # Initialize task attributes
         task.parameters['is_paused'] = False
@@ -370,14 +370,14 @@ class TaskManager:
                 # Check again in one second.
                 if task.parameters['is_unknown']:
                     # Manually restart other flags because they are no longer relevant
-                    notify_normies = True
+                    notify_others = True
                     await asyncio.sleep(1)
                     continue
 
                 # If timer is paused, check again in one second.
                 if task.parameters['is_paused']:
                     # Manually restart other flags because they are no longer relevant
-                    notify_normies = True
+                    notify_others = True
                     await asyncio.sleep(1)
                     continue
 
@@ -390,11 +390,11 @@ class TaskManager:
                 # If the clock just had a new period added, its number of hours changed, or was just
                 # unpaused, restart the current hour
                 elif refresh_reason in ['period', 'unpause', 'set_hours_proceed']:
-                    notify_normies = True
+                    notify_others = True
                     await asyncio.sleep((60-minute_at_interruption)/60 * hour_length)
                 # Otherwise, just wait full hour
                 else:
-                    notify_normies = True
+                    notify_others = True
                     await asyncio.sleep(hour_length)
 
                 # After handling any interrupts, an hour just finished without any
@@ -403,8 +403,8 @@ class TaskManager:
                 # We can do that as code only runs here if the timer is not paused
                 hour = (hour + 1) % hours_in_day
                 targets = [c for c in client.hub.get_players()
-                           if c == client or
-                           (notify_normies and area_1 <= c.area.id <= area_2)]
+                           if c == client
+                           or (notify_others and area_1 <= c.area.id <= area_2)]
 
                 # Check if new period has started
                 if not periods:
@@ -433,7 +433,7 @@ class TaskManager:
 
                 time_started_at = time.time()
                 minute_at_interruption = 0
-                notify_normies = True
+                notify_others = True
 
             except (asyncio.CancelledError, KeyError):
                 # Code can run here for a few reasons
@@ -474,7 +474,7 @@ class TaskManager:
                     task.parameters['main_hour_length'] = main_hour_length
 
                     # Do not notify of clock set to normies if only hour length changed
-                    notify_normies = (old_hour != hour)
+                    notify_others = (old_hour != hour)
                     minute_at_interruption = 0
                     force_period_refresh = True
                     str_hour = '{0:02d}'.format(hour)
@@ -676,10 +676,18 @@ class TaskManager:
                     time_started_at = time.time()
                     igt_now = '{}:{}'.format('{0:02d}'.format(hour),
                                              '{0:02d}'.format(int(minute_at_interruption)))
+                    igt_rounded = '{}:00.'.format('{0:02d}'.format(hour))
                     client.send_ooc('It is now {}.'.format(igt_now))
                     client.send_ooc_others('It is now {}.'.format(igt_now),
                                            is_zstaff_flex=True, in_hub=hub,
                                            pred=lambda c: area_1 <= c.area.id <= area_2)
+                    client.send_ooc_others('It is now some time past {}.'.format(igt_rounded),
+                                           is_zstaff_flex=False, in_hub=hub,
+                                           pred=lambda c: area_1 <= c.area.id <= area_2)
+                    targets = [c for c in client.hub.get_players()
+                               if c == client or area_1 <= c.area.id <= area_2]
+                    for c in targets:
+                        c.send_clock(client_id=client.id, hour=hour)
 
                 elif refresh_reason == 'pause':
                     task.parameters['is_paused'] = True
