@@ -3549,31 +3549,37 @@ def ooc_cmd_hub(client: ClientManager.Client, arg: str):
 
 def ooc_cmd_hub_create(client: ClientManager.Client, arg: str):
     """ (OFFICER ONLY)
-    Creates a new hub. The numerical ID of the hub will be the lowest non-taken numerical hub ID.
+    Creates a new hub with the given name, or with a default generated name if not given one.
+    The numerical ID of the hub will be the lowest non-taken numerical hub ID.
 
     SYNTAX
-    /hub_create
+    /hub_create {name}
 
     PARAMETERS
     None
+
+    OPTIONAL PARAMETERS
+    {name}: Name of the hub
 
     EXAMPLES
     Assuming that two hubs with numerical IDs 0 and 2 respectively exist...
     >>> /hub_create
     Creates hub with numerical ID 1.
-    >>> /hub_create
-    Creates hub with numerical ID 3.
+    >>> /hub_create hubby hub
+    Creates hub with numerical ID 3 and name "hubby hub".
     """
 
-    Constants.assert_command(client, arg, is_officer=True, parameters='=0')
+    Constants.assert_command(client, arg, is_officer=True)
 
     hub = client.hub.manager.new_managee()
+    if arg:
+        hub.set_name(arg)
 
     for target in client.server.get_clients():
         target.send_music_list_view()
 
-    client.send_ooc(f'You created hub {hub.get_numerical_id()}.')
-    client.send_ooc_others(f'{client.name} [{client.id}] created hub {hub.get_numerical_id()}.',
+    client.send_ooc(f'You created hub {hub.get_name()}.')
+    client.send_ooc_others(f'{client.name} [{client.id}] created hub {hub.get_name()}.',
                            is_officer=True, in_hub=None)
 
 

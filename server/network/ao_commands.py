@@ -66,6 +66,8 @@ def net_cmd_hi(client: ClientManager.Client, pargs: Dict[str, Any]):
     # Check if the client is banned
     for ipid in client.server.hdid_list[client.hdid]:
         if client.server.ban_manager.is_banned(ipid):
+            logger.log_server(f'Disconnected previously banned player who just tried to join. '
+                              f'Banned IPID: {ipid}', client)
             client.send_ooc_others(
                 f'Banned client with HDID {client.hdid} and IPID {client.ipid} '
                 f'attempted to join the server but was refused entrance.',

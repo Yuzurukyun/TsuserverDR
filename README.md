@@ -736,8 +736,8 @@ GMs can:
     - Sets a movement handicap on a client by ID or IPID so that they need to wait a set amount of time in seconds between changing areas.
     - If name is given, the handicap announcement will use it as the name of the handicap.
     - If announce if over is set to any of "False, false, 0, No, no", no announcements will be sent to the player indicating that they may now move areas.
-* **hub_create**
-    - Creates a new hub.
+* **hub_create** "name"
+    - Creates a new hub with given name, or with a default generated name otherwise.
 * **hub_end** "hub"
     - Deletes the hub by numerical ID, or your hub if not given any.
 * **hub_info** "hub"
