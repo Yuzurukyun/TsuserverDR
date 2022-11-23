@@ -1251,9 +1251,14 @@ class Constants():
 
     @staticmethod
     def get_first_area_list_item(view_name: str, hub: _Hub, area: AreaManager.Area) -> str:
-        return (f'|| GO TO {view_name} VIEW\n'
-                f'|| YOU ARE HERE:\n'
-                f'|| Hub {hub.get_id()[1:]}, Area {area.id}\n')
+        if view_name == 'AREA':
+            return (f'|| GO TO {view_name} VIEW\n'
+                    f'|| YOU ARE HERE:\n'
+                    f'|| Hub {hub.get_id()[1:]}, Area {area.id}\n')
+        elif view_name == 'HUB':
+            return (f'|| GO TO {view_name} VIEW')
+        else:
+            raise RuntimeError(f'Invalid view {view_name}')
 
     @staticmethod
     def secure_eq(a: str, b: str) -> bool:
