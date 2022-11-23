@@ -3578,10 +3578,14 @@ def ooc_cmd_hub_create(client: ClientManager.Client, arg: str):
     for target in client.server.get_clients():
         target.send_music_list_view()
 
-    client.send_ooc(f'You created hub {hub.get_name()}.')
-    client.send_ooc_others(f'{client.name} [{client.id}] created hub {hub.get_name()}.',
-                           is_officer=True, in_hub=None)
-
+    if arg:
+        client.send_ooc(f'You created hub {hub.get_numerical_id()} with name {hub.get_name()}.')
+        client.send_ooc_others(f'{client.name} [{client.id}] created hub {hub.get_numerical_id()} '
+                               f'with name {hub.get_name()}.', is_officer=True, in_hub=None)
+    else:
+        client.send_ooc(f'You created hub {hub.get_numerical_id()}.')
+        client.send_ooc_others(f'{client.name} [{client.id}] created hub {hub.get_numerical_id()}.',
+                               is_officer=True, in_hub=None)
 
 def ooc_cmd_hub_end(client: ClientManager.Client, arg: str):
     """ (VARYING REQUIREMENTS)
