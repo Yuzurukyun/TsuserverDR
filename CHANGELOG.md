@@ -821,7 +821,7 @@
 ### 220926a (4.3.5-post1)
 * Fixed area list loading failing if there was a player in the process of joining a server
 
-## (5.0.0)
+## 221123a (5.0.0)
 * Increased minimum Python version required to 3.9, added support for Python 3.11
 * Added hubs. Each hub has a unique numerical ID and may have its own areas, backgrounds, characters, music, zones and trials. Changes to any of these in a particular hub do not affect other hubs. Commands associated include
   - /hub_create

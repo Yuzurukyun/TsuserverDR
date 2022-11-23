@@ -42,7 +42,7 @@ It is highly recommended you read through all the installation steps first befor
 
 * Rename the folder `config_sample` to `config` and edit the values in the provided YAML files to your liking. Be sure to check the YAML files for syntax errors after you are done. *Use spaces only; do not use tabs.*
 
-* Open or forward the port that you would like players to connect to. The port number is available in `config/config.yaml` next to `port`, and you may change it to something else if you want to. The port that you choose must be made to accept TCP connections. This whole process may involve you doing some (or all) of the following:
+* If you intend to have players outside of your network connect to your server, open or forward the port that you would like them to connect to. The port number is available in `config/config.yaml` next to `port`, and you may change it to something else if you want to. The port that you choose must be made to accept TCP connections. This whole process may involve you doing some (or all) of the following:
     - If you are hosting your server in your own device: go to your router settings, and proceed to open/forward/allow inbound connections into the port. You can typically find instructions for this by finding the brand and model name of your router, and searching "brand + model + port forwarding".
     - If you are hosting your server in an external device (such as a VPS): find its networking settings, and proceed to open/forward/allow inbound connections into the port. You can typically find instructions for this by searching something like this "your VPS + open/forward/allow inbound connections into the port".
     - Go to your operating system firewall settings, and proceed to create a rule to allow inbound connections into the port. You can typically find instructions for this by searching "your operating system + create inbound port rule".
@@ -57,22 +57,22 @@ It is highly recommended you read through all the installation steps first befor
 * If everything was set up correctly, you will see something like this appear:
 
 ```
-[2022-10-31T10:20:20]: Starting...
-[2022-10-31T10:20:20]: Launching TsuserverDR 5.0.0-b1 (PO221031c)...
-[2022-10-31T10:20:20]: Loading server configurations...
-[2022-10-31T10:20:20]: Server configurations loaded successfully!
-[2022-10-31T10:20:20]: Starting a nonlocal server...
-[2022-10-31T10:20:20]: Server started successfully!
-[2022-10-31T10:20:21]: Server should be now accessible from address 192.0.2.0 and port 50000.
+[2022-11-23T10:20:20]: Starting...
+[2022-11-23T10:20:20]: Launching TsuserverDR 5.0.0 (221123a)...
+[2022-11-23T10:20:20]: Loading server configurations...
+[2022-11-23T10:20:20]: Server configurations loaded successfully!
+[2022-11-23T10:20:20]: Starting a nonlocal server...
+[2022-11-23T10:20:20]: Server started successfully!
+[2022-11-23T10:20:21]: Server should be now accessible from address 192.0.2.0 and port 50000.
 ```
 
 * If you are listing your server in the Attorney Online master server, make sure its details are set up correctly. In particular, make sure that your server name and description are correct, as that is how players will find your server. If everything was set up correctly, you will see something like this appear:
 
 ```
-[2022-10-31T10:20:21]: Attempting to connect to the master server at https://servers.aceattorneyonline.com/servers with the following details:
-[2022-10-31T10:20:21]: *Server name: My First DR Server
-[2022-10-31T10:20:21]: *Server description: This is my flashy new DR server
-[2022-10-31T10:20:22]: Connected to the master server.
+[2022-11-23T10:20:21]: Attempting to connect to the master server at https://servers.aceattorneyonline.com/servers with the following details:
+[2022-11-23T10:20:21]: *Server name: My First DR Server
+[2022-11-23T10:20:21]: *Server description: This is my flashy new DR server
+[2022-11-23T10:20:22]: Connected to the master server.
 ```
 
   - The server will make a single ping to [ipify](https://api.ipify.org) in order to obtain its public IP address. If it fails to do that, it will let you know that, as it means there is probably something wrong with your internet connection and that other players may not be able to connect to your server.
@@ -81,9 +81,9 @@ It is highly recommended you read through all the installation steps first befor
 * To stop the server, press Ctrl+C once from your terminal. This will initiate a shutdown sequence and notify you when it is done. If the shutdown finished successfully, you will see something like this appear:
 
 ```
-[2022-10-31T22:23:04]: You have initiated a server shut down.
-[2022-10-31T22:23:04]: Kicking 12 remaining clients.
-[2022-10-31T22:23:04]: Server has successfully shut down.
+[2022-11-23T22:23:04]: You have initiated a server shut down.
+[2022-11-23T22:23:04]: Kicking 12 remaining clients.
+[2022-11-23T22:23:04]: Server has successfully shut down.
 ```
 
 * If you do not see anything after a few seconds of starting a shutdown, you can try spamming Ctrl+C to try and force a shutdown or directly close out your terminal. This is not recommended due to the cleanup process not finishing correctly but it is doable.
@@ -887,7 +887,7 @@ Commands without (D) are aliases to commands and can be freely used (subject to 
     - **IP**: the IP address of the player.
     - **OOC Name**: the username of the player in the OOC chat.
 * **Note 2**: some commands include commas (,) between the parameters. If that is the case, the command expects you to actually use the commas between the parameters. If for whatever reason your parameter also has a comma followed by a space, you can include it by using ,\ (so 'Hello, world' becomes 'Hello,\ world').
-* **Note 3**: additional documentation for the commands can be found in `config\commands.py` and consulting the docstrings. For example, to get additional information for /help, you would look for `ooc_cmd_help` and look for the associated text.
+* **Note 3**: additional documentation for the commands can be found in `config/commands.py` and consulting the docstrings. For example, to get additional information for /help, you would look for `ooc_cmd_help` and look for the associated text.
 
 ## License
 
