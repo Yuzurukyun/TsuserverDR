@@ -1,7 +1,8 @@
-# TsuserverDR, a Danganronpa Online server based on tsuserver3, an Attorney Online server
+# TsuserverDR, server software for Danganronpa Online based on tsuserver3,
+# which is server software for Attorney Online.
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
-# Current project leader: 2018-22 Chrezm/Iuvee <thechrezm@gmail.com>
+#           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -60,21 +61,7 @@ command_aliases = {
     'showname_areas': 'getareas',
     'ga': 'getarea',
     'gas': 'getareas',
+    'area_kick': 'summon',
 }
 
-command_deprecated = {
-    'clock_cancel': 'clock_end',
-    'lurk_cancel': 'lurk_end',
-    'party_disband': 'party_end',
-    'party_members': 'party_info',
-    'timer_cancel': 'timer_end',
-    'zone_delete': 'zone_end',
-    'area_list': 'map',
-    'area_lists': 'map_list',
-    'cleardoc': 'doc_clear',
-    'reload': 'char_reload',
-    'charselect': 'char_select',
-    'defaultarea': 'area_default',
-    'currentmusic': 'play_info',
-    'randommusic': 'play_random',
-}
+command_deprecated = dict()

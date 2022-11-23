@@ -10,7 +10,7 @@ class _TestZone(_TestSituation6Mc1Gc25):
         cls.c3.move_area(5)
         cls.c4.move_area(6)
         cls.c5.move_area(7)
-        cls.zm = cls.server.zone_manager
+        cls.zm = cls.server.hub_manager.get_default_managee().zone_manager
 
         # Prevent multiclienting warning in tests
         cls.c0.hdid = '0'
@@ -29,7 +29,7 @@ class _TestZone(_TestSituation6Mc1Gc25):
 
     def assert_zones(self, expected_zones):
         """
-        Assert that the set of zone IDs matches exactly to the server's zone manager's zones
+        Assert that the set of zone IDs matches exactly to the hub's zone manager's zones
         """
 
         self.assertEqual(len(expected_zones), len(self.zm.get_zones()))

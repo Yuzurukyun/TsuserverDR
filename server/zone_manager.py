@@ -1,7 +1,8 @@
-# TsuserverDR, a Danganronpa Online server based on tsuserver3, an Attorney Online server
+# TsuserverDR, server software for Danganronpa Online based on tsuserver3,
+# which is server software for Attorney Online.
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
-# Current project leader: 2018-22 Chrezm/Iuvee <thechrezm@gmail.com>
+#           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,22 +25,25 @@ as well as perform tasks only on the areas of the zone.
 """
 
 from __future__ import annotations
+
 import typing
 from typing import Any, Dict, Set
-if typing.TYPE_CHECKING:
-    # Avoid circular referencing
-    from server.area_manager import AreaManager
-    from server.client_manager import ClientManager
-    from server.tsuserver import TsuserverDR
 
 from server.constants import Constants
 from server.exceptions import ClientError, ZoneError
 from server.subscriber import Listener
 
+if typing.TYPE_CHECKING:
+    # Avoid circular referencing
+    from server.area_manager import AreaManager
+    from server.client_manager import ClientManager
+    from server.hub_manager import _Hub
+    from server.tsuserver import TsuserverDR
+
 class ZoneManager:
     """
     A mutable data type for a manager for the zones in a server.
-    Contains the Zone object definition, as well as the server's zone list.
+    Contains the Zone object definition, as well as the hub's zone list.
     """
 
     class Zone:
@@ -48,15 +52,25 @@ class ZoneManager:
         that occur in areas in the zone.
         """
 
-        def __init__(self, server: TsuserverDR, zone_id: str, areas: Set[AreaManager.Area],
-                     watchers: Set[ClientManager.Client]):
+        def __init__(
+            self,
+            server: TsuserverDR,
+            manager: ZoneManager,
+            hub: _Hub,
+            zone_id: str,
+            areas: Set[AreaManager.Area],
+            watchers: Set[ClientManager.Client]):
             """
             Initialization method for a zone.
 
             Parameters
             ----------
-            server: TsuserverDR
-                Server the zone belongs to
+            server : TsuserverDR
+                The server this zone belongs to.
+            manager : ZoneManager
+                The manager of this zone.
+            hub: _Hub
+                The hub this zone belongs to.
             zone_id: str
                 Identifier of zone.
             areas: set of AreaManager.Area
@@ -65,7 +79,10 @@ class ZoneManager:
                 Set of clients who are watching the zone.
             """
 
-            self._server = server
+            self.server = server
+            self.manager = manager
+            self.hub = hub
+
             self._zone_id = zone_id
             self._areas = set()
             self._watchers = set()
@@ -193,7 +210,7 @@ class ZoneManager:
 
             # If no more areas, delete the zone
             if not self._areas:
-                self._server.zone_manager.delete_zone(self._zone_id)
+                self.manager.delete_zone(self._zone_id)
 
         def _cleanup_removed_area(self, area: AreaManager.Area):
             self.listener.unsubscribe(area)
@@ -320,13 +337,13 @@ class ZoneManager:
 
             # If no more watchers nor players, delete the zone
             if not self._watchers and not self._players:
-                self._server.zone_manager.delete_zone(self._zone_id)
+                self.manager.delete_zone(self._zone_id)
                 user.send_ooc('(X) Zone `{}` that you were in was automatically ended as no one '
                               'was in an area part of it or was watching it anymore.'
-                              .format(self._zone_id), is_staff=True)
+                              .format(self._zone_id))
                 user.send_ooc_others('Zone `{}` was automatically ended as no one was in an '
                                      'area part of it or was watching it anymore.'
-                                     .format(self._zone_id), is_officer=True)
+                                     .format(self._zone_id), is_officer=True, in_hub=None)
 
         def _cleanup_removed_watcher(self, user: ClientManager.Client):
             user.zone_watched = None
@@ -376,6 +393,12 @@ class ZoneManager:
                 if autopass and not user.autopass:
                     user.autopass = True
                     user.send_ooc('Your autopass was automatically turned on.')
+
+            if self.is_property('Autoglance'):
+                autoglance = self.get_property('Autoglance')
+                if autoglance and not user.autoglance:
+                    user.autoglance = True
+                    user.send_ooc('Your autoglance was automatically turned on.')
 
         def get_players(self) -> Set[ClientManager.Client]:
             """
@@ -434,13 +457,13 @@ class ZoneManager:
 
             # If no more watchers nor players, delete the zone
             if not self._watchers and not self._players:
-                self._server.zone_manager.delete_zone(self._zone_id)
+                self.manager.delete_zone(self._zone_id)
                 user.send_ooc('(X) Zone `{}` that you were in was automatically ended as no one '
                               'was in an area part of it or was watching it anymore.'
-                              .format(self._zone_id), is_staff=True)
+                              .format(self._zone_id))
                 user.send_ooc_others('Zone `{}` was automatically ended as no one was in an '
                                      'area part of it or was watching it anymore.'
-                                     .format(self._zone_id), is_officer=True)
+                                     .format(self._zone_id), is_officer=True, in_hub=None)
 
         def _cleanup_removed_player(self, player: ClientManager.Client):
             self.listener.unsubscribe(player)
@@ -620,7 +643,7 @@ class ZoneManager:
                 return
 
             self._is_deleted = True
-            self._server.zone_manager.delete_zone(self._zone_id)
+            self.manager.delete_zone(self._zone_id)
 
             for area in self._areas:
                 self._cleanup_removed_area(area)
@@ -642,7 +665,7 @@ class ZoneManager:
             return self._is_deleted
 
         def _on_area_client_left_final(self, area, client=None, old_displayname=None,
-                                    ignore_bleeding=False, ignore_autopass=False):
+                                       ignore_bleeding=False, ignore_autopass=False):
             """
             Default callback for zone signaling a client left. This is executed after all other
             actions related to moving the player to a new area have been executed: in particular,
@@ -689,7 +712,8 @@ class ZoneManager:
             client : ClientManager.Client, optional
                 The client that has entered. The default is None.
             old_area : AreaManager.Area
-                The old area the client has come from. The default is None.
+                The old area the client has come from (possibly None for a newly connected user).
+                The default is None.
             old_displayname : str, optional
                 The old displayed name of the client before they changed area. This will typically
                 change only if the client's character or showname are taken. The default is None.
@@ -737,7 +761,7 @@ class ZoneManager:
             self._check_structure()
 
         def _check_structure(self):
-            self._server.zone_manager._check_structure()
+            self.manager._check_structure()
 
         def __repr__(self) -> str:
             """
@@ -751,17 +775,21 @@ class ZoneManager:
 
             return 'Z::{}:{}:{}'.format(self._zone_id, self._areas, self._watchers)
 
-    def __init__(self, server: TsuserverDR):
+    def __init__(self, server: TsuserverDR, hub: _Hub):
         """
         Create a zone manager object.
 
         Parameters
         ----------
-        server: TsuserverDR
+        server : TsuserverDR
             The server this zone manager belongs to.
+        hub : _Hub
+            The hub this zone manager belongs to.
         """
 
-        self._server = server
+        self.server = server
+        self.hub = hub
+
         self._zones = dict()
         self._zone_limit = 10000
 
@@ -808,7 +836,7 @@ class ZoneManager:
                            .format(Constants.cjoin(conflict_watchers)))
             raise ZoneError.WatcherConflictError(message)
 
-        zone = self.Zone(self._server, zone_id, areas, watchers)
+        zone = self.Zone(self.server, self, self.hub, zone_id, areas, watchers)
         self._zones[zone_id] = zone
         self._check_structure()
         return zone_id
@@ -907,13 +935,13 @@ class ZoneManager:
 
     def get_info(self) -> str:
         """
-        List all zones in the server, as well as some of their properties.
+        List all zones in the hub, as well as some of their properties.
         If there are no zones, return a special message instead.
 
         Returns
         -------
         str:
-            All zones in the server.
+            All zones in the hub.
         """
 
         if not self._zones:
@@ -1002,53 +1030,61 @@ class ZoneManager:
         # 1.
         assert len(self._zones.keys()) < self._zone_limit, (
             'Expected the server cap of {} to be enforced, found the server linked to '
-            '{} zones instead.'.format(self._zone_limit, len(self._zones.keys())))
+            '{} zones instead.'.format(self._zone_limit, len(self._zones.keys()))
+            )
 
         # 2.
         for zone_id, zone in self._zones.items():
             assert zone._zone_id == zone_id, (
                 'Expected zone {} associated with ID {} to have the same ID, found it had ID '
-                '{} instead.'.format(zone, zone_id, zone._zone_id))
+                '{} instead.'.format(zone, zone_id, zone._zone_id)
+                )
 
         for zone in self._zones.values():
             # 3.
             conflicting_areas = [area for area in zone._areas if area in areas_so_far]
             assert not conflicting_areas, (
                 'Expected no conflicting areas, but zone {} introduces repeated areas {}.'
-                .format(zone, conflicting_areas))
+                .format(zone, conflicting_areas)
+                )
 
             # 4.
             for area in zone._areas:
                 assert area.in_zone == zone, (
                     'Expected area {} to recognize it being a part of zone {}, found it '
-                    'recognized {} instead.'.format(area, zone, area.in_zone))
+                    'recognized {} instead.'.format(area, zone, area.in_zone)
+                    )
                 areas_so_far.add(area)
 
             # 5.
             conflicting_watchers = [watch for watch in zone._watchers if watch in watchers_so_far]
             assert not conflicting_watchers, (
                 'Expected no conflicting watchers, but zone {} introduces conflicting watchers '
-                '{}.'.format(zone, conflicting_watchers))
+                '{}.'.format(zone, conflicting_watchers)
+                )
 
             # 6.
             for watcher in zone._watchers:
                 assert watcher.zone_watched == zone, (
                     'Expected watcher {} to recognize it is watching zone {}, found it '
-                    'recognized {} instead.'.format(watcher, zone, watcher.zone_watched))
+                    'recognized {} instead.'.format(watcher, zone, watcher.zone_watched)
+                    )
                 watchers_so_far.add(watcher)
 
         # 7.
-        for area in self._server.area_manager.get_areas():
+        for area in self.hub.area_manager.get_areas():
             if area in areas_so_far:
                 continue
             assert area.in_zone is None, (
                 'Expected area {} not part of a zone to recognize it not being in a zone, '
-                'found it recognized {} instead.'.format(area, area.in_zone))
+                'found it recognized {} instead.'.format(area, area.in_zone)
+                )
 
         # 8.
-        for watcher in self._server.get_clients():
+        for watcher in self.hub.get_players():
             if watcher in watchers_so_far:
                 continue
             assert watcher.zone_watched is None, (
                 'Expected watcher {} to recognize that it is not watching a zone, found it '
-                'recognized it watched {} instead.'.format(watcher, watcher.zone_watched))
+                'recognized it watched {} instead.'.format(watcher, watcher.zone_watched)
+                )

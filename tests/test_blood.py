@@ -172,7 +172,7 @@ class TestBlood_02_Effect(_TestBlood):
         self.c2.move_area(0, discard_trivial=True)
         self.c2.assert_ooc('You see {} is bleeding.'.format(self.c0_dname))
         self.c2.assert_ooc('You spot some blood in the area.', ooc_over=True)
-        self.c2.assert_ic('(Something catches your attention)', over=True)
+        self.c2.assert_ic('[Something catches your attention]', over=True)
         self.c2.move_area(6, discard_trivial=True)
         self.c2.assert_no_ooc()
 
@@ -192,7 +192,7 @@ class TestBlood_02_Effect(_TestBlood):
         self.c1.assert_no_ooc()
         self.c2.assert_ooc('You see {} arrive to the area while bleeding.'.format(self.c0_dname),
                            ooc_over=True)
-        self.c2.assert_ic('(Something catches your attention)', over=True)
+        self.c2.assert_ic('[Something catches your attention]', over=True)
         self.c3.assert_no_ooc()
 
     def test_03_bloodtrail(self):
@@ -206,13 +206,13 @@ class TestBlood_02_Effect(_TestBlood):
         self.c1.move_area(5, discard_trivial=True)
         self.c1.assert_ooc('You spot a blood trail leading to the {} and the {}.'
                            .format(self.a0_name, self.a6_name), ooc_over=True)
-        self.c1.assert_ic('(Something catches your attention)', over=True)
+        self.c1.assert_ic('[Something catches your attention]', over=True)
 
         self.c1.move_area(6, discard_trivial=True)
         self.c1.assert_ooc('You see {} is bleeding.'.format(self.c0_dname))
         self.c1.assert_ooc('You spot a blood trail leading to the {}.'.format(self.a5_name),
                            ooc_over=True)
-        self.c1.assert_ic('(Something catches your attention)', over=True)
+        self.c1.assert_ic('[Something catches your attention]', over=True)
 
     def test_04_bleedonbloodtrail(self):
         """

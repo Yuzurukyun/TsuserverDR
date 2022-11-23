@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
-# TsuserverDR, a Danganronpa Online server based on tsuserver3, an Attorney Online server
+# TsuserverDR, server software for Danganronpa Online based on tsuserver3,
+# which is server software for Attorney Online.
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
-# Current project leader: 2018-22 Chrezm/Iuvee <thechrezm@gmail.com>
+#           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,10 +35,10 @@ from server.tsuserver import TsuserverDR
 def _mandatory_python_version_check():
     current_python_tuple = sys.version_info
     current_python_simple = 'Python {}.{}.{}'.format(*current_python_tuple[:3])
-    if current_python_tuple < (3, 7):
+    if current_python_tuple < (3, 9):
         # This deliberately uses .format() because f-strings were not available prior to
-        # Python 3.7
-        msg = ('This version of TsuserverDR requires at least Python 3.7. You currently have '
+        # Python 3.7, and 3.7 < 3.9
+        msg = ('This version of TsuserverDR requires at least Python 3.9. You currently have '
                 '{}. Please refer to README.md for instructions on updating.'
                 .format(current_python_simple))
         raise RuntimeError(msg)
@@ -48,9 +49,9 @@ def _upcoming_python_version_check():
     current_python_simple = 'Python {}.{}.{}'.format(*current_python_tuple[:3])
     if current_python_tuple < (3, 9):
         msg = (f'WARNING: The upcoming major release of TsuserverDR (4.4.0) will be requiring '
-                f'at least Python 3.9. You currently have {current_python_simple}. '
-                f'Please consider upgrading to at least Python 3.9 soon. You may find '
-                f'additional instructions on updating in README.md')
+               f'at least Python 3.9. You currently have {current_python_simple}. '
+               f'Please consider upgrading to at least Python 3.9 soon. You may find '
+               f'additional instructions on updating in README.md')
         logger.log_print(msg)
 
 
@@ -80,6 +81,8 @@ async def _abnormal_shutdown(exception, server=None):
     try:
         await server.normal_shutdown()
     except Exception as exception2:
+        server.shutting_down = True
+
         logger.log_print('Unable to gracefully shut down: Forcing a shutdown.')
         etype, evalue, etraceback = (type(exception2), exception2, exception2.__traceback__)
         info = "\r\n" + "".join(traceback.format_exception(etype, evalue, etraceback))

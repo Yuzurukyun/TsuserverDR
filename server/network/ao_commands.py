@@ -1,4 +1,5 @@
-# TsuserverDR, a Danganronpa Online server based on tsuserver3, an Attorney Online server
+# TsuserverDR, server software for Danganronpa Online based on tsuserver3,
+# which is server software for Attorney Online.
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
 # Current project leader: 2018-21 Chrezm/Iuvee <thechrezm@gmail.com>
@@ -26,12 +27,13 @@ import random
 import re
 import time
 import typing
-
 from typing import Any, Dict
 
-from server import logger, clients
+from server import clients, logger
 from server.constants import Constants
-from server.exceptions import AreaError, ClientError, ServerError, PartyError, TsuserverException
+from server.exceptions import (AreaError, ClientError, HubError, MusicError,
+                               PartyError, ServerError, TsuserverException)
+
 # from server.evidence import EvidenceList
 
 if typing.TYPE_CHECKING:
@@ -65,10 +67,12 @@ def net_cmd_hi(client: ClientManager.Client, pargs: Dict[str, Any]):
     # Check if the client is banned
     for ipid in client.server.hdid_list[client.hdid]:
         if client.server.ban_manager.is_banned(ipid):
+            logger.log_server(f'Disconnected previously banned player who just tried to join. '
+                              f'Banned IPID: {ipid}', client)
             client.send_ooc_others(
                 f'Banned client with HDID {client.hdid} and IPID {client.ipid} '
                 f'attempted to join the server but was refused entrance.',
-                is_officer=True)
+                is_officer=True, in_hub=None)
             client.send_command_dict('BD', dict())
             client.disconnect()
             return
@@ -106,30 +110,23 @@ def net_cmd_id(client: ClientManager.Client, pargs: Dict[str, Any]):
         version_list = raw_version.split('.')
 
         # Identify version number
-        if len(version_list) >= 3:
-            # Such versions include DRO and AO
-            release = int(version_list[0])
-            major = int(version_list[1])
-            # Strip out any extra identifiers (like -b1) from minor
-            match = re.match(r'(?P<minor>\d+)(?P<rest>.*)', version_list[2])
-            if match:
-                minor = int(match['minor'])
-                rest = match['rest']
-            else:
-                minor = 0
-                rest = version_list[2]
-            if pargs['client_software'] not in ['DRO', 'AO2']:
-                return False
+        if len(version_list) < 3:
+            return False
+
+        # Such versions include DRO and AO
+        if pargs['client_software'] not in ['DRO', 'AO2']:
+            return False
+
+        release = int(version_list[0])
+        major = int(version_list[1])
+        # Strip out any extra identifiers (like -b1) from minor
+        match = re.match(r'(?P<minor>\d+)(?P<rest>.*)', version_list[2])
+        if match:
+            minor = int(match['minor'])
+            rest = match['rest']
         else:
-            # Only such version recognized now is CC
-            # CC has args[1] == 'CC - Update (\d+\.)*\d+'
-            if pargs['client_software_version'].startswith('CC'):
-                release = 'CC'
-                major = float(raw_version.split(' ')[-1])
-                minor = 0
-                rest = ''
-            else:
-                return False
+            minor = 0
+            rest = version_list[2]
 
         # While we grab rest for the sake of the future-proofing, right now it is not used.
         # I added this useless if so my IDE wouldn't complain of an unused variable.
@@ -137,49 +134,42 @@ def net_cmd_id(client: ClientManager.Client, pargs: Dict[str, Any]):
             pass
 
         if software == 'DRO':
-            if major >= 2:
-                if minor >= 2:
-                    client.packet_handler = clients.ClientDRO1d2d2()
+            if release >= 2:
+                # DRO 2???
+                # Placeholder
+                client.packet_handler = clients.ClientDRO1d2d2()
+            elif release >= 1:
+                if major >= 2:
+                    if minor >= 2:
+                        client.packet_handler = clients.ClientDRO1d2d2()
+                    else:
+                        client.packet_handler = clients.ClientDRO1d2d0()
+                elif major >= 1:
+                    client.packet_handler = clients.ClientDRO1d1d0()
                 else:
-                    client.packet_handler = clients.ClientDRO1d2d0()
-            elif major >= 1:
-                client.packet_handler = clients.ClientDRO1d1d0()
+                    client.packet_handler = clients.ClientDRO1d0d0()
             else:
-                client.packet_handler = clients.ClientDRO1d0d0()
-        else:  # AO2 protocol
+                return False
+        elif software == 'AO2':  # AO2 protocol
             if release == 2:
                 if major >= 10:
                     client.packet_handler = clients.ClientAO2d10()
-                elif major >= 9:
-                    client.packet_handler = clients.ClientAO2d9d0()
-                elif major >= 8 and minor >= 4:
-                    client.packet_handler = clients.ClientAO2d8d4()
-                elif major >= 8:  # KFO
-                    client.packet_handler = clients.ClientKFO2d8()
-                elif major == 7:  # AO 2.7
-                    client.packet_handler = clients.ClientAO2d7()
-                elif major == 6:  # AO 2.6
-                    client.packet_handler = clients.ClientAO2d6()
-                elif major == 4 and minor == 8:  # Older DRO
-                    client.packet_handler = clients.ClientDROLegacy()
                 else:
                     return False  # Unrecognized
-            elif release == 'CC':
-                if major >= 24:
-                    client.packet_handler = clients.ClientCC24()
-                elif major >= 22:
-                    client.packet_handler = clients.ClientCC22()
-                else:
-                    return False  # Unrecognized
+            else:
+                return False  # Unrecognized
+        else:
+            raise RuntimeError(f'{software}')
+
         # The only way to make it here is if we have not returned False
         # If that is the case, we have successfully found a version
         return True
 
     if not check_client_version():
-        # Warn player they are using an unknown client.
+        # Kick players that are using an unknown client.
         # Assume a legacy DRO client instruction set.
-        client.packet_handler = clients.ClientDRO1d0d0()
-        client.bad_version = True
+        client.disconnect()
+        return
 
     client.send_command_dict('FL', {
         'fl_ao2_list': ['yellowtext', 'customobjections', 'flipping', 'fastloading',
@@ -221,11 +211,11 @@ def net_cmd_askchaa(client: ClientManager.Client, pargs: Dict[str, Any]):
     client.can_askchaa = False  # Enforce the joining process happening atomically
 
     # Make sure there is enough room for the client
-    char_cnt = len(client.server.character_manager.get_characters())
+    char_cnt = len(client.hub.character_manager.get_characters())
     evi_cnt = 0
     music_cnt = sum([len(item['songs']) + 1
                      for item in client.music_manager.get_music()])  # +1 for category
-    area_cnt = len(client.server.area_manager.get_areas())
+    area_cnt = len(client.hub.area_manager.get_areas())
     client.send_command_dict('SI', {
         'char_count': char_cnt,
         'evidence_count': evi_cnt,
@@ -256,9 +246,7 @@ def net_cmd_rc(client: ClientManager.Client, pargs: Dict[str, Any]):
     # Check if client is ready to actually join, and did not do weird packet shenanigans before
     if client.required_packets_received != {'HI', 'ID'}:
         return
-    client.send_command_dict('SC', {
-        'chars_ao2_list': client.server.character_manager.get_characters(),
-        })
+    client.send_character_list()
 
 
 def net_cmd_rm(client: ClientManager.Client, pargs: Dict[str, Any]):
@@ -293,10 +281,7 @@ def net_cmd_rd(client: ClientManager.Client, pargs: Dict[str, Any]):
 
     client.send_done()
     if client.server.config['announce_areas']:
-        if client.server.config['rp_mode_enabled']:
-            client.send_limited_area_list()
-        else:
-            client.send_area_list()
+        client.send_limited_area_list()
     client.send_motd()
     client.can_askchaa = True  # Allow rejoining if left to lobby but did not dc.
 
@@ -489,8 +474,8 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
     else:
         # As msg.startswith('') is True, this also accounts for having no required prefix.
         start, end = client.multi_ic[0].id, client.multi_ic[1].id + 1
-        start_area = client.server.area_manager.get_area_by_id(start)
-        end_area = client.server.area_manager.get_area_by_id(end-1)
+        start_area = client.hub.area_manager.get_area_by_id(start)
+        end_area = client.hub.area_manager.get_area_by_id(end-1)
         area_range = range(start, end)
 
         truncated_msg = msg.replace(client.multi_ic_pre, '', 1)
@@ -570,7 +555,7 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
     client.publish_inbound_command('MS_final', pargs)
 
     for area_id in area_range:
-        target_area = client.server.area_manager.get_area_by_id(area_id)
+        target_area = client.hub.area_manager.get_area_by_id(area_id)
         for target in target_area.clients:
             target.send_ic(params=pargs, sender=client, gag_replaced=gag_replaced)
 
@@ -591,14 +576,16 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
                                f'talking ({client.area.id}).', is_zstaff=True)
 
     # Restart AFK kick timer and lurk callout timers, if needed
-    client.server.tasker.create_task(client,
-                                    ['as_afk_kick', client.area.afk_delay, client.area.afk_sendto])
+    client.server.task_manager.new_task(client, 'as_afk_kick', {
+        'afk_delay': client.area.afk_delay,
+        'afk_sendto': client.area.afk_sendto
+    })
     client.check_lurk()
 
     client.last_ic_message = msg
     client.last_active = Constants.get_time()
 
-def _process_ooc_command(cmd, client):
+def _process_ooc_command(cmd: str, client: ClientManager.Client):
     called_function = f'ooc_cmd_{cmd}'
     if hasattr(client.server.commands, called_function):
         function = getattr(client.server.commands, called_function)
@@ -673,7 +660,7 @@ def net_cmd_ct(client: ClientManager.Client, pargs: Dict[str, Any]):
                 if ex.message:
                     client.send_ooc(ex)
                 else:
-                    client.send_ooc(type(ex).__name__)
+                    raise
         else:
             client.send_ooc(f'Invalid command `{cmd}`.')
     else:
@@ -697,6 +684,85 @@ def net_cmd_ct(client: ClientManager.Client, pargs: Dict[str, Any]):
     client.last_active = Constants.get_time()
 
 
+def _attempt_to_change_hub(client: ClientManager.Client, pargs: Dict[str, Any]) -> bool:
+    name: str = pargs['name']
+
+    if name == Constants.get_first_area_list_item('AREA', client.hub, client.area):
+        client.viewing_hubs = False
+        client.send_music_list_view()
+
+        return True
+    else:
+        try:
+            delimiter = name.find('-')
+            numerical_id = int(name[:delimiter])
+            hub = client.hub.manager.get_managee_by_numerical_id(numerical_id)
+        except (HubError.ManagerInvalidGameIDError,  ValueError):
+            return False
+
+        try:
+            client.change_hub(hub, from_party=True if client.party else False)
+        except (ClientError, PartyError) as ex:
+            client.send_ooc(ex)
+
+        return True
+
+
+def _attempt_to_change_area(client: ClientManager.Client, pargs: Dict[str, Any]) -> bool:
+    name: str = pargs['name']
+
+    if name == Constants.get_first_area_list_item('HUB', client.hub, client.area):
+        client.viewing_hubs = True
+        client.send_music_list_view()
+
+        return True
+    else:
+        try:
+            delimiter = name.find('-')
+            area = client.hub.area_manager.get_area_by_name(name[delimiter+1:])
+        except (AreaError, ValueError):
+            return False
+
+        try:
+            client.change_area(area, from_party=True if client.party else False)
+        except (ClientError, PartyError) as ex:
+            client.send_ooc(ex)
+
+        return True
+
+
+def _attempt_to_play_music(client: ClientManager.Client, pargs: Dict[str, Any]) -> bool:
+    name: str = pargs['name']
+
+    if client.is_muted:  # Checks to see if the client has been muted by a mod
+        client.send_ooc("You have been muted by a moderator.")
+        return False
+    if not client.is_dj:
+        client.send_ooc('You were blockdj\'d by a moderator.')
+        return False
+
+    if int(pargs['char_id']) != client.char_id:
+        return False
+
+    delay = client.change_music_cd()
+    if delay:
+        client.send_ooc(f'You changed song too many times recently. Please try again '
+                        f'after {Constants.time_format(delay)}.')
+        return False
+
+    try:
+        client.area.play_track(name, client, raise_if_not_found=True,
+                               reveal_sneaked=True, pargs=pargs)
+    except ServerError.FileInvalidNameError:
+        client.send_ooc(f'Invalid area or music `{name}`.')
+        return False
+    except MusicError.MusicNotFoundError:
+        client.send_ooc(f'Unrecognized area or music `{name}`.')
+        return False
+
+    return True
+
+
 def net_cmd_mc(client: ClientManager.Client, pargs: Dict[str, Any]):
     """ Play music.
 
@@ -704,42 +770,20 @@ def net_cmd_mc(client: ClientManager.Client, pargs: Dict[str, Any]):
 
     """
 
-    # First attempt to switch area,
-    # because music lists typically include area names for quick access
-    try:
-        delimiter = pargs['name'].find('-')
-        area = client.server.area_manager.get_area_by_name(pargs["name"][delimiter+1:])
-        client.change_area(area, from_party=True if client.party else False)
+    # First attempt to switch area/hub,
+    # because music lists typically include area/hub names for quick access
+    if client.viewing_hubs:
+        done = _attempt_to_change_hub(client, pargs)
+    else:
+        done = _attempt_to_change_area(client, pargs)
 
-    # Otherwise, attempt to play music.
-    except (AreaError, ValueError):
-        if client.is_muted:  # Checks to see if the client has been muted by a mod
-            client.send_ooc("You have been muted by a moderator.")
-            return
-        if not client.is_dj:
-            client.send_ooc('You were blockdj\'d by a moderator.')
-            return
+    if not done:
+        # Otherwise, attempt to play music.
+        done = _attempt_to_play_music(client, pargs)
 
-        if int(pargs['char_id']) != client.char_id:
-            return
-
-        delay = client.change_music_cd()
-        if delay:
-            client.send_ooc(f'You changed song too many times recently. Please try again '
-                            f'after {Constants.time_format(delay)}.')
-            return
-
-        try:
-            client.area.play_track(pargs['name'], client, raise_if_not_found=True,
-                                   reveal_sneaked=True, pargs=pargs)
-        except ServerError.MusicNotFoundError:
-            client.send_ooc(f'Unrecognized area or music `{pargs["name"]}`.')
-        except ServerError:
-            return
-    except (ClientError, PartyError) as ex:
-        client.send_ooc(ex)
-
-    client.last_active = Constants.get_time()
+    # Only update last active if command finished to completion
+    if done:
+        client.last_active = Constants.get_time()
 
 
 def net_cmd_rt(client: ClientManager.Client, pargs: Dict[str, Any]):

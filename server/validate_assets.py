@@ -1,7 +1,8 @@
-# TsuserverDR, a Danganronpa Online server based on tsuserver3, an Attorney Online server
+# TsuserverDR, server software for Danganronpa Online based on tsuserver3,
+# which is server software for Attorney Online.
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
-# Current project leader: 2018-22 Chrezm/Iuvee <thechrezm@gmail.com>
+#           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -136,7 +137,7 @@ class Validate():
 
                 except OSError as exc:
                     # Should only land here for paths that cannot be resolved
-                    print(f'Invalid file name {file_name}.')
+                    print(f'Invalid file name {file_name}: {exc}.')
                 else:
                     if not file_name.upper().endswith('.YAML'):
                         msg = f'Invalid file name {file_name} (file extension must be .yaml)'

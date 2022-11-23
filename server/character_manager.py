@@ -1,7 +1,8 @@
-# TsuserverDR, a Danganronpa Online server based on tsuserver3, an Attorney Online server
+# TsuserverDR, server software for Danganronpa Online based on tsuserver3,
+# which is server software for Attorney Online.
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
-# Current project leader: 2018-22 Chrezm/Iuvee <thechrezm@gmail.com>
+#           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,13 +21,15 @@ from __future__ import annotations
 
 import typing
 
-from typing import Callable, List, Union
+from typing import Callable, List, Tuple, Union
 
 from server.asset_manager import AssetManager
 from server.exceptions import CharacterError
 from server.validate.characters import ValidateCharacters
 
 if typing.TYPE_CHECKING:
+    from server.hub_manager import _Hub
+    from server.client_manager import ClientManager
     from server.tsuserver import TsuserverDR
 
 class CharacterManager(AssetManager):
@@ -35,7 +38,7 @@ class CharacterManager(AssetManager):
     loaded file or an adequate Python representation.
     """
 
-    def __init__(self, server: TsuserverDR):
+    def __init__(self, server: TsuserverDR, hub: Union[_Hub, None] = None):
         """
         Create a character manager object.
 
@@ -43,13 +46,16 @@ class CharacterManager(AssetManager):
         ----------
         server: TsuserverDR
             The server this character manager belongs to.
+        hub : _Hub, optional
+            The hub this character manager belongs to. Defaults to None.
         """
 
-        super().__init__(server)
+        super().__init__(server, hub=hub)
         self._characters = []
-        self._source_file = 'config/characters.yaml'
+        self._source_file = None
+        self._previous_source_file = None
 
-    def get_name(self) -> str:
+    def get_type_name(self) -> str:
         """
         Return `'character list'`.
 
@@ -75,15 +81,15 @@ class CharacterManager(AssetManager):
 
     def get_loader(self) -> Callable[[str, ], str]:
         """
-        Return `self.server.load_characters`.
+        Return `self.hub.load_characters`.
 
         Returns
         -------
         Callable[[str, ], str]
-            `self.server.load_characters`.
+            `self.hub.load_characters`.
         """
 
-        return self.server.load_characters
+        return self.hub.load_characters
 
     def get_characters(self) -> List[str]:
         """
@@ -111,17 +117,31 @@ class CharacterManager(AssetManager):
 
         return self._source_file
 
+    def get_previous_source_file(self) -> Union[str, None]:
+        """
+        Return the output that self.get_source_file() would have returned *before* the last
+        successful time a character list was successfully loaded.
+        If no such call was ever made, return None.
+
+        Returns
+        -------
+        Union[str, None]
+            Previous source file or None.
+        """
+
+        return self._previous_source_file
+
     def get_custom_folder(self) -> str:
         """
-        Return `'config/character_lists'`.
+        Return `'config/char_lists'`.
 
         Returns
         -------
         str
-            `'config/character_lists'`.
+            `'config/char_lists'`.
         """
 
-        return 'config/character_lists'
+        return 'config/char_lists'
 
     def validate_file(self, source_file: Union[str, None] = None) -> List[str]:
         if source_file is None:
@@ -196,6 +216,8 @@ class CharacterManager(AssetManager):
         return output
 
     def _load_characters(self, new_list: List[str], source_file: Union[str, None]) -> List[str]:
+        self._previous_source_file = self._source_file
+
         self._characters = new_list.copy()
         self._source_file = source_file
 
@@ -203,6 +225,12 @@ class CharacterManager(AssetManager):
 
     def is_character(self, character: str) -> bool:
         return character in self._characters
+
+    def is_char_id_participant(self, char_id: Union[int, None]) -> bool:
+        # DO NOT UNCOMMENT.
+        # if not self.is_valid_character_id(char_id):
+        #    return False
+        return char_id is not None and char_id >= 0
 
     def is_valid_character_id(self, char_id: Union[int, None]) -> bool:
         return char_id is None or len(self._characters) > char_id >= -1
@@ -224,6 +252,24 @@ class CharacterManager(AssetManager):
             if ch.lower() == name.lower():
                 return i
         raise CharacterError.CharacterNotFoundError(f'Character {name} not found.')
+
+    def translate_character_id(self, client: ClientManager.Client,
+                               old_char_name: str = None) -> Tuple[bool, Union[int, None]]:
+        if old_char_name is None:
+            old_char_name = client.get_char_name()
+
+        if not client.has_participant_character():
+            # Do nothing for spectators
+            return (False, client.char_id)
+        if old_char_name not in self._characters:
+            # Character no longer exists, so switch to spectator
+            client.send_ooc(f'After a change in the character list, your character is no '
+                            f'longer available. Switching to '
+                            f'{self.server.config["spectator_name"]}.')
+            return (True, -1)
+
+        target_char_id = self._characters.index(old_char_name)
+        return (client.char_id != target_char_id, target_char_id)
 
     def _check_structure(self):
         """

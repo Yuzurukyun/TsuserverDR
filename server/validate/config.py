@@ -1,7 +1,8 @@
-# TsuserverDR, a Danganronpa Online server based on tsuserver3, an Attorney Online server
+# TsuserverDR, server software for Danganronpa Online based on tsuserver3,
+# which is server software for Attorney Online.
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
-# Current project leader: 2018-22 Chrezm/Iuvee <thechrezm@gmail.com>
+#           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -49,8 +50,6 @@ class ValidateConfig(Validate):
             'announce_areas',
             'motd',
             'hostname',
-
-            'rp_mode_enabled',
             ]
 
         for field in mandatory_fields:
@@ -131,7 +130,6 @@ class ValidateConfig(Validate):
             'def_numfaces': int,
             'def_modifier': str,
 
-            'rp_mode_enabled': bool,
             'blackout_background': str,
             'default_area_description': str,
             'party_lights_timeout': (float, int),

@@ -1,7 +1,8 @@
-# TsuserverDR, a Danganronpa Online server based on tsuserver3, an Attorney Online server
+# TsuserverDR, server software for Danganronpa Online based on tsuserver3,
+# which is server software for Attorney Online.
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
-# Current project leader: 2018-22 Chrezm/Iuvee <thechrezm@gmail.com>
+#           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -33,6 +34,8 @@ from server.constants import ArgType, Constants
 from server.exceptions import AOProtocolError
 
 if typing.TYPE_CHECKING:
+    from asyncio.proactor_events import _ProactorSocketTransport
+
     # Avoid circular referencing
     from server.tsuserver import TsuserverDR
 
@@ -59,24 +62,10 @@ class AOProtocol(asyncio.Protocol):
         self.client = None
         self.buffer = ''
         self.ping_timeout = None
-        logger.log_print = logger.log_print2 if self.server.in_test else logger.log_print
 
-        # Determine whether /exec is active or not and warn server owner if so.
-        if getattr(self.server.commands, "ooc_cmd_exec")(self.client, "is_exec_active") == 1:
-            logger.log_print("""
+        self.server.check_exec_active()
 
-                  WARNING
-
-                  THE /exec COMMAND IN commands.py IS ACTIVE.
-
-                  UNLESS YOU ABSOLUTELY MEANT IT AND KNOW WHAT YOU ARE DOING,
-                  PLEASE STOP YOUR SERVER RIGHT NOW AND DEACTIVATE IT BY GOING TO THE
-                  commands.py FILE AND FOLLOWING THE INSTRUCTIONS UNDER ooc_cmd_exec.\n
-                  BAD THINGS CAN AND WILL HAPPEN OTHERWISE.
-
-                  """)
-
-    def connection_made(self, transport):
+    def connection_made(self, transport: _ProactorSocketTransport):
         """ Called upon a new client connecting
 
         :param transport: the transport object
@@ -122,7 +111,7 @@ class AOProtocol(asyncio.Protocol):
 
         return f'{short_buffer} ({len(self.buffer)} bytes)'
 
-    def _process_message(self, msg):
+    def _process_message(self, msg: str) -> bool:
         if len(msg) < 2:
             # This immediatelly kills any client that does not even try to follow the proper
             # client protocol
@@ -152,7 +141,7 @@ class AOProtocol(asyncio.Protocol):
 
             dispatched = self._net_cmd_dispatcher[cmd]
             pargs = self._process_arguments(cmd, args, needs_auth=dispatched.needs_auth,
-                                            fallback_protocols=[clients.ClientDROLegacy])
+                                            fallback_protocols=[clients.ClientDRO1d0d0])
             self.client.publish_inbound_command(cmd, pargs)
 
             dispatched.function(self.client, pargs)
@@ -165,7 +154,7 @@ class AOProtocol(asyncio.Protocol):
             self.server.send_error_report(self.client, cmd, args, ex)
         return True
 
-    def data_received(self, data):
+    def data_received(self, data: bytearray):
         """ Handles any data received from the network.
 
         Receives data, parses them into a command and passes it

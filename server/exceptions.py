@@ -1,7 +1,8 @@
-# TsuserverDR, a Danganronpa Online server based on tsuserver3, an Attorney Online server
+# TsuserverDR, server software for Danganronpa Online based on tsuserver3,
+# which is server software for Attorney Online.
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
-# Current project leader: 2018-22 Chrezm/Iuvee <thechrezm@gmail.com>
+#           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -47,7 +48,15 @@ def recreate_subexceptions(cls):
     than TsuserverException.
 
     """
-    subexceptions = [item for item in cls.__dict__.keys() if not item.startswith('__')]
+    #subexceptions = [item for item in cls.__dict__.keys() if not item.startswith('__')]
+
+    current_class = cls
+    subexceptions = set()
+    while current_class != TsuserverException:
+        subexceptions |= {item for item in current_class.__dict__.keys()
+                          if not item.startswith('__')}
+        current_class = current_class.__bases__[0]
+
     for subexception_name in subexceptions:
         fullname = '{}.{}'.format(cls.__name__, subexception_name)
         setattr(cls, subexception_name, type(fullname, (cls, ), dict()))
@@ -63,12 +72,6 @@ class ClientError(TsuserverException):
 @recreate_subexceptions
 class AOProtocolError(TsuserverException):
     class InvalidInboundPacketArguments(TsuserverException):
-        pass
-
-
-@recreate_subexceptions
-class BackgroundError(TsuserverException):
-    class BackgroundNotFoundError(TsuserverException):
         pass
 
 
@@ -339,9 +342,13 @@ class GameWithAreasError(GameError):
     class AreaHitGameConcurrentLimitError(TsuserverException):
         pass
 
+@recreate_subexceptions
+class HubbedGameError(GameWithAreasError):
+    class AreaNotInHubError(GameWithAreasError):
+        pass
 
 @recreate_subexceptions
-class TrialError(GameWithAreasError):
+class TrialError(HubbedGameError):
     class AreaDisallowsBulletsError(GameWithAreasError):
         pass
 
@@ -354,17 +361,30 @@ class TrialError(GameWithAreasError):
     class FocusIsInvalidError(GameWithAreasError):
         pass
 
+@recreate_subexceptions
+class TrialMinigameError(HubbedGameError):
+    pass
 
 @recreate_subexceptions
-class NonStopDebateError(GameWithAreasError):
-    class NSDAlreadyInModeError(GameWithAreasError):
+class NonStopDebateError(TrialMinigameError):
+    class NSDAlreadyInModeError(TrialMinigameError):
         pass
 
-    class NSDNotInModeError(GameWithAreasError):
+    class NSDNotInModeError(TrialMinigameError):
         pass
 
-    class NSDNoMessagesError(GameWithAreasError):
+    class NSDNoMessagesError(TrialMinigameError):
         pass
 
-    class TimersAlreadySetupError(GameWithAreasError):
+    class TimersAlreadySetupError(TrialMinigameError):
+        pass
+
+@recreate_subexceptions
+class HubError(GameWithAreasError):
+    class ManagerCannotManageeNoManagees(GameWithAreasError):
+        pass
+
+@recreate_subexceptions
+class TaskError(TsuserverException):
+    class TaskNotFoundError(TsuserverException):
         pass

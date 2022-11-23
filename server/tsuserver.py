@@ -1,7 +1,8 @@
-# TsuserverDR, a Danganronpa Online server based on tsuserver3, an Attorney Online server
+# TsuserverDR, server software for Danganronpa Online based on tsuserver3,
+# which is server software for Attorney Online.
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
-# Current project leader: 2018-22 Chrezm/Iuvee <thechrezm@gmail.com>
+#           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +21,7 @@
 # This class will suffer major reworkings for 4.3
 
 from __future__ import annotations
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple, Type
 
 import asyncio
 import errno
@@ -31,55 +32,46 @@ import socket
 import ssl
 import sys
 import traceback
+import typing
 import urllib.request, urllib.error
-import warnings
-import yaml
 
 from server import logger
-from server.area_manager import AreaManager
-from server.background_manager import BackgroundManager
 from server.ban_manager import BanManager
-from server.character_manager import CharacterManager
 from server.constants import Constants
 from server.client_manager import ClientManager
-from server.exceptions import MusicError, ServerError
-from server.game_manager import GameManager
-from server.music_manager import MusicManager
+from server.exceptions import ServerError
+from server.hub_manager import HubManager
 from server.network.ao_protocol import AOProtocol
 from server.network.ms3_protocol import MasterServerClient
 from server.party_manager import PartyManager
-from server.tasker import Tasker
+from server.task_manager import TaskManager
 from server.timer_manager import TimerManager
-from server.trial_manager import TrialManager
-from server.zone_manager import ZoneManager
 
 from server.validate.config import ValidateConfig
 from server.validate.gimp import ValidateGimp
 
+if typing.TYPE_CHECKING:
+    from asyncio.proactor_events import _ProactorSocketTransport
+
 
 class TsuserverDR:
-    def __init__(self, protocol: AOProtocol = None,
-                 client_manager: ClientManager = None, in_test: bool = False):
+    def __init__(self, client_manager_type: Type[ClientManager] = None):
+        if client_manager_type is None:
+            client_manager_type = ClientManager
+
         self.logged_packet_limit = 100  # Arbitrary
         self.logged_packets = []
         self.print_packets = False  # For debugging purposes
         self._server = None  # Internal server object, changed to proper object later
 
-        self.release = 4
-        self.major_version = 3
-        self.minor_version = 5
-        self.segment_version = 'post1'
-        self.internal_version = '220926a'
+        self.release = 5
+        self.major_version = 0
+        self.minor_version = 0
+        self.segment_version = ''
+        self.internal_version = '221123a'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
-        self.in_test = in_test
-
-        self.protocol = AOProtocol if protocol is None else protocol
-        client_manager = ClientManager if client_manager is None else client_manager
-        logger.log_print = logger.log_print2 if self.in_test else logger.log_print
-        logger.log_server = logger.log_server2 if self.in_test else logger.log_server
-        self.random = importlib.reload(random)
 
         logger.log_print('Launching {}...'.format(self.version))
         logger.log_print('Loading server configurations...')
@@ -90,40 +82,29 @@ class TsuserverDR:
         self.shutting_down = False
         self.loop = None
         self.last_error = None
-        self.allowed_iniswaps = None
-        self.old_area_list = None
-        self.default_area = 0
         self.all_passwords = list()
         self.global_allowed = True
         self.server_select_name = 'SERVER_SELECT'
 
         self.load_config()
-        self.timer_manager = TimerManager(self)
-        self.client_manager: ClientManager = client_manager(self)
-        self.character_manager = CharacterManager(self)
-        self.load_iniswaps()
-        self.load_characters()
 
-        self.game_manager = GameManager(self)
-        self.trial_manager = TrialManager(self)
-        self.zone_manager = ZoneManager(self)
-        self.area_manager = AreaManager(self)
-        self.background_manager = BackgroundManager(self)
-        self.music_manager = MusicManager(self)
         self.ban_manager = BanManager(self)
+        self.timer_manager = TimerManager(self)
         self.party_manager = PartyManager(self)
+
+        self.client_manager = client_manager_type(self)
+        self.hub_manager = HubManager(self)
+        default_hub = self.hub_manager.new_managee()
+        default_hub.set_name('Main')
 
         self.ipid_list = {}
         self.hdid_list = {}
         self.gimp_list = list()
         self.load_commandhelp()
-        self.load_music()
-        self.load_backgrounds()
         self.load_ids()
         self.load_gimp()
 
         self.ms_client = None
-        self.rp_mode = True
         self.user_auth_req = False
         self.showname_freeze = False
         self.commands = importlib.import_module('server.commands')
@@ -133,44 +114,17 @@ class TsuserverDR:
         logger.log_print('Server configurations loaded successfully!')
 
         self.error_queue = None
-        with open('config/110_new_music.yaml') as f:
-            self.new_110_music = set(yaml.load(f, yaml.SafeLoader))
-
-        self._server = None
-
-    @property
-    def backgrounds(self):
-        Constants.warn_deprecated('server.backgrounds',
-                                  'server.background_manager.get_backgrounds()',
-                                  '4.4')
-        return self.background_manager.get_backgrounds()
-
-    @property
-    def music_list(self):
-        Constants.warn_deprecated('server.music_list',
-                                  'server.music_manager.get_music()',
-                                  '4.4')
-        return self.music_manager.get_music()
-
-    @property
-    def area_list(self):
-        Constants.warn_deprecated('server.area_list',
-                                  'server.area_manager.get_source_file()',
-                                  '4.4')
-        return self.area_manager.get_source_file()
 
     async def start(self):
         self.loop = asyncio.get_event_loop()
         self.error_queue = asyncio.Queue()
 
-        self.tasker = Tasker(self)
-        bound_ip = '0.0.0.0'
+        self.task_manager = TaskManager(self)
         if self.config['local']:
             bound_ip = '127.0.0.1'
-            server_name = 'localhost'
             logger.log_print('Starting a local server...')
         else:
-            server_name = self.config['masterserver_name']
+            bound_ip = '0.0.0.0'
             logger.log_print('Starting a nonlocal server...')
 
         # Check if port is available
@@ -193,7 +147,7 @@ class TsuserverDR:
         # Yes there is a race condition here (between checking if port is available, and actually
         # using it). The only side effect of a race condition is a slightly less nice error
         # message, so it's not that big of a deal.
-        self._server = await self.loop.create_server(lambda: self.protocol(self),
+        self._server = await self.loop.create_server(lambda: AOProtocol(self),
                                                      bound_ip, port,
                                                      start_serving=False)
         asyncio.create_task(self._server.serve_forever())
@@ -221,7 +175,7 @@ class TsuserverDR:
                               f'{self.config["port"]}.')
 
         if self.config['local']:
-            self.local_connection = asyncio.create_task(self.tasker.do_nothing())
+            self.local_connection = asyncio.create_task(Constants.do_nothing())
 
         if self.config['use_masterserver']:
             self.ms_client = MasterServerClient(self)
@@ -242,12 +196,12 @@ class TsuserverDR:
         # Cancel further polling for master server
         if self.local_connection:
             self.local_connection.cancel()
-            await self.tasker.await_cancellation(self.local_connection)
+            await Constants.await_cancellation(self.local_connection)
 
         if self.masterserver_connection:
             self.masterserver_connection.cancel()
-            await self.tasker.await_cancellation(self.masterserver_connection)
-            await self.tasker.await_cancellation(self.ms_client.shutdown())
+            await Constants.await_cancellation(self.masterserver_connection)
+            await Constants.await_cancellation(self.ms_client.shutdown())
 
         # Cancel pending client tasks and cleanly remove them from the areas
         players = self.get_player_count()
@@ -267,24 +221,21 @@ class TsuserverDR:
             mes = '{}-{}'.format(mes, self.segment_version)
         return mes
 
-    def reload(self):
-        try:
-            self.background_manager.validate_file()
-            self.character_manager.validate_file()
-            self.music_manager.validate_file()
-        except ServerError.YAMLInvalidError as exc:
-            # The YAML exception already provides a full description. Just add the fact the
-            # reload was undone to ease the person who ran the command's nerves.
-            msg = (f'{exc} Reload was undone.')
-            raise ServerError.YAMLInvalidError(msg)
-        except ServerError.FileSyntaxError as exc:
-            msg = f'{exc} Reload was undone.'
-            raise ServerError(msg)
+    def check_exec_active(self):
+        # Determine whether /exec is active or not and warn server owner if so.
+        if getattr(self.commands, "ooc_cmd_exec")(None, "is_exec_active") == 1:
+            logger.log_print("""
 
-        # Only on success reload
-        self.load_characters()
-        self.load_backgrounds()
-        self.load_music()
+                  WARNING
+
+                  THE /exec COMMAND IN commands.py IS ACTIVE.
+
+                  UNLESS YOU ABSOLUTELY MEANT IT AND KNOW WHAT YOU ARE DOING,
+                  PLEASE STOP YOUR SERVER RIGHT NOW AND DEACTIVATE IT BY GOING TO THE
+                  commands.py FILE AND FOLLOWING THE INSTRUCTIONS UNDER ooc_cmd_exec.\n
+                  BAD THINGS CAN AND WILL HAPPEN OTHERWISE.
+
+                  """)
 
     def reload_commands(self):
         try:
@@ -299,12 +250,18 @@ class TsuserverDR:
         entry = ('R:' if incoming else 'S:', Constants.get_time_iso(), str(client.id), packet)
         self.logged_packets.append(entry)
 
-    def new_client(self, transport, protocol=None) -> Tuple[ClientManager.Client, bool]:
-        c, valid = self.client_manager.new_client(transport, protocol=protocol)
-        if self.rp_mode:
-            c.in_rp = True
+    def new_client(
+        self,
+        transport: _ProactorSocketTransport,
+        protocol: AOProtocol = None,
+        ) -> Tuple[ClientManager.Client, bool]:
+        c, valid = self.client_manager.new_client(
+            hub=self.hub_manager.get_default_managee(),
+            transport=transport,
+            protocol=protocol,
+            )
         c.server = self
-        c.area = self.area_manager.default_area()
+        c.area = self.hub_manager.get_default_managee().area_manager.default_area()
         c.area.new_client(c)
         return c, valid
 
@@ -332,82 +289,6 @@ class TsuserverDR:
     def get_player_count(self) -> int:
         # Ignore players in the server selection screen.
         return len([client for client in self.get_clients() if client.char_id is not None])
-
-    def load_areas(self, source_file: str = 'config/areas.yaml') -> List[AreaManager.Area]:
-        """
-        Load an area list file.
-
-        Parameters
-        ----------
-        source_file : str
-            Relative path from server root folder to the area list file, by default
-            'config/areas.yaml'
-
-        Returns
-        -------
-        List[AreaManager.Area]
-            Areas.
-
-        Raises
-        ------
-        ServerError.FileNotFoundError
-            If the file was not found.
-        ServerError.FileOSError
-            If there was an operating system error when opening the file.
-        ServerError.YAMLInvalidError
-            If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
-        ServerError.FileSyntaxError
-            If the file failed verification for its asset type.
-        """
-
-        areas = self.area_manager.load_file(source_file)
-        return areas.copy()
-
-    def load_backgrounds(self, source_file: str = 'config/backgrounds.yaml') -> List[str]:
-        """
-        Load a background list file.
-
-        Parameters
-        ----------
-        source_file : str
-            Relative path from server root folder to background list file, by default
-            'config/backgrounds.yaml'
-
-        Returns
-        -------
-        List[str]
-            Backgrounds.
-
-        Raises
-        ------
-        ServerError.FileNotFoundError
-            If the file was not found.
-        ServerError.FileOSError
-            If there was an operating system error when opening the file.
-        ServerError.YAMLInvalidError
-            If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
-        ServerError.FileSyntaxError
-            If the file failed verification for its asset type.
-        """
-
-        old_backgrounds = self.background_manager.get_backgrounds()
-        backgrounds = self.background_manager.load_file(source_file)
-
-        if old_backgrounds == backgrounds:
-            # No change implies backgrounds still valid, do nothing more
-            return backgrounds.copy()
-
-        # Make sure each area still has a valid background
-        default_background = self.background_manager.get_default_background()
-        for area in self.area_manager.get_areas():
-            if not self.background_manager.is_background(area.background) and not area.cbg_allowed:
-                # The area no longer has a valid background, so change it to some valid background
-                # like the first one
-                area.change_background(default_background)
-                area.broadcast_ooc(f'After a change in the background list, your area no longer '
-                                   f'had a valid background. Switching to {default_background}.')
-
-        return backgrounds.copy()
 
     def load_config(self) -> Dict[str, Any]:
         self.config = ValidateConfig().validate('config/config.yaml')
@@ -460,68 +341,6 @@ class TsuserverDR:
                 self.config[tag] = value
 
         return self.config
-
-    def load_characters(self, source_file: str = 'config/characters.yaml') -> List[str]:
-        """
-        Load a character list file.
-
-        Parameters
-        ----------
-        source_file : str, optional
-            Relative path from server root folder to character list file, by default
-            'config/characters.yaml'
-
-        Returns
-        -------
-        List[str]
-            Characters.
-
-        Raises
-        ------
-        ServerError.FileNotFoundError
-            If the file was not found.
-        ServerError.FileOSError
-            If there was an operating system error when opening the file.
-        ServerError.YAMLInvalidError
-            If the file was empty, had a YAML syntax error, or could not be decoded using UTF-8.
-        ServerError.FileSyntaxError
-            If the file failed verification for its asset type.
-        """
-
-        old_characters = self.character_manager.get_characters()
-        characters = self.character_manager.validate_file(source_file)
-        if old_characters == characters:
-            return characters.copy()
-
-        # Inconsistent character list, so change to spectator those who lost their character.
-        new_chars = {char: num for (num, char) in enumerate(characters)}
-
-        for client in self.get_clients():
-            target_char_id = -1
-            old_char_name = client.get_char_name()
-
-            if not client.has_character():
-                # Do nothing for spectators
-                pass
-            elif old_char_name not in new_chars:
-                # Character no longer exists, so switch to spectator
-                client.send_ooc(f'After a change in the character list, your character is no '
-                                f'longer available. Switching to {self.config["spectator_name"]}.')
-            else:
-                target_char_id = new_chars[old_char_name]
-
-            if client.packet_handler.ALLOWS_CHAR_LIST_RELOAD:
-                client.send_command_dict('SC', {
-                    'chars_ao2_list': characters,
-                    })
-                client.change_character(target_char_id, force=True)
-            else:
-                client.send_ooc('After a change in the character list, your client character list '
-                                'is no longer synchronized. Please rejoin the server.')
-
-        # Only now update internally. This is to allow `change_character` to work properly.
-        self.character_manager.load_file(source_file)
-        return characters.copy()
 
     def load_commandhelp(self):
         with Constants.fopen('README.md', 'r', encoding='utf-8') as readme:
@@ -604,7 +423,7 @@ class TsuserverDR:
                 self.ipid_list = json.load(whole_list)
         except ServerError.FileNotFoundError:
             with Constants.fopen('storage/ip_ids.json', 'w', encoding='utf-8') as whole_list:
-                json.dump(dict(), whole_list)
+                json.dump(dict(), whole_list, indent=4)
             message = 'WARNING: File not found: storage/ip_ids.json. Creating a new one...'
             logger.log_pdebug(message)
         except Exception as ex:
@@ -620,6 +439,9 @@ class TsuserverDR:
             logger.log_pdebug(message)
             self.ipid_list = dict()
             self.dump_ipids()
+        # TODO: Remove this else and the code within after next major update
+        else:
+            self.dump_ipids()
 
         # load hdids
         try:
@@ -627,7 +449,7 @@ class TsuserverDR:
                 self.hdid_list = json.loads(whole_list.read())
         except ServerError.FileNotFoundError:
             with Constants.fopen('storage/hd_ids.json', 'w', encoding='utf-8') as whole_list:
-                json.dump(dict(), whole_list)
+                json.dump(dict(), whole_list, indent=4)
             message = 'WARNING: File not found: storage/hd_ids.json. Creating a new one...'
             logger.log_pdebug(message)
         except Exception as ex:
@@ -643,25 +465,9 @@ class TsuserverDR:
             logger.log_pdebug(message)
             self.hdid_list = dict()
             self.dump_hdids()
-
-    def load_iniswaps(self):
-        try:
-            with Constants.fopen('config/iniswaps.yaml', 'r', encoding='utf-8') as iniswaps:
-                self.allowed_iniswaps = Constants.yaml_load(iniswaps)
-        except Exception as ex:
-            message = 'WARNING: Error loading config/iniswaps.yaml. Will assume empty values.\n'
-            message += '{}: {}'.format(type(ex).__name__, ex)
-
-            logger.log_pdebug(message)
-
-    def load_music(self, music_list_file: str = 'config/music.yaml',
-                   server_music_list: bool = True) -> List[Dict[str, Any]]:
-        if server_music_list is not True:
-            Constants.warn_deprecated('non-default value of server_music_list parameter',
-                                      'server.music_manager.validate_file',
-                                      '4.4')
-        music = self.music_manager.load_file(music_list_file)
-        return music.copy()
+        # TODO: Remove this else and the code within after next major update
+        else:
+            self.dump_hdids()
 
     def load_gimp(self):
         try:
@@ -699,11 +505,11 @@ class TsuserverDR:
 
     def dump_ipids(self):
         with Constants.fopen('storage/ip_ids.json', 'w', encoding='utf-8') as whole_list:
-            json.dump(self.ipid_list, whole_list)
+            json.dump(self.ipid_list, whole_list, indent=4)
 
     def dump_hdids(self):
         with Constants.fopen('storage/hd_ids.json', 'w', encoding='utf-8') as whole_list:
-            json.dump(self.hdid_list, whole_list)
+            json.dump(self.hdid_list, whole_list, indent=4)
 
     def get_ipid(self, ip: str) -> int:
         if ip not in self.ipid_list:
@@ -714,108 +520,6 @@ class TsuserverDR:
             self.ipid_list[ip] = ipid
             self.dump_ipids()
         return self.ipid_list[ip]
-
-    def build_music_list(self, from_area: AreaManager.Area = None, c: ClientManager.Client = None,
-                         music_list: List[Dict[str, Any]] = None, include_areas: bool = True,
-                         include_music: bool = True) -> List[str]:
-        Constants.warn_deprecated('server.build_music_list',
-                                  'client.get_area_and_music_list_view',
-                                  '4.4')
-        built_music_list = list()
-
-        # add areas first, if needed
-        if include_areas:
-            built_music_list.extend(self.prepare_area_list(c=c, from_area=from_area))
-
-        # then add music, if needed
-        if include_music:
-            built_music_list.extend(self.prepare_music_list(c=c, specific_music_list=music_list))
-
-        return built_music_list
-
-    def prepare_area_list(self, c: ClientManager.Client = None,
-                          from_area: AreaManager.Area = None) -> List[str]:
-        """
-        Return the area list of the server. If given c and from_area, it will send an area list
-        that matches the perspective of client `c` as if they were in area `from_area`.
-
-        Parameters
-        ----------
-        c: ClientManager.Client
-            Client whose perspective will be taken into account, by default None
-        from_area: AreaManager.Area
-            Area from which the perspective will be considered, by default None
-
-        Returns
-        -------
-        list of str
-            Area list that matches intended perspective.
-        """
-
-        Constants.warn_deprecated('server.prepare_area_list',
-                                  'area_manager.get_client_view',
-                                  '4.4')
-        return self.area_manager.get_client_view(c, from_area=from_area)
-
-    def prepare_music_list(self, c: ClientManager.Client = None,
-                           specific_music_list: List[Dict[str, Any]] = None) -> List[str]:
-        """
-        If `specific_music_list` is not None, return a client-ready version of that music list.
-        Else, return their latest music list.
-
-        Parameters
-        ----------
-        c: ClientManager.Client
-            Client whose current music list if it exists will be considered if `specific_music_list`
-            is None
-        specific_music_list: list of dictionaries with key sets {'category', 'songs'}
-            Music list to use if given
-
-        Returns
-        -------
-        list of str
-            Music list ready to be sent to clients
-        """
-
-        Constants.warn_deprecated('server.prepare_music_list',
-                                  'client.music_manager.get_client_view',
-                                  '4.4')
-
-        if not specific_music_list:
-            return c.music_manager.get_client_view()
-
-        prepared_music_list = list()
-        for item in specific_music_list:
-            category = item['category']
-            songs = item['songs']
-            prepared_music_list.append(category)
-            for song in songs:
-                name = song['name']
-                prepared_music_list.append(name)
-
-        return prepared_music_list
-
-    def is_valid_char_id(self, char_id: int) -> bool:
-        Constants.warn_deprecated('server.is_valid_char_id()',
-                                  'server.character_manager.is_valid_character_id()',
-                                  '4.4')
-        return self.character_manager.is_valid_character_id(char_id)
-
-    def get_char_id_by_name(self, name: str) -> int:
-        Constants.warn_deprecated('server.get_char_id_by_name()',
-                                  'server.character_manager.get_character_id_by_name()',
-                                  '4.4')
-        return self.character_manager.get_character_id_by_name(name)
-
-    def get_song_data(self, music: str, c: ClientManager.Client = None) -> Tuple[str, int, str]:
-        Constants.warn_deprecated('server.get_song_data',
-                                  'client.music_manager.get_music_data',
-                                  '4.4')
-
-        try:
-            return c.music_manager.get_music_data(music)
-        except MusicError.MusicNotFoundError:
-            raise ServerError.MusicNotFoundError('Music not found.')
 
     def make_all_clients_do(self, function: str, *args: List[str],
                             pred: Callable[[ClientManager.Client], bool] = lambda x: True,
@@ -856,7 +560,7 @@ class TsuserverDR:
         client.send_ooc(info)
         client.send_ooc_others('Client {} triggered a Python error through a client packet. '
                                'Do /lasterror to take a look at it.'.format(client.id),
-                               pred=lambda c: c.is_mod)
+                               is_mod=True, in_hub=None)
 
         # Print complete traceback to console
         info = 'TSUSERVERDR HAS ENCOUNTERED AN ERROR HANDLING A CLIENT PACKET'
@@ -873,12 +577,12 @@ class TsuserverDR:
         # Log error to file
         logger.log_error(info, server=self, errortype='C')
 
-        if self.in_test:
-            raise ex
-
     def broadcast_global(self, client: ClientManager.Client, msg: str, as_mod: bool = False,
                          mtype: str = "<dollar>G",
-                         condition: Constants.ClientBool = lambda x: not x.muted_global):
+                         condition: Callable[[ClientManager.Client,], bool] = None):
+        if condition is None:
+            condition = lambda x: not x.muted_global
+
         username = client.name
         ooc_name = '{}[{}][{}]'.format(mtype, client.area.id, username)
         if as_mod:
@@ -890,14 +594,3 @@ class TsuserverDR:
                 c.send_ooc(msg, username=ooc_name_ipid)
             else:
                 c.send_ooc(msg, username=ooc_name)
-
-    def broadcast_need(self, client: ClientManager.Client, msg: str):
-        char_name = client.displayname
-        area_name = client.area.name
-        area_id = client.area.id
-
-        targets = [c for c in self.get_clients() if not c.muted_adverts]
-        msg = ('=== Advert ===\r\n{} in {} [{}] needs {}\r\n==============='
-               .format(char_name, area_name, area_id, msg))
-        for c in targets:
-            c.send_ooc(msg)

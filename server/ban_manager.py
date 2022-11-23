@@ -1,7 +1,8 @@
-# TsuserverDR, a Danganronpa Online server based on tsuserver3, an Attorney Online server
+# TsuserverDR, server software for Danganronpa Online based on tsuserver3,
+# which is server software for Attorney Online.
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
-# Current project leader: 2018-22 Chrezm/Iuvee <thechrezm@gmail.com>
+#           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,19 +17,26 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 import ipaddress
 import json
+import typing
 
 from server import logger
 from server.constants import Constants
 from server.exceptions import ServerError
 
+if typing.TYPE_CHECKING:
+    from server.tsuserver import TsuserverDR
 
 class BanManager:
-    def __init__(self, server):
+    def __init__(self, server: TsuserverDR):
         self.bans = []
-        self.load_banlist()
         self.server = server
+
+        self.load_banlist()
+        self.write_banlist()  # TODO: Remove this after next major update
 
     def load_banlist(self):
         try:
@@ -44,8 +52,8 @@ class BanManager:
             logger.log_pdebug(message)
 
     def write_banlist(self):
-        with open('storage/banlist.json', 'w') as banlist_file:
-            json.dump(self.bans, banlist_file)
+        with open('storage/banlist.json', 'w', encoding='utf-8') as banlist_file:
+            json.dump(self.bans, banlist_file, indent=4)
 
     def add_ban(self, ip):
         try:

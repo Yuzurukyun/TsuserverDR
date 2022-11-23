@@ -36,8 +36,9 @@ This document will present best coding practices and contribution standards coll
       - `M` if the development branch is for a major release (e.g. `M200319b`).
       - `m` if the development branch is for a minor release (e.g. `m200229c`).
       - `p` if the development branch is for a post-release (e.g. `p191231e`).
-    - If a release is meant to be made public effective immediately, there should be no letters at the beginning (e.g. `200319a`).
-    - The date should correspond to its equivalent EST/EDT date, whichever is active in the United States (so a person three hours behind EST, whose last commit in the pull request is at 10 pm, should add one to their day as it would be the next day in EST).
+    - If a release is targeted towards an approved development branch and is meant to be widely tested, include the letter `O` after the letter described in the prior section (e.g. `PO221031a`).
+    - If a release is meant to be stable and made public effective immediately, there should be no letters at the beginning (e.g. `200319a`).
+    - The date should correspond to the commit date in local time.
       - For example, a January 13, 2019 EST commit could be labeled `190113e`; and a December 7, 2020 EST commit could be labeled `201207a`.
     - The final letter should correspond to the `i`-th letter of the English alphabet, where `i` corresponds to however many releases were pushed to the target branch on that date.
       - For example, `201207a` means the release is the first one to the master branch of December 7, 2020; and `M190101c` is the third commit to the development branch in major release stage of January 1, 2019.

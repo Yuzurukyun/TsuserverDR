@@ -309,12 +309,12 @@ class _TestSenseBlockCommon(_TestSenseBlock):
         if not hasattr(self, 'server'):
             return
 
-        self.server.disconnect_client(3)
+        self.server.disconnect_test_client(3)
         assert not self.sense_attribute(self.c0)
         assert not self.sense_attribute(self.c1)
         assert not self.sense_attribute(self.c2)
 
-        self.server.make_clients(1)
+        self.server.make_test_clients(1)
 
         self.c1.assert_no_packets()
         self.c3 = self.server.client_list[3]

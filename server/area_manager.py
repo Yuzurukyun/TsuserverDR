@@ -1,7 +1,8 @@
-# TsuserverDR, a Danganronpa Online server based on tsuserver3, an Attorney Online server
+# TsuserverDR, server software for Danganronpa Online based on tsuserver3,
+# which is server software for Attorney Online.
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
-# Current project leader: 2018-22 Chrezm/Iuvee <thechrezm@gmail.com>
+#           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,26 +25,29 @@ all necessary actions in order to simulate different rooms.
 """
 
 from __future__ import annotations
-import typing
-from typing import Any, Callable, Dict, List, Set, Tuple, Union
-if typing.TYPE_CHECKING:
-    # Avoid circular referencing
-    from server.client_manager import ClientManager
-    from server.party_manager import PartyManager
-    from server.tsuserver import TsuserverDR
-    from server.zone_manager import ZoneManager
 
 import asyncio
+import random
 import time
+import typing
+
+from typing import Any, Callable, Dict, List, Set, Tuple, Union
 
 from server import logger
 from server.asset_manager import AssetManager
 from server.constants import Constants
 from server.evidence import EvidenceList
-from server.exceptions import AreaError, MusicError, ServerError
+from server.exceptions import AreaError, MusicError, ServerError, TaskError
 from server.subscriber import Publisher
-
 from server.validate.areas import ValidateAreas
+
+if typing.TYPE_CHECKING:
+    # Avoid circular referencing
+    from server.hub_manager import _Hub
+    from server.client_manager import ClientManager
+    from server.party_manager import PartyManager
+    from server.tsuserver import TsuserverDR
+    from server.zone_manager import ZoneManager
 
 
 class AreaManager(AssetManager):
@@ -55,26 +59,35 @@ class AreaManager(AssetManager):
 
     class Area:
         """
-        Create a new area for the server.
+        Create a new area for the hub.
         """
 
-        def __init__(self, area_id: int, server: TsuserverDR, parameters: Dict[str, Any]):
+        def __init__(
+            self,
+            server: TsuserverDR,
+            hub: _Hub,
+            area_id: int,
+            parameters: Dict[str, Any]
+            ):
             """
             Parameters
             ----------
+            server : TsuserverDR
+                The server this area belongs to.
+            hub: _Hub
+                The hub this area belongs to.
             area_id: int
                 The area ID.
-            server: server.TsuserverDR
-                The server this area belongs to.
             parameters: dict
                 Area parameters as specified in the loaded area list.
             """
 
-            self._clients = set()
-            self.id = area_id
             self.server = server
+            self.hub = hub
+            self.id = area_id
             self.publisher = Publisher(self)
 
+            self._clients = set()
             self.invite_list = {}
             self.music_looper = None
             self.music_looper_pargs = {}
@@ -82,7 +95,6 @@ class AreaManager(AssetManager):
             self.hp_def = 10
             self.hp_pro = 10
             self.doc = 'No document.'
-            self.status = 'IDLE'
             self.judgelog = []
             self.shoutlog = []
             self.current_music = ''
@@ -90,10 +102,8 @@ class AreaManager(AssetManager):
             self.current_music_source = ''
             self.evi_list = EvidenceList()
             self.recorded_messages = []
-            self.owned = False
             self.ic_lock = False
             self.is_locked = False
-            self.is_gmlocked = False
             self.is_modlocked = False
             self.bleeds_to = set()
             self.blood_smeared = False
@@ -104,6 +114,8 @@ class AreaManager(AssetManager):
             self.lurk_length = 0
             self._in_zone = None
             self.noteworthy = False
+            self.default_noteworthy_text = '[Something catches your attention]'
+            self.noteworthy_text = self.default_noteworthy_text
             self.ambient = ''
 
             self.name = parameters['area']
@@ -141,12 +153,6 @@ class AreaManager(AssetManager):
 
             self.reachable_areas.add(self.name) # Area can always reach itself
 
-        def background_backup(self) -> str:
-            Constants.warn_deprecated('area.background_backup',
-                                      'area.background',
-                                      '4.4')
-            return self.background
-
         @property
         def clients(self) -> Set[ClientManager.Client]:
             """
@@ -156,9 +162,9 @@ class AreaManager(AssetManager):
             return self._clients
 
         @clients.setter
-        def clients(self, new_clients) -> Set[ClientManager.Client]:
+        def clients(self, new_clients: Set[ClientManager.Client]):
             """
-            Set the clients parameter to the given one.
+            Set the clients parameter to a copy of the given one.
 
             Parameters
             ----------
@@ -305,10 +311,10 @@ class AreaManager(AssetManager):
             Raises
             ------
             AreaError
-                If the server attempted to validate the background name and failed.
+                If the hub attempted to validate the background name and failed.
             """
 
-            if validate and not self.server.background_manager.is_background(bg):
+            if validate and not self.hub.background_manager.is_background(bg):
                 raise AreaError('Invalid background name.')
 
             self.background = bg
@@ -337,18 +343,18 @@ class AreaManager(AssetManager):
                 Whether to first determine if background name is listed as a server background
                 before changing. Defaults to True.
             override_blind: bool, optional
-                Whether to send the intended background to blind people as opposed to the server
+                Whether to send the intended background to blind people as opposed to the hub
                 blackout one. Defaults to False (send blackout).
 
             Raises
             ------
             AreaError
-                If the background name is non-empty and the server attempted to validate the
+                If the background name is non-empty and the hub attempted to validate the
                 background name and failed, or if the background name is empty and the area already
                 has no backgroudn associated with the given period.
             """
 
-            if validate and not self.server.background_manager.is_background(bg):
+            if validate and not self.hub.background_manager.is_background(bg):
                 raise AreaError('Invalid background name.')
 
             if tod not in self.background_tod and not bg:
@@ -391,9 +397,9 @@ class AreaManager(AssetManager):
             if more_unavail_chars is None:
                 more_unavail_chars = set()
 
-            unavailable = {x.char_id for x in self.clients if x.has_character()}
+            unavailable = {x.char_id for x in self.clients if x.has_participant_character()}
             unavailable |= more_unavail_chars
-            restricted = {self.server.character_manager.get_character_id_by_name(name)
+            restricted = {self.hub.character_manager.get_character_id_by_name(name)
                           for name in self.restricted_chars}
 
             if not allow_restricted:
@@ -428,13 +434,13 @@ class AreaManager(AssetManager):
 
             unusable = self.get_chars_unusable(allow_restricted=allow_restricted,
                                                more_unavail_chars=more_unavail_chars)
-            available = {i for i in range(len(self.server.character_manager.get_characters()))
+            available = {i for i in range(len(self.hub.character_manager.get_characters()))
                          if i not in unusable}
 
             if not available:
                 raise AreaError('No available characters.')
 
-            return self.server.random.choice(tuple(available))
+            return random.choice(tuple(available))
 
         def is_char_available(self, char_id: Union[int, None], allow_restricted: bool = False,
                               more_unavail_chars: Set[int] = None) -> bool:
@@ -459,12 +465,12 @@ class AreaManager(AssetManager):
                 screen), or is not found to be among the area's unusable characters.
             """
 
-            if char_id is None or char_id < 0:
+            if not self.hub.character_manager.is_char_id_participant(char_id):
                 return True
 
-            unused = char_id in self.get_chars_unusable(allow_restricted=allow_restricted,
-                                                        more_unavail_chars=more_unavail_chars)
-            return not unused
+            unusable = self.get_chars_unusable(allow_restricted=allow_restricted,
+                                               more_unavail_chars=more_unavail_chars)
+            return char_id not in unusable
 
         def add_to_dicelog(self, client: ClientManager.Client, msg: str):
             """
@@ -501,13 +507,14 @@ class AreaManager(AssetManager):
 
         def change_doc(self, doc: str = 'No document.'):
             """
-            Changes the casing document of the area, usually a URL.
+            Changes the RP document of the area, usually a URL.
 
             Parameters
             ----------
             doc: str, optional
-                New casing document of the area. Defaults to 'No document.'
+                New RP document of the area. Defaults to 'No document.'
             """
+
             self.doc = doc
 
         def get_evidence_list(self, client: ClientManager.Client):
@@ -586,8 +593,7 @@ class AreaManager(AssetManager):
             -------
             bool
                 True if either anim1 or anim2 point to an external location through '../../' or
-                their claimed character folder does not match the expected server name and the
-                performed iniswap is not in the list of allowed iniswaps by the server.
+                their claimed character folder does not match the expected server name.
             """
 
             if char == client.get_char_name():
@@ -595,9 +601,6 @@ class AreaManager(AssetManager):
 
             if '..' in anim1 or '..' in anim2:
                 return True
-            for char_link in self.server.allowed_iniswaps:
-                if client.get_char_name() in char_link and char in char_link:
-                    return False
             return True
 
         def add_to_judgelog(self, client: ClientManager.Client, msg: str):
@@ -677,9 +680,11 @@ class AreaManager(AssetManager):
                         initiator.send_ooc('You feel a light switch was flipped.')
 
                 initiator.send_ooc_others('The lights were turned {}.'.format(status[new_lights]),
-                                          is_zstaff_flex=False, in_area=area if area else True, to_blind=False)
-                initiator.send_ooc_others('You hear a flicker.', is_zstaff_flex=False, in_area=area if area else True,
-                                          to_blind=True, to_deaf=False)
+                                          is_zstaff_flex=False, to_blind=False,
+                                          in_area=area if area else True)
+                initiator.send_ooc_others('You hear a flicker.',
+                                          is_zstaff_flex=False, to_blind=True, to_deaf=False,
+                                          in_area=area if area else True)
                 initiator.send_ooc_others('(X) {} [{}] turned the lights {}.'
                                           .format(initiator.displayname, initiator.id,
                                                   status[new_lights]),
@@ -740,7 +745,7 @@ class AreaManager(AssetManager):
             effect : int, optional
                 Accompanying effect to the track (only used by AO 2.8.4+). Defaults to 0.
             raise_if_not_found : bool, optional
-                If True, it will raise ServerError if the track name is not in the server's music
+                If True, it will raise ServerError if the track name is not in the hub's music
                 list nor the client's music list. If False, it will not care about it. Defaults to
                 False.
             reveal_sneaked : bool, optional
@@ -760,7 +765,7 @@ class AreaManager(AssetManager):
             ServerError.FileInvalidNameError:
                 If `name` references parent or current directories (e.g. "../hi.opus")
             MusicError.MusicNotFoundError:
-                If `name` is not a music track in the server or client's music list and
+                If `name` is not a music track in the hub's music list and
                 `raise_if_not_found` is True.
             """
 
@@ -775,7 +780,7 @@ class AreaManager(AssetManager):
             except MusicError.MusicNotFoundError:
                 if raise_if_not_found:
                     raise
-                name, length, source = name, -1, ''
+                length, source = -1, ''
 
             if 'name' not in pargs:
                 pargs['name'] = name
@@ -823,7 +828,7 @@ class AreaManager(AssetManager):
                 client.change_visibility(True)
                 client.send_ooc_others('(X) {} [{}] revealed themselves by playing music ({}).'
                                        .format(client.displayname, client.id, client.area.id),
-                                       is_zstaff=True)
+                                       is_zstaff_flex=True)
 
         def play_current_track(self, only_for: Set[ClientManager.Client] = None,
                                force_same_restart: int = -1):
@@ -916,28 +921,6 @@ class AreaManager(AssetManager):
                     info += '\r\n*{}'.format(log)
             return info
 
-        def change_status(self, value: str):
-            """
-            Change the casing status of the area to one of predetermined values.
-
-            Parameters
-            ----------
-            value: str
-                New casing status of the area.
-
-            Raises
-            ------
-            AreaError
-                If the new casing status is not among the allowed values.
-            """
-
-            allowed_values = ['idle', 'building-open', 'building-full', 'casing-open',
-                              'casing-full', 'recess']
-            if value.lower() not in allowed_values:
-                raise AreaError('Invalid status. Possible values: {}'
-                                .format(', '.join(allowed_values)))
-            self.status = value.upper()
-
         def get_clock_creator(self) -> ClientManager.Client:
             """
             Return a client that has an active day cycle involving the current area.
@@ -955,13 +938,13 @@ class AreaManager(AssetManager):
                 If no client has an active day cycle involving the current area.
             """
 
-            for client in self.server.get_clients():
+            for client in self.hub.get_players():
                 try:
-                    args = self.server.tasker.get_task_args(client, ['as_day_cycle'])
-                except KeyError:
+                    task = self.server.task_manager.get_task(client, 'as_day_cycle')
+                except TaskError.TaskNotFoundError:
                     pass
                 else:
-                    area_1, area_2 = args[1], args[2]
+                    area_1, area_2 = task.parameters['area_1'], task.parameters['area_2']
                     if area_1 <= self.id <= area_2:
                         return client
             raise AreaError.ClientNotFound
@@ -983,10 +966,12 @@ class AreaManager(AssetManager):
             except AreaError.ClientNotFound:
                 return ''
             else:
-                period = self.server.tasker.get_task_attr(client, ['as_day_cycle'], 'period')
+                task = self.server.task_manager.get_task(client, 'as_day_cycle')
+                period = task.parameters['period']
                 return period
 
-        def get_look_output_for(self, client: ClientManager.Client) -> Tuple[bool, str, str]:
+        def get_look_output_for(self,
+                                client: ClientManager.Client) -> Tuple[bool, bool, str, bool, str]:
             """
             Return information about the visual aspect of the current area in accordance to
             a particular player's perspective.
@@ -998,20 +983,26 @@ class AreaManager(AssetManager):
 
             Returns
             -------
-            Tuple[bool, str, str]
+            Tuple[bool, bool, str, bool, str]
                 - First argument is True if information that only GM+ could have obtained is
                   included in the return, False otherwise.
-                - Second argument is a description of the current area (ignoring whether `client` is
-                  blind or lights are off)
-                - Third argument is a description of the players in the current area that `client`
+                - Second argument is whether a non-default description is stated in the next
+                  argument.
+                - Third argument is a description of the current area (ignoring whether `client` is
+                  blind or lights are off).
+                - Fourth argument is whether a non-default description is stated in the next
+                  argument and the player does not see another player in the target area.
+                - Fifth argument is a description of the players in the current area that `client`
                   is entitled to see.
             """
 
             elevated = False
 
             if self.description == self.server.config['default_area_description']:
+                has_area_description = False
                 area_description = 'Nothing particularly interesting.'
             else:
+                has_area_description = True
                 area_description = self.description
 
             players = client.get_visible_clients(self)
@@ -1054,11 +1045,15 @@ class AreaManager(AssetManager):
                     elevated = True
                     player_description += ' (S)'
 
-            if not player_description:
+            if player_description and (players-{player}):
+                has_other_players = True
+            else:
                 # This could happen for example, when a player peeks into an area where they cannot
                 # see any player.
+                has_other_players = False
                 player_description = 'no one'
-            return elevated, area_description, player_description
+            return (elevated, has_area_description, area_description,
+                    has_other_players, player_description)
 
 
         def unlock(self):
@@ -1066,16 +1061,6 @@ class AreaManager(AssetManager):
             Unlock the area so that non-authorized players may now join.
             """
 
-            self.is_locked = False
-            if not self.is_gmlocked and not self.is_modlocked:
-                self.invite_list = {}
-
-        def gmunlock(self):
-            """
-            Unlock the area if it had a GM lock so that non-authorized players may now join.
-            """
-
-            self.is_gmlocked = False
             self.is_locked = False
             if not self.is_modlocked:
                 self.invite_list = {}
@@ -1086,7 +1071,6 @@ class AreaManager(AssetManager):
             """
 
             self.is_modlocked = False
-            self.is_gmlocked = False
             self.is_locked = False
             self.invite_list = {}
 
@@ -1141,9 +1125,10 @@ class AreaManager(AssetManager):
             The string follows the convention 'A::AreaID:AreaName:ClientsInArea'
             """
 
-            return 'A::{}:{}:{}'.format(self.id, self.name, len(self.clients))
+            return 'A::{}:{}:{}:{}'.format(self.id, self.name, len(self.clients),
+                                           self.hub.get_numerical_id())
 
-    def __init__(self, server: TsuserverDR):
+    def __init__(self, server: TsuserverDR, hub: Union[_Hub, None] = None):
         """
         Create an area manager object.
 
@@ -1151,22 +1136,19 @@ class AreaManager(AssetManager):
         ----------
         server: TsuserverDR
             The server this area manager belongs to.
+        hub : _Hub, optional
+            The hub this area manager belongs to. Defaults to None.
         """
 
-        super().__init__(server)
+        super().__init__(server, hub=hub)
         self._areas = []
-        self._source_file = 'config/areas.yaml'
+        self._source_file = None
+        self._previous_source_file = None
         self.area_names = set()
-        self.load_file(self._source_file)
 
-    @property
-    def areas(self) -> List[Area]:
-        Constants.warn_deprecated('AreaManager.areas',
-                                  'AreaManager.get_areas()',
-                                  '4.4')
-        return self.get_areas()
+        self._default_area_id = 0
 
-    def get_name(self) -> str:
+    def get_type_name(self) -> str:
         """
         Return `'area list'`.
 
@@ -1192,15 +1174,15 @@ class AreaManager(AssetManager):
 
     def get_loader(self) -> Callable[[str, ], str]:
         """
-        Return `self.server.load_file`.
+        Return `self.hub.load_areas`.
 
         Returns
         -------
         Callable[[str, ], str]
-            `self.server.load_file`.
+            `self.hub.load_areas`.
         """
 
-        return self.server.load_areas
+        return self.hub.load_areas
 
     def get_source_file(self) -> Union[str, None]:
         """
@@ -1214,6 +1196,20 @@ class AreaManager(AssetManager):
         """
 
         return self._source_file
+
+    def get_previous_source_file(self) -> Union[str, None]:
+        """
+        Return the output that self.get_source_file() would have returned *before* the last
+        successful time an area list was successfully loaded.
+        If no such call was ever made, return None.
+
+        Returns
+        -------
+        Union[str, None]
+            Previous source file or None.
+        """
+
+        return self._previous_source_file
 
     def get_custom_folder(self) -> str:
         """
@@ -1238,12 +1234,6 @@ class AreaManager(AssetManager):
         """
 
         return self._areas.copy()
-
-    def load_areas(self, area_list_file: str = 'config/areas.yaml') -> List[Area]:
-        Constants.warn_deprecated('area_manager.load_areas',
-                                  'area_manager.load_file',
-                                  '4.4')
-        return self.load_file(area_list_file)
 
     def load_file(self, source_file: str) -> List:
         """
@@ -1272,7 +1262,7 @@ class AreaManager(AssetManager):
         """
 
         areas = ValidateAreas().validate(source_file, extra_parameters={
-            'server_character_list': self.server.character_manager.get_characters(),
+            'server_character_list': self.hub.character_manager.get_characters(),
             'server_default_area_description': self.server.config['default_area_description']
             })
         areas = self._load_areas(areas, source_file)
@@ -1307,7 +1297,7 @@ class AreaManager(AssetManager):
         """
 
         areas = ValidateAreas().validate_contents(yaml_contents, extra_parameters={
-            'server_character_list': self.server.character_manager.get_characters(),
+            'server_character_list': self.hub.character_manager.get_characters(),
             'server_default_area_description': self.server.config['default_area_description']
             })
         areas = self._load_areas(areas, None)
@@ -1316,14 +1306,14 @@ class AreaManager(AssetManager):
         return areas
 
     def _load_areas(self, areas: List[Area], source_file: Union[str, None]) -> List[Area]:
-        self.server.old_area_list = self._source_file
+        self._previous_source_file = self._source_file
 
         # Now we are ready to create the areas
         self._source_file = source_file
 
         temp_areas = list()
         for (i, area_item) in enumerate(areas):
-            temp_areas.append(self.Area(i, self.server, area_item))
+            temp_areas.append(self.Area(self.server, self.hub, i, area_item))
 
         old_areas = self.get_areas()
         self._areas = temp_areas
@@ -1332,22 +1322,31 @@ class AreaManager(AssetManager):
         # Only once all areas have been created, actually set the corresponding values
         # Helps avoiding junk area lists if there was an error
         # But first, remove all zones
-        backup_zones = self.server.zone_manager.get_zones()
+        backup_zones = self.hub.zone_manager.get_zones()
         for (zone_id, zone) in backup_zones.items():
-            self.server.zone_manager.delete_zone(zone_id)
+            self.hub.zone_manager.delete_zone(zone_id)
             for client in zone.get_watchers():
                 client.send_ooc('Your zone has been automatically deleted due to an area list '
                                 'load.')
 
         # And end all existing day cycles
-        for client in self.server.get_clients():
+        clients_with_clocks: Set[ClientManager.Client] = set()
+        for area in old_areas:
             try:
-                client.server.tasker.remove_task(client, ['as_day_cycle'])
-            except KeyError:
+                clock_creator = area.get_clock_creator()
+            except AreaError.ClientNotFound:
+                continue
+            else:
+                clients_with_clocks.add(clock_creator)
+
+        for client in clients_with_clocks:
+            try:
+                client.server.task_manager.delete_task(client, 'as_day_cycle')
+            except TaskError.TaskNotFoundError:
                 pass
 
         # And remove all global IC and global IC prefixes
-        for client in self.server.get_clients():
+        for client in self.hub.get_players():
             if client.multi_ic:
                 client.send_ooc('Due to an area list reload, your global IC was turned off. You '
                                 'may turn it on again manually.')
@@ -1357,12 +1356,16 @@ class AreaManager(AssetManager):
                                 'You may set it again manually.')
                 client.multi_ic_pre = ''
 
+        # If the default area ID is now past the number of available areas, reset it back to zero
+        if self._default_area_id >= len(self._areas):
+            self._default_area_id = 0
+
         # And do other tasks associated with areas reloading
         self.publisher.publish('areas_loaded', dict())
 
-        # If the default area ID is now past the number of available areas, reset it back to zero
-        if self.server.default_area >= len(self._areas):
-            self.server.default_area = 0
+        # Add new areas to hub
+        for area in self._areas:
+            self.hub.add_area(area)
 
         for area in old_areas:
             # Decide whether the area still exists or not
@@ -1389,7 +1392,7 @@ class AreaManager(AssetManager):
                     message = 'Area list reload. Moving you to the new {}.'
                 else:
                     message = ('Area list reload. Your previous area no longer exists. Moving you '
-                               'to the server default area {}.')
+                               'to the hub default area {}.')
 
                 client.send_ooc(message.format(new_area.name))
                 client.change_area(new_area, ignore_checks=True, change_to=new_char_id,
@@ -1409,10 +1412,29 @@ class AreaManager(AssetManager):
 
     def default_area(self) -> AreaManager.Area:
         """
-        Return the Area object corresponding to the server's default area.
+        Return the Area object corresponding to the hub's default area.
         """
 
-        return self._areas[self.server.default_area]
+        return self._areas[self._default_area_id]
+
+    def set_default_area(self, area: Area):
+        """
+        Set the default area of the area manager.
+
+        Parameters
+        ----------
+        area : Area
+            New area.
+
+        Raises
+        ------
+        AreaError
+            If the manager does not recognize the area as an area it manages.
+        """
+
+        if area not in self._areas:
+            raise AreaError
+        self._default_area_id = area.id
 
     def get_area_by_name(self, name: str) -> AreaManager.Area:
         """
@@ -1491,12 +1513,16 @@ class AreaManager(AssetManager):
         need_to_check = from_area is None or client.is_staff() or client.is_transient
 
         # Now add areas
-        prepared_area_list = list()
+        if from_area is None:
+            from_area = client.area
+
+        prepared_list = list()
+        prepared_list.append(Constants.get_first_area_list_item('HUB', from_area.hub, from_area))
         for area in self.get_areas():
             if need_to_check or area.name in from_area.visible_areas:
-                prepared_area_list.append("{}-{}".format(area.id, area.name))
+                prepared_list.append(f'{area.id}-{area.name}')
 
-        return prepared_area_list
+        return prepared_list
 
     def change_passage_lock(self, client: ClientManager.Client,
                             areas: List[AreaManager.Area],

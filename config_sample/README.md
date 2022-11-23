@@ -1,23 +1,19 @@
 # Server configuration files
 
 ## Before you get started...
-With your copy of this software, you should check that you have the following files in `\config_sample\`:
+With your copy of this software, you should check that you have the following files in `/config_sample/`:
 
 * `config.yaml`
-* `area_lists.yaml`
-* `area_templates.yaml`
 * `areas.yaml`
 * `backgrounds.yaml`
 * `gimp.yaml`
-* `iniswaps.yaml`
 * `music.yaml`
-* `music_lists.yaml`
 
 As well as these folders:
 
 * `area_lists`
-* `background_lists`
-* `character_lists`
+* `bg_lists`
+* `char_lists`
 * `music_lists`
 
 Make sure you have all of the above inside this folder (otherwise, the server may hang or crash while starting).
@@ -37,13 +33,6 @@ Each file contains an example configuration. Further instructions should be loca
 * **config.yaml**
     - Contains server configuration attributes such as server name, player limit, the port it should use to listen to  connections, whether it should be advertised in the AO master server list, etc.
 
-* **area_lists.yaml**
-    - Lists the area lists the server supports.
-    - This is the list that is returned when moderators use `/area_lists`. No validation is performed to check if some area list is in this list of area lists.
-
-* **area_templates.yaml**
-    - Lists the area templates area lists can use to generate areas. **Currently unused.**
-
 * **areas.yaml**
     - Contains the default server area list.
     - This is the area list that is loaded when the server starts, as well as the area list the server falls back to when moderators use `/area_list` on its own.
@@ -55,14 +44,6 @@ Each file contains an example configuration. Further instructions should be loca
 * **gimp.yaml**
     - Lists a pool of messages. If a player is gimped, their messages will be replaced with a randomly chosen message from this list.
 
-* **iniswaps.yaml**
-    - Lists the allowed iniswapping combinations.
-    - This is the list the server uses to check in areas that prevent iniswapping to check if they should allow a particular iniswap to exist.
-
 * **music.yaml**
     - Contains the default server music list.
     - This is the music list that is loaded when the server starts, as well as the music list the server sends to a client that uses `/music_list` on its own.
-
-* **music_lists.yaml**
-    - Lists the music lists the server supports.
-    - This is the list that is returned when players use `/music_lists`. No validation is performed to check if some music list is in this list of music lists.

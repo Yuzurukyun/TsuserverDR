@@ -1,7 +1,8 @@
-# TsuserverDR, a Danganronpa Online server based on tsuserver3, an Attorney Online server
+# TsuserverDR, server software for Danganronpa Online based on tsuserver3,
+# which is server software for Attorney Online.
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
-# Current project leader: 2018-22 Chrezm/Iuvee <thechrezm@gmail.com>
+#           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -89,16 +90,16 @@ class EvidenceList:
                 evi_list.append(self.evidences[i].to_string())
         return nums_list, evi_list
 
-    def del_evidence(self, client, id):
+    def del_evidence(self, client, evi_id):
         if self.login(client):
-            self.evidences.pop(id)
+            self.evidences.pop(evi_id)
 
-    def edit_evidence(self, client, id, arg):
+    def edit_evidence(self, client, evi_id, arg):
         if self.login(client):
             if client.area.evidence_mod == 'HiddenCM' and self.correct_format(client, arg[1]):
-                self.evidences[id] = self.Evidence(arg[0], arg[1][14:], arg[2], arg[1][9:12])
+                self.evidences[evi_id] = self.Evidence(arg[0], arg[1][14:], arg[2], arg[1][9:12])
                 return
             if client.area.evidence_mod == 'HiddenCM':
                 client.send_ooc('You entered a wrong pos.')
                 return
-            self.evidences[id] = self.Evidence(arg[0], arg[1], arg[2], arg[3])
+            self.evidences[evi_id] = self.Evidence(arg[0], arg[1], arg[2], arg[3])

@@ -1,7 +1,8 @@
-# TsuserverDR, a Danganronpa Online server based on tsuserver3, an Attorney Online server
+# TsuserverDR, server software for Danganronpa Online based on tsuserver3,
+# which is server software for Attorney Online.
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
-# Current project leader: 2018-22 Chrezm/Iuvee <thechrezm@gmail.com>
+#           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,33 +18,39 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from io import TextIOWrapper
-from typing import Awaitable, Any, Callable, Iterable, List, Optional, Set, Tuple
-import typing
-if typing.TYPE_CHECKING:
-    # Avoid circular referencing
-    from server.area_manager import AreaManager
-    from server.client_manager import ClientManager
-    from server.tsuserver import TsuserverDR
 
 import asyncio
 import functools
 import errno
+import hashlib
+import hmac
 import os
 import pathlib
 import random
 import re
+import secrets
 import sys
 import tempfile
 import time
+import typing
 import warnings
 import yaml
 
 from enum import Enum
+from io import TextIOWrapper
+from typing import Awaitable, Any, Callable, Iterable, List, Set, Tuple, Union
 
 from server.exceptions import ClientError, ServerError, ArgumentError, AreaError
 from server.exceptions import TsuserverException
 
+if typing.TYPE_CHECKING:
+    from asyncio.proactor_events import _ProactorSocketTransport
+
+    # Avoid circular referencing
+    from server.area_manager import AreaManager
+    from server.client_manager import ClientManager
+    from server.hub_manager import _Hub
+    from server.tsuserver import TsuserverDR
 
 class ArgType(Enum):
     STR = 1
@@ -240,12 +247,8 @@ class FileValidity:
         if not FileValidity.is_path_exists_or_creatable(pathname):
             return False
 
-        try:
-            if pathlib.Path(pathname).is_file():
-                return True
-        except OSError:
-            # 3.7 in Windows raises an OSError for stuff like `con.yaml` here
-            return False
+        if pathlib.Path(pathname).is_file():
+            return True
 
         # If execution makes it here, we are in one of two situations
         # pathname exists but is not a file
@@ -346,7 +349,7 @@ class Constants():
         return ('.' in folders or '..' in folders)
 
     @staticmethod
-    def includes_omniwhy_exploit(name: str) -> bool:
+    def is_aoprotocol_injection_vulnerable(name: str) -> bool:
         return name.startswith('%') or '#' in name
 
     @staticmethod
@@ -508,14 +511,27 @@ class Constants():
                 raise ArgumentError(error[0].format(error[1], 's' if error[1] != 1 else ''))
 
     @staticmethod
-    def build_cond(sender: ClientManager.Client, is_staff=None, is_officer=None, is_mod=None,
-                   in_area=None, pred=None, part_of=None, not_to=None, to_blind=None, to_deaf=None,
-                   is_zstaff=None, is_zstaff_flex=None) -> Callable[[ClientManager.Client], bool]:
+    def build_cond(
+        sender: ClientManager.Client,
+        is_staff: Union[bool, None] = None,
+        is_officer: Union[bool, None] = None,
+        is_mod: Union[bool, None] = None,
+        in_hub: Union[bool, _Hub, Set[_Hub], None] = None,
+        in_area: Union[bool, AreaManager.Area, Set[AreaManager.Area], None] = None,
+        not_to: Union[Set[ClientManager.Client], None] = None,
+        part_of: Union[Set[ClientManager.Client], None] = None,
+        to_blind: Union[bool, None] = None,
+        to_deaf: Union[bool, None] = None,
+        is_zstaff: Union[bool, AreaManager.Area, None] = None,
+        is_zstaff_flex: Union[bool, AreaManager.Area, None] = None,
+        pred: Callable[[ClientManager.Client], bool] = None,
+        ) -> Callable[[ClientManager.Client], bool]:
         """
         Acceptable conditions:
             is_staff: If target is GM, CM or Mod
             is_officer: If target is CM or Mod
             is_mod: If target is Mod
+            in_hub: If target is in client's hub, or some particular hub
             in_area: If target is in client's area, or some particular area
             part_of: If target is an element of this set
             not_to: If target is not in a set of clients that are filtered out
@@ -557,6 +573,19 @@ class Constants():
             pass
         else:
             raise KeyError('Invalid argument for build_cond is_mod: {}'.format(is_mod))
+
+        if in_hub is True:
+            conditions.append(lambda c: c.hub == sender.hub)
+        elif in_hub is False:
+            conditions.append(lambda c: c.area != sender.hub)
+        elif isinstance(in_hub, type(sender.hub)):  # Lazy way of finding if in_hub is hub obj
+            conditions.append(lambda c: c.hub == in_hub)
+        elif isinstance(in_hub, set):
+            conditions.append(lambda c: c.hub in in_hub)
+        elif in_hub is None:
+            pass
+        else:
+            raise KeyError('Invalid argument for build_cond in_hub: {}'.format(in_hub))
 
         if in_area is True:
             conditions.append(lambda c: c.area == sender.area)
@@ -616,7 +645,7 @@ class Constants():
                 conditions.append(lambda c: (c.zone_watched != sender.area.in_zone))
             else:
                 conditions.append(lambda c: False)
-        elif isinstance(is_zstaff, sender.server.area_manager.Area):
+        elif isinstance(is_zstaff, sender.hub.area_manager.Area):
             # Only staff members who are watching the area's zone will receive it, PROVIDED the area
             # is part of a zone. Otherwise, NO notification is sent.
             target_zone = is_zstaff.in_zone
@@ -653,7 +682,7 @@ class Constants():
             else:
                 condition1 = lambda c: False
             conditions.append(lambda c: condition1(c) or not c.is_staff())
-        elif isinstance(is_zstaff_flex, sender.server.area_manager.Area):
+        elif isinstance(is_zstaff_flex, sender.hub.area_manager.Area):
             # Only staff members who are watching the area's zone will receive it, PROVIDED the area
             # is part of a zone. Otherwise, NO notification is sent.
             target_zone = is_zstaff_flex.in_zone
@@ -746,7 +775,7 @@ class Constants():
                 # mid_roll: result after modifiers (if any) have been applied to original roll
                 # final_roll: result after previous result was capped between 1 and max_numfaces
 
-                raw_roll = str(server.random.randint(1, num_faces))
+                raw_roll = str(random.randint(1, num_faces))
                 if modifiers == '':
                     aux_modifier = ''
                     mid_roll = int(raw_roll)
@@ -837,40 +866,6 @@ class Constants():
         return set(split_values)
 
     @staticmethod
-    def gimp_message():
-        Constants.warn_deprecated('Constants.gimp_message()',
-                                  'random.choice(server.gimp_list)',
-                                  '4.4')
-        message = ['ERP IS BAN',
-                   'I\'m fucking gimped because I\'m both autistic and a retard!',
-                   'HELP ME',
-                   'Boy, I sure do love Dia, the best admin, and the cutest!!!!!',
-                   'I\'M SEVERELY AUTISTIC!!!!',
-                   '[PEES FREELY]',
-                   'KILL ME',
-                   'I found this place on reddit XD',
-                   '(((((case????)))))',
-                   'Anyone else a fan of MLP?',
-                   'does this server have sans from undertale?',
-                   'what does call mod do',
-                   'does anyone have a miiverse account?',
-                   'Drop me a PM if you want to ERP',
-                   'Join my discord server please',
-                   'can I have mod pls?',
-                   'why is everyone a missingo?',
-                   'how 2 change areas?',
-                   'does anyone want to check out my tumblr? :3',
-                   '19 years of perfection, i don\'t play games to fucking lose',
-                   'nah... your taunts are fucking useless... only defeat angers me... by trying '
-                   'to taunt just earns you my pitty',
-                   'When do we remove dangits',
-                   'MODS STOP GIMPING ME',
-                   'Please don\'t say things like ni**er and f**k it\'s very rude and I don\'t '
-                   'like it',
-                   'PLAY NORMIES PLS']
-        return random.choice(message)
-
-    @staticmethod
     def gagged_message() -> str:
         length = random.randint(5, 9)
         letters = ['g', 'h', 'm', 'r']
@@ -909,13 +904,13 @@ class Constants():
             # wants ',\' as part of their actual area name. If you are that person... just... why
             try:
                 target = areas[i].replace(',\\', ',')
-                area_list.append(client.server.area_manager.get_area_by_name(target))
+                area_list.append(client.hub.area_manager.get_area_by_name(target))
             except AreaError:
                 try:
-                    area_list.append(client.server.area_manager.get_area_by_name(areas[i]))
+                    area_list.append(client.hub.area_manager.get_area_by_name(areas[i]))
                 except AreaError:
                     try:
-                        area_list.append(client.server.area_manager.get_area_by_id(int(areas[i])))
+                        area_list.append(client.hub.area_manager.get_area_by_id(int(areas[i])))
                     except Exception:
                         raise ArgumentError('Could not parse area `{}`.'.format(areas[i]))
         return area_list
@@ -989,13 +984,6 @@ class Constants():
                 return targets
 
         raise ArgumentError('No targets found.')
-
-    @staticmethod
-    def parse_passage_lock(client, areas, bilock=False):
-        Constants.warn_deprecated('Constants.parse_passage_lock()',
-                                  'Constants.change_passage_lock()',
-                                  '4.4')
-        client.server.area_manager.change_passage_lock(client, areas, bilock=bilock)
 
     @staticmethod
     def parse_time_length(time_length: str) -> float:
@@ -1139,11 +1127,9 @@ class Constants():
 
             if not exception:
                 return
-            if isinstance(exception, (KeyboardInterrupt, asyncio.CancelledError)):
-                # exception may only be asyncio.CancelledError in Python 3.7 or lower
-                # In Python 3.8 it would be raised as an exception and caught in the
-                # earlier try except.
+            if isinstance(exception, (KeyboardInterrupt, )):
                 return
+
             try:
                 if not (_client and isinstance(exception, TsuserverException)):
                     raise exception
@@ -1263,3 +1249,69 @@ class Constants():
             if char in text:
                 return True
         return False
+
+    @staticmethod
+    def get_first_area_list_item(view_name: str, hub: _Hub, area: AreaManager.Area) -> str:
+        if view_name == 'AREA':
+            return (f'|| GO TO {view_name} VIEW\n'
+                    f'|| YOU ARE HERE:\n'
+                    f'|| Hub {hub.get_id()[1:]}, Area {area.id}\n')
+        elif view_name == 'HUB':
+            return (f'|| GO TO {view_name} VIEW')
+        else:
+            raise RuntimeError(f'Invalid view {view_name}')
+
+    @staticmethod
+    def secure_eq(a: str, b: str) -> bool:
+        """
+        Return whether a and b are the same, such that timing attacks are difficult to perform.
+
+        Parameters
+        ----------
+        a : str
+            First element.
+        b : str
+            Second element.
+
+        Returns
+        -------
+        bool
+            Whether `a == b`.
+        """
+
+        key = secrets.token_hex(16)
+        byte_key = bytes(key, 'utf-8')
+
+        mes_a = a.encode('utf-8')
+        mes_b = b.encode('utf-8')
+
+        enc_a = hmac.new(byte_key, mes_a, hashlib.sha256)
+        enc_b = hmac.new(byte_key, mes_b, hashlib.sha256)
+
+        return hmac.compare_digest(
+            enc_a.hexdigest(),
+            enc_b.hexdigest()
+        )
+
+    @staticmethod
+    def get_ip_of_transport(transport: Union[_ProactorSocketTransport, None]) -> str:
+        if not transport:
+            return "127.0.0.1"
+
+        return transport.get_extra_info('peername')[0]
+
+    @staticmethod
+    async def await_cancellation(old_task: asyncio.Task):
+        # Wait until it is able to properly retrieve the cancellation exception
+        try:
+            await old_task
+        except asyncio.CancelledError:
+            pass
+
+    @staticmethod
+    async def do_nothing():
+        while True:
+            try:
+                await asyncio.sleep(1)
+            except KeyboardInterrupt:
+                raise

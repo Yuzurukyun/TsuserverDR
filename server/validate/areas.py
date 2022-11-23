@@ -1,7 +1,8 @@
-# TsuserverDR, a Danganronpa Online server based on tsuserver3, an Attorney Online server
+# TsuserverDR, server software for Danganronpa Online based on tsuserver3,
+# which is server software for Attorney Online.
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
-# Current project leader: 2018-22 Chrezm/Iuvee <thechrezm@gmail.com>
+#           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -99,7 +100,7 @@ class ValidateAreas(Validate):
                 raise ServerError.FileSyntaxError(info)
 
             # Prevent conflicts with AO Protocol
-            if Constants.includes_omniwhy_exploit(item['area']):
+            if Constants.is_aoprotocol_injection_vulnerable(item['area']):
                 info = (f'Area {item["area"]} contains characters that could cause issues with '
                         f'certain AO clients, so it is invalid. Please rename the area and try '
                         f'again.')
@@ -176,6 +177,31 @@ class ValidateAreas(Validate):
                     new_background_tod[tod_name] = tod_background
                 item['background_tod'] = new_background_tod
 
+            # Check afk_sendto and afk_delay (the only mandatory numerical values)
+            try:
+                int_afk_sendto = int(item['afk_sendto'])
+            except (ValueError, TypeError, OverflowError):
+                info = (f'afk_sendto `{item["afk_sendto"]}` must be a nonnegative integer from 0 '
+                        f'to the number of areas {len(contents)} minus 1.')
+                raise ServerError.FileSyntaxError(info)
+
+            if not 0 <= int_afk_sendto < len(contents):
+                info = (f'afk_sendto `{item["afk_sendto"]}` must be a nonnegative integer from 0 '
+                        f'to the number of areas {len(contents)} minus 1.')
+                raise ServerError.FileSyntaxError(info)
+
+            try:
+                int_afk_delay = int(item['afk_delay'])
+            except (ValueError, TypeError, OverflowError):
+                info = (f'afk_delay `{item["afk_delay"]}` must be a nonnegative integer from 0 '
+                        f'to 360.')
+                raise ServerError.FileSyntaxError(info)
+
+            if not 0 <= int_afk_delay <= 360:
+                info = (f'afk_delay `{item["afk_delay"]}` must be a nonnegative integer from 0 '
+                        f'to 360.')
+                raise ServerError.FileSyntaxError(info)
+
             area_parameters.append(item.copy())
             temp_area_names.add(item['area'])
             current_area_id += 1
@@ -244,7 +270,7 @@ class ValidateAreas(Validate):
         if found_uncheckable_restricted_chars:
             info = ('WARNING: Some areas provided default restricted characters. However, no '
                     'server character list was provided, so no checks whether restricted '
-                    'characters were in the character list of the server were performed.')
+                    'characters were in the default character list of the server were performed.')
             print(info)
 
         return area_parameters

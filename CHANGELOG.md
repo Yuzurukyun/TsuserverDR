@@ -820,3 +820,62 @@
 
 ### 220926a (4.3.5-post1)
 * Fixed area list loading failing if there was a player in the process of joining a server
+
+## 221123a (5.0.0)
+* Increased minimum Python version required to 3.9, added support for Python 3.11
+* Added hubs. Each hub has a unique numerical ID and may have its own areas, backgrounds, characters, music, zones and trials. Changes to any of these in a particular hub do not affect other hubs. Commands associated include
+  - /hub_create
+  - /hub_end
+  - /hub_info
+  - /hub_rename
+* All commands that are run that involve IDs or names of players, areas, backgrounds, characters, music, zones and trials as arguments (either explicitly or implicitly) now assume those IDs or names are IDs or names within the current hub
+* Added a first-list-item to switch between areas in hub view and hubs view in the area list
+* A player may change between hubs by running /hub followed by the hub ID, or by double-clicking their hub of interest in the hubs view. Changing hub is equivalent to changing to the default area of a hub
+* Players may now log in as GMs of a hub if they put in the hub password after /logingm. Hubs generate a random password when created that can be distributed and changed. Commands associated include
+  - /hub_password
+  - /hub_password_info
+* GMs are now tied to the hub they logged in at. GMs that change hubs will lose their GM status automatically
+* Server dumps now also include background, character, and DJ list information for each hub, including current file, previous file, and file contents
+* Introduced the concept of participant and non-participant characters (currently a "character provided in a character list" and one that is not respectively)
+* Redid trial and nonstop debates
+* Json files within `storage` now use indents and new lines for better human readability (this is backwards compatible with 4.3.x)
+* Removed leftover concepts of an area casing status and area ownership
+* Added text in change area message indicating whether the area seems populated or not. Populated means being able to see at least one player othen than yourself in /look
+* Added commands to automatically get area descriptions if possible when moving to a new area (all off by default) via
+  - /autoglance
+  - /zone_autoglance
+* Added /pm_gms, which sends a personal message to all other GMs in the hub that have not muted PMs
+* Added commands to modify the IC text that appears if an area is marked as noteworthy via
+  - /noteworthy_set
+  - /noteworthy_info
+* Added additional restrictions to the range of allowed values for "afk_sendto" and "afk_delay"
+* Made /refresh a GM+ command rather than a mod command (but it only affects your current hub)
+* Made /area_kick with a single argument move the target to your area rather than the hub default area
+* Renamed /area_kick to /summon, and replaced all "kicking" indications it generated with "summoning" indications
+* Renamed the folders `config/background_lists` and `config/character_lists` to `config/bg_lists` and `config/char_lists` respectively to maintain consistency with several existing commands
+* Improved README installation instructions so that it prompts users to try and test whether Python was properly set up in path
+* Fixed timer end notification showing the OOC name of the timer initiator as the timer name rather than the actual name
+* Fixed all notecard commands having an inconsistent output when used with /help_more
+* Fixed /showname_set erroring out if it attempted to show an error message
+* Fixed /paranoia showing an error message with wrong valid percentage boundaries if an out of bounds paranoia level was input
+* Fixed /zone_paranoia having an inconsistent parameter description when used with /help_more
+* Fixed server dumps not attempting to show more information about remaining objects in some object list if it failed to display some object
+* Fixed players with client versions that do not allow character list reloading not being forced to spectator after a different character list was loaded
+* Fixed AO 2.10 being marked as not supporting character list reloading
+* Fixed /clock_unpause not sending current clock details to non-GM players
+* Removed unused `server/area_manager_revamp.py` and `server/steptimer_manager.py`
+* Removed the old names of the following commands. Please use the new ones:
+  - /clock_cancel: /clock_end
+  - /lurk_cancel: /lurk_end
+  - /party_disband: /party_end
+  - /timer_cancel: /timer_end
+  - /zone_delete: /zone_end
+* Removed RP mode: It is now assumed always on
+* Removed /gmlock and /gmunlock (different from /lock and /unlock)
+* Removed unused configuration settings from `config/config.yaml`
+* Removed the following configuration files:
+  - The allowed iniswaps override file `config/iniswaps.yaml`.
+  - The compatibility bridge file `config/110_new_music.yaml`.
+  - The area lists file `config/area_lists.yaml`
+  - The music lists file `config/music_lists.yaml`
+  - The area templates file `config/area_templates.yaml`

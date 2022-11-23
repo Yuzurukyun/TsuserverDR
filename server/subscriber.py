@@ -1,7 +1,8 @@
-# TsuserverDR, a Danganronpa Online server based on tsuserver3, an Attorney Online server
+# TsuserverDR, server software for Danganronpa Online based on tsuserver3,
+# which is server software for Attorney Online.
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
-# Current project leader: 2018-22 Chrezm/Iuvee <thechrezm@gmail.com>
+#           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,6 +20,10 @@
 """
 Module that implements a simple publisher-listener model.
 """
+
+from __future__ import annotations
+
+from typing import List
 
 
 class Listener:
@@ -137,7 +142,7 @@ class Listener:
         publisher = self._get_publisher(unsubscribing_from)
         publisher.discard(self._parent)
 
-    def get_subscriptions(self):
+    def get_subscriptions(self) -> List[Publisher]:
         """
         Return (a shallow copy of) the publishers this listener is subscribed to.
 

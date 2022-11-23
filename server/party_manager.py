@@ -1,7 +1,8 @@
-# TsuserverDR, a Danganronpa Online server based on tsuserver3, an Attorney Online server
+# TsuserverDR, server software for Danganronpa Online based on tsuserver3,
+# which is server software for Attorney Online.
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
-# Current project leader: 2018-22 Chrezm/Iuvee <thechrezm@gmail.com>
+#           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,6 +22,7 @@
 
 import asyncio
 import random
+from server.constants import Constants
 
 from server.exceptions import AreaError, ClientError, PartyError
 
@@ -150,7 +152,8 @@ class PartyManager:
             # Only call this when you are sure you want to cancel potential light timeout timers.
             # Restart light timer
             if self.lights_timeout is not None:
-                self.server.tasker.cancel_task(self.lights_timeout)
+                self.lights_timeout.cancel()
+                asyncio.ensure_future(Constants.await_cancellation(self.lights_timeout))
             self.lights_timeout = None
 
             if not self.area.lights:
@@ -248,7 +251,7 @@ class PartyManager:
         movers = self.check_move_party(party, initiator, new_area)
         moving, staying = movers[True], movers[False]
 
-        if not moving and staying:
+        if staying and not moving:
             raise PartyError('No one was able to move.')
 
         if moving and not staying:
@@ -268,18 +271,17 @@ class PartyManager:
             return
 
         # Some people move, some stay behind case
-        """
-        If initiator is not sneaking
-        1. Visible who moved
-        2. Visible who stayed as they were not allowed
-        3. Sneaked who stayed
-        Party ID is assigned to the formed party that contains initiator
 
-        If initiator is sneaking
-        1. Sneaked who moved
-        2. Sneaked who stayed as they were not allowed
-        3. Visible who stayed (keeps party ID)
-        """
+        # If initiator is not sneaking
+        # 1. Visible who moved
+        # 2. Visible who stayed as they were not allowed
+        # 3. Sneaked who stayed
+        # Party ID is assigned to the formed party that contains initiator
+
+        # If initiator is sneaking
+        # 1. Sneaked who moved
+        # 2. Sneaked who stayed as they were not allowed
+        # 3. Visible who stayed (keeps party ID)
         split = list()
         split.append({c: i for c, i in moving.items()}) # Guaranteed non-empty
         split.append({c: i for c, i in staying.items() if c.is_visible})
@@ -455,7 +457,7 @@ class PartyManager:
                     culprit = member.displayname if member != initiator else 'yourself'
                     raise ClientError('Unable to move the party due to {}.'.format(culprit))
 
-                if error.code in ['ChArLocked', 'ChArGMLocked', 'ChArModLocked',
+                if error.code in ['ChArLocked', 'ChArModLocked',
                                   'ChArRestrictedChar', 'ChArInArea']:
                     movers[False][member] = new_char_id
                 elif error.code is not None:

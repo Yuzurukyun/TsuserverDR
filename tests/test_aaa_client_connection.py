@@ -6,13 +6,13 @@ _standard_FL = ('yellowtext', 'customobjections', 'flipping', 'fastloading', 'no
 _standard_client_version = ('1', '2', '2')
 
 
-class TestClientConnection(_Unittest):
+class TestAAA_ClientConnection(_Unittest):
     def test_01_client0_connect(self):
         """
         Situation: Client selects the server on the lobby screen.
         """
 
-        self.clients[0] = self.server.create_client()
+        self.clients[0] = self.server.make_test_client(attempts_to_fully_join=False)
         c = self.clients[0]
         c.assert_packet('decryptor', 34)
         c.assert_packet('ID', (0, None, None))
@@ -26,7 +26,7 @@ class TestClientConnection(_Unittest):
         Situation: Another client selects the server on the lobby screen.
         """
 
-        self.clients[1] = self.server.create_client()
+        self.clients[1] = self.server.make_test_client(attempts_to_fully_join=False)
         c = self.clients[1]
         c.assert_packet('decryptor', 34)
         c.assert_packet('ID', (1, None, None))
@@ -71,7 +71,7 @@ class TestClientConnection(_Unittest):
         """
 
         # Starts off as normal
-        self.clients[0] = self.server.create_client()
+        self.clients[0] = self.server.make_test_client(attempts_to_fully_join=False)
         c = self.clients[0]
         c.assert_packet('decryptor', 34)
         c.assert_packet('ID', (0, None, None))
@@ -82,7 +82,7 @@ class TestClientConnection(_Unittest):
 
         # But then it carries on
         c.send_command_cts("askchaa#%")
-        c.assert_packet('SI', (len(self.server.character_manager.get_characters()), None, None), over=True)
+        c.assert_packet('SI', (len(c.hub.character_manager.get_characters()), None, None), over=True)
         c.send_command_cts("RC#%")
         c.assert_packet('SC', None, over=True)
         c.send_command_cts("RM#%")
@@ -121,7 +121,7 @@ class TestClientConnection(_Unittest):
         """
 
         # Starts off as normal
-        self.clients[1] = self.server.create_client()
+        self.clients[1] = self.server.make_test_client(attempts_to_fully_join=False)
         c = self.clients[1]
         c.assert_packet('decryptor', 34)
         c.assert_packet('ID', (1, None, None))
@@ -132,7 +132,7 @@ class TestClientConnection(_Unittest):
 
         # Join server
         c.send_command_cts("askchaa#%")
-        c.assert_packet('SI', (len(self.server.character_manager.get_characters()), None, None), over=True)
+        c.assert_packet('SI', (len(c.hub.character_manager.get_characters()), None, None), over=True)
         c.send_command_cts("RC#%")
         c.assert_packet('SC', None, over=True)
         c.send_command_cts("RM#%")
@@ -163,7 +163,7 @@ class TestClientConnection(_Unittest):
         c.send_command_cts("CC#1#0#FAKEHDID#%")  # Pick char 0
         c.assert_packet('PV', (1, 'CID', 0))  # 1 because second client online
         c.assert_packet('GM', '', over=True)
-        assert(c.get_char_name() == self.server.character_manager.get_characters()[0])
+        assert(c.get_char_name() == c.hub.character_manager.get_characters()[0])
 
         # Check number of clients
         num_clients = len(self.server.client_manager.clients)
@@ -178,7 +178,7 @@ class TestClientConnection(_Unittest):
         """
 
         # Starts off as normal
-        self.clients[2] = self.server.create_client()
+        self.clients[2] = self.server.make_test_client(attempts_to_fully_join=False)
         c = self.clients[2]
         c.assert_packet('decryptor', 34)
         c.assert_packet('ID', (2, None, None))
@@ -189,7 +189,8 @@ class TestClientConnection(_Unittest):
 
         # Join server
         c.send_command_cts("askchaa#%")
-        c.assert_packet('SI', (len(self.server.character_manager.get_characters()), None, None), over=True)
+        c.assert_packet('SI', (len(c.hub.character_manager.get_characters()), None, None),
+                        over=True)
         c.send_command_cts("RC#%")
         c.assert_packet('SC', None, over=True)
         c.send_command_cts("RM#%")
@@ -222,7 +223,7 @@ class TestClientConnection(_Unittest):
         c.send_command_cts("CC#2#1#FAKEHDID#%")  # Attempt to pick char 1
         c.assert_packet('PV', (2, 'CID', 1))  # 2 because third client online
         c.assert_packet('GM', '', over=True)
-        assert(c.get_char_name() == self.server.character_manager.get_characters()[1])
+        assert(c.get_char_name() == c.hub.character_manager.get_characters()[1])
 
         # Check number of clients
         num_clients = len(self.server.client_manager.clients)
@@ -246,7 +247,7 @@ class TestClientConnection(_Unittest):
         c.send_command_cts("CC#0#3#FAKEHDID#%")  # Attempt to pick char 3
         c.assert_packet('PV', (0, 'CID', 3))  # 0 because first client online
         c.assert_packet('GM', '', over=True)
-        assert(c.get_char_name() == self.server.character_manager.get_characters()[3])
+        assert(c.get_char_name() == c.hub.character_manager.get_characters()[3])
 
         self.assertEqual(len(self.server.client_manager.clients), 3)
         self.assertEqual(self.server.get_player_count(), 3)
@@ -256,7 +257,7 @@ class TestClientConnection(_Unittest):
         Situation: Player joins and picks char 2 (automated).
         """
 
-        self.clients[3] = self.server.make_client(2)
+        self.clients[3] = self.server.make_test_client(2)
         self.assertEqual(len(self.server.client_manager.clients), 4)
         self.assertEqual(self.server.get_player_count(), 4)
 
@@ -273,7 +274,7 @@ class TestClientConnection(_Unittest):
         self.assertEqual(len(self.server.client_manager.clients), 3)
         self.assertEqual(self.server.get_player_count(), 3)
 
-        self.clients[1] = self.server.make_client(0)
+        self.clients[1] = self.server.make_test_client(0)
         self.assertEqual(self.clients[1].id, 1)
         self.assertEqual(len(self.server.client_manager.clients), 4)
         self.assertEqual(self.server.get_player_count(), 4)
@@ -301,13 +302,13 @@ class TestClientConnection(_Unittest):
         self.assertEqual(self.server.get_player_count(), 2)
 
         # Now c0 picks char_id=1
-        self.clients[0] = self.server.make_client(1)
+        self.clients[0] = self.server.make_test_client(1)
         self.assertEqual(self.clients[0].id, 0)
         self.assertEqual(len(self.server.client_manager.clients), 3)
         self.assertEqual(self.server.get_player_count(), 3)
 
         # And c2 picks char_id=3
-        self.clients[2] = self.server.make_client(3)
+        self.clients[2] = self.server.make_test_client(3)
         self.assertEqual(self.clients[2].id, 2)
         self.assertEqual(len(self.server.client_manager.clients), 4)
         self.assertEqual(self.server.get_player_count(), 4)
@@ -317,11 +318,11 @@ class TestClientConnection(_Unittest):
         Situation: All clients disconnect and reconnect (automated).
         """
 
-        self.server.disconnect_all()
+        self.server.disconnect_all_test_clients()
         self.assertEqual(len(self.server.client_manager.clients), 0)
         self.assertEqual(self.server.get_player_count(), 0)
 
-        self.server.make_clients(4)
+        self.server.make_test_clients(4)
         self.assertEqual(len(self.server.client_manager.clients), 4)
         self.assertEqual(self.server.get_player_count(), 4)
 
@@ -331,7 +332,7 @@ class TestClientConnection(_Unittest):
         are forced to choose Spectator.
         """
 
-        self.server.make_clients(1)
+        self.server.make_test_clients(1)
         self.assertEqual(len(self.server.client_manager.clients), 5)
         self.assertEqual(self.server.get_player_count(), 5)
 
@@ -340,19 +341,19 @@ class TestClientConnection(_Unittest):
         Situation: Server is filled up, then more clients try to join.
         """
 
-        self.server.make_clients(95)  # Nothing should happen
+        self.server.make_test_clients(95)  # Nothing should happen
         self.assertEqual(len(self.server.client_manager.clients), 100)
         self.assertEqual(self.server.get_player_count(), 100)
 
-        self.server.make_clients(1)  # Would overlap
+        self.server.make_test_clients(1)  # Would overlap
         self.assertEqual(len(self.server.client_manager.clients), 100)
         self.assertEqual(self.server.get_player_count(), 100)
 
-        self.server.make_clients(1)  # Tries again, should still be denied
+        self.server.make_test_clients(1)  # Tries again, should still be denied
         self.assertEqual(len(self.server.client_manager.clients), 100)
         self.assertEqual(self.server.get_player_count(), 100)
 
-        self.server.disconnect_all()
+        self.server.disconnect_all_test_clients()
         self.assertEqual(len(self.server.client_manager.clients), 0)
         self.assertEqual(self.server.get_player_count(), 0)
 
@@ -360,6 +361,6 @@ class TestClientConnection(_Unittest):
         """
         Situation: Tester of test function, filling up beyond server capacity.
         """
-        self.server.make_clients(105)
+        self.server.make_test_clients(105)
         self.assertEqual(len(self.server.client_manager.clients), 100)
         self.assertEqual(self.server.get_player_count(), 100)

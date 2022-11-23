@@ -1,7 +1,8 @@
-# TsuserverDR, a Danganronpa Online server based on tsuserver3, an Attorney Online server
+# TsuserverDR, server software for Danganronpa Online based on tsuserver3,
+# which is server software for Attorney Online.
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
-# Current project leader: 2018-22 Chrezm/Iuvee <thechrezm@gmail.com>
+#           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,6 +32,7 @@ from server.exceptions import BackgroundError
 from server.validate.backgrounds import ValidateBackgrounds
 
 if typing.TYPE_CHECKING:
+    from server.hub_manager import _Hub
     from server.tsuserver import TsuserverDR
 
 class BackgroundManager(AssetManager):
@@ -39,7 +41,7 @@ class BackgroundManager(AssetManager):
     loaded file or an adequate Python representation.
     """
 
-    def __init__(self, server: TsuserverDR):
+    def __init__(self, server: TsuserverDR, hub: Union[_Hub, None] = None):
         """
         Create a background manager object.
 
@@ -47,14 +49,18 @@ class BackgroundManager(AssetManager):
         ----------
         server: TsuserverDR
             The server this background manager belongs to.
+        hub : _Hub, optional
+            The hub this area manager belongs to. Defaults to None.
         """
 
-        super().__init__(server)
+        super().__init__(server, hub=hub)
         self._backgrounds = ['default']
-        self._source_file = 'config/backgrounds.yaml'
+        self._source_file = None
+        self._previous_source_file = None
+
         self._default_background = self._backgrounds[0]
 
-    def get_name(self) -> str:
+    def get_type_name(self) -> str:
         """
         Return `'background list'`.
 
@@ -80,15 +86,15 @@ class BackgroundManager(AssetManager):
 
     def get_loader(self) -> Callable[[str, ], str]:
         """
-        Return `self.server.load_backgrounds`.
+        Return `self.hub.load_backgrounds`.
 
         Returns
         -------
         Callable[[str, ], str]
-            `self.server.load_backgrounds`.
+            `self.hub.load_backgrounds`.
         """
 
-        return self.server.load_backgrounds
+        return self.hub.load_backgrounds
 
     def get_backgrounds(self) -> List[str]:
         """
@@ -116,17 +122,31 @@ class BackgroundManager(AssetManager):
 
         return self._source_file
 
+    def get_previous_source_file(self) -> Union[str, None]:
+        """
+        Return the output that self.get_source_file() would have returned *before* the last
+        successful time a background list was successfully loaded.
+        If no such call was ever made, return None.
+
+        Returns
+        -------
+        Union[str, None]
+            Previous source file or None.
+        """
+
+        return self._previous_source_file
+
     def get_custom_folder(self) -> str:
         """
-        Return `'config/background_lists'`.
+        Return `'config/bg_lists'`.
 
         Returns
         -------
         str
-            `'config/background_lists'`.
+            `'config/bg_lists'`.
         """
 
-        return 'config/background_lists'
+        return 'config/bg_lists'
 
     def get_default_background(self) -> str:
         return self._default_background
@@ -211,6 +231,8 @@ class BackgroundManager(AssetManager):
         return output
 
     def _load_backgrounds(self, new_list: List[str], source_file: Union[str, None]) -> List[str]:
+        self._previous_source_file = self._source_file
+
         lower = [name.lower() for name in new_list]
         self._backgrounds = lower
         self._source_file = source_file

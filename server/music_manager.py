@@ -1,7 +1,8 @@
-# TsuserverDR, a Danganronpa Online server based on tsuserver3, an Attorney Online server
+# TsuserverDR, server software for Danganronpa Online based on tsuserver3,
+# which is server software for Attorney Online.
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
-# Current project leader: 2018-22 Chrezm/Iuvee <thechrezm@gmail.com>
+#           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,6 +28,7 @@ from server.exceptions import MusicError
 from server.validate.music import ValidateMusic
 
 if typing.TYPE_CHECKING:
+    from server.hub_manager import _Hub
     from server.tsuserver import TsuserverDR
 
 class MusicManager(AssetManager):
@@ -35,7 +37,7 @@ class MusicManager(AssetManager):
     loaded file or an adequate Python representation.
     """
 
-    def __init__(self, server: TsuserverDR):
+    def __init__(self, server: TsuserverDR, hub: Union[_Hub, None] = None):
         """
         Create a music manager object.
 
@@ -43,13 +45,16 @@ class MusicManager(AssetManager):
         ----------
         server: TsuserverDR
             The server this music manager belongs to.
+        hub : _Hub, optional
+            The hub this music manager belongs to. Defaults to None.
         """
 
-        super().__init__(server)
+        super().__init__(server, hub=hub)
         self._music = []
-        self._source_file = 'config/music.yaml'
+        self._source_file = None
+        self._previous_source_file = None
 
-    def get_name(self) -> str:
+    def get_type_name(self) -> str:
         """
         Return `'music list'`.
 
@@ -75,12 +80,12 @@ class MusicManager(AssetManager):
 
     def get_loader(self) -> Callable[[str, ], str]:
         """
-        Return `self.server.load_characters`.
+        Return `self.load_file`.
 
         Returns
         -------
         Callable[[str, ], str]
-            `self.server.load_characters`.
+            `self.load_file`.
         """
 
         return self.load_file
@@ -109,6 +114,20 @@ class MusicManager(AssetManager):
         """
 
         return self._source_file
+
+    def get_previous_source_file(self) -> Union[str, None]:
+        """
+        Return the output that self.get_source_file() would have returned *before* the last
+        successful time a music list was successfully loaded.
+        If no such call was ever made, return None.
+
+        Returns
+        -------
+        Union[str, None]
+            Previous source file or None.
+        """
+
+        return self._previous_source_file
 
     def get_custom_folder(self) -> str:
         """
@@ -203,7 +222,10 @@ class MusicManager(AssetManager):
 
         return output
 
-    def _load_music(self, new_list: List[Dict[str, Any]], source_file: Union[str, None]) -> List[Dict[str, Any]]:
+    def _load_music(self, new_list: List[Dict[str, Any]],
+                    source_file: Union[str, None]) -> List[Dict[str, Any]]:
+        self._previous_source_file = self._source_file
+
         self._music = new_list.copy()
         self._source_file = source_file
 
@@ -229,6 +251,15 @@ class MusicManager(AssetManager):
             return False
 
     def get_client_view(self) -> List[str]:
+        """
+        Return the list of music of the music manager in a format a client can understand.
+
+        Returns
+        -------
+        List[str]
+            List of music.
+        """
+
         prepared_music_list = list()
         for item in self._music:
             category = item['category']
@@ -253,3 +284,9 @@ class MusicManager(AssetManager):
 
         # At least one music track
         assert self._music
+
+
+class PersonalMusicManager(MusicManager):
+    def __init__(self, server: TsuserverDR, hub: Union[_Hub, None] = None):
+        super().__init__(server, hub)
+        self.if_default_show_hub_music = True

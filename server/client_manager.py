@@ -1,7 +1,8 @@
-# TsuserverDR, a Danganronpa Online server based on tsuserver3, an Attorney Online server
+# TsuserverDR, server software for Danganronpa Online based on tsuserver3,
+# which is server software for Attorney Online.
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
-# Current project leader: 2018-22 Chrezm/Iuvee <thechrezm@gmail.com>
+#           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,43 +19,49 @@
 
 from __future__ import annotations
 
+import datetime
+import random
+import time
 import typing
-from typing import Any, Callable, List, Optional, Set, Tuple, Dict, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, TypeVar, Union
 
-from server.music_manager import MusicManager
+from server import client_changearea, clients, logger
+from server.constants import Constants, TargetType
+from server.exceptions import (AreaError, ClientError, HubError, PartyError,
+                               TaskError, TrialError)
+from server.hub_manager import _Hub
+from server.music_manager import PersonalMusicManager
+from server.subscriber import Publisher
+
 if typing.TYPE_CHECKING:
+    from asyncio.proactor_events import _ProactorSocketTransport
+
     # Avoid circular referencing
     from server.area_manager import AreaManager
     from server.network.ao_protocol import AOProtocol
     from server.tsuserver import TsuserverDR
     from server.zone_manager import ZoneManager
 
-import datetime
-import random
-import time
-
-from server import clients
-from server import client_changearea
-from server import logger
-from server.exceptions import AreaError, ClientError, GameError, PartyError, TrialError
-from server.constants import TargetType, Constants
-from server.subscriber import Publisher
-
-
 class ClientManager:
     class Client:
-        def __init__(self, server: TsuserverDR, transport, user_id: int, ipid: int,
-                     protocol: AOProtocol = None):
+        def __init__(
+            self,
+            server: TsuserverDR,
+            hub: _Hub,
+            transport: _ProactorSocketTransport,
+            user_id: int,
+            ipid: int,
+            protocol: AOProtocol = None
+            ):
             self.server = server
+            self.hub = hub
             self.transport = transport
             self.protocol = protocol
-            self.ip = transport.get_extra_info('peername')[0] if transport else "127.0.0.1"
             self.area_changer = client_changearea.ClientChangeArea(self)
             self.required_packets_received = set()  # Needs to have length 2 to actually connect
             self.can_askchaa = True  # Needs to be true to process an askchaa packet
             self.version = ('Undefined', 'Undefined')  # AO version used established through ID pack
             self.packet_handler = clients.ClientDRO1d2d2()
-            self.bad_version = False
             self.publisher = Publisher(self)
 
             self.disconnected = False
@@ -69,16 +76,19 @@ class ClientManager:
             self.showname = ''
             self.joined = time.time()
             self.last_active = Constants.get_time()
+            self.viewing_hubs = False
 
             self.ever_chose_character = False
             self.ever_outbounded_gamemode = False
             self.ever_outbounded_time_of_day = False
 
-            self.music_manager = MusicManager(server)
+            self.music_manager = PersonalMusicManager(server, hub=None)
             # Avoid doing an OS call for a new client
-            self.music_manager.transfer_contents_from_manager(self.server.music_manager)
+            self.music_manager.transfer_contents_from_manager(
+                self.server.hub_manager.get_default_managee().music_manager
+                )
 
-            self.area = server.area_manager.default_area()
+            self.area = hub.area_manager.default_area()
             self.new_area = self.area  # It is different from self.area in transition to a new area
             self.party = None
             self.is_mod = False
@@ -94,7 +104,6 @@ class ClientManager:
             self.muted_global = False
             self.pm_mute = False
 
-            self.in_rp = False
             self.autopass = False
             self.disemvowel = False
             self.disemconsonant = False
@@ -107,8 +116,7 @@ class ClientManager:
             self.followedby = set()
             self.showname_history = list()
             self.is_transient = False
-            self.handicap = None
-            self.handicap_backup = None  # Use if custom handicap is overwritten with a server one
+            self.old_handicap = None  # Use if custom handicap is overwritten with a server one
             self.is_movement_handicapped = False
             self.show_shownames = True
             self.is_bleeding = False
@@ -117,8 +125,8 @@ class ClientManager:
             self.last_ooc_message = ''
             self.first_person = False
             self.forward_sprites = True
-            self.last_received_ic = [None, None, None]
-            self.last_received_ic_notme = [None, None, None]
+            self.last_received_ic = (None, None, None)
+            self.last_received_ic_notme = (None, None, None)
             self.is_blind = False
             self.is_deaf = False
             self.is_gagged = False
@@ -137,6 +145,7 @@ class ClientManager:
             self.paranoia = 2
             self.notecard = ''
             self.is_mindreader = False
+            self.autoglance = False
 
             # Pairing stuff
             self.charid_pair = -1
@@ -157,13 +166,6 @@ class ClientManager:
             self.mflood_times = self.server.config['music_change_floodguard']['times_per_interval']
             self.mflood_mutelength = self.server.config['music_change_floodguard']['mute_length']
             self.mflood_log = list()
-
-        @property
-        def music_list(self) -> List[Dict[str, Any]]:
-            Constants.warn_deprecated('client.music_list',
-                                      'client.music_manager.get_music',
-                                      '4.4')
-            return self.music_manager.get_music()
 
         def send_command(self, command: str, *args: List):
             self.protocol.data_send(command, *args)
@@ -221,24 +223,50 @@ class ClientManager:
                                    {'contents': final_dargs.copy()})
             return final_dargs, to_send
 
-        def send_ooc(self, msg: str, username: str = None, allow_empty: bool = False,
-                     is_staff=None, is_officer=None, in_area=None, not_to=None, part_of=None,
-                     to_blind=None, to_deaf=None, is_zstaff=None, is_zstaff_flex=None,
-                     pred: Callable[[ClientManager.Client], bool] = None):
+        def send_ooc(
+            self,
+            msg: str,
+            username: str = None,
+            allow_empty: bool = False,
+
+            is_staff: Union[bool, None] = None,
+            is_officer: Union[bool, None] = None,
+            is_mod: Union[bool, None] = None,
+            in_hub: Union[bool, _Hub, Set[_Hub], None] = True,
+            in_area: Union[bool, AreaManager.Area, Set[AreaManager.Area], None] = None,
+            not_to: Union[Set[ClientManager.Client], None] = None,
+            part_of: Union[Set[ClientManager.Client], None] = None,
+            to_blind: Union[bool, None] = None,
+            to_deaf: Union[bool, None] = None,
+            is_zstaff: Union[bool, AreaManager.Area, None] = None,
+            is_zstaff_flex: Union[bool, AreaManager.Area, None] = None,
+            pred: Callable[[ClientManager.Client], bool] = None
+            ):
+            if not allow_empty and not msg:
+                return
+
             if pred is None:
                 pred = lambda x: True
             if not_to is None:
                 not_to = set()
-            if not allow_empty and not msg:
-                return
             if username is None:
                 username = self.server.config['hostname']
 
-            cond = Constants.build_cond(self, is_staff=is_staff, is_officer=is_officer,
-                                        in_area=in_area, not_to=not_to, part_of=part_of,
-                                        to_blind=to_blind, to_deaf=to_deaf,
-                                        is_zstaff=is_zstaff, is_zstaff_flex=is_zstaff_flex,
-                                        pred=pred)
+            cond = Constants.build_cond(
+                self,
+                is_staff=is_staff,
+                is_officer=is_officer,
+                is_mod=is_mod,
+                in_hub=in_hub,
+                in_area=in_area,
+                not_to=not_to,
+                part_of=part_of,
+                to_blind=to_blind,
+                to_deaf=to_deaf,
+                is_zstaff=is_zstaff,
+                is_zstaff_flex=is_zstaff_flex,
+                pred=pred
+                )
 
             if cond(self):
                 self.send_command_dict('CT', {
@@ -246,11 +274,25 @@ class ClientManager:
                     'message': msg,
                     })
 
-        def send_ooc_others(self, msg: str, username: str = None, allow_empty: bool = False,
-                            is_staff=None, is_officer=None, in_area=None,
-                            not_to: Set = None, part_of=None,
-                            to_blind=None, to_deaf=None, is_zstaff=None, is_zstaff_flex=None,
-                            pred: Callable[[ClientManager.Client], bool] = None):
+        def send_ooc_others(
+            self,
+            msg: str,
+            username: str = None,
+            allow_empty: bool = False,
+
+            is_staff: Union[bool, None] = None,
+            is_officer: Union[bool, None] = None,
+            is_mod: Union[bool, None] = None,
+            in_hub: Union[bool, _Hub, Set[_Hub], None] = True,
+            in_area: Union[bool, AreaManager.Area, Set[AreaManager.Area], None] = None,
+            not_to: Union[Set[ClientManager.Client], None] = None,
+            part_of: Union[Set[ClientManager.Client], None] = None,
+            to_blind: Union[bool, None] = None,
+            to_deaf: Union[bool, None] = None,
+            is_zstaff: Union[bool, AreaManager.Area, None] = None,
+            is_zstaff_flex: Union[bool, AreaManager.Area, None] = None,
+            pred: Callable[[ClientManager.Client], bool] = None
+        ):
             if not allow_empty and not msg:
                 return
 
@@ -261,39 +303,56 @@ class ClientManager:
             if username is None:
                 username = self.server.config['hostname']
 
-            cond = Constants.build_cond(self, is_staff=is_staff, is_officer=is_officer,
-                                        in_area=in_area, not_to=not_to.union({self}),
-                                        part_of=part_of, to_blind=to_blind, to_deaf=to_deaf,
-                                        is_zstaff=is_zstaff, is_zstaff_flex=is_zstaff_flex,
-                                        pred=pred)
+            cond = Constants.build_cond(
+                self,
+                is_staff=is_staff,
+                is_officer=is_officer,
+                is_mod=is_mod,
+                in_hub=in_hub,
+                in_area=in_area,
+                not_to=not_to.union({self}),
+                part_of=part_of,
+                to_blind=to_blind,
+                to_deaf=to_deaf,
+                is_zstaff=is_zstaff,
+                is_zstaff_flex=is_zstaff_flex,
+                pred=pred
+                )
+
             self.server.make_all_clients_do("send_ooc", msg, pred=cond, allow_empty=allow_empty,
                                             username=username)
 
-        def send_ic(self,
-                    params: List = None,
-                    sender: ClientManager.Client = None,
-                    bypass_text_replace: bool = False,
-                    bypass_deafened_starters: bool = False,
-                    use_last_received_sprites: bool = False,
-                    gag_replaced: bool = False,
-                    pred: Callable[[ClientManager.Client], bool] = None,
-                    not_to: Set[ClientManager.Client] = None,
-                    part_of: Set[ClientManager.Client] = None,
-                    is_staff: bool = None,
-                    is_officer: bool = None,
-                    is_zstaff: bool = None,
-                    is_zstaff_flex: bool = None,
-                    in_area: bool = None,
-                    to_blind: bool = None,
-                    to_deaf: bool = None,
-                    msg=None,
-                    folder=None,
-                    pos=None,
-                    char_id=None,
-                    ding=None,
-                    color=None,
-                    showname=None,
-                    hide_character=0):
+        def send_ic(
+            self,
+            params: List = None,
+            sender: ClientManager.Client = None,
+            bypass_text_replace: bool = False,
+            bypass_deafened_starters: bool = False,
+            use_last_received_sprites: bool = False,
+            gag_replaced: bool = False,
+
+            is_staff: Union[bool, None] = None,
+            is_officer: Union[bool, None] = None,
+            is_mod: Union[bool, None] = None,
+            in_hub: Union[bool, _Hub, Set[_Hub], None] = True,
+            in_area: Union[bool, AreaManager.Area, Set[AreaManager.Area], None] = None,
+            not_to: Union[Set[ClientManager.Client], None] = None,
+            part_of: Union[Set[ClientManager.Client], None] = None,
+            to_blind: Union[bool, None] = None,
+            to_deaf: Union[bool, None] = None,
+            is_zstaff: Union[bool, AreaManager.Area, None] = None,
+            is_zstaff_flex: Union[bool, AreaManager.Area, None] = None,
+            pred: Callable[[ClientManager.Client], bool] = None,
+
+            msg=None,
+            folder=None,
+            pos=None,
+            char_id=None,
+            ding=None,
+            color=None,
+            showname=None,
+            hide_character=0
+            ):
 
             # sender is the client who sent the IC message
             # self is who is receiving the IC message at this particular moment
@@ -332,11 +391,21 @@ class ClientManager:
             # Check if receiver is actually meant to receive the message. Bail out early if not.
             # FIXME: First argument should be sender, not self. Using in_area=True fails otherwise
 
-            cond = Constants.build_cond(self, is_staff=is_staff, is_officer=is_officer,
-                                        in_area=in_area, not_to=not_to,
-                                        part_of=part_of, to_blind=to_blind, to_deaf=to_deaf,
-                                        is_zstaff=is_zstaff, is_zstaff_flex=is_zstaff_flex,
-                                        pred=pred)
+            cond = Constants.build_cond(
+                self,
+                is_staff=is_staff,
+                is_officer=is_officer,
+                is_mod=is_mod,
+                in_hub=in_hub,
+                in_area=in_area,
+                not_to=not_to,
+                part_of=part_of,
+                to_blind=to_blind,
+                to_deaf=to_deaf,
+                is_zstaff=is_zstaff,
+                is_zstaff_flex=is_zstaff_flex,
+                pred=pred
+                )
             if not cond(self):
                 return
             # If self is ignoring sender, now is the moment to discard
@@ -357,7 +426,7 @@ class ClientManager:
             # Remove None values from pargs, which could have happened while setting default values
             # from the function call
             to_pop = list()
-            for (key, value) in pargs.items():
+            for key in pargs:
                 if pargs[key] is None:
                     to_pop.append(key)
             for key in to_pop:
@@ -379,9 +448,9 @@ class ClientManager:
                     (sender == self and self.first_person) or
                     (sender and not sender.forward_sprites)):
                 # last_sender: Client who actually sent the new message
-                # last_apparent_sender: Client whose sprites were used for the last message
+                # last_seen_sender: Client whose sprites were used for the last message
                 # last_args: "MS" arguments to the last message
-                # Do note last_sender != last_apparent_sender if a person receives a message
+                # Do note last_sender != last_seen_sender if a person receives a message
                 # from someone in not forward sprites mode. In that case, last_sender is
                 # updated with this new client, but last apparent_sender is not.
 
@@ -389,27 +458,27 @@ class ClientManager:
                 # guarantee ourselves we do not pick the last message that could possibly
                 # be self
                 if sender == self and self.first_person:
-                    last_apparent_sender, last_args, last_apparent_args = self.last_received_ic_notme
+                    last_seen_sender, last_args, last_seen_args = self.last_received_ic_notme
                 else:
-                    last_apparent_sender, last_args, last_apparent_args = self.last_received_ic
+                    last_seen_sender, last_args, last_seen_args = self.last_received_ic
 
                 # Make sure showing previous sender makes sense. If it does not make sense now,
                 # it will not make sense later.
 
                 # If last sender is no longer connected, do not show previous sender
-                if not last_apparent_sender or not self.server.is_client(last_apparent_sender):
+                if not last_seen_sender or not self.server.is_client(last_seen_sender):
                     pargs['anim'] = '../../misc/blank'
-                    self.last_received_ic_notme = [None, None, None]
-                    self.last_received_ic = [None, None, None]
+                    self.last_received_ic_notme = (None, None, None)
+                    self.last_received_ic = (None, None, None)
                 # If last apparent sender and self are not in the same area, do not show
                 # previous sender
-                elif self.area != last_apparent_sender.area:
+                elif self.area != last_seen_sender.area:
                     pargs['anim'] = '../../misc/blank'
-                    self.last_received_ic_notme = [None, None, None]
-                    self.last_received_ic = [None, None, None]
+                    self.last_received_ic_notme = (None, None, None)
+                    self.last_received_ic = (None, None, None)
                 # If last sender has changed character, do not show previous sender
-                elif ((last_apparent_sender.char_id != last_apparent_args['char_id'] or
-                        last_apparent_sender.char_folder != last_apparent_args['folder'])):
+                elif ((last_seen_sender.char_id != last_seen_args['char_id'] or
+                        last_seen_sender.char_folder != last_seen_args['folder'])):
                     # We need to check for iniswaps as well, to account for this possibility:
                     # 1. A and B are in the same room. A as in first person mode
                     # 2. B talks to A and moves to another room
@@ -418,21 +487,21 @@ class ClientManager:
                     # 5. If A had received no other message in the meantime, clear the last
                     # character seen.
                     pargs['anim'] = '../../misc/blank'
-                    self.last_received_ic_notme = [None, None, None]
-                    self.last_received_ic = [None, None, None]
+                    self.last_received_ic_notme = (None, None, None)
+                    self.last_received_ic = (None, None, None)
                 # Do not show previous sender if
                 # 1. Previous sender is sneaked and is not GM, and
                 # 2. It is not the case self is in a party, the same one as previous sender,
                 # and self is sneaked
-                elif (not last_apparent_sender.is_visible and
-                        not last_apparent_sender.is_staff() and
-                        not (self.party and self.party == last_apparent_sender.party
+                elif (not last_seen_sender.is_visible and
+                        not last_seen_sender.is_staff() and
+                        not (self.party and self.party == last_seen_sender.party
                             and not self.is_visible)):
                     # It will still be the case self will reveal themselves by talking
                     # They will however see last sender if needed
                     pargs['anim'] = '../../misc/blank'
-                    self.last_received_ic_notme = [None, None, None]
-                    self.last_received_ic = [None, None, None]
+                    self.last_received_ic_notme = (None, None, None)
+                    self.last_received_ic = (None, None, None)
                 # Otherwise, show message
                 else:
                     pargs['folder'] = last_args['folder']
@@ -485,7 +554,7 @@ class ClientManager:
                         (not pargs['msg'].startswith(allowed_starters) and
                          not pargs['msg'] in allowed_messages) or
                         (sender and sender.is_gagged and gag_replaced)):
-                        pargs['msg'] = '(Your ears are ringing)'
+                        pargs['msg'] = '[Your ears are ringing]'
                         if (not self.packet_handler.ALLOWS_REPEATED_MESSAGES_FROM_SAME_CHAR
                             and self.send_deaf_space):
                             pargs['msg'] = pargs['msg'] + ' '
@@ -535,7 +604,7 @@ class ClientManager:
 
             # This step also takes care of filtering out the packet arguments that the client
             # cannot parse, and also make sure they are in the correct order.
-            final_pargs, to_send = self.prepare_command('ms', pargs)
+            final_pargs, _ = self.prepare_command('ms', pargs)
 
             # Keep track of packet details in case this was sent by someone else
             # This is used, for example, for first person mode
@@ -545,77 +614,119 @@ class ClientManager:
 
                 # Only update apparent sender if sender was in forward sprites mode
                 if sender and sender.forward_sprites:
-                    self.last_received_ic_notme[0] = sender
-                    self.last_received_ic_notme[2] = final_pargs
-                self.last_received_ic_notme[1] = final_pargs
+                    self.last_received_ic_notme = (
+                        sender,
+                        final_pargs,
+                        final_pargs,
+                    )
+                else:
+                    self.last_received_ic_notme = (
+                        self.last_received_ic_notme[0],
+                        final_pargs,
+                        self.last_received_ic_notme[2],
+                    )
             # Moreover, keep track of last received IC message
             # This is used for forward sprites mode.
             if sender and sender.forward_sprites:
-                self.last_received_ic[0] = sender
-                self.last_received_ic[2] = final_pargs
-            self.last_received_ic[1] = final_pargs
+                self.last_received_ic = (
+                    sender,
+                    final_pargs,
+                    final_pargs,
+                )
+            else:
+                self.last_received_ic = (
+                    self.last_received_ic[0],
+                    final_pargs,
+                    self.last_received_ic[2],
+                )
 
             self.send_command_dict('MS', final_pargs)
 
-        def send_ic_others(self,
-                           params: List = None,
-                           sender: ClientManager.Client = None,
-                           bypass_text_replace: bool = False,
-                           bypass_deafened_starters: bool = False,
-                           use_last_received_sprites: bool = False,
-                           gag_replaced: bool = False,
-                           pred: Callable[[ClientManager.Client], bool] = None,
-                           not_to: Set[ClientManager.Client] = None,
-                           part_of: Set[ClientManager.Client] = None,
-                           is_staff: bool = None,
-                           is_officer: bool = None,
-                           is_zstaff: bool = None,
-                           is_zstaff_flex: bool = None,
-                           in_area: bool = None,
-                           to_blind: bool = None,
-                           to_deaf: bool = None,
-                           msg=None,
-                           folder=None,
-                           pos=None,
-                           char_id=None,
-                           ding=None,
-                           color=None,
-                           showname=None,
-                           hide_character=0):
+        def send_ic_others(
+            self,
+            params: List = None,
+            sender: ClientManager.Client = None,
+            bypass_text_replace: bool = False,
+            bypass_deafened_starters: bool = False,
+            use_last_received_sprites: bool = False,
+            gag_replaced: bool = False,
+
+            is_staff: Union[bool, None] = None,
+            is_officer: Union[bool, None] = None,
+            is_mod: Union[bool, None] = None,
+            in_hub: Union[bool, _Hub, Set[_Hub], None] = True,
+            in_area: Union[bool, AreaManager.Area, Set[AreaManager.Area], None] = None,
+            not_to: Union[Set[ClientManager.Client], None] = None,
+            part_of: Union[Set[ClientManager.Client], None] = None,
+            to_blind: Union[bool, None] = None,
+            to_deaf: Union[bool, None] = None,
+            is_zstaff: Union[bool, AreaManager.Area, None] = None,
+            is_zstaff_flex: Union[bool, AreaManager.Area, None] = None,
+            pred: Callable[[ClientManager.Client], bool] = None,
+
+            msg=None,
+            folder=None,
+            pos=None,
+            char_id=None,
+            ding=None,
+            color=None,
+            showname=None,
+            hide_character=0
+            ):
 
             if not_to is None:
                 not_to = {self}
             else:
                 not_to = not_to.union({self})
 
-            cond = Constants.build_cond(self, is_staff=is_staff, is_officer=is_officer,
-                                        in_area=in_area, not_to=not_to.union({self}),
-                                        part_of=part_of, to_blind=to_blind, to_deaf=to_deaf,
-                                        is_zstaff=is_zstaff, is_zstaff_flex=is_zstaff_flex,
-                                        pred=pred)
-            self.server.make_all_clients_do("send_ic", pred=cond,
-                                            params=params,
-                                            sender=sender,
-                                            bypass_text_replace=bypass_text_replace,
-                                            bypass_deafened_starters=bypass_deafened_starters,
-                                            use_last_received_sprites=use_last_received_sprites,
-                                            gag_replaced=gag_replaced,
-                                            msg=msg,
-                                            folder=folder,
-                                            pos=pos,
-                                            char_id=char_id,
-                                            ding=ding,
-                                            color=color,
-                                            showname=showname,
-                                            hide_character=hide_character)
+            cond = Constants.build_cond(
+                self,
+                is_staff=is_staff,
+                is_officer=is_officer,
+                is_mod=is_mod,
+                in_hub=in_hub,
+                in_area=in_area,
+                not_to=not_to.union({self}),
+                part_of=part_of,
+                to_blind=to_blind,
+                to_deaf=to_deaf,
+                is_zstaff=is_zstaff,
+                is_zstaff_flex=is_zstaff_flex,
+                pred=pred
+                )
+            self.server.make_all_clients_do(
+                "send_ic",
+                pred=cond,
+                params=params,
+                sender=sender,
+                bypass_text_replace=bypass_text_replace,
+                bypass_deafened_starters=bypass_deafened_starters,
+                use_last_received_sprites=use_last_received_sprites,
+                gag_replaced=gag_replaced,
+                msg=msg,
+                folder=folder,
+                pos=pos,
+                char_id=char_id,
+                ding=ding,
+                color=color,
+                showname=showname,
+                hide_character=hide_character
+                )
 
         def send_ic_attention(self, ding: bool = True):
             int_ding = 1 if ding else 0
-            self.send_ic(msg='(Something catches your attention)', ding=int_ding, hide_character=1)
+            self.send_ic(msg=self.area.noteworthy_text, ding=int_ding, hide_character=1)
 
         def send_ic_blankpost(self):
             if self.packet_handler.ALLOWS_INVISIBLE_BLANKPOSTS:
                 self.send_ic(msg='', hide_character=1, bypass_text_replace=True)
+
+        def send_character_list(self, characters: List[str] = None):
+            if characters is None:
+                characters = self.hub.character_manager.get_characters()
+            self.send_command_dict('SC', {
+                'chars_ao2_list': characters,
+                })
 
         def send_background(self, name: str = None, pos: str = None,
                             tod_backgrounds: Dict[str, str] = None):
@@ -668,12 +779,6 @@ class ClientManager:
 
         def send_music(self, name=None, char_id=None, showname=None, force_same_restart=None,
                        loop=None, channel=None, effects=None):
-            if (not self.packet_handler.HAS_CLIENTSIDE_MUSIC_LOOPING
-                and self.packet_handler.REPLACES_BASE_OPUS_FOR_MP3):
-                if name in self.server.new_110_music:
-                    name = name.replace('.opus', '.mp3')
-                    name = '/'.join(name.split('/')[1:])
-
             self.send_command_dict('MC', {
                 'name': name,
                 'char_id': char_id,
@@ -769,10 +874,10 @@ class ClientManager:
             name_ws = name.replace(' ', '')
             if not name_ws or name_ws.isdigit():
                 return False
-            #for client in self.server.get_clients():
-                #print(client.name == name)
-                #if client.name == name:
-                    #return False
+            # for client in self.hub.get_players():
+            #     print(client.name == name)
+            #     if client.name == name:
+            #         return False
             return True
 
         @property
@@ -789,14 +894,12 @@ class ClientManager:
                 return self.showname
             return self.char_showname
 
-        def has_character(self, char_id: int = None) -> bool:
-            if char_id is None:
-                char_id = self.char_id
-
-            return char_id is not None and char_id >= 0
+        def has_participant_character(self) -> bool:
+            return self.hub.character_manager.is_char_id_participant(self.char_id)
 
         def change_character(self, char_id: int, force: bool = False,
                              target_area: AreaManager.Area = None,
+                             old_char: str = None,
                              announce_zwatch: bool = True):
             # Do not run this code if player is still doing server handshake
             if self.char_id is None:
@@ -807,35 +910,43 @@ class ClientManager:
             # area if I just did self.area
             if target_area is None:
                 target_area = self.area
+            if old_char is None:
+                old_char = self.get_char_name()
+            old_char_id = self.char_id
 
-            old_char, old_char_id = self.get_char_name(), self.char_id
-
-            if not self.server.character_manager.is_valid_character_id(char_id):
+            if not target_area.hub.character_manager.is_valid_character_id(char_id):
                 raise ClientError('Invalid character ID.')
+
+            new_char = self.hub.character_manager.get_character_name(char_id)
             if not target_area.is_char_available(char_id, allow_restricted=self.is_staff()):
                 if force:
                     for client in self.area.clients:
                         if client.char_id == char_id:
                             client.char_select()
-                            if client != self:
-                                client.send_ooc('You were forced off your character.')
-                                self.send_ooc(f'You forced client {client.id} off their '
-                                              f'character.')
-                                self.send_ooc_others(f'{self.name} [{self.id}] forced client '
-                                                     f'{client.id} off their character.',
-                                                     is_officer=True, not_to={client})
+                            if client == self:
+                                continue
+
+                            client.send_ooc('You were forced off your character.')
+                            self.send_ooc(f'You forced client {client.id} off their character.')
+                            self.send_ooc_others(f'{self.name} [{self.id}] forced client '
+                                                 f'{client.id} off their character.',
+                                                 is_officer=True, in_hub=None, not_to={client})
                 else:
-                    raise ClientError('Character {} not available.'
-                                      .format(self.get_char_name(char_id)))
+                    raise ClientError(f'Character {new_char} not available.')
 
             # Code after this comment assumes the character change will be successful
             self.ever_chose_character = True
 
-            if not self.has_character() and self.has_character(char_id=char_id):
+            has_char_before = self.has_participant_character()
+            has_char_after = self.hub.character_manager.is_char_id_participant(char_id)
+
+            if has_char_after and not has_char_before:
                 # No longer spectator?
                 # Now bound by AFK rules
-                self.server.tasker.create_task(self, ['as_afk_kick', self.area.afk_delay,
-                                                      self.area.afk_sendto])
+                self.server.task_manager.new_task(self, 'as_afk_kick', {
+                    'afk_delay': self.area.afk_delay,
+                    'afk_sendto': self.area.afk_sendto,
+                })
                 # And to lurk callouts, if any, provided not staff member
                 self.check_lurk()
 
@@ -846,19 +957,19 @@ class ClientManager:
                                   f'and you are not logged in.')
                     self.unfollow_user()
 
-            elif self.has_character() and not self.has_character(char_id=char_id):
+            elif has_char_before and not has_char_after:
                 # Now a spectator?
                 # No longer bound to AFK rules
                 try:
-                    self.server.tasker.remove_task(self, ['as_afk_kick'])
-                except KeyError:
+                    self.server.task_manager.delete_task(self, 'as_afk_kick')
+                except TaskError.TaskNotFoundError:
                     pass
                 # And to lurk callouts
                 self.check_lurk()
 
             self.char_id = char_id
             # Assumes players are not iniswapped initially, waiting for chrini packet
-            self.char_folder = self.get_char_name()
+            self.char_folder = new_char
             self.char_showname = ''
             self.pos = 'wit'
 
@@ -866,7 +977,7 @@ class ClientManager:
                 self.send_ooc_others('(X) Client {} has changed from character `{}` to `{}` in '
                                      'your zone ({}).'
                                      .format(self.id, old_char, self.char_folder, self.area.id),
-                                     is_zstaff=target_area)
+                                     is_zstaff=target_area, in_hub=target_area.hub)
 
             self.send_command_dict('PV', {
                 'client_id': self.id,
@@ -875,7 +986,9 @@ class ClientManager:
                 })
             self.publisher.publish('client_change_character', {
                 'old_char_id': old_char_id,
+                'old_char_name': old_char,
                 'new_char_id': char_id,
+                'new_char_name': new_char,
                 })
             logger.log_server('[{}]Changed character from {} to {}.'
                               .format(self.area.id, old_char, self.get_char_name()), self)
@@ -921,14 +1034,22 @@ class ClientManager:
             self.change_character(self.char_id, force=True)
 
         def get_area_and_music_list_view(self):
-            area_list = self.server.area_manager.get_client_view(self, from_area=self.area)
+            area_list = self.hub.area_manager.get_client_view(self, from_area=self.area)
             music_list = self.music_manager.get_client_view()
 
             return area_list+music_list
 
         def send_music_list_view(self):
-            area_list = self.server.area_manager.get_client_view(self, from_area=self.area)
-            music_list = self.music_manager.get_client_view()
+            if self.viewing_hubs:
+                area_list = self.hub.manager.get_client_view(self)
+            else:
+                area_list = self.hub.area_manager.get_client_view(self, from_area=self.area)
+
+            if (self.music_manager.is_default_file_loaded()
+                and self.music_manager.if_default_show_hub_music):
+                music_list = self.hub.music_manager.get_client_view()
+            else:
+                music_list = self.music_manager.get_client_view()
 
             if self.packet_handler.HAS_DISTINCT_AREA_AND_MUSIC_LIST_OUTGOING_PACKETS:
                 # DRO 1.1.0+, KFO and AO2.8.4+ deals with music lists differently than older clients
@@ -943,21 +1064,6 @@ class ClientManager:
                 self.send_command_dict('FM', {
                     'music_ao2_list': area_list+music_list,
                     })
-
-        def reload_music_list(self, new_music_file=None):
-            """
-            Rebuild the music list so that it only contains the target area's
-            reachable areas+music. Useful when moving areas/logging in or out.
-            """
-
-            Constants.warn_deprecated('client.reload_music_list',
-                                      'client.send_music_list_view',
-                                      '4.4',)
-
-            if new_music_file:
-                self.music_manager.load_file(new_music_file)
-
-            self.send_music_list_view()
 
         def check_change_area(self, area: AreaManager.Area,
                               override_passages: bool = False,
@@ -976,15 +1082,36 @@ class ClientManager:
                 just_me=just_me)
 
         def check_lurk(self):
-            if self.area.lurk_length > 0 and not self.is_staff() and self.has_character():
-                self.server.tasker.create_task(self, ['as_lurk', self.area.lurk_length])
+            if self.area.lurk_length > 0 and not self.is_staff() and self.has_participant_character():
+                self.server.task_manager.new_task(self, 'as_lurk', {
+                    'length': self.area.lurk_length,
+                })
             else:  # Otherwise, end any existing lurk, if there is one
                 try:
-                    self.server.tasker.remove_task(self, ['as_lurk'])
-                except KeyError:
+                    self.server.task_manager.delete_task(self, 'as_lurk')
+                except TaskError.TaskNotFoundError:
                     pass
 
-        def change_area(self, area: AreaManager.Area, override_all: bool = False,
+        def change_hub(self, hub: _Hub,
+                    override_effects: bool = False,
+                    ignore_bleeding: bool = False, ignore_followers: bool = False,
+                    ignore_autopass: bool = False,
+                    ignore_checks: bool = False, ignore_notifications: bool = False,
+                    more_unavail_chars: Set[int] = None,
+                    change_to: int = None, from_party: bool = False):
+            if hub == self.hub:
+                raise ClientError('User is already in target hub.')
+
+            self.change_area(
+                hub.area_manager.default_area(),
+                override_passages=True,  # Overriden
+                override_effects=override_effects, ignore_bleeding=ignore_bleeding,
+                ignore_autopass=ignore_autopass,
+                ignore_followers=ignore_followers, ignore_checks=ignore_checks,
+                ignore_notifications=ignore_notifications, change_to=change_to,
+                more_unavail_chars=more_unavail_chars, from_party=from_party)
+
+        def change_area(self, area: AreaManager.Area,
                         override_passages: bool = False, override_effects: bool = False,
                         ignore_bleeding: bool = False, ignore_followers: bool = False,
                         ignore_autopass: bool = False,
@@ -992,7 +1119,7 @@ class ClientManager:
                         more_unavail_chars: Set[int] = None,
                         change_to: int = None, from_party: bool = False):
             self.area_changer.change_area(
-                area, override_all=override_all, override_passages=override_passages,
+                area, override_passages=override_passages,
                 override_effects=override_effects, ignore_bleeding=ignore_bleeding,
                 ignore_autopass=ignore_autopass,
                 ignore_followers=ignore_followers, ignore_checks=ignore_checks,
@@ -1003,7 +1130,6 @@ class ClientManager:
                               found_something: bool = False,
                               ding_something: bool = False,
                               old_dname: str = '',
-                              override_all: bool = False,
                               override_passages: bool = False, override_effects: bool = False,
                               ignore_bleeding: bool = False, ignore_followers: bool = False,
                               ignore_autopass: bool = False,
@@ -1014,7 +1140,7 @@ class ClientManager:
                 old_area, area,
                 found_something=found_something,
                 ding_something=ding_something,
-                old_dname=old_dname, override_all=override_all,
+                old_dname=old_dname,
                 override_passages=override_passages,
                 override_effects=override_effects,
                 ignore_bleeding=ignore_bleeding,
@@ -1170,17 +1296,20 @@ class ClientManager:
                 # delay than the server's sneaked handicap and restore it (as by default the server
                 # will take the largest handicap when dealing with the automatic sneak handicap)
                 try:
-                    _, _, name, _ = self.server.tasker.get_task_args(self, ['as_handicap'])
-                except KeyError:
+                    task = self.server.task_manager.get_task(self, 'as_handicap')
+                except TaskError.TaskNotFoundError:
                     pass
                 else:
+                    name = task.parameters['handicap_name']
                     if name == "Sneaking":
-                        if self.server.config['sneak_handicap'] > 0 and self.handicap_backup:
+                        if self.server.config['sneak_handicap'] > 0 and self.old_handicap:
                             # Only way for a handicap backup to exist and to be in this situation is
                             # for the player to had a custom handicap whose length was shorter than
                             # the server's sneak handicap, then was set to be sneaking, then was
                             # revealed. From this, we can recover the old handicap backup
-                            _, old_length, old_name, old_announce_if_over = self.handicap_backup[1]
+                            old_length = self.old_handicap.parameters['length']
+                            old_name = self.old_handicap.parameters['handicap_name']
+                            old_announce_if_over = self.old_handicap.parameters['announce_if_over']
 
                             msg = ('(X) {} was [{}] automatically imposed their old movement '
                                    'handicap "{}" of length {} seconds after being revealed in '
@@ -1191,11 +1320,13 @@ class ClientManager:
                             self.send_ooc('You were automatically imposed your former movement '
                                           'handicap "{}" of length {} seconds when changing areas.'
                                           .format(old_name, old_length))
-                            self.server.tasker.create_task(self, ['as_handicap', time.time(),
-                                                                  old_length, old_name,
-                                                                  old_announce_if_over])
+                            self.server.task_manager.new_task(self, 'as_handicap', {
+                                'length': old_length,
+                                'handicap_name': old_name,
+                                'announce_if_over': old_announce_if_over,
+                            })
                         else:
-                            self.server.tasker.remove_task(self, ['as_handicap'])
+                            self.server.task_manager.delete_task(self, 'as_handicap')
 
                 logger.log_server('{} is no longer sneaking.'.format(self.ipid), self)
             else:  # Changed to invisible (e.g. through /sneak)
@@ -1208,20 +1339,25 @@ class ClientManager:
                 # 2. The player has no movement handicap or one shorter than the sneak handicap
                 if shandicap > 0:
                     try:
-                        _, length, _, _ = self.server.tasker.get_task_args(self, ['as_handicap'])
+                        task = self.server.task_manager.get_task(self, 'as_handicap')
+
+                        length = task.parameters['length']
                         if length < shandicap:
                             msg = ('(X) {} [{}] was automatically imposed the longer movement '
                                    'handicap "Sneaking" of length {} seconds in area {} ({}).'
                                    .format(self.displayname, self.id, shandicap, self.area.name,
                                            self.area.id))
                             self.send_ooc_others(msg, is_zstaff_flex=True)
-                            raise KeyError  # Lazy way to get there, but it works
-                    except KeyError:
+                            raise ValueError  # Lazy way to get there, but it works
+                    except (TaskError.TaskNotFoundError, ValueError):
                         self.send_ooc('You were automatically imposed a movement handicap '
                                       '"Sneaking" of length {} seconds when changing areas.'
                                       .format(shandicap))
-                        self.server.tasker.create_task(self, ['as_handicap', time.time(), shandicap,
-                                                              "Sneaking", True])
+                        self.server.task_manager.new_task(self, 'as_handicap', {
+                            'length': shandicap,
+                            'handicap_name': 'Sneaking',
+                            'announce_if_over': True,
+                            })
 
                 logger.log_server('{} is now sneaking.'.format(self.ipid), self)
 
@@ -1238,21 +1374,28 @@ class ClientManager:
             for effect in effects:
                 name = effect.name
                 async_name = effect.async_name
-                new_args = [async_name, time.time(), length, effect]
 
                 try:
-                    args = self.server.tasker.get_task_args(self, [async_name])
-                except KeyError:
-                    # New effect
-                    self.server.tasker.create_task(self, new_args)
+                    task = self.server.task_manager.get_task(self, async_name)
+                except TaskError.TaskNotFoundError:
+                    self.server.task_manager.new_task(self, async_name, {
+                        'length': length,
+                        'effect': effect,
+                        'new_value': True,
+                    })
                     resulting_effects[name] = (length, False)
                 else:
+                    old_start = task.creation_time
+                    old_length = task.parameters['length']
                     # Effect existed before, check if need to replace it with a shorter effect
-                    old_start, old_length, _ = args
                     old_remaining, _ = Constants.time_remaining(old_start, old_length)
                     if length < old_remaining:
                         # Replace with shorter timed effect
-                        self.server.tasker.create_task(self, new_args)
+                        self.server.task_manager.new_task(self, async_name, {
+                            'length': length,
+                            'effect': effect,
+                            'new_value': True,
+                        })
                         resulting_effects[name] = (length, True)
                     else:
                         # Do not replace, current effect's time is shorter
@@ -1266,37 +1409,40 @@ class ClientManager:
                 self.send_ooc('You were imposed a movement handicap "{}" of length {} seconds when '
                               'changing areas.'.format(name, length))
 
-                self.server.tasker.create_task(self, ['as_handicap', time.time(), length, name,
-                                                      announce_if_over])
-                self.handicap = (self.server.tasker.get_task(self, ['as_handicap']),
-                                 self.server.tasker.get_task_args(self, ['as_handicap']))
-                self.handicap_backup = (self.server.tasker.get_task(self, ['as_handicap']),
-                                        self.server.tasker.get_task_args(self, ['as_handicap']))
+                task = self.server.task_manager.new_task(self, 'as_handicap', {
+                    'length': length,
+                    'handicap_name': name,
+                    'announce_if_over': announce_if_over,
+                })
+                self.old_handicap = task
                 return name
             else:
                 try:
-                    _, _, old_name, _ = self.server.tasker.get_task_args(self, ['as_handicap'])
-                except KeyError:
+                    task = self.server.task_manager.get_task(self, 'as_handicap')
+                except TaskError.TaskNotFoundError:
                     raise ClientError
                 else:
+                    old_name = task.parameters['handicap_name']
                     self.send_ooc('Your movement handicap "{}" when changing areas was removed.'
                                   .format(old_name))
-                    self.handicap = None
-                    self.handicap_backup = None
-                    self.server.tasker.remove_task(self, ['as_handicap'])
+                    self.old_handicap = None
+                    self.server.task_manager.delete_task(self, 'as_handicap')
 
                 if self.area.in_zone and self.area.in_zone.is_property('Handicap'):
                     length, name, announce_if_over = self.area.in_zone.get_property('Handicap')
-                    self.send_ooc_others(f'(X) Warning: {self.displayname} [{self.id}] lost '
+                    self.send_ooc_others(
+                        f'(X) Warning: {self.displayname} [{self.id}] lost '
                         f'their zone movement handicap by virtue of having their '
                         f'handicap removed. Add it again with /zone_handicap_add {self.id}',
-                        is_zstaff_flex=True)
+                        is_zstaff_flex=True
+                        )
                 if not self.is_visible and self.server.config['sneak_handicap'] > 0:
-                    self.send_ooc_others(f'(X) Warning: {self.displayname} [{self.id}] lost '
-                                         f'their sneaking handicap by virtue of having their '
-                                         f'handicap removed. Add it again with /handicap '
-                                         f'{self.id} {self.server.config["sneak_handicap"]} '
-                                         f'Sneaking', is_zstaff_flex=True)
+                    self.send_ooc_others(
+                        f'(X) Warning: {self.displayname} [{self.id}] lost their sneaking handicap '
+                        f'by virtue of having their handicap removed. Add it again with /handicap '
+                        f'{self.id} {self.server.config["sneak_handicap"]} Sneaking',
+                        is_zstaff_flex=True
+                        )
                 return old_name
 
         def refresh_remembered_status(self,
@@ -1376,7 +1522,8 @@ class ClientManager:
             # Warn zone watchers of the area of the target
             self.send_ooc_others(f'(X) {self.displayname} [{self.id}] started following '
                                  f'{target.displayname} [{target.id}] in your zone '
-                                 f'({self.area.id}).', is_zstaff=target.area)
+                                 f'({self.area.id}).',
+                                 is_zstaff=target.area, in_hub=target.area.hub)
 
         def unfollow_user(self):
             if not self.following:
@@ -1386,39 +1533,38 @@ class ClientManager:
                           f'at {Constants.get_time()}.')
             self.send_ooc_others(f'(X) {self.displayname} [{self.id}] stopped following '
                                  f'{self.following.displayname} [{self.following.id}] in your zone '
-                                 f'({self.area.id}).', is_zstaff=self.following.area)
+                                 f'({self.area.id}).',
+                                 is_zstaff=self.following.area, in_hub=self.following.area.hub)
             self.following.followedby.remove(self)
             self.following = None
 
-        def follow_area(self, area: ClientManager.Client, just_moved: bool = True):
+        def follow_area(self, area: AreaManager.Area, just_moved: bool = True):
             # just_moved if True assumes the case where the followed user just moved
             # It being false is the case where, when the following started, the followed user was
             # in another area, and thus the followee is moved automtically
+
+            name = (area.name if area.hub == self.hub
+                    else f'{area.name} in hub {area.hub.get_numerical_id()}')
+
             if just_moved:
                 if self.is_staff():
-                    self.send_ooc('Followed user moved to {} at {}'
-                                  .format(area.name, Constants.get_time()))
+                    self.send_ooc(f'Followed user moved to area {name} at {Constants.get_time()}.')
                 else:
-                    self.send_ooc(f'Followed user moved to area {area.name}.')
+                    self.send_ooc(f'Followed user moved to area {name}.')
             else:
-                self.send_ooc('Followed user was at {}'.format(area.name))
+                self.send_ooc(f'Followed user was in area {name}.')
 
             try:
                 self.change_area(area, override_passages=True, override_effects=True,
                                  ignore_bleeding=True, ignore_autopass=True, ignore_followers=True)
             except ClientError as error:
-                self.send_ooc('Unable to follow to {}: {}'.format(area.name, error))
+                self.send_ooc(f'Unable to follow to area {name}: `{error}`.')
 
         def send_area_list(self):
             msg = '=== Areas ==='
             lock = {True: '[LOCKED]', False: ''}
-            for i, area in enumerate(self.server.area_manager.get_areas()):
-                owner = 'FREE'
-                if area.owned:
-                    for client in [x for x in area.clients if x.is_cm]:
-                        owner = 'MASTER: {}'.format(client.get_char_name())
-                        break
-                locked = area.is_gmlocked or area.is_modlocked or area.is_locked
+            for i, area in enumerate(self.hub.area_manager.get_areas()):
+                locked = area.is_modlocked or area.is_locked
 
                 if self.is_staff():
                     n_clt = len([c for c in area.clients if c.char_id is not None])
@@ -1432,9 +1578,20 @@ class ClientManager:
 
         def send_limited_area_list(self):
             msg = '=== Areas ==='
-            for i, area in enumerate(self.server.area_manager.get_areas()):
+            for i, area in enumerate(self.hub.area_manager.get_areas()):
                 msg += '\r\nArea {}: {}'.format(i, area.name)
                 if self.area == area:
+                    msg += ' [*]'
+            self.send_ooc(msg)
+
+        def send_limited_hub_list(self):
+            msg = '=== Hubs ==='
+            for i, hub in self.hub.manager.get_managee_numerical_ids_to_managees().items():
+                name = hub.get_name()
+                if not name:
+                    name = hub.get_id()
+                msg += '\r\nHub {}: {}'.format(i, name)
+                if self.hub == hub:
                     msg += ' [*]'
             self.send_ooc(msg)
 
@@ -1480,7 +1637,7 @@ class ClientManager:
             if include_ipid is None and as_mod:
                 include_ipid = True
 
-            area = self.server.area_manager.get_area_by_id(area_id)
+            area = self.hub.area_manager.get_area_by_id(area_id)
             clients = self.get_visible_clients(area, mods=mods, as_mod=as_mod,
                                                only_my_multiclients=only_my_multiclients)
             sorted_clients = sorted(clients, key=lambda x: x.get_char_name())
@@ -1532,7 +1689,7 @@ class ClientManager:
                 getarea_restricted = (area_id >= 0 and not self.area.rp_getarea_allowed)
                 if getareas_restricted or getarea_restricted:
                     raise ClientError('This command has been restricted to authorized users only '
-                                      'in this area while in RP mode.')
+                                      'in this area.')
                 if not self.area.lights:
                     raise ClientError('The lights are off, so you cannot see anything.')
 
@@ -1542,7 +1699,7 @@ class ClientManager:
                 # all areas info
 
                 if area_id == -1:
-                    areas = self.server.area_manager.get_areas()
+                    areas = self.hub.area_manager.get_areas()
                 elif area_id == -2:
                     zone = self.zone_watched
                     if zone is None:
@@ -1584,32 +1741,8 @@ class ClientManager:
 
             return info
 
-        def send_area_hdid(self, area_id):
-            info = self.get_area_hdid(area_id)
-            self.send_ooc(info)
-
-        def get_area_hdid(self, area_id):
-            raise NotImplementedError
-
-        def send_all_area_hdid(self):
-            info = '== HDID List =='
-            for i in range(len(self.server.area_manager.get_areas())):
-                if len(self.server.area_manager.get_areas()[i].clients) > 0:
-                    info += '\r\n{}'.format(self.get_area_hdid(i))
-            self.send_ooc(info)
-
-        def send_all_area_ip(self):
-            info = '== IP List =='
-            for i in range(len(self.server.area_manager.get_areas())):
-                if len(self.server.area_manager.get_areas()[i].clients) > 0:
-                    info += '\r\n{}'.format(self.get_area_ip(i))
-            self.send_ooc(info)
-
-        def get_area_ip(self, ip):
-            raise NotImplementedError
-
         def refresh_char_list(self):
-            char_list = [0] * len(self.server.character_manager.get_characters())
+            char_list = [0] * len(self.hub.character_manager.get_characters())
             unusable_ids = self.area.get_chars_unusable(allow_restricted=self.is_staff())
             # Remove sneaked players from unusable if needed so that they don't appear as taken
             # Their characters will not be able to be reused, but at least that's one less clue
@@ -1620,25 +1753,25 @@ class ClientManager:
             for x in unusable_ids:
                 char_list[x] = -1
 
-            if self.has_character():
+            if self.has_participant_character():
                 char_list[self.char_id] = 0  # Self is always available
             self.send_command_dict('CharsCheck', {
                 'chars_status_ao2_list': char_list,
                 })
 
         def refresh_visible_char_list(self):
-            char_list = [0] * len(self.server.character_manager.get_characters())
+            char_list = [0] * len(self.hub.character_manager.get_characters())
             unusable_ids = {c.char_id for c in self.get_visible_clients(self.area)
-                            if c.has_character()}
+                            if c.has_participant_character()}
             if not self.is_staff():
-                unusable_ids |= {self.server.character_manager.get_character_id_by_name(name)
+                unusable_ids |= {self.hub.character_manager.get_character_id_by_name(name)
                                 for name in self.area.restricted_chars}
 
             for x in unusable_ids:
                 char_list[x] = -1
 
             # Self is always available
-            if self.has_character():
+            if self.has_participant_character():
                 char_list[self.char_id] = 0
             self.send_command_dict('CharsCheck', {
                 'chars_status_ao2_list': char_list,
@@ -1651,10 +1784,6 @@ class ClientManager:
             if self.char_id is None:
                 self.char_id = -1  # Set to a valid ID if still needed
             self.send_command_dict('DONE', dict())
-
-            if self.bad_version:
-                self.send_ooc(f'Unknown client detected {self.version}. '
-                              f'Assuming standard DRO client protocol.')
 
         def char_select(self):
             # By running the change_character code, all checks and actions for switching to
@@ -1714,7 +1843,7 @@ class ClientManager:
             # Filter out messages about GMs because they were called earlier in auth_gm
             if not self.is_gm and announce_to_officers:
                 self.send_ooc_others('{} [{}] logged in as a {}.'.format(self.name, self.id, role),
-                                     is_officer=True)
+                                     is_officer=True, in_hub=None)
             logger.log_server('Logged in as a {}.'.format(role), self)
 
             if self.area.in_zone and self.area.in_zone != self.zone_watched:
@@ -1725,8 +1854,8 @@ class ClientManager:
 
             # Send command hints for leading trials and other minigames
             try:
-                trial = self.server.trial_manager.get_trial_of_user(self)
-            except GameError.UserNotPlayerError:
+                trial = self.hub.trial_manager.get_managee_of_user(self)
+            except TrialError.UserNotPlayerError:
                 pass
             else:
                 if self not in trial.get_leaders():
@@ -1746,10 +1875,10 @@ class ClientManager:
 
             # No longer bound to AFK rules
             # Nor lurk callouts
-            for task in ['as_afk_kick', 'as_lurk']:
+            for task_name in ['as_afk_kick', 'as_lurk']:
                 try:
-                    self.server.tasker.remove_task(self, [task])
-                except KeyError:
+                    self.server.task_manager.delete_task(self, task_name)
+                except TaskError.TaskNotFoundError:
                     pass
 
             # No longer need an IC lock bypass
@@ -1758,63 +1887,75 @@ class ClientManager:
                               'staff member.')
                 self.can_bypass_iclock = False
 
+            try:
+                self.hub.add_leader(self)
+            except HubError.UserAlreadyLeaderError:
+                # E.g. logging in as cm after logging in as gm
+                pass
+
         def auth_mod(self, password: str, announce_to_officers: bool = True):
             if self.is_mod:
                 raise ClientError('Already logged in.')
-            if password == self.server.config['modpass']:
+            if Constants.secure_eq(password, self.server.config['modpass']):
                 self.is_mod = True
                 self.is_cm = False
                 self.is_gm = False
-                self.in_rp = False
             else:
                 if announce_to_officers:
                     self.send_ooc_others('{} [{}] failed to login as a moderator.'
-                                         .format(self.name, self.id), is_officer=True)
+                                         .format(self.name, self.id), is_officer=True, in_hub=None)
                 raise ClientError('Invalid password.')
 
         def auth_cm(self, password: str, announce_to_officers: bool = True):
             if self.is_cm:
                 raise ClientError('Already logged in.')
-            if password == self.server.config['cmpass']:
+            if Constants.secure_eq(password, self.server.config['cmpass']):
                 self.is_cm = True
                 self.is_mod = False
                 self.is_gm = False
-                self.in_rp = False
             else:
                 if announce_to_officers:
                     self.send_ooc_others('{} [{}] failed to login as a community manager.'
-                                         .format(self.name, self.id), is_officer=True)
+                                         .format(self.name, self.id), is_officer=True, in_hub=None)
                 raise ClientError('Invalid password.')
 
         def auth_gm(self, password: str , announce_to_officers: bool =True):
             if self.is_gm:
                 raise ClientError('Already logged in.')
 
+            hub_pass = self.hub.get_password()
             # Obtain the daily gm pass (changes at midnight server time, gmpass1=Monday..)
             current_day = datetime.datetime.today().weekday()
             daily_gmpass = self.server.config['gmpass{}'.format((current_day % 7) + 1)]
 
-            valid_passwords = [self.server.config['gmpass']]
+            valid_passwords = [hub_pass, self.server.config['gmpass']]
             if daily_gmpass is not None:
                 valid_passwords.append(daily_gmpass)
 
-            if password in valid_passwords:
-                if password == daily_gmpass:
-                    g_or_daily = 'daily password'
-                else:
-                    g_or_daily = 'global password'
-                if announce_to_officers:
-                    self.send_ooc_others('{} [{}] logged in as a game master with the {}.'
-                                         .format(self.name, self.id, g_or_daily), is_officer=True)
-                self.is_gm = True
-                self.is_mod = False
-                self.is_cm = False
-                self.in_rp = False
+            for valid_password in valid_passwords:
+                if Constants.secure_eq(password, valid_password):
+                    break
             else:
                 if announce_to_officers:
                     self.send_ooc_others('{} [{}] failed to login as a game master.'
-                                         .format(self.name, self.id), is_officer=True)
+                                        .format(self.name, self.id),
+                                        is_officer=True, in_hub=None)
                 raise ClientError('Invalid password.')
+
+            if password == hub_pass:
+                password_type = 'hub password'
+            elif password == daily_gmpass:
+                password_type = 'daily password'
+            else:
+                password_type = 'global password'
+
+            if announce_to_officers:
+                self.send_ooc_others('{} [{}] logged in as a game master with the {}.'
+                                        .format(self.name, self.id, password_type),
+                                        is_officer=True, in_hub=None)
+            self.is_gm = True
+            self.is_mod = False
+            self.is_cm = False
 
         def logout(self):
             self.is_mod = False
@@ -1822,15 +1963,15 @@ class ClientManager:
             self.is_cm = False
 
             # Clean-up operations
-            if self.server.rp_mode:
-                self.in_rp = True
             if self.area.evidence_mod == 'HiddenCM':
                 self.area.broadcast_evidence_list()
 
             # Update the music list to show reachable areas and activate the AFK timer
             self.send_music_list_view()
-            self.server.tasker.create_task(self, ['as_afk_kick', self.area.afk_delay,
-                                                  self.area.afk_sendto])
+            self.server.task_manager.new_task(self, 'as_afk_kick', {
+                'afk_delay': self.area.afk_delay,
+                'afk_sendto': self.area.afk_sendto,
+            })
 
             # If using a character restricted in the area, switch out
             if self.get_char_name() in self.area.restricted_chars:
@@ -1874,8 +2015,8 @@ class ClientManager:
 
             # If managing a day cycle clock, end it
             try:
-                self.server.tasker.remove_task(self, ['as_day_cycle'])
-            except KeyError:
+                self.server.task_manager.delete_task(self, 'as_day_cycle')
+            except TaskError.TaskNotFoundError:
                 pass
 
             # If having global IC enabled, remove it
@@ -1889,6 +2030,12 @@ class ClientManager:
                               f'you are not a spectator.')
                 self.unfollow_user()
 
+            try:
+                self.hub.remove_leader(self)
+            except HubError.UserNotLeaderError:
+                # E.g. logging out as gm
+                pass
+
         def get_hdid(self) -> str:
             return self.hdid
 
@@ -1896,13 +2043,10 @@ class ClientManager:
             return self.ipid
 
         def get_ipreal(self) -> str:
-            return self.transport.get_extra_info('peername')[0]
+            return Constants.get_ip_of_transport(self.transport)
 
-        def get_char_name(self, char_id: int = None) -> str:
-            if char_id is None:
-                char_id = self.char_id
-
-            return self.server.character_manager.get_character_name(char_id)
+        def get_char_name(self) -> str:
+            return self.hub.character_manager.get_character_name(self.char_id)
 
         def get_showname_history(self) -> str:
             info = '== Showname history of client {} =='.format(self.id)
@@ -2009,7 +2153,7 @@ class ClientManager:
                 areas = set()
             else:
                 start, end = self.multi_ic[0].id, self.multi_ic[1].id
-                areas = {area for area in self.server.area_manager.get_areas()
+                areas = {area for area in self.hub.area_manager.get_areas()
                          if start <= area.id <= end}
             info += ('\n*Global IC range: {}. Global IC prefix: {}'
                      .format(Constants.format_area_ranges(areas),
@@ -2081,18 +2225,22 @@ class ClientManager:
             return self.id < other.id
 
         def __repr__(self):
-            return ('C::{}:{}:{}:{}:{}:{}:{}'
+            return ('C::{}:{}:{}:{}:{}:{}:{}:{}'
                     .format(self.id, self.ipid, self.name, self.get_char_name(), self.showname,
-                            self.is_staff(), self.area.id))
+                            self.is_staff(), self.area.id, self.hub.get_numerical_id()))
 
-    def __init__(self, server: TsuserverDR, client_obj: typing.Type[ClientManager.Client] = None):
-        if client_obj is None:
-            client_obj = self.Client
+    def __init__(
+        self,
+        server: TsuserverDR,
+        default_client_type: Type[ClientManager.Client] = None,
+        ):
+        if default_client_type is None:
+            default_client_type = self.Client
 
-        self.clients: Set[client_obj] = set()
+        self.clients: Set[default_client_type] = set()
         self.server = server
         self.cur_id = [False] * self.server.config['playerlimit']
-        self.client_obj = client_obj
+        self.default_client_type = default_client_type
 
         # Phantom peek timer stuff
         base_time = 300
@@ -2117,7 +2265,9 @@ class ClientManager:
                 threshold = (client.paranoia+zone_paranoia)/100
                 if random.random() < threshold:
                     delay = random.randint(0, int(_phantom_peek_fuzz_per_client)-1)
-                    self.server.tasker.create_task(client, ['as_phantom_peek', delay])
+                    self.server.task_manager.new_task(client, 'as_phantom_peek', {
+                        'length': delay,
+                    })
             self.phantom_peek_timer.set_max_value(
                 random.randint(int(_phantom_peek_timer_min), int(_phantom_peek_timer_max))
             )
@@ -2125,20 +2275,28 @@ class ClientManager:
         self.phantom_peek_timer._on_max_end = _phantom_peek
         self.phantom_peek_timer.start()
 
-    def new_client(self, transport, client_obj: typing.Type[ClientManager.Client] = None,
-                   protocol=None):
-        ip = transport.get_extra_info('peername')[0] if transport else "127.0.0.1"
-        ipid = self.server.get_ipid(ip)
+    def new_client(
+        self,
+        client_type: Type[Client] = None,
+        hub: _Hub = None,
+        transport: _ProactorSocketTransport = None,
+        protocol: AOProtocol = None,
+        ) -> Tuple[Client, bool]:
+        if client_type is None:
+            client_type = self.default_client_type
+        if hub is None:
+            hub = self.server.hub_manager.get_default_managee()
 
-        if client_obj is None:
-            client_obj = self.client_obj
+        ip = Constants.get_ip_of_transport(transport)
+        ipid = self.server.get_ipid(ip)
 
         cur_id = -1
         for i in range(self.server.config['playerlimit']):
             if not self.cur_id[i]:
                 cur_id = i
                 break
-        c = client_obj(self.server, transport, cur_id, ipid, protocol=protocol)
+
+        c = client_type(self.server, hub, transport, cur_id, ipid, protocol=protocol)
         self.clients.add(c)
 
         # Check if server is full, and if so, send number of players and disconnect
@@ -2149,7 +2307,7 @@ class ClientManager:
                 })
             return c, False
         self.cur_id[cur_id] = True
-        self.server.tasker.client_tasks[cur_id] = dict()
+        self.server.task_manager.tasks[c] = dict()
         return c, True
 
     def remove_client(self, client: ClientManager.Client):
@@ -2167,8 +2325,8 @@ class ClientManager:
         if client.id >= 0:  # Avoid having pre-clients do this (before they are granted a cID)
             self.cur_id[client.id] = False
             # Cancel client's pending tasks
-            for task_id in self.server.tasker.client_tasks[client.id].copy():
-                self.server.tasker.remove_task(client, [task_id])
+            for task_name in self.server.task_manager.tasks[client].copy():
+                self.server.task_manager.delete_task(client, task_name)
 
         # If the client was part of a party, remove them from the party
         if client.party:
@@ -2245,7 +2403,7 @@ class ClientManager:
         if local:
             areas = [client.area]
         else:
-            areas = client.server.area_manager.get_areas()
+            areas = client.hub.area_manager.get_areas()
         targets = []
         if key == TargetType.ALL:
             for nkey in range(8):

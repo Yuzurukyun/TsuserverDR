@@ -9,7 +9,7 @@ class _TestDeafen(_TestSenseBlock):
 
     def convo1(self):
         self.c2.sic('Oi m8.')
-        self.c0.assert_ic('(Your ears are ringing)', folder=self.c2_cname, anim='happy', over=True)
+        self.c0.assert_ic('[Your ears are ringing]', folder=self.c2_cname, anim='happy', over=True)
         self.c2.assert_ic('Oi m8.', folder=self.c2_cname, anim='happy', over=True)
 
         others = [self.c1, self.c3]
@@ -23,7 +23,7 @@ class _TestDeafen(_TestSenseBlock):
                 c.assert_no_ic()
 
         self.c0.sic('Cant hear you.', anim='sad')
-        self.c0.assert_ic('(Your ears are ringing)', folder=self.c0_cname, anim='sad', over=True)
+        self.c0.assert_ic('[Your ears are ringing]', folder=self.c0_cname, anim='sad', over=True)
         self.c2.assert_ic('Cant hear you.', folder=self.c0_cname, anim='sad', over=True)
 
         for c in others:
@@ -71,19 +71,19 @@ class TestDeafen_02_Effect(_TestSenseBlock):
         """
 
         self.c0.sic('Hello?')
-        self.c0.assert_ic('(Your ears are ringing)', folder=self.c0_cname, anim='happy', over=True)
+        self.c0.assert_ic('[Your ears are ringing]', folder=self.c0_cname, anim='happy', over=True)
         self.c1.assert_ic('Hello?', folder=self.c0_cname, anim='happy', over=True)
         self.c2.assert_no_ic()
         self.c3.assert_no_ic()
 
         self.c1.sic('Yes I can hear you.')
-        self.c0.assert_ic('(Your ears are ringing)', folder=self.c1_cname, anim='happy', over=True)
+        self.c0.assert_ic('[Your ears are ringing]', folder=self.c1_cname, anim='happy', over=True)
         self.c1.assert_ic('Yes I can hear you.', folder=self.c1_cname, anim='happy', over=True)
         self.c2.assert_no_ic()
         self.c3.assert_no_ic()
 
         self.c0.sic('I cant hear you :(')
-        self.c0.assert_ic('(Your ears are ringing)', folder=self.c0_cname, anim='happy', over=True)
+        self.c0.assert_ic('[Your ears are ringing]', folder=self.c0_cname, anim='happy', over=True)
         self.c1.assert_ic('I cant hear you :(', folder=self.c0_cname, anim='happy', over=True)
         self.c2.assert_no_ic()
         self.c3.assert_no_ic()
@@ -102,13 +102,13 @@ class TestDeafen_02_Effect(_TestSenseBlock):
         self.c0.move_area(4)
 
         self.c2.sic('Oi m8.')
-        self.c0.assert_ic('(Your ears are ringing)', folder=self.c2_cname, anim='happy', over=True)
+        self.c0.assert_ic('[Your ears are ringing]', folder=self.c2_cname, anim='happy', over=True)
         self.c2.assert_ic('Oi m8.', folder=self.c2_cname, anim='happy', over=True)
         self.c1.assert_no_ic()
         self.c3.assert_no_ic()
 
         self.c0.sic('Cant hear you.', anim='sad')
-        self.c0.assert_ic('(Your ears are ringing)', folder=self.c0_cname, anim='sad', over=True)
+        self.c0.assert_ic('[Your ears are ringing]', folder=self.c0_cname, anim='sad', over=True)
         self.c2.assert_ic('Cant hear you.', folder=self.c0_cname, anim='sad', over=True)
         self.c1.assert_no_ic()
         self.c3.assert_no_ic()
@@ -138,7 +138,7 @@ class TestDeafen_03_ChangeArea(_TestDeafen):
         cls.c2.ooc('/deafen 0')
         cls.c0.move_area(4)
         cls.c1.move_area(4)
-        cls.server.make_clients(1)
+        cls.server.make_test_clients(1)
         cls.c4 = cls.clients[4]
         cls.c4.ooc('/switch {}'.format(cls.server.config['spectator_name']))
         cls.c4.move_area(4)
@@ -252,7 +252,7 @@ class TestDeafen_04_Miscellaneous(_TestDeafen):
 
         self.c3.ooc('/scream Hi')
         self.c0.assert_no_ooc()
-        self.c0.assert_ic('(Your ears are ringing)', over=True)
+        self.c0.assert_ic('[Your ears are ringing]', over=True)
         self.c1.assert_ooc('(X) {} [{}] screamed `Hi` ({}).'
                            .format(self.c3_dname, 3, 5), ooc_over=True)
         self.c1.assert_ic('Hi', over=True)
@@ -273,7 +273,7 @@ class TestDeafen_04_Miscellaneous(_TestDeafen):
         self.c2.assert_ooc('Set up a global IC prefix with /globalic_pre', over=True)
 
         self.c2.sic('Hi')
-        self.c0.assert_ic('(Your ears are ringing)', folder=self.c2_cname, over=True)
+        self.c0.assert_ic('[Your ears are ringing]', folder=self.c2_cname, over=True)
         self.c1.assert_ic('Hi', folder=self.c2_cname, over=True)
         self.c2.assert_ooc('Sent global IC message "Hi" to area {}.'
                            .format(self.a0_name), over=True)
@@ -284,7 +284,7 @@ class TestDeafen_04_Miscellaneous(_TestDeafen):
         self.c2.assert_ooc('Set up a global IC prefix with /globalic_pre', over=True)
 
         self.c2.sic('Hi.')
-        self.c0.assert_ic('(Your ears are ringing)', folder=self.c2_cname, over=True)  # client wk
+        self.c0.assert_ic('[Your ears are ringing]', folder=self.c2_cname, over=True)  # client wk
         self.c1.assert_ic('Hi.', folder=self.c2_cname, over=True)
         self.c2.assert_ooc('Sent global IC message "Hi." to areas {} through {}.'
                            .format(self.a0_name, self.a1_name), over=True)

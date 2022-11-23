@@ -1,7 +1,8 @@
-# TsuserverDR, a Danganronpa Online server based on tsuserver3, an Attorney Online server
+# TsuserverDR, server software for Danganronpa Online based on tsuserver3,
+# which is server software for Attorney Online.
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
-# Current project leader: 2018-22 Chrezm/Iuvee <thechrezm@gmail.com>
+#           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -35,7 +36,8 @@ from server.exceptions import ServerError
 from server.subscriber import Publisher
 
 if typing.TYPE_CHECKING:
-    from client_manager import ClientManager
+    from server.client_manager import ClientManager
+    from server.hub_manager import _Hub
     from server.tsuserver import TsuserverDR
 
 
@@ -44,7 +46,7 @@ class AssetManager(ABC):
     A quasi-abstract base class for managers of assets.
     """
 
-    def __init__(self, server: TsuserverDR):
+    def __init__(self, server: TsuserverDR, hub: Union[_Hub, None] = None):
         """
         Create an asset manager.
 
@@ -52,13 +54,16 @@ class AssetManager(ABC):
         ----------
         server : TsuserverDR
             The server this asset manager belongs to.
+        hub : _Hub, optional
+            The hub this asset manager belongs to. Defaults to None.
         """
 
         self.server = server
+        self.hub = hub
         self.publisher = Publisher(self)
 
     @abstractmethod
-    def get_name(self) -> str:
+    def get_type_name(self) -> str:
         """
         Return a brief human-readable description of the manager.
 
@@ -101,13 +106,28 @@ class AssetManager(ABC):
     @abstractmethod
     def get_source_file(self) -> Union[str, None]:
         """
-        Return the source file of the last asset the manager successfully loaded relative to the
-        root directory of the server, or None if the latest loaded asset was loaded raw.
+        Return the source file of the last asset list the manager successfully loaded relative to
+        the root directory of the server, or None if the latest loaded asset list was loaded raw.
 
         Returns
         -------
         Union[str, None]
             Source file or None.
+        """
+
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_previous_source_file(self) -> Union[str, None]:
+        """
+        Return the output that self.get_source_file() would have returned *before* the last
+        successful time an asset list was successfully loaded.
+        If no such call was ever made, return None.
+
+        Returns
+        -------
+        Union[str, None]
+            Previous source file or None.
         """
 
         raise NotImplementedError
@@ -127,7 +147,7 @@ class AssetManager(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def load_file(source_file: str) -> List:
+    def load_file(self, source_file: str) -> List:
         """
         Load assets from a file relative to the server root directory.
 
@@ -145,13 +165,13 @@ class AssetManager(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def load_raw(raw: Any) -> List:
+    def load_raw(self, yaml_contents: Any) -> List:
         """
         Load assets from a Python representation.
 
         Parameters
         ----------
-        raw : Any
+        yaml_contents : Any
             Assets to load
 
         Returns
@@ -162,8 +182,21 @@ class AssetManager(ABC):
 
         raise NotImplementedError
 
+    def is_default_file_loaded(self) -> bool:
+        """
+        Decide whether the default file as specified by self.get_default_file() is currently
+        loaded or not.
+
+        Returns
+        -------
+        bool
+            True if the default file is loaded, False otherwise
+        """
+
+        return self.get_source_file() == self.get_default_file()
+
     def command_list_load(self, client: ClientManager.Client, file: str,
-                          notify_others: bool = True):
+                          send_notifications: bool = True):
         """
         Load an asset given by the player and notify the player and others if indicated.
 
@@ -173,8 +206,8 @@ class AssetManager(ABC):
             Player who requested the loading.
         file : str
             Location of the file relative to the server root folder.
-        notify_others : bool, optional
-            If other players of the server should be notified if the asset is successfully loaded,
+        send_notifications : bool, optional
+            If notifications should be sent if the asset is successfully loaded,
             by default True.
 
         Raises
@@ -193,10 +226,10 @@ class AssetManager(ABC):
 
         if not file:
             source_file = self.get_default_file()
-            msg = f'the default {self.get_name()} file'
+            msg = f'the default {self.get_type_name()} file'
         else:
             source_file = f'{self.get_custom_folder()}/{file}.yaml'
-            msg = f'the custom {self.get_name()} file `{source_file}`'
+            msg = f'the custom {self.get_type_name()} file `{source_file}`'
         fail_msg = f'Unable to load {msg}'
 
         try:
@@ -217,12 +250,16 @@ class AssetManager(ABC):
             raise ServerError(f'{fail_msg}: '
                               f'An asset syntax error occurred: `{exc}`.')
         else:
-            client.send_ooc(f'You have loaded {msg}.')
-            if notify_others:
-                client.send_ooc_others(f'{msg[0].upper()}{msg[1:]} has been loaded.',
-                                       is_officer=False)
-                client.send_ooc_others(f'{client.name} [{client.id}] has loaded {msg}.',
-                                       is_officer=True)
+            if send_notifications:
+                client.send_ooc(f'You have loaded {msg} in your hub.')
+                client.send_ooc_others(f'{msg[0].upper()}{msg[1:]} has been loaded in your hub.',
+                                       is_staff=False, in_hub=True)
+                client.send_ooc_others(f'{client.displayname} [{client.id}] has loaded {msg} in '
+                                       f'your hub.',
+                                       is_staff=True, in_hub=True)
+                client.send_ooc_others(f'{client.displayname} [{client.id}] has loaded {msg} in '
+                                       f'hub {client.hub.get_numerical_id()}.',
+                                       is_officer=True, in_hub=False)
 
     def command_list_info(self, client: ClientManager.Client):
         """
@@ -243,7 +280,7 @@ class AssetManager(ABC):
         else:
             name = 'the default list'
 
-        client.send_ooc(f'The current {self.get_name()} is {name}.')
+        client.send_ooc(f'The current {self.get_type_name()} is {name}.')
 
     @abstractmethod
     def _check_structure(self):

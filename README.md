@@ -3,7 +3,7 @@
 
 A Python-based server for Danganronpa Online. It is a fork from [tsuserver3](https://github.com/AttorneyOnline/tsuserver3) which is targeted towards Attorney Online.
 
-Requires Python 3.7-3.10, PyYAML and aiohttp (follow instructions below to install).
+Requires Python 3.9-3.11, PyYAML and aiohttp (follow instructions below to install).
 
 ## How to use
 
@@ -15,11 +15,16 @@ It is highly recommended you read through all the installation steps first befor
   - You can download Python from its official website [here](https://www.python.org/downloads/). If you already have Python installed, check that your Python version satisfies the version requirement listed above.
   - If prompted during the installation to add `python` as a PATH environment variable, accept this option. You may see this option appear on the very first screen during the installation process.
   - If you know what a virtual environment is and your system supports it, it is recommended that you use one, such as [Anaconda](https://www.continuum.io/downloads) for Windows, or [virtualenv](https://virtualenv.pypa.io/en/stable/) for everyone else (it runs itself using Python). If you do not know what a virtual environment is, you may skip this point.
-  - If you have Python 3.6 or lower, you will be prompted on server launch to update to a newer version of Python. That is because the server requires Python 3.7 or higher. Follow instructions under Updating to update your Python version.
+  - If you have Python 3.8 or lower, you will be prompted on server launch to update to a newer version of Python. That is because the server requires Python 3.9 or higher. Follow instructions under Updating to update your Python version.
 
 * Open Command Prompt, PowerShell or your preferred terminal, and change to the directory where you downloaded TsuserverDR to. You can do this in two ways:
   - On Windows 10 or higher, go up one folder above the TsuserverDR folder, Shift + right click the TsuserverDR folder, and click `Open PowerShell window here` or `Open in Terminal`. This is the easiest method. Alternatively...
   - On most operating systems, copy the path of the TsuserverDR folder, open the terminal, and type in `cd "[paste here]"`, excluding the brackets, but including the quotation marks if the path contains spaces.
+
+* Make sure Python is properly installed by typing `python` in the terminal and pushing Enter.
+  - If text that starts with `Python 3.11.0 (main, ` or similar appears, you are all set with this step. Push Ctrl+Z followed by Enter to continue to the next step if you are on Windows; and Ctrl+D if you are on Linux.
+  - If text that starts with `The term 'python' is not recognized as the name of a cmdlet` or similar, Python wasn't properly added to path. Follow the instructions [here](https://realpython.com/add-python-to-path/#how-to-add-python-to-path-on-windows) to try and fix the issue (this is for Windows, instructions for other operating systems are also available in the same website if you scroll further down).
+  - If on Windows and a separate window opens that leads to the Microsoft Store, Windows may have added an execution alias. Follow the instructions [here](https://stackoverflow.com/a/58773979) to try and remove this alias.
 
 * Install all dependencies by typing in the following two commands in the terminal you just opened:
   ```
@@ -37,7 +42,7 @@ It is highly recommended you read through all the installation steps first befor
 
 * Rename the folder `config_sample` to `config` and edit the values in the provided YAML files to your liking. Be sure to check the YAML files for syntax errors after you are done. *Use spaces only; do not use tabs.*
 
-* Open or forward the port that you would like players to connect to. The port number is available in `config/config.yaml` next to `port`, and you may change it to something else if you want to. The port that you choose must be made to accept TCP connections. This whole process may involve you doing some (or all) of the following:
+* If you intend to have players outside of your network connect to your server, open or forward the port that you would like them to connect to. The port number is available in `config/config.yaml` next to `port`, and you may change it to something else if you want to. The port that you choose must be made to accept TCP connections. This whole process may involve you doing some (or all) of the following:
     - If you are hosting your server in your own device: go to your router settings, and proceed to open/forward/allow inbound connections into the port. You can typically find instructions for this by finding the brand and model name of your router, and searching "brand + model + port forwarding".
     - If you are hosting your server in an external device (such as a VPS): find its networking settings, and proceed to open/forward/allow inbound connections into the port. You can typically find instructions for this by searching something like this "your VPS + open/forward/allow inbound connections into the port".
     - Go to your operating system firewall settings, and proceed to create a rule to allow inbound connections into the port. You can typically find instructions for this by searching "your operating system + create inbound port rule".
@@ -52,33 +57,33 @@ It is highly recommended you read through all the installation steps first befor
 * If everything was set up correctly, you will see something like this appear:
 
 ```
-[2022-09-12T10:20:20]: Starting...
-[2022-09-12T10:20:20]: Launching TsuserverDR 4.3.5 (220912a)...
-[2022-09-12T10:20:20]: Loading server configurations...
-[2022-09-12T10:20:20]: Server configurations loaded successfully!
-[2022-09-12T10:20:20]: Starting a nonlocal server...
-[2022-09-12T10:20:20]: Server started successfully!
-[2022-09-12T10:20:21]: Server should be now accessible from address 192.0.2.0 and port 50000.
+[2022-11-23T10:20:20]: Starting...
+[2022-11-23T10:20:20]: Launching TsuserverDR 5.0.0 (221123a)...
+[2022-11-23T10:20:20]: Loading server configurations...
+[2022-11-23T10:20:20]: Server configurations loaded successfully!
+[2022-11-23T10:20:20]: Starting a nonlocal server...
+[2022-11-23T10:20:20]: Server started successfully!
+[2022-11-23T10:20:21]: Server should be now accessible from address 192.0.2.0 and port 50000.
 ```
 
 * If you are listing your server in the Attorney Online master server, make sure its details are set up correctly. In particular, make sure that your server name and description are correct, as that is how players will find your server. If everything was set up correctly, you will see something like this appear:
 
 ```
-[2022-09-12T10:20:21]: Attempting to connect to the master server at https://servers.aceattorneyonline.com/servers with the following details:
-[2022-09-12T10:20:21]: *Server name: My First DR Server
-[2022-09-12T10:20:21]: *Server description: This is my flashy new DR server
-[2022-09-12T10:20:22]: Connected to the master server.
+[2022-11-23T10:20:21]: Attempting to connect to the master server at https://servers.aceattorneyonline.com/servers with the following details:
+[2022-11-23T10:20:21]: *Server name: My First DR Server
+[2022-11-23T10:20:21]: *Server description: This is my flashy new DR server
+[2022-11-23T10:20:22]: Connected to the master server.
 ```
 
   - The server will make a single ping to [ipify](https://api.ipify.org) in order to obtain its public IP address. If it fails to do that, it will let you know that, as it means there is probably something wrong with your internet connection and that other players may not be able to connect to your server.
-  - Successful connection or getting a spot in the master server list does not imply that your server will be accessible to other players. In particular, you must make sure that your external port in `config\config.yaml` is open and accepting connections, which usually involves a combination of router and firewall settings. In case of doubt, you can use websites such as [Can You See Me](https://canyouseeme.org) to check if your port is visible.
+  - Successful connection or getting a spot in the master server list does not imply that your server will be accessible to other players. In particular, you must make sure that your external port in `config/config.yaml` is open and accepting connections, which usually involves a combination of router and firewall settings. In case of doubt, you can use websites such as [Can You See Me](https://canyouseeme.org) to check if your port is visible.
 
 * To stop the server, press Ctrl+C once from your terminal. This will initiate a shutdown sequence and notify you when it is done. If the shutdown finished successfully, you will see something like this appear:
 
 ```
-[2022-09-12T22:23:04]: You have initiated a server shut down.
-[2022-09-12T22:23:04]: Kicking 12 remaining clients.
-[2022-09-12T22:23:04]: Server has successfully shut down.
+[2022-11-23T22:23:04]: You have initiated a server shut down.
+[2022-11-23T22:23:04]: Kicking 12 remaining clients.
+[2022-11-23T22:23:04]: Server has successfully shut down.
 ```
 
 * If you do not see anything after a few seconds of starting a shutdown, you can try spamming Ctrl+C to try and force a shutdown or directly close out your terminal. This is not recommended due to the cleanup process not finishing correctly but it is doable.
@@ -93,7 +98,7 @@ It is highly recommended you read through all the installation steps first befor
 
   - This process will not overwrite your server configurations inside the `config` folder, your existing logs inside the `logs` folder, or the user information inside the `storage` folder. However, it will overwrite other files including the Python files inside the `server` folder. Therefore, make sure to save backups of those files before overwriting in case you have modified them and wish to keep an archive of your changes.
 
-* If you want to update **Python** itself, you can get the latest Python download [from their website here](https://www.python.org/downloads/) and then follow the instructions under the Installing section in this readme. To check your current version of Python, you can run ``python`` on its own and look at the first line. The latest stable major Python release is *Python 3.10* as of October 4, 2021.
+* If you want to update **Python** itself, you can get the latest Python download [from their website here](https://www.python.org/downloads/) and then follow the instructions under the Installing section in this readme. To check your current version of Python, you can run ``python`` on its own and look at the first line. The latest stable major Python release is *Python 3.11* as of October 24, 2022.
 
   - Please follow the installation instructions again even if you had successfully ran a server before, because your new Python installation may be missing libraries that TsuserverDR expects there to exist. You should not need to change any server configuration files though.
   - In general, updating to a Python version beyond what is specified as supported may lead to unstable behavior, so for active servers try to keep your Python version among the ones specifically labeled as supported.
@@ -111,8 +116,11 @@ Additional notes are listed at the end of the command list. Unless otherwise spe
     - Displays the current area ambient sound effect.
 * **area** "area number"
     - Moves you to an area by its numerical ID if it is reachable from your own, or displays all areas if not given a number.
+* **autoglance**
+    - Toggles area descriptions (if present) being sent automatically or not when you move areas.
+    - No messages will be sent if your area's lights are turned off or you are blind.
 * **autopass**
-    - Toggles enter/leave messages being sent automatically or not to users in the current area, including original/target areas.
+    - Toggles enter/leave messages being sent automatically or not to users in your area, including original/target areas.
     - Messages will not be sent if sneaking. Altered messages will be sent if the area's lights are turned off.
 * **bg** "background"
     - Changes the current background.
@@ -155,6 +163,8 @@ Additional notes are listed at the end of the command list. Unless otherwise spe
     - Shows the current characters in your area, including their showname if they have set it.
 * **getareas**
     - Shows all characters in all areas reachable from your own, including their showname if they have set it.
+* **hub** "hub number"
+    - Moves you to the default area of a hub by its numerical ID, or displays all hubs if not given a number.
 * **ignore** "ID/char name/edited-to character/showname/char showname/OOC name"
     - Marks a target as ignored, so you will no longer receive any IC messages from them.
     - The target is not notified of you marking them as ignored.
@@ -175,7 +185,7 @@ Additional notes are listed at the end of the command list. Unless otherwise spe
 * **logincm** "password"
     - Makes you a Community Manager.
 * **logingm** "password"
-    - Makes you a GM.
+    - Makes you a Game Master.
 * **logout**
     - Logs you out of the rank you have, if any.
 * **look**
@@ -188,8 +198,6 @@ Additional notes are listed at the end of the command list. Unless otherwise spe
     - Sets your music list to the given one, or restores the original one if not given any.
 * **music_list_info**
     - Returns your current music list.
-* **music_lists**
-    - Lists all available music lists as established in `config/music_lists.yaml`.
 * **notecard** "content"
     - Sets the content of your notecard.
 * **notecard_clear**
@@ -239,6 +247,7 @@ Additional notes are listed at the end of the command list. Unless otherwise spe
     - Returns "Pong", used to check for server connection.
 * **play** "song.extension"
     - Plays a song, provided the area you are in allows non-staff members to run this command.
+    - If the song is within some folders within the client music folder, such folders must be included separated by "/" (e.g. "trial/Trial Start.opus" to play "Trial Start.opus" within the "trial" folder of the client music folder).
 * **pm** "ID/char name/edited-to character/showname/char showname/OOC name" "message"
     - PMs the target.
 * **pos** "position"
@@ -289,6 +298,8 @@ Additional notes are listed at the end of the command list. Unless otherwise spe
     - Changes your setting to have forward sprites mode off (your character sprites are not sent to anyone, everyone sees the last sprites they last saw) or on (your character appears normally). By default it is on.
 * **toggle_global**
     - Changes your setting to receive global messages. By default it is on.
+* **toggle_music_list_default**
+    - Changes your setting to see which music list to see when no personal music list is active: current hub or server default. By default it is current hub.
 * **toggle_pm**
     - Changes your setting to receive PMs. By default it is on.
 * **toggle_shownames**
@@ -331,9 +342,11 @@ GMs can:
     - Changes the ambient sound effect of your current area.
 * **ambient_end**
     - Clears the ambient sound effect of your current area.
-* **area_kick** "ID" "area number"
-    - Kicks target from your area to the intended area and remove them from its invite-list.
-    - If not given a target area, it will use the server's default area (usually area 0).
+* **area_list** "area list"
+    - Sets the area list of your hub.
+    - If not given an area list, it will use the default file `config/areas.yaml`.
+* **area_list_info**
+    - Returns the area list of your hub.
 * **autopass** "ID"
     - Toggles enter/leave messages being sent automatically or not to users in the current area, including original/target areas, whenever the target moves.
     - Messages will not be sent if sneaking. Altered messages will be sent if the area's lights are turned off.
@@ -357,18 +370,28 @@ GMs can:
     - Sets the current area to have bloodtrails leading to the listed areas. If no areas are given, the area is set to have an unconnected pool of blood.
 * **bloodtrail_smear** "area 1", "area 2", ...
     - Smears the blood trails in the given areas (or the current one if not given any areas).
+* **bg_list** "list"
+    - Sets the background list of your hub.
+    - If not given a background list, it will use the default file `config/backgrounds.yaml`.
+* **bg_list_info**
+    - Returns the background list of your hub.
 * **bg_period** "period name" "bg name"
     - Sets the special background to be displayed in the area whenever there is a clock in the area with the given period.
 * **bg_period_end** "period name"
     - Removes the special background to be displayed in the area whenever there is a clock in the area with the given period, so that it instead displays the normal background of the area.
 * **can_passagelock**
-    - Changes the current area's setting to allow non-staff members to change passages starting in the area with /bilock or /unilock. By default area setting is indicated in the server's area list.
+    - Changes the current area's setting to allow non-staff members to change passages starting in the area with /bilock or /unilock. By default area setting is indicated in your hub's area list.
 * **can_rollp**
-    - Changes the current area's setting to allow non-staff members to do /rollp. By default area setting is indicated in the server's area list.
+    - Changes the current area's setting to allow non-staff members to do /rollp. By default area setting is indicated in your hub's area list.
 * **can_rpgetarea**
-    - Changes the current area's setting to allow RP users to use /getarea. By default area setting is indicated in the server's area list.
+    - Changes the current area's setting to allow RP users to use /getarea. By default area setting is indicated in your hub's area list.
 * **can_rpgetareas**
-    - Changes the current area's setting to allow RP users to use /getareas. By default area setting is indicated in the server's area list.
+    - Changes the current area's setting to allow RP users to use /getareas. By default area setting is indicated in your hub's area list.
+* **char_list** "list"
+    - Sets the character list of your hub.
+    - If not given a character list, it will use the default file `config/characters.yaml`.
+* **char_list_info**
+    - Returns the character list of your hub.
 * **char_restrict** "character name"
     - Changes the restricted status of a character in the current area.
     - If a character is restricted, only GMs and above can use the character in the current area.
@@ -407,6 +430,11 @@ GMs can:
     - Obtains the last 20 rolls from a target, or your last 20 rolls if not given a target.
 * **dicelog_area** "area"
     - Obtains the last 20 rolls from an area by ID or name, or the last 20 rolls of your area if not given one.
+* **dj_list** "music list"
+    - Sets the music list of your hub.
+    - If not given a music list, it will use the default file `config/music.yaml`.
+* **dj_list_info**
+    - Returns the music list of your hub.
 * **follow** "ID"
     - Starts following a target. If the target changes areas, you will automatically follow them there.
 * **gag** "ID"
@@ -418,8 +446,6 @@ GMs can:
     - Sends subsequence IC messages to the area range described above. Can take either area IDs or area names.
 * **globalic_pre** "prefix"
     - Ensures only IC messages that start with the prefix are sent to the preestablished area range through /globalic (otherwise, just to the current area), or removes the need for a prefix if not given one.
-* **gmlock**
-    - Locks your area. Prevents CMs and normal users from entering. WARNING: Pending deprecation.
 * **gmself**
     - Logs all opened multiclients as GM.
 * **guide** "ID/char name/edited-to character/showname/char showname/OOC name" "message"
@@ -431,6 +457,16 @@ GMs can:
     - If name is given, the handicap announcement will use it as the name of the handicap.
     - If announce if over is set to any of "False, false, 0, No, no", no announcements will be sent to the player indicating that they may now move areas.
     - If the player had an existing handicap, it will be overwritten with this one.
+* **hub_end**
+    - Deletes your hub.
+* **hub_info**
+    - Returns information about your hub.
+* **hub_password** "password"
+    - Changes the password of your hub.
+* **hub_password_info**
+    - Gets the password of your hub.
+* **hub_rename** "name"
+    - Changes the name of your hub to the given name, or clears it if not given any.
 * **iclock**
     - Changes the IC lock status of the current area.
     - If the area has an IC lock, only GMs and above will be able to send IC messages.
@@ -473,7 +509,12 @@ GMs can:
     - Tallies the contents of all notecards of players in the area and reveals the count to all players in your current area.
     - This does not reveal the people who wrote particular notecards.
 * **noteworthy**
-   - Changes the noteworthy status of the area.
+    - Changes the noteworthy status of the area.
+* **noteworthy_info**
+    - Returns the noteworthy status and noteworthy text of an area.
+* **noteworthy_set** "text"
+    - Changes the noteworthy text of the area to the given text, or a default one if not given any.
+    - Noteworthy text can be changed independently of the noteworthy status of an area.
 * **nsd** "time"
     - Starts an NSD part of your current trial with all players in the area part of your trial, making you leader of the NSD.
     - The NSD will have a given time limit in seconds, or no time limit if not given a time. Debates with a time limit will be automatically halted once the timer runs out.
@@ -521,18 +562,20 @@ GMs can:
     - Restores passage locks that start in the areas in the given area range to their original status, or just the ones in the current area if not given a range.
 * **play** "song.extension"
     - Plays a song, even if not in the server music list.
+    - If the song is within some folders within the client music folder, such folders must be included separated by "/" (e.g. "trial/Trial Start.opus" to play "Trial Start.opus" within the "trial" folder of the client music folder).
 * **poison** "ID" "initials of effects" "length"
     - Applies a poison to the target that will inflict them in the given length of time in seconds the given effects.
 * **pos_force** "position" "ID"
     - Changes the IC position of a target by ID to the given one, or the one of all players in an area if not given a target.
+* **refresh**
+    - Reloads your hub's character, music and background lists.
 * **reveal** "ID"
     - Reveals a target if they were previously sneaking.
     - Also restores their formerly assigned handicap if they had one that was shorter than the server's automatic sneaking handicap.
     - If no ID is given, target is yourself.
 * **rplay** "song.extension"
     - Plays a song in all areas reachable from the current one.
-* **rpmode** "on/off"
-    - Toggles RP mode.
+    - If the song is within some folders within the client music folder, such folders must be included separated by "/" (e.g. "trial/Trial Start.opus" to play "Trial Start.opus" within the "trial" folder of the client music folder).
 * **scream_range**
     - Returns the areas that can listen to screams sent from the current area.
 * **scream_set** "area"
@@ -554,6 +597,8 @@ GMs can:
     - If no ID is given, target is yourself.
 * **sneakself**
     - Sneaks all opened multiclients that can be sneaked.
+* **summon** "ID" "area number"
+    - Summons target from their area to the intended area, or to your area if not given an area, and remove them from the invite list of their old area.
 * **st** "message"
     - Sends a message to all active staff members.
 * **status_set_other** "ID/char name/edited-to character/showname/char showname/OOC name" "status"
@@ -608,7 +653,7 @@ GMs can:
 * **uninvite** "ID/char name/edited-to character/showname/char showname/OOC name"
     - Removes a target from your locked area's invite list, so that if they leave, they will not be allowed back until the area is unlocked.
 * **unlock**
-    - Unlocks an area, provided the lock came as a result of /gmlock or /lock.
+    - Unlocks an area, provided the lock came as a result of /lock.
 * **whereis** "ID"
     - Obtains the area a target is.
 * **whois** "ID/char name/showname/OOC name"
@@ -622,6 +667,8 @@ GMs can:
     - Changes the ambient sound effect of all areas of the zone you are watching.
 * **zone_ambient_end**
     - Clears the ambient sound effect of all areas of the zone you are watching.
+* **zone_autoglance**
+    - Changes the autoglance status of the zone you are watching. If turned on, turns autoglance on for players in an area part of a zone and players that later join; otherwise, it turns it off for players in an area part of the zone
 * **zone_autopass**
     - Changes the autopass status of the zone you are watching. If turned on, turns autopass on for players in an area part of a zone and players that later join; otherwise, it turns it off for players in an area part of the zone
 * **zone_end**
@@ -654,6 +701,7 @@ GMs can:
     - Gets the zone paranoia level of the zone you are watching.
 * **zone_play**
     - Plays a track in all areas in the zone you are watching.
+    - If the song is within some folders within the client music folder, such folders must be included separated by "/" (e.g. "trial/Trial Start.opus" to play "Trial Start.opus" within the "trial" folder of the client music folder).
 * **zone_remove** "area"
     - Removes an area by name or ID from the zone you are watching.
 * **zone_tick** "chat tick rate"
@@ -669,32 +717,12 @@ GMs can:
 
 ### Community Manager Commands
 
-* **area_kick** "ID/IPID" "area number"
-    - Kicks target from your area to the intended area and remove them from its invite-list.
-    - If not given a target area, it will use the server's default area (usually area 0).
-* **area_list** "area list"
-    - Sets the server's current area list.
-    - If not given an area list, it will use the default file `config/areas.yaml`.
-* **area_list_info**
-    - Returns the server's current area list.
-* **area_lists**
-    - Lists all available area lists as established in `config/area_lists.yaml`.
-* **bg_list** "list"
-    - Sets the server's current background list.
-    - If not given a background list, it will use the default file `config/backgrounds.yaml`.
-* **bg_list_info**
-    - Returns the server's current background list.
 * **blockdj** "ID/IPID"
     - Mutes the target from changing music.
 * **charlog** "ID/IPID"
     - Lists all character changes (including iniswaps and character name changes) a target has gone through since connecting, including the time they were changed.
-* **char_list** "list"
-    - Sets the server's current character list.
-    - If not given a character list, it will use the default file `config/characters.yaml`.
-* **char_list_info**
-    - Returns the server's current character list.
 * **cleargm** "ID"
-    - Logs out the target from their GM rank, or all GMs in the server if not given a target, and puts them in RP mode if needed.
+    - Logs out the target from their GM rank, or all GMs in the server if not given a target.
 * **g** "message"
     - Sends a serverwide message, even if the current area disallows sending global messages.
 * **getarea**
@@ -708,6 +736,16 @@ GMs can:
     - Sets a movement handicap on a client by ID or IPID so that they need to wait a set amount of time in seconds between changing areas.
     - If name is given, the handicap announcement will use it as the name of the handicap.
     - If announce if over is set to any of "False, false, 0, No, no", no announcements will be sent to the player indicating that they may now move areas.
+* **hub_create** "name"
+    - Creates a new hub with given name, or with a default generated name otherwise.
+* **hub_end** "hub"
+    - Deletes the hub by numerical ID, or your hub if not given any.
+* **hub_info** "hub"
+    - Returns information about the hub by numerical ID, or your hub if not given any.
+* **hub_password_info** "hub"
+    - Returns the password of the hub by numerical ID, or your hub if not given any.
+* **hub_rename** "name"
+    - Changes the name of your hub to the given name, or clears it if not given any.
 * **invite** "ID/IPID/char name/edited-to character/showname/char showname/OOC name"
     - Adds target to the invite list of your area.
 * **kick** "ID/IPID"
@@ -732,6 +770,8 @@ GMs can:
 * **sneak** "ID/IPID"
     - Sets a target to be sneaking if they were visible.
     - If the target was subject to a handicap shorter than the server's automatic sneak handicap length, they will be imposed this handicap.
+* **summon** "ID/IPID" "area number"
+    - Summons target from their area to the intended area, or to your area if not given an area, and remove them from the invite list of their old area.
 * **transient** "ID/IPID"
     - Changes a player's ability to ignore passage locks and thus access all areas from any given area. By default it is off.
 * **unblockdj** "ID/IPID"
@@ -779,8 +819,6 @@ GMs can:
     - Sends an area OOC message with mod tag.
 * **modlock**
     - Locks your area. Prevents GMs, CMs and normal users from entering.
-* **refresh**
-    - Reloads the server's default character, music and background lists.
 * **showname_freeze**
     - Changes the ability of non-staff members of being able to change or remove their own shownames.
 * **showname_nuke**
@@ -794,7 +832,7 @@ GMs can:
 * **undisemvowel/undisemconsonant/ungimp/unremove_h** "ID/IPID"
     - Undoes correlating command.
 * **unlock**
-    - Unlocks an area, provided the lock came as a result of /gmlock, /lock or /modlock.
+    - Unlocks an area, provided the lock came as a result of /lock or /modlock.
 
 ### Debug commands
 
@@ -824,7 +862,6 @@ Commands without (D) are aliases to commands and can be freely used (subject to 
 * **yell**: Same as /scream.
 * **zg**: Same as /zone_global.
 * **zi**: Same as /zone_info.
-* **timer_cancel**: Same as /timer_end. (D) (Deprecated July 5, 2021)
 * **fa**: Same as /files_area.
 * **l**: Same as /look.
 * **forcepos**: Same as /pos_force.
@@ -835,13 +872,10 @@ Commands without (D) are aliases to commands and can be freely used (subject to 
 
 #### GM+
 
+* **area_kick**: Same as /summon.
 * **loginrp**: Same as /logingm.
 * **slit**: Same as /bloodtrail.
 * **unsneak**: Same as /reveal.
-* **clock_cancel**: Same as /clock_end. (D) (Deprecated July 5, 2021)
-* **lurk_cancel**: Same as /lurk_end. (D) (Deprecated July 5, 2021)
-* **zone_delete**: Same as /zone_end. (D) (Deprecated July 5, 2021)
-* **rpmode**: (D) (Deprecated May 20, 2022)
 
 ### Notes
 
@@ -853,7 +887,7 @@ Commands without (D) are aliases to commands and can be freely used (subject to 
     - **IP**: the IP address of the player.
     - **OOC Name**: the username of the player in the OOC chat.
 * **Note 2**: some commands include commas (,) between the parameters. If that is the case, the command expects you to actually use the commas between the parameters. If for whatever reason your parameter also has a comma followed by a space, you can include it by using ,\ (so 'Hello, world' becomes 'Hello,\ world').
-* **Note 3**: additional documentation for the commands can be found in `config\commands.py` and consulting the docstrings. For example, to get additional information for /help, you would look for `ooc_cmd_help` and look for the associated text.
+* **Note 3**: additional documentation for the commands can be found in `config/commands.py` and consulting the docstrings. For example, to get additional information for /help, you would look for `ooc_cmd_help` and look for the associated text.
 
 ## License
 

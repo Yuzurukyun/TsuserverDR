@@ -436,12 +436,12 @@ class TestWhisper_03_WhisperToDeafened(_TestWhisper):
                                      recipient.id, sender.area.id))
                 sender.ooc('/whisper {} {}'.format(identifier, message))
                 sender.assert_ooc(sent_ooc, ooc_over=True)
-                sender.assert_ic('(Your ears are ringing)', folder=sender.char_folder,
+                sender.assert_ic('[Your ears are ringing]', folder=sender.char_folder,
                                  pos=sender.pos, char_id=sender.char_id,
                                  showname='[W] ' + sender.showname,
                                  allow_partial_match=True, over=True)
                 recipient.assert_ooc(recipient_ooc, ooc_over=True)
-                recipient.assert_ic('(Your ears are ringing)', folder=sender.char_folder,
+                recipient.assert_ic('[Your ears are ringing]', folder=sender.char_folder,
                                     pos=sender.pos, char_id=sender.char_id,
                                     showname='[W] ' + sender.showname,
                                     allow_partial_match=True, over=True)
@@ -471,7 +471,7 @@ class TestWhisper_03_WhisperToDeafened(_TestWhisper):
                             .format(sender.displayname, recipient.displayname))
             sender.ooc('/whisper {} {}'.format(identifier, message))
             sender.assert_ooc(sent_ooc, ooc_over=True)
-            sender.assert_ic('(Your ears are ringing)', folder=sender.char_folder, pos=sender.pos,
+            sender.assert_ic('[Your ears are ringing]', folder=sender.char_folder, pos=sender.pos,
                              char_id=sender.char_id, showname='[W] ' + sender.showname,
                              allow_partial_match=True, over=True)
             recipient.assert_ooc(recipient_ooc, ooc_over=True)
@@ -513,7 +513,7 @@ class TestWhisper_03_WhisperToDeafened(_TestWhisper):
                 sender.assert_ic(message, folder='<NOCHAR>', pos='jud',
                                  showname='[W] ' + sender.showname, over=True)
                 recipient.assert_ooc(recipient_ooc, ooc_over=True)
-                recipient.assert_ic('(Your ears are ringing)', folder='<NOCHAR>', pos='jud',
+                recipient.assert_ic('[Your ears are ringing]', folder='<NOCHAR>', pos='jud',
                                     allow_partial_match=True, showname='???', over=True)
                 self.c0.assert_no_packets()
                 self.c1.assert_ooc(staff_ooc, over=True)
@@ -540,7 +540,7 @@ class TestWhisper_03_WhisperToDeafened(_TestWhisper):
                 ooc = 'You whispered `{}` to yourself.'.format(message)
                 client.ooc('/whisper {} {}'.format(identifier, message))
                 client.assert_ooc(ooc, ooc_over=True)
-                client.assert_ic('(Your ears are ringing)', folder=client.char_folder,
+                client.assert_ic('[Your ears are ringing]', folder=client.char_folder,
                                  pos=client.pos, showname='[W] ' + client.showname,
                                  char_id=client.char_id,
                                  allow_partial_match=True, over=True)
@@ -593,12 +593,12 @@ class TestWhisper_03_WhisperToDeafened(_TestWhisper):
                                      recipient.id, sender.area.id))
                 sender.ooc('/whisper {} {}'.format(identifier, message))
                 sender.assert_ooc(sent_ooc, ooc_over=True)
-                sender.assert_ic('(Your ears are ringing)', folder=sender.char_folder,
+                sender.assert_ic('[Your ears are ringing]', folder=sender.char_folder,
                                  pos=sender.pos, char_id=sender.char_id,
                                  showname='[W] ' + sender.showname,
                                  allow_partial_match=True, over=True)
                 recipient.assert_ooc(recipient_ooc, ooc_over=True)
-                recipient.assert_ic('(Your ears are ringing)', folder=sender.char_folder,
+                recipient.assert_ic('[Your ears are ringing]', folder=sender.char_folder,
                                     pos=sender.pos, char_id=sender.char_id,
                                     showname='[W] ' + sender.showname,
                                     allow_partial_match=True, over=True)
