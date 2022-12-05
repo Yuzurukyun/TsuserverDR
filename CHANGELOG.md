@@ -879,3 +879,6 @@
   - The area lists file `config/area_lists.yaml`
   - The music lists file `config/music_lists.yaml`
   - The area templates file `config/area_templates.yaml`
+
+## 221204a (5.0.0-post1)
+* Fixed players being unable to play a track via the music list if it is a track of their hub music list but not of their personal music list

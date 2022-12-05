@@ -778,9 +778,12 @@ class AreaManager(AssetManager):
             try:
                 name, length, source = client.music_manager.get_music_data(name)
             except MusicError.MusicNotFoundError:
-                if raise_if_not_found:
-                    raise
-                length, source = -1, ''
+                try:
+                    name, length, source = client.hub.music_manager.get_music_data(name)
+                except MusicError.MusicNotFoundError:
+                    if raise_if_not_found:
+                        raise
+                    length, source = -1, ''
 
             if 'name' not in pargs:
                 pargs['name'] = name
