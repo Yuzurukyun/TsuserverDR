@@ -885,3 +885,4 @@
 
 ## (5.0.0-post2)
 * Fixed /randommusic failing halfway through
+* Fixed games not asserting properties of player groups after mutator calls
