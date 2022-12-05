@@ -886,3 +886,4 @@
 ## (5.0.0-post2)
 * Fixed /randommusic failing halfway through
 * Fixed games not asserting properties of player groups after mutator calls
+* Fixed trials being internally initialized incorrectly, which prevented commands such as /nsd_accept and /nsd_reject from running properly

@@ -1898,7 +1898,7 @@ class _Hub(_HubTrivialInherited):
         self.area_manager = AreaManager(server, hub=self)
         self.load_areas()
 
-        self.trial_manager = TrialManager(self)
+        self.trial_manager = TrialManager(server)
 
         self._password = str(secrets.randbelow(9000) + 1000)  # Cute trick to get 4-digit number
 
