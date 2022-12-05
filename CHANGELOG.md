@@ -882,3 +882,6 @@
 
 ## 221204a (5.0.0-post1)
 * Fixed players being unable to play a track via the music list if it is a track of their hub music list but not of their personal music list
+
+## (5.0.0-post2)
+* Fixed /randommusic failing halfway through
