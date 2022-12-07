@@ -887,3 +887,4 @@
 * Fixed /randommusic failing halfway through
 * Fixed games not asserting properties of player groups after mutator calls
 * Fixed trials being internally initialized incorrectly, which prevented commands such as /nsd_accept and /nsd_reject from running properly
+* Fixed players using clients that do not have a HIDE_CHARACTER argument in inbound IC messages (e.g. AO 2.10) occassionally failing to receive messages if they are in first person mode or not in forward sprites mode
