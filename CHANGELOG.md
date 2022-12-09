@@ -883,7 +883,7 @@
 ## 221204a (5.0.0-post1)
 * Fixed players being unable to play a track via the music list if it is a track of their hub music list but not of their personal music list
 
-## (5.0.0-post2)
+## 221208a (5.0.0-post2)
 * Fixed /randommusic failing halfway through
 * Fixed games not asserting properties of player groups after mutator calls
 * Fixed trials being internally initialized incorrectly, which prevented commands such as /nsd_accept and /nsd_reject from running properly
