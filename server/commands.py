@@ -7476,7 +7476,7 @@ def ooc_cmd_randommusic(client: ClientManager.Client, arg: str):
 
     # Find all music tracks
     music_names = list()
-    music_list = client.music_manager.get_music_data()
+    music_list = client.music_manager.get_music()
 
     for item in music_list:
         songs = item['songs']

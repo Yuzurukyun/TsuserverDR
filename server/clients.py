@@ -40,6 +40,7 @@ class DefaultDROProtocol(_Singleton):
     ALLOWS_INVISIBLE_BLANKPOSTS = True
     REPLACES_BASE_OPUS_FOR_MP3 = False
     ALLOWS_CHAR_LIST_RELOAD = True
+    HAS_HIDE_CHARACTER_AS_MS_ARGUMENT = True
 
     DECRYPTOR_OUTBOUND = [
         ('key', 34),  # 0
@@ -359,6 +360,7 @@ class ClientDRO1d0d0(DefaultDROProtocol):
     HAS_JOINED_AREA = False
     REPLACES_BASE_OPUS_FOR_MP3 = True
     ALLOWS_CHAR_LIST_RELOAD = False
+    HAS_HIDE_CHARACTER_AS_MS_ARGUMENT = False
 
     MS_INBOUND = [
         ('msg_type', ArgType.STR),  # 0
@@ -411,6 +413,7 @@ class ClientAO2d10(DefaultDROProtocol):
     ALLOWS_INVISIBLE_BLANKPOSTS = False
     REPLACES_BASE_OPUS_FOR_MP3 = True
     ALLOWS_CHAR_LIST_RELOAD = True
+    HAS_HIDE_CHARACTER_AS_MS_ARGUMENT = False
 
     MS_INBOUND = [
         ('msg_type', ArgType.STR),  # 0

@@ -1863,6 +1863,9 @@ class _Game(_GameTrivialInherited):
         self._timer_manager._check_structure()
         self._team_manager._check_structure()
 
+        # 5.
+        super()._check_structure()
+
     def __str__(self):
         """
         Return a string representation of this game.

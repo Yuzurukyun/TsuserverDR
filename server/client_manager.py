@@ -324,8 +324,8 @@ class ClientManager:
 
         def send_ic(
             self,
-            params: List = None,
-            sender: ClientManager.Client = None,
+            params: Dict[str, Any] = None,
+            sender: Union[ClientManager.Client, None] = None,
             bypass_text_replace: bool = False,
             bypass_deafened_starters: bool = False,
             use_last_received_sprites: bool = False,
@@ -509,7 +509,9 @@ class ClientManager:
                     pargs['pos'] = last_args['pos']
                     pargs['anim_type'] = last_args['anim_type']
                     pargs['flip'] = last_args['flip']
-                    pargs['hide_character'] = last_args['hide_character']
+                    # Only DRO 1.1.0+ has this
+                    if self.packet_handler.HAS_HIDE_CHARACTER_AS_MS_ARGUMENT:
+                        pargs['hide_character'] = last_args['hide_character']
 
                 # Regardless of anything, pairing is visually canceled while in first person
                 # so set them to default values
@@ -644,8 +646,8 @@ class ClientManager:
 
         def send_ic_others(
             self,
-            params: List = None,
-            sender: ClientManager.Client = None,
+            params: Dict[str, Any] = None,
+            sender: Union[ClientManager.Client, None] = None,
             bypass_text_replace: bool = False,
             bypass_deafened_starters: bool = False,
             use_last_received_sprites: bool = False,
