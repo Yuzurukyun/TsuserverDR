@@ -888,3 +888,8 @@
 * Fixed games not asserting properties of player groups after mutator calls
 * Fixed trials being internally initialized incorrectly, which prevented commands such as /nsd_accept and /nsd_reject from running properly
 * Fixed players using clients that do not have a HIDE_CHARACTER argument in inbound IC messages (e.g. AO 2.10) occassionally failing to receive messages if they are in first person mode or not in forward sprites mode
+
+## 221218a (5.0.0-post3)
+* Server logs now include the hub of the player that triggered the log message
+* Server logs now explicitly show when players change hubs
+* Fixed adding periods to a clock while the time is unknown failing halfway through
