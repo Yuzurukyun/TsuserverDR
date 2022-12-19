@@ -235,36 +235,38 @@ def log_error(msg: str, server: Union[TsuserverDR, None], errortype='P') -> str:
     return file
 
 
-def log_server(msg, client=None):
+def log_server(msg: str, client: ClientManager.Client = None):
     msg = f'{parse_client_info(client)}{msg}'
     logging.getLogger('server').info(msg)
 
 
-def log_print(msg, client=None):
+def log_print(msg: str, client: ClientManager.Client = None):
     msg = f'{parse_client_info(client)}{msg}'
     current_time = Constants.get_time_iso()
     print('{}: {}'.format(current_time, msg))
 
 
-def log_pdebug(msg, client=None):
+def log_pdebug(msg: str, client: ClientManager.Client = None):
     log_debug(msg, client=client)
     log_print(msg, client=client)
 
 
-def log_pserver(msg, client=None):
+def log_pserver(msg: str, client: ClientManager.Client = None):
     log_server(msg, client=client)
     log_print(msg, client=client)
 
 
-def parse_client_info(client):
+def parse_client_info(client: ClientManager.Client) -> str:
     if client is None:
         return ''
     hdid = client.get_hdid()
     ipid = client.get_ip()
     if ipid is None:
-        info = None
+        ipid = 'None'
     else:
-        info = '{:<15}'.format(ipid)
+        ipid = '{:<15}'.format(ipid)
+
+    output = f'[{ipid}][{hdid}][{client.id}][{client.hub.get_id()}]'
     if client.is_mod:
-        return '[{}][{}][{}][MOD]'.format(info, hdid, client.id)
-    return '[{}][{}][{}]'.format(info, hdid, client.id)
+        output += '[MOD]'
+    return output
