@@ -647,12 +647,12 @@ class TaskManager:
                             # Case added a period
                             formatted_time = '{}:00'.format('{0:02d}'.format(start))
                             client.send_ooc(f'(X) You have added period `{name}`. '
-                                            f'Period hour length: {new_period_length} seconds. '
+                                            f'Period hour length: {current_period[2]} seconds. '
                                             f'Period hour start: {formatted_time}.')
                             client.send_ooc_others(
                                 f'(X) {client.displayname} [{client.id}] has added period `{name}` '
                                 f'to their day cycle. '
-                                f'Period hour length: {new_period_length} seconds. '
+                                f'Period hour length: {current_period[2]} seconds. '
                                 f'Period hour start: {formatted_time} '
                                 f'({client.area.id}).',
                                 is_zstaff_flex=True, in_hub=hub,
