@@ -829,10 +829,14 @@ class ClientChangeArea:
         else:
             populated_message = ''
 
+        in_new_hub = ''
+        if old_area.hub != area.hub:
+            in_new_hub = f' in new hub {area.hub.get_numerical_id()}'
+
         client.send_ooc(f'Changed area to {area.name}.{populated_message}')
         logger.log_server(f'[{client.get_char_name()}]Changed area from '
                           f'{old_area.name} ({old_area.id}) to '
-                          f'{area.name} ({area.id}).', client)
+                          f'{area.name} ({area.id}){in_new_hub}.', client)
         found_something, ding_something = client.notify_change_area(
             area, old_dname, ignore_bleeding=ignore_bleeding,
             ignore_autopass=ignore_autopass)
