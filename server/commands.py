@@ -325,7 +325,32 @@ def ooc_cmd_autoglance(client: ClientManager.Client, arg: str):
                                f'{target.displayname} [{target.id}] ({client.area.id}).',
                                is_zstaff_flex=True, not_to={target})
 
+        
+def ooc_cmd_autogetmusic(client: ClientManager.Client, arg: str):
+    """
+    Automatically obtains current area music and play it for your own client.
+    This occurs each time you change an area. It is a toggle, turn it off or on.
+    Returns an error if music is not playing.
 
+    SYNTAX
+    /autogetmusic
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    >>> /getmusic
+    Returns "You turned on/off your auto-getmusic."
+    """
+
+    Constants.assert_command(client, arg, parameters='=0')
+
+    client.auto_getmusic = not client.auto_getmusic
+    status = {False: 'off', True: 'on'}
+
+    client.send_ooc(f'You turned {status[client.auto_getmusic]} your auto-getmusic.')
+
+    
 def ooc_cmd_autopass(client: ClientManager.Client, arg: str):
     """ (VARYING REQUIREMENTS)
     Toggles enter/leave messages being sent automatically or not to users in the current area
@@ -2989,8 +3014,30 @@ def ooc_cmd_getareas(client: ClientManager.Client, arg: str):
         raise ClientError('You are blind, so you cannot see anything.')
 
     client.send_area_info(client.area, -1, False, include_shownames=True)
+    
 
+def ooc_cmd_getmusic(client: ClientManager.Client, arg: str):
+    """
+    Obtains current area music and play it for your own client.
+    Returns an error if music is not playing.
 
+    SYNTAX
+    /getmusic
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    >>> /getmusic
+    Returns "Now Playing Current Area Music: <current_music_name>"
+    """
+
+    Constants.assert_command(client, arg, parameters='=0')
+
+    client.area.play_current_track(only_for=[client], force_same_restart=-1, has_clientside_music_looping_var=1)
+    client.send_ooc(f'Now Playing Current Area Music: {client.area.current_music}')
+
+    
 def ooc_cmd_gimp(client: ClientManager.Client, arg: str):
     """ (MOD ONLY)
     Gimps all IC messages of a user by client ID (number in brackets) or IPID (number in
@@ -4469,7 +4516,7 @@ def ooc_cmd_look(client: ClientManager.Client, arg: str):
         _, _, area_description, _, player_description = client.area.get_look_output_for(client)
 
         msg += (
-            f'=== Look results for {client.area.name} ===\r\n'
+            f'=== Look results for Area {client.area.id}: {client.area.name} ===\r\n'
             f'*About the people: you see {player_description}\r\n'
             f'*About the area: {area_description}'
             )
@@ -8081,7 +8128,32 @@ def ooc_cmd_scream_set_range(client: ClientManager.Client, arg: str):
                       .format(client.area.id, client.get_char_name(), client.area.name,
                               area_names), client)
 
+    
+def ooc_cmd_setgetmusic(client: ClientManager.Client, arg: str):
+    """
+    Sets area getmusic attribute to obtain current area music and play it for your own client.
+    This occurs each time you change to this area per area. It is a toggle, turn it off or on.
+    Returns an error if music is not playing.
 
+    SYNTAX
+    /setgetmusic
+
+    PARAMETERS
+    None
+
+    EXAMPLES
+    >>> /getmusic
+    Returns "You turned on/off this area's auto-getmusic."
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='=0')
+
+    client.area.change_to_getmusic = not client.area.change_to_getmusic
+    status = {False: 'off', True: 'on'}
+
+    client.send_ooc(f'You turned {status[client.area.change_to_getmusic]} this area\'s auto-getmusic.')
+    
+    
 def ooc_cmd_shoutlog(client: ClientManager.Client, arg: str):
     """ (STAFF ONLY)
     List the last 20 shouts performed in the current area (Hold it, Objection, Take That, etc.).
@@ -8550,6 +8622,38 @@ def ooc_cmd_summon(client: ClientManager.Client, arg: str):
                 for member in party.get_members():
                     member.send_ooc('{} was summoned off your party.'.format(old_displayname))
 
+                    
+def ooc_cmd_summon_all(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY+VARYING REQUIREMENTS)
+    Summons EVERYONE except Staff to an area within the hub by using the 
+    /summon command and moving them to a specific given area ID.
+    Area ID is the mandatory argument and this command requires only one.
+    All rules of /summon applies here, read ooc_cmd_summon for more details.
+
+    Note, again, this summons EVERYONE BUT the Staff, so be wary of this command.
+
+    SYNTAX
+    /summon_all {target_area}
+
+    PARAMETERS
+    {target_area}: Intended area to summon the user(s) to, by area ID or name
+
+    EXAMPLES
+    Assuming you want them to move to area 5...
+    /summon_all 5
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='=1')
+    areas = client.hub.area_manager.get_areas()
+    move_clients = list()
+    for area in areas:
+        for area_client in area.clients:
+            if not area_client.is_staff():
+                move_clients.append(area_client.id)
+
+    for moving_client_id in move_clients:
+        ooc_cmd_summon(client=client, arg=f"{moving_client_id} {arg}")
+        
 
 def ooc_cmd_st(client: ClientManager.Client, arg: str):
     """ (STAFF ONLY)
