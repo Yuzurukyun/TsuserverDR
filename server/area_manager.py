@@ -100,6 +100,7 @@ class AreaManager(AssetManager):
             self.current_music = ''
             self.current_music_player = ''
             self.current_music_source = ''
+            self.change_to_getmusic = False
             self.evi_list = EvidenceList()
             self.recorded_messages = []
             self.ic_lock = False
@@ -834,7 +835,19 @@ class AreaManager(AssetManager):
                                        is_zstaff_flex=True)
 
         def play_current_track(self, only_for: Set[ClientManager.Client] = None,
-                               force_same_restart: int = -1):
+                               force_same_restart: int = -1, 
+                               has_clientside_music_looping_var: int = 0):
+            """
+            Unsure how to document this, since there's no document from the get-go.
+            The new variable, has_clientside_music_looping_var, is there to bypass the server's check.
+            So, I don't break the server, I decided to do a variable for it, which, by default, is False.
+            Which means nothing really changes except when it's used as a command.
+            
+            But this functions as a way to play the current area's music track without the need of
+            replaying music or awaiting for it to loop serverside. Often, GMs leave out the duration
+            in the music yaml section, hence it will never loop. This function will help this dilemma.
+            """
+
             if not self.current_music:
                 raise AreaError('No music is currently playing.')
             if only_for is None:
@@ -849,7 +862,7 @@ class AreaManager(AssetManager):
                 pargs['force_same_restart'] = force_same_restart
 
             for player in only_for:
-                if player.packet_handler.HAS_CLIENTSIDE_MUSIC_LOOPING:
+                if has_clientside_music_looping_var:
                     player.send_music(**pargs)
 
         def add_to_shoutlog(self, client: ClientManager.Client, msg: str):
