@@ -146,6 +146,7 @@ class ClientManager:
             self.notecard = ''
             self.is_mindreader = False
             self.autoglance = False
+            self.auto_getmusic = False
 
             # Pairing stuff
             self.charid_pair = -1
@@ -1127,6 +1128,29 @@ class ClientManager:
                 ignore_followers=ignore_followers, ignore_checks=ignore_checks,
                 ignore_notifications=ignore_notifications, change_to=change_to,
                 more_unavail_chars=more_unavail_chars, from_party=from_party)
+            
+            # Wew, okay, here we go. This is definitely not the place to put it but
+            # it works. So um, etto.... bweh.
+            
+            def getmusic():
+                """
+                This checks if client and/or area has their current music variable True.
+                If True, it will change the music.
+                """
+
+                if not self.area.current_music:
+                    return
+
+                # These two sections ensure it won't run twice. I don't trust "or" statements.
+                if self.auto_getmusic:
+                    self.area.play_current_track(only_for=[self], force_same_restart=-1, has_clientside_music_looping_var=1)
+                    self.send_ooc(f'Now Playing Current Area Music: {self.area.current_music}')
+
+                elif self.area.change_to_getmusic:
+                    self.area.play_current_track(only_for=[self], force_same_restart=-1, has_clientside_music_looping_var=1)
+                    self.send_ooc(f'Now Playing Current Area Music: {self.area.current_music}')
+
+            getmusic()
 
         def post_area_changed(self, old_area: Union[None, AreaManager.Area], area: AreaManager.Area,
                               found_something: bool = False,
