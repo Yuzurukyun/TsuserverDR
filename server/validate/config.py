@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
 #           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
+#           (C) 2022 Tricky Leifa (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -50,7 +51,7 @@ class ValidateConfig(Validate):
             'announce_areas',
             'motd',
             'hostname',
-            ]
+        ]
 
         for field in mandatory_fields:
             if field not in contents:
@@ -90,7 +91,7 @@ class ValidateConfig(Validate):
             'gmpass5',
             'gmpass6',
             'gmpass7'
-            ]
+        ]
 
         for (i, password1) in enumerate(passwords):
             if contents[password1] is None:
@@ -138,7 +139,7 @@ class ValidateConfig(Validate):
             'spectator_name': str,
 
             'music_change_floodguard': dict,
-            }
+        }
 
         for (field_name, field_type) in expected_types.items():
             if field_name not in contents:
@@ -152,7 +153,7 @@ class ValidateConfig(Validate):
             'times_per_interval': int,
             'interval_length': (float, int),
             'mute_length': (float, int),
-            }
+        }
 
         for (field_name, field_type) in music_floodguard_types.items():
             if not isinstance(contents['music_change_floodguard'][field_name], field_type):
@@ -177,7 +178,7 @@ class ValidateConfig(Validate):
             'party_lights_timeout',
             'showname_max_length',
             'sneak_handicap',
-            }
+        }
 
         for field_name in nonnegative_number_fields:
             if field_name not in contents:
@@ -191,7 +192,7 @@ class ValidateConfig(Validate):
             'times_per_interval',
             'interval_length',
             'mute_length',
-            }
+        }
 
         for field_name in nonnegative_floodguard_fields:
             if contents['music_change_floodguard'][field_name] < 0:

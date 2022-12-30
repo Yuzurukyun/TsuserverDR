@@ -39,8 +39,8 @@ def _mandatory_python_version_check():
         # This deliberately uses .format() because f-strings were not available prior to
         # Python 3.7, and 3.7 < 3.9
         msg = ('This version of TsuserverDR requires at least Python 3.9. You currently have '
-                '{}. Please refer to README.md for instructions on updating.'
-                .format(current_python_simple))
+               '{}. Please refer to README.md for instructions on updating.'
+               .format(current_python_simple))
         raise RuntimeError(msg)
 
 
@@ -97,12 +97,12 @@ def _pre_launch_checks():
         # If not, check if config_sample folder exists (common setup mistake)
         if os.path.exists('config_sample'):
             msg = ('Unable to locate the `config` folder. However, a `config_sample` folder '
-                    'was found. Please rename `config_sample` to `config` as instructed in the '
-                    'README and try again.')
+                   'was found. Please rename `config_sample` to `config` as instructed in the '
+                   'README and try again.')
             raise RuntimeError(msg)
         # Otherwise, something went wrong.
         msg = ('Unable to locate the `config` folder. Please make sure the folder exists and '
-                'is named correctly and try again.')
+               'is named correctly and try again.')
         raise RuntimeError(msg)
 
     _mandatory_python_version_check()

@@ -34,6 +34,7 @@ from server import logger
 if typing.TYPE_CHECKING:
     from server.tsuserver import TsuserverDR
 
+
 class MasterServerClient():
     """
     Worker that advertises the server's presence to the AO master server.

@@ -10,3 +10,4 @@
 /.pylint.d/
 /**/.pylint.d/
 /.vscode/
+/.vs/

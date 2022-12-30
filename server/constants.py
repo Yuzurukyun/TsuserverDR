@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
 #           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
+#           (C) 2022 Tricky Leifa (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -52,6 +53,31 @@ if typing.TYPE_CHECKING:
     from server.hub_manager import _Hub
     from server.tsuserver import TsuserverDR
 
+"""
+MusicFade lets the client know how to behave when it receives a new song to play.
+NO_FADE: The old song ends abruptly and the new song immediately begins playing.
+FADE_IN: The new song will fade in as it begins to play.
+FADE_OUT: The old song will fade out before the new song begins to play.
+FADE_MIX: A combination of FadeIn and FadeOut.
+"""
+
+
+class FadeType(Enum):
+    NO_FADE = 0
+    FADE_IN = 1
+    FADE_OUT = 2
+    FADE_MIX = 3
+
+    # aliases
+    IN = FADE_IN
+    OUT = FADE_OUT
+    MIX = FADE_MIX
+
+    @staticmethod
+    def from_str(in_str: str):
+        return str.upper() in FadeType or FadeType.NO_FADE
+
+
 class ArgType(Enum):
     STR = 1
     STR_OR_EMPTY = 2
@@ -73,8 +99,10 @@ class TargetType(Enum):
 
 
 class Effects(Enum):
-    B = ('Blindness', 'blinded', lambda client, value: client.change_blindness(value))
-    D = ('Deafness', 'deafened', lambda client, value: client.change_deafened(value))
+    B = ('Blindness', 'blinded', lambda client,
+         value: client.change_blindness(value))
+    D = ('Deafness', 'deafened', lambda client,
+         value: client.change_deafened(value))
     G = ('Gagged', 'gagged', lambda client, value: client.change_gagged(value))
 
     @property
@@ -151,7 +179,8 @@ class FileValidity:
             # environment variable); else, the typical root directory.
             root_dirname = os.environ.get('HOMEDRIVE', 'C:') \
                 if sys.platform == 'win32' else os.path.sep
-            assert os.path.isdir(root_dirname)   # ...Murphy and her ironclad Law
+            # ...Murphy and her ironclad Law
+            assert os.path.isdir(root_dirname)
 
             # Append a path separator to this directory if needed.
             root_dirname = root_dirname.rstrip(os.path.sep) + os.path.sep
@@ -268,18 +297,18 @@ class Constants():
     @staticmethod
     def decode_ao_packet(params: List[str]) -> List[str]:
         new_params = [
-                (arg.replace('<num>', '#').replace('<percent>', '%')
-                    .replace('<dollar>', '$').replace('<and>', '&'))
-                for arg in params
+            (arg.replace('<num>', '#').replace('<percent>', '%')
+             .replace('<dollar>', '$').replace('<and>', '&'))
+            for arg in params
         ]
         return new_params
 
     @staticmethod
     def encode_ao_packet(params: List) -> List[str]:
         new_params = [
-             (str(arg).replace('#', '<num>').replace('%', '<percent>')
-                      .replace('$', '<dollar>').replace('&', '<and>'))
-             for arg in params
+            (str(arg).replace('#', '<num>').replace('%', '<percent>')
+             .replace('$', '<dollar>').replace('&', '<and>'))
+            for arg in params
         ]
         return new_params
 
@@ -436,7 +465,8 @@ class Constants():
                                   '{0:02d}'.format(int(length % 60)))
         else:
             text = "{}:{}:{}".format(int(length//3600),
-                                     '{0:02d}'.format(int((length % 3600) // 60)),
+                                     '{0:02d}'.format(
+                                         int((length % 3600) // 60)),
                                      '{0:02d}'.format(int(length % 60)))
         return text
 
@@ -454,24 +484,31 @@ class Constants():
                        split_spaces=None, split_commas=False):
         if is_staff is not None:
             if is_staff is True and not client.is_staff():
-                raise ClientError.UnauthorizedError('You must be authorized to do that.')
+                raise ClientError.UnauthorizedError(
+                    'You must be authorized to do that.')
             if is_staff is False and client.is_staff():
-                raise ClientError.UnauthorizedError('You have too high a rank to do that.')
+                raise ClientError.UnauthorizedError(
+                    'You have too high a rank to do that.')
 
         if is_officer is not None:
             if is_officer is True and not client.is_officer():
-                raise ClientError.UnauthorizedError('You must be authorized to do that.')
+                raise ClientError.UnauthorizedError(
+                    'You must be authorized to do that.')
             if is_officer is False and client.is_officer():
-                raise ClientError.UnauthorizedError('You have too high a rank to do that.')
+                raise ClientError.UnauthorizedError(
+                    'You have too high a rank to do that.')
 
         if is_mod is not None:
             if is_mod is True and not client.is_mod:
-                raise ClientError.UnauthorizedError('You must be authorized to do that.')
+                raise ClientError.UnauthorizedError(
+                    'You must be authorized to do that.')
             if is_mod is False and client.is_mod():
-                raise ClientError.UnauthorizedError('You have too high a rank to do that.')
+                raise ClientError.UnauthorizedError(
+                    'You have too high a rank to do that.')
 
         if parameters is not None:
-            symbol, num = parameters[0], [int(i) for i in parameters[1:].split('-')]
+            symbol, num = parameters[0], [int(i)
+                                          for i in parameters[1:].split('-')]
             # Set up default values
             if (num[0] > 0 or symbol == '&') and split_spaces is None and split_commas is False:
                 split_spaces = True
@@ -508,7 +545,8 @@ class Constants():
                     error = ('This command has from {} argument{}.', expect)
 
             if error:
-                raise ArgumentError(error[0].format(error[1], 's' if error[1] != 1 else ''))
+                raise ArgumentError(error[0].format(
+                    error[1], 's' if error[1] != 1 else ''))
 
     @staticmethod
     def build_cond(
@@ -517,7 +555,8 @@ class Constants():
         is_officer: Union[bool, None] = None,
         is_mod: Union[bool, None] = None,
         in_hub: Union[bool, _Hub, Set[_Hub], None] = None,
-        in_area: Union[bool, AreaManager.Area, Set[AreaManager.Area], None] = None,
+        in_area: Union[bool, AreaManager.Area,
+                       Set[AreaManager.Area], None] = None,
         not_to: Union[Set[ClientManager.Client], None] = None,
         part_of: Union[Set[ClientManager.Client], None] = None,
         to_blind: Union[bool, None] = None,
@@ -525,7 +564,7 @@ class Constants():
         is_zstaff: Union[bool, AreaManager.Area, None] = None,
         is_zstaff_flex: Union[bool, AreaManager.Area, None] = None,
         pred: Callable[[ClientManager.Client], bool] = None,
-        ) -> Callable[[ClientManager.Client], bool]:
+    ) -> Callable[[ClientManager.Client], bool]:
         """
         Acceptable conditions:
             is_staff: If target is GM, CM or Mod
@@ -554,7 +593,8 @@ class Constants():
         elif is_staff is None:
             pass
         else:
-            raise KeyError('Invalid argument for build_cond is_staff: {}'.format(is_staff))
+            raise KeyError(
+                'Invalid argument for build_cond is_staff: {}'.format(is_staff))
 
         if is_officer is True:
             conditions.append(lambda c: c.is_officer())
@@ -563,7 +603,8 @@ class Constants():
         elif is_officer is None:
             pass
         else:
-            raise KeyError('Invalid argument for build_cond is_officer: {}'.format(is_officer))
+            raise KeyError(
+                'Invalid argument for build_cond is_officer: {}'.format(is_officer))
 
         if is_mod is True:
             conditions.append(lambda c: c.is_mod)
@@ -572,33 +613,38 @@ class Constants():
         elif is_mod is None:
             pass
         else:
-            raise KeyError('Invalid argument for build_cond is_mod: {}'.format(is_mod))
+            raise KeyError(
+                'Invalid argument for build_cond is_mod: {}'.format(is_mod))
 
         if in_hub is True:
             conditions.append(lambda c: c.hub == sender.hub)
         elif in_hub is False:
             conditions.append(lambda c: c.area != sender.hub)
-        elif isinstance(in_hub, type(sender.hub)):  # Lazy way of finding if in_hub is hub obj
+        # Lazy way of finding if in_hub is hub obj
+        elif isinstance(in_hub, type(sender.hub)):
             conditions.append(lambda c: c.hub == in_hub)
         elif isinstance(in_hub, set):
             conditions.append(lambda c: c.hub in in_hub)
         elif in_hub is None:
             pass
         else:
-            raise KeyError('Invalid argument for build_cond in_hub: {}'.format(in_hub))
+            raise KeyError(
+                'Invalid argument for build_cond in_hub: {}'.format(in_hub))
 
         if in_area is True:
             conditions.append(lambda c: c.area == sender.area)
         elif in_area is False:
             conditions.append(lambda c: c.area != sender.area)
-        elif isinstance(in_area, type(sender.area)):  # Lazy way of finding if in_area is area obj
+        # Lazy way of finding if in_area is area obj
+        elif isinstance(in_area, type(sender.area)):
             conditions.append(lambda c: c.area == in_area)
         elif isinstance(in_area, set):
             conditions.append(lambda c: c.area in in_area)
         elif in_area is None:
             pass
         else:
-            raise KeyError('Invalid argument for build_cond in_area: {}'.format(in_area))
+            raise KeyError(
+                'Invalid argument for build_cond in_area: {}'.format(in_area))
 
         if part_of is not None:
             conditions.append(lambda c: c in part_of)
@@ -613,7 +659,8 @@ class Constants():
         elif to_blind is None:
             pass
         else:
-            raise KeyError('Invalid argument for build_cond to_blind: {}'.format(to_blind))
+            raise KeyError(
+                'Invalid argument for build_cond to_blind: {}'.format(to_blind))
 
         if to_deaf is True:
             conditions.append(lambda c: c.is_deaf)
@@ -622,7 +669,8 @@ class Constants():
         elif to_deaf is None:
             pass
         else:
-            raise KeyError('Invalid argument for build_cond to_deaf: {}'.format(to_deaf))
+            raise KeyError(
+                'Invalid argument for build_cond to_deaf: {}'.format(to_deaf))
 
         # This is a strict parameter.
         # To be precise, is_zstaff expects the sender to be watching a zone or be in a zone, or
@@ -633,16 +681,20 @@ class Constants():
             # NO notification is sent.
             conditions.append(lambda c: c.is_staff() and c.zone_watched)
             if sender.zone_watched:
-                conditions.append(lambda c: (c.zone_watched == sender.zone_watched))
+                conditions.append(lambda c: (
+                    c.zone_watched == sender.zone_watched))
             elif sender.area.in_zone:
-                conditions.append(lambda c: (c.zone_watched == sender.area.in_zone))
+                conditions.append(lambda c: (
+                    c.zone_watched == sender.area.in_zone))
             else:
                 conditions.append(lambda c: False)
         elif is_zstaff is False:
             if sender.zone_watched:
-                conditions.append(lambda c: (c.zone_watched != sender.zone_watched))
+                conditions.append(lambda c: (
+                    c.zone_watched != sender.zone_watched))
             elif sender.area.in_zone:
-                conditions.append(lambda c: (c.zone_watched != sender.area.in_zone))
+                conditions.append(lambda c: (
+                    c.zone_watched != sender.area.in_zone))
             else:
                 conditions.append(lambda c: False)
         elif isinstance(is_zstaff, sender.hub.area_manager.Area):
@@ -650,13 +702,15 @@ class Constants():
             # is part of a zone. Otherwise, NO notification is sent.
             target_zone = is_zstaff.in_zone
             if target_zone:
-                conditions.append(lambda c: c.is_staff() and c.zone_watched == target_zone)
+                conditions.append(lambda c: c.is_staff()
+                                  and c.zone_watched == target_zone)
             else:
                 conditions.append(lambda c: False)
         elif is_zstaff is None:
             pass
         else:
-            raise KeyError('Invalid argument for build_cond is_zstaff: {}'.format(is_zstaff))
+            raise KeyError(
+                'Invalid argument for build_cond is_zstaff: {}'.format(is_zstaff))
 
         # This is a less strict parameter. The sender may or may not be in a zone (or the given
         # area may not be in a zone), in which case it will ignore zone limitations and effectively
@@ -671,22 +725,27 @@ class Constants():
             # NO notification is sent.
             conditions.append(lambda c: c.is_staff())
             if sender.zone_watched:
-                conditions.append(lambda c: (c.zone_watched == sender.zone_watched))
+                conditions.append(lambda c: (
+                    c.zone_watched == sender.zone_watched))
             elif sender.area.in_zone:
-                conditions.append(lambda c: (c.zone_watched == sender.area.in_zone))
+                conditions.append(lambda c: (
+                    c.zone_watched == sender.area.in_zone))
         elif is_zstaff_flex is False:
             if sender.zone_watched:
-                condition1 = lambda c: (c.zone_watched != sender.zone_watched)
+                def condition1(c): return (
+                    c.zone_watched != sender.zone_watched)
             elif sender.area.in_zone:
-                condition1 = lambda c: (c.zone_watched != sender.area.in_zone)
+                def condition1(c): return (
+                    c.zone_watched != sender.area.in_zone)
             else:
-                condition1 = lambda c: False
+                def condition1(c): return False
             conditions.append(lambda c: condition1(c) or not c.is_staff())
         elif isinstance(is_zstaff_flex, sender.hub.area_manager.Area):
             # Only staff members who are watching the area's zone will receive it, PROVIDED the area
             # is part of a zone. Otherwise, NO notification is sent.
             target_zone = is_zstaff_flex.in_zone
-            conditions.append(lambda c: c.is_staff() and c.zone_watched == target_zone)
+            conditions.append(lambda c: c.is_staff()
+                              and c.zone_watched == target_zone)
         elif is_zstaff_flex is None:
             pass
         else:
@@ -696,7 +755,7 @@ class Constants():
         if pred is not None:
             conditions.append(pred)
 
-        cond = lambda c: all([cond(c) for cond in conditions])
+        def cond(c): return all([cond(c) for cond in conditions])
 
         return cond
 
@@ -748,7 +807,8 @@ class Constants():
                                     'positive integers.')
 
             if not 1 <= num_dice <= max_numdice:
-                raise ArgumentError('Number of rolls must be between 1 and {}.'.format(max_numdice))
+                raise ArgumentError(
+                    'Number of rolls must be between 1 and {}.'.format(max_numdice))
             if not 1 <= num_faces <= max_numfaces:
                 raise ArgumentError('Number of faces must be between 1 and {}.'
                                     .format(max_numfaces))
@@ -770,7 +830,8 @@ class Constants():
 
         for _ in range(num_dice):
             divzero_attempts = 0
-            while True:  # Roll until no division by zeroes happen (or it gives up)
+            # Roll until no division by zeroes happen (or it gives up)
+            while True:
                 # raw_roll: original roll
                 # mid_roll: result after modifiers (if any) have been applied to original roll
                 # final_roll: result after previous result was capped between 1 and max_numfaces
@@ -802,13 +863,15 @@ class Constants():
                                 raise ArgumentError('The modifier must take numbers within the '
                                                     'computation limit of the server.')
                         except ValueError:
-                            raise ArgumentError('The modifier has a syntax error.')
+                            raise ArgumentError(
+                                'The modifier has a syntax error.')
 
                     for j in range(10):
                         # Deals with inputs like 3(r-1), which act like Python functions.
                         # Needed to be done here to prevent Python 3.8 from raising SyntaxWarning
                         if '{}('.format(j) in aux_modifier[:-1]:
-                            raise ArgumentError('The modifier has a syntax error.')
+                            raise ArgumentError(
+                                'The modifier has a syntax error.')
 
                     try:
                         # By this point it should be 'safe' to run eval
@@ -818,7 +881,8 @@ class Constants():
                     except ZeroDivisionError:
                         divzero_attempts += 1
                         if divzero_attempts == MAXDIVZERO_ATTEMPTS:
-                            raise ArgumentError('The modifier causes divisions by zero too often.')
+                            raise ArgumentError(
+                                'The modifier causes divisions by zero too often.')
                         continue
                 break
 
@@ -858,7 +922,8 @@ class Constants():
         """
 
         split_values = csv_values.split(', ')
-        for (i, split_value) in enumerate(split_values):  # Ah, escape characters... again...
+        # Ah, escape characters... again...
+        for (i, split_value) in enumerate(split_values):
             split_values[i] = split_value.replace(',\\', ',')
 
         if split_values in [list(), ['']]:
@@ -870,7 +935,8 @@ class Constants():
         length = random.randint(5, 9)
         letters = ['g', 'h', 'm', 'r']
         starters = ['G', 'M']
-        message = random.choice(starters) + "".join([random.choice(letters) for _ in range(length)])
+        message = random.choice(
+            starters) + "".join([random.choice(letters) for _ in range(length)])
         return message
 
     @staticmethod
@@ -904,15 +970,19 @@ class Constants():
             # wants ',\' as part of their actual area name. If you are that person... just... why
             try:
                 target = areas[i].replace(',\\', ',')
-                area_list.append(client.hub.area_manager.get_area_by_name(target))
+                area_list.append(
+                    client.hub.area_manager.get_area_by_name(target))
             except AreaError:
                 try:
-                    area_list.append(client.hub.area_manager.get_area_by_name(areas[i]))
+                    area_list.append(
+                        client.hub.area_manager.get_area_by_name(areas[i]))
                 except AreaError:
                     try:
-                        area_list.append(client.hub.area_manager.get_area_by_id(int(areas[i])))
+                        area_list.append(
+                            client.hub.area_manager.get_area_by_id(int(areas[i])))
                     except Exception:
-                        raise ArgumentError('Could not parse area `{}`.'.format(areas[i]))
+                        raise ArgumentError(
+                            'Could not parse area `{}`.'.format(areas[i]))
         return area_list
 
     @staticmethod
@@ -924,14 +994,16 @@ class Constants():
         if not effects:
             raise ArgumentError('Expected effects.')
         if len({x.lower() for x in effects}) != len([x.lower() for x in effects]):
-            raise ArgumentError('Effect list cannot contained repeated characters.')
+            raise ArgumentError(
+                'Effect list cannot contained repeated characters.')
 
         parsed_effects = set()
         for effect_letter in effects:
             try:
                 parsed_effects.add(Effects[effect_letter.capitalize()])
             except KeyError:
-                raise ArgumentError('Invalid effect letter `{}`.'.format(effect_letter))
+                raise ArgumentError(
+                    'Invalid effect letter `{}`.'.format(effect_letter))
 
         return parsed_effects
 
@@ -944,7 +1016,8 @@ class Constants():
         if identifier == '':
             raise ArgumentError('Expected client ID.')
         if not identifier.isdigit():
-            raise ArgumentError('`{}` does not look like a valid client ID.'.format(identifier))
+            raise ArgumentError(
+                '`{}` does not look like a valid client ID.'.format(identifier))
 
         targets = client.server.client_manager.get_targets(client, TargetType.ID,
                                                            int(identifier), False)
@@ -972,14 +1045,16 @@ class Constants():
 
         idnt = int(identifier)
         # First try and match by ID
-        targets = client.server.client_manager.get_targets(client, TargetType.ID, idnt, False)
+        targets = client.server.client_manager.get_targets(
+            client, TargetType.ID, idnt, False)
         if targets:
             return targets
 
         # Otherwise, try and match by IPID
         # PROVIDED the client is CM or mod
         if client.is_officer():
-            targets = client.server.client_manager.get_targets(client, TargetType.IPID, idnt, False)
+            targets = client.server.client_manager.get_targets(
+                client, TargetType.IPID, idnt, False)
             if targets:
                 return targets
 
@@ -1051,7 +1126,8 @@ class Constants():
 
     @staticmethod
     def remove_letters(message: str, target: str) -> str:
-        message = re.sub("[{}]".format(target), "", message, flags=re.IGNORECASE)
+        message = re.sub("[{}]".format(target), "",
+                         message, flags=re.IGNORECASE)
         return re.sub(r"\s+", " ", message)
 
     @staticmethod
@@ -1069,7 +1145,8 @@ class Constants():
 
         def add_range():
             if current_range[0] != current_range[1]:
-                area_ranges.append('{}-{}'.format(current_range[0], current_range[1]))
+                area_ranges.append(
+                    '{}-{}'.format(current_range[0], current_range[1]))
             else:
                 area_ranges.append('{}'.format(current_range[0]))
 
@@ -1243,7 +1320,7 @@ class Constants():
             '\u200d',
             '\u2060',
             '\ufeff',
-            ]
+        ]
 
         for char in illegal_characters:
             if char in text:

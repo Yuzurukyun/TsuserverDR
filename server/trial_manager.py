@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
 #           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
+#           (C) 2022 Tricky Leifa (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,7 +27,7 @@ from __future__ import annotations
 
 import typing
 
-from server.exceptions import NonStopDebateError, TrialError, HubbedGameError
+from server.exceptions import               NonStopDebateError, TrialError, HubbedGameError
 from server.hubbedgame_manager import _HubbedGame, HubbedGameManager
 from server.trialminigame import _TrialMinigame, TRIALMINIGAMES
 from server.nonstopdebate import _NonStopDebate
@@ -40,6 +41,7 @@ if typing.TYPE_CHECKING:
     from server.hub_manager import _Hub
     from server.timer_manager import Timer
     from server.tsuserver import TsuserverDR
+
 
 class _TrialTrivialInherited(_HubbedGame):
     """
@@ -139,7 +141,7 @@ class _TrialTrivialInherited(_HubbedGame):
     def get_players(
         self,
         cond: Callable[[ClientManager.Client, ], bool] = None
-        ) -> Set[ClientManager.Client]:
+    ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of players of this trial that satisfy a
         condition if given.
@@ -260,7 +262,7 @@ class _TrialTrivialInherited(_HubbedGame):
     def get_invitations(
         self,
         cond: Callable[[ClientManager.Client, ], bool] = None
-        ) -> Set[ClientManager.Client]:
+    ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of invited users of this trial that satisfy a
         condition if given.
@@ -441,7 +443,7 @@ class _TrialTrivialInherited(_HubbedGame):
     def get_leaders(
         self,
         cond: Callable[[ClientManager.Client, ], bool] = None
-        ) -> Set[ClientManager.Client]:
+    ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of leaders of this trial that satisfy a condition
         if given.
@@ -464,7 +466,7 @@ class _TrialTrivialInherited(_HubbedGame):
     def get_regulars(
         self,
         cond: Callable[[ClientManager.Client, ], bool] = None
-        ) -> Set[ClientManager.Client]:
+    ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of players of this trial that are regulars and
         satisfy a condition if given.
@@ -671,7 +673,7 @@ class _TrialTrivialInherited(_HubbedGame):
         max_value: Union[float, None] = None,
         auto_restart: bool = False,
         auto_destroy: bool = True
-        ) -> Timer:
+    ) -> Timer:
         """
         Create a new timer managed by this trial with given parameters.
 
@@ -738,7 +740,7 @@ class _TrialTrivialInherited(_HubbedGame):
         max_value: Union[float, None] = None,
         auto_restart: bool = False,
         auto_destroy: bool = True
-        ) -> Timer:
+    ) -> Timer:
         """
         Create a new timer managed by this trial with given parameters.
 
@@ -935,7 +937,7 @@ class _TrialTrivialInherited(_HubbedGame):
         require_invitations: bool = False,
         require_players: bool = True,
         require_leaders: bool = True
-        ) -> _Team:
+    ) -> _Team:
         """
         Create a new team managed by this trial.
 
@@ -997,7 +999,7 @@ class _TrialTrivialInherited(_HubbedGame):
         require_invitations: bool = False,
         require_players: bool = True,
         require_leaders: bool = True
-        ) -> _Team:
+    ) -> _Team:
         """
         Create a new team managed by this trial.
 
@@ -1520,7 +1522,7 @@ class _TrialTrivialInherited(_HubbedGame):
         self,
         player: ClientManager.Client,
         contents: Dict[str, Any] = None
-        ):
+    ):
         """
         Default callback for trial player signaling it wants to check if sending an IC
         message is appropriate. The IC arguments can be passed by reference, so this also serves as
@@ -1548,7 +1550,7 @@ class _TrialTrivialInherited(_HubbedGame):
         self,
         player: ClientManager.Client,
         contents: Dict[str, Any] = None
-        ):
+    ):
         """
         Default callback for trial player signaling it has sent an IC message.
         This callback is executed after the server is done making all modifications to the MS packet
@@ -1576,7 +1578,7 @@ class _TrialTrivialInherited(_HubbedGame):
         area: AreaManager.Area,
         client: ClientManager.Client = None,
         contents: Dict[str, Any] = None
-        ):
+    ):
         """
         Default callback for trial area signaling a client in the area sent an IC message.
         Unlike the ClientManager.Client callback for send_ic_check, this one is triggered
@@ -1620,6 +1622,7 @@ class _TrialTrivialInherited(_HubbedGame):
         """
 
         super()._on_area_destroyed(area)
+
 
 class _Trial(_TrialTrivialInherited):
     """
@@ -1690,7 +1693,6 @@ class _Trial(_TrialTrivialInherited):
     # 4. For each influence and focus value in the player to influence and player to focus maps,
     # they are a value between 0 and 10 inclusive.
     # 5. The invariants from the parent class GameWithArea are satisfied.
-
 
     def __init__(
         self,
@@ -1821,7 +1823,7 @@ class _Trial(_TrialTrivialInherited):
 
         self.listener.update_events({
             'client_inbound_rt': self._on_client_inbound_rt,
-            })
+        })
         self.manager: TrialManager  # Setting for typing
 
     def get_type_name(self) -> str:
@@ -1953,7 +1955,7 @@ class _Trial(_TrialTrivialInherited):
         self.introduce_user(user)
         self.publisher.publish('trial_player_added', {
             'player': user,
-            })
+        })
 
     def unchecked_remove_player(self, user: ClientManager.Client):
         """
@@ -2172,7 +2174,6 @@ class _Trial(_TrialTrivialInherited):
             If the new influence is below the trial minimum or above the trial maximum.
 
         """
-
 
         if user not in self.get_players():
             raise TrialError.UserNotPlayerError
@@ -2490,7 +2491,7 @@ class _Trial(_TrialTrivialInherited):
         autoadd_on_creation_existing_users: bool = False,
         autoadd_on_trial_player_add: Union[bool, None] = None,
         timer_start_value: float = 300,
-        ) -> _NonStopDebate:
+    ) -> _NonStopDebate:
         """
         Create a new NSD managed by this trial. Overriden default parameters include:
         * An NSD does not require leaders.
@@ -2833,7 +2834,7 @@ class _Trial(_TrialTrivialInherited):
         old_displayname: str = None,
         ignore_bleeding: bool = False,
         ignore_autopass: bool = False,
-        ):
+    ):
         """
         If a player left to an area not part of the trial, remove the player and warn them and
         the leaders of the trial.
@@ -2903,7 +2904,7 @@ class _Trial(_TrialTrivialInherited):
         old_displayname: str = None,
         ignore_bleeding: bool = False,
         ignore_autopass: bool = False,
-        ):
+    ):
         """
         If a non-player entered, warn them and the leaders of the trial.
 
@@ -3000,7 +3001,7 @@ class _Trial(_TrialTrivialInherited):
         old_char_name: str = '',
         new_char_id: int = -1,
         new_char_name: str = '',
-        ):
+    ):
         """
         It checks if the player is now no longer having a participant character. If that is
         the case and the trial requires all players have participant characters, the player is
@@ -3177,7 +3178,7 @@ class _Trial(_TrialTrivialInherited):
                 assert player in self.get_players(), (
                     f'For trial {_id}, expected that player {player} of its minigame '
                     f'{game} was a player of the trial, found that was not the case. || {self}'
-                    )
+                )
 
         # 2.
         for game in self.get_minigames():
@@ -3185,7 +3186,7 @@ class _Trial(_TrialTrivialInherited):
                 assert area in self.get_areas(), (
                     f'For trial {_id}, expected that area {area} of its minigame '
                     f'{game} was an area of the trial, found that was not the case. || {self}'
-                    )
+                )
 
         # 3.
         for player in self.get_players():
@@ -3193,13 +3194,13 @@ class _Trial(_TrialTrivialInherited):
                 f'For trial {_id}, expected that player {player} of the trial appeared in the '
                 f'player to influence map of the trial {self._player_to_influence}, found that was '
                 f'not the case. || {self}'
-                )
+            )
 
             assert player.id in self._player_to_focus, (
                 f'For trial {_id}, expected that player {player} of the trial appeared in the '
                 f'player to focus map of the trial {self._player_to_focus}, found that was '
                 f'not the case. || {self}'
-                )
+            )
 
         player_ids = {player.id for player in self.get_players()}
         for player_id in self._player_to_influence:
@@ -3207,14 +3208,14 @@ class _Trial(_TrialTrivialInherited):
                 f'For trial {_id}, expected that player with ID {player_id} that appeared '
                 f'in the player to influence map of the trial {self._player_to_influence} was '
                 f'a player of the trial, found that was not the case. || {self}'
-                )
+            )
 
         for player_id in self._player_to_focus:
             assert player_id in player_ids, (
                 f'For trial {_id}, expected that player with ID {player_id} that appeared '
                 f'in the player to focus map of the trial {self._player_to_focus} was '
                 f'a player of the trial, found that was not the case. || {self}'
-                )
+            )
 
         # 4.
         for (player_id, influences) in self._player_to_influence.items():
@@ -3223,7 +3224,7 @@ class _Trial(_TrialTrivialInherited):
                 f'3-tuple of current influence, min influence and max influence associated '
                 f'to it in the player to influence map, found it was {influences} instead. '
                 f'|| {self}'
-                )
+            )
 
             influence, min_influence, max_influence = self._player_to_influence[player_id]
             all_numbers = [isinstance(value, (int, float)) for value in influences]
@@ -3231,20 +3232,20 @@ class _Trial(_TrialTrivialInherited):
                 f'For trial {_id}, expected that the player with ID {player_id} had a '
                 f'3-tuple of floats associated to it in the player to influence map, found it '
                 f'was {influences} instead. || {self}'
-                )
+            )
 
             assert min_influence <= influence <= max_influence, (
                 f'For trial {_id}, expected that player with ID {player_id} had an influence '
                 f'value between {min_influence} and {max_influence} inclusive, '
                 f'found it was {influence} instead. || {self}'
-                )
+            )
 
         for (player_id, focuses) in self._player_to_focus.items():
             assert isinstance(focuses, tuple) and len(focuses) == 3, (
                 f'For trial {_id}, expected that the player with ID {player_id} had a '
                 f'3-tuple of current focus, min focus and max focus associated '
                 f'to it in the player to focus map, found it was {focuses} instead. || {self}'
-                )
+            )
 
             focus, min_focus, max_focus = self._player_to_focus[player_id]
             all_numbers = [isinstance(value, (int, float)) for value in focuses]
@@ -3252,13 +3253,13 @@ class _Trial(_TrialTrivialInherited):
                 f'For trial {_id}, expected that the player with ID {player_id} had a '
                 f'3-tuple of floats associated to it in the player to focus map, found it '
                 f'was {focuses} instead. || {self}'
-                )
+            )
 
             assert min_focus <= focus <= max_focus, (
                 f'For trial {self}, expected that player with ID {player_id} had an focus '
                 f'value between {min_focus} and {max_focus} inclusive, '
                 f'found it was {focus} instead. || {self}'
-                )
+            )
 
         # 5.
         super()._check_structure()
@@ -3313,6 +3314,7 @@ class _Trial(_TrialTrivialInherited):
                 f'unmanaged={self.is_unmanaged()}), '
                 f')')
 
+
 class _TrialManagerTrivialInherited(HubbedGameManager):
     """
     This class should not be instantiated.
@@ -3339,7 +3341,7 @@ class _TrialManagerTrivialInherited(HubbedGameManager):
         # new
         autoadd_minigame_on_player_added: bool = False,
         **kwargs: Any,
-        ) -> _Trial:
+    ) -> _Trial:
         """
         Create a new trial managed by this manager. Overriden default parameters include:
         * A trial does not require leaders.
@@ -3434,7 +3436,7 @@ class _TrialManagerTrivialInherited(HubbedGameManager):
             hub=hub,
             autoadd_minigame_on_player_added=autoadd_minigame_on_player_added,
             **kwargs,
-            )
+        )
         self._check_structure()
 
         return trial
@@ -3482,7 +3484,7 @@ class _TrialManagerTrivialInherited(HubbedGameManager):
     def unchecked_delete_managee(
         self,
         managee: _Trial
-        ) -> Tuple[str, Set[ClientManager.Client]]:
+    ) -> Tuple[str, Set[ClientManager.Client]]:
         """
         Delete a trial managed by this manager, so all its players no longer belong to
         this trial.
@@ -3726,7 +3728,7 @@ class _TrialManagerTrivialInherited(HubbedGameManager):
     def find_area_concurrent_limiting_managee(
         self,
         area: AreaManager.Area
-        ) -> Union[_Trial, None]:
+    ) -> Union[_Trial, None]:
         """
         For area `area`, find a trial `most_restrictive_game` managed by this manager
         such that, if `area` were to be added to another trial managed by this manager,
@@ -3779,7 +3781,7 @@ class _TrialManagerTrivialInherited(HubbedGameManager):
     def find_player_concurrent_limiting_managee(
         self,
         user: ClientManager.Client
-        ) -> Union[_Trial, None]:
+    ) -> Union[_Trial, None]:
         """
         For user `user`, find a trial `most_restrictive_game` managed by this manager such
         that, if `user` were to join another trial managed by this manager, they would
@@ -3823,7 +3825,7 @@ class TrialManager(_TrialManagerTrivialInherited):
         server: TsuserverDR,
         managee_limit: Union[int, None] = None,
         default_managee_type: Type[_Trial] = None,
-        ):
+    ):
         """
         Create a trial manager object.
 
@@ -3870,7 +3872,7 @@ class TrialManager(_TrialManagerTrivialInherited):
         # new
         autoadd_minigame_on_player_added: bool = False,
         **kwargs: Any,
-        ) -> _Trial:
+    ) -> _Trial:
         """
         Create a new trial managed by this manager. Overriden default parameters include:
         * A trial does not require leaders.
@@ -3969,7 +3971,7 @@ class TrialManager(_TrialManagerTrivialInherited):
                 # kwargs
                 autoadd_minigame_on_player_added=autoadd_minigame_on_player_added,
                 **kwargs,
-                )
+            )
         except HubbedGameError.ManagerTooManyGamesError:
             raise TrialError.ManagerTooManyGamesError
 

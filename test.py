@@ -28,6 +28,7 @@ import asyncio
 import sys
 import unittest
 
+
 class NoSkipLogTextTestResult(unittest.TextTestResult):
     # I dont want "s" in my log
     def addSkip(self, test, reason):
@@ -37,8 +38,10 @@ class NoSkipLogTextTestResult(unittest.TextTestResult):
         elif self.dots:
             self.stream.flush()
 
+
 class NoSkipLogTextTestRunner(unittest.TextTestRunner):
     resultclass = NoSkipLogTextTestResult
+
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
