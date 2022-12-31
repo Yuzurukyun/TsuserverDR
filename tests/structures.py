@@ -44,6 +44,7 @@ if typing.TYPE_CHECKING:
 
     from server.hub_manager import _Hub
 
+
 class _Unittest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -253,7 +254,7 @@ class _TestClientManager(ClientManager):
             user_id: int,
             ipid: int,
             protocol: AOProtocol = None
-            ):
+        ):
             """ Overwrites client_manager.ClientManager.Client.__init__ """
 
             super().__init__(
@@ -406,16 +407,16 @@ class _TestClientManager(ClientManager):
                 # Discard the trivial packets
                 # Note we use somewhere because MS usually comes between LE and FM
                 packets_to_discard = (
-                                    ['HP', None],
-                                    ['HP', None],
-                                    ['BN', None],
-                                    ['LE', None],
-                                    ['FA', None],
-                                    ['FM', None],
-                                    ['BN', None],
-                                    ['area_ambient', None],
-                                    ['joined_area', None],
-                                    )
+                    ['HP', None],
+                    ['HP', None],
+                    ['BN', None],
+                    ['LE', None],
+                    ['FA', None],
+                    ['FM', None],
+                    ['BN', None],
+                    ['area_ambient', None],
+                    ['joined_area', None],
+                )
                 for packet in packets_to_discard:
                     self.discard_packet(packet, somewhere=True)
 
@@ -519,7 +520,7 @@ class _TestClientManager(ClientManager):
                 new_args = args
 
             self.search_match([command_type, new_args], self.received_packets, somewhere=somewhere,
-                               allow_partial_match=allow_partial_match)
+                              allow_partial_match=allow_partial_match)
 
             if over:
                 err = ('{} expected no more packets, found some '
@@ -758,7 +759,7 @@ class _TestClientManager(ClientManager):
                 'video': 16,
                 'hide_character': 17,
                 'client_id': 18,
-                }
+            }
 
             if 'msg' not in kwargs:
                 kwargs['msg'] = message
@@ -776,10 +777,10 @@ class _TestClientManager(ClientManager):
                     assert expected == got, err
 
             if over or ic_over:
-                assert(len(self.received_ic) == 0)
+                assert (len(self.received_ic) == 0)
                 self.discarded_ic_somewhere = False
             else:
-                assert(len(self.received_ic) != 0)
+                assert (len(self.received_ic) != 0)
 
         def assert_no_ic(self):
             err = ('{} expected no more IC messages, found {}'
@@ -818,7 +819,7 @@ class _TestClientManager(ClientManager):
             if command_type == 'decryptor':  # Hi
                 buffer = 'HI#FAKEHDID#%'
             elif command_type == 'ID':  # Server ID
-                buffer = "ID#DRO#1.2.2#%"
+                buffer = "ID#DRO#1.3.0#%"
                 err = ('Wrong client ID for {}.\nExpected {}\nGot {}'
                        .format(self, args[0], self.id))
                 assert args[0] == str(self.id), err
@@ -915,7 +916,7 @@ class _TestClientManager(ClientManager):
         hub: _Hub = None,
         transport: _ProactorSocketTransport = None,
         protocol: AOProtocol = None,
-        ) -> Tuple[_TestClient, bool]:
+    ) -> Tuple[_TestClient, bool]:
         """ Overwrites client_manager.ClientManager.new_client """
 
         return super().new_client(
@@ -923,7 +924,7 @@ class _TestClientManager(ClientManager):
             hub=hub,
             transport=transport,
             protocol=protocol
-            )
+        )
 
 
 class _TestTsuserverDR(TsuserverDR):
@@ -937,7 +938,7 @@ class _TestTsuserverDR(TsuserverDR):
 
         self.client_list: List[
             Union[_TestClientManager._TestClient, None]
-            ] = [None] * self.config['playerlimit']
+        ] = [None] * self.config['playerlimit']
         self.task_manager = TaskManager(self)
         self.client_manager: _TestClientManager  # For typing
 
@@ -945,7 +946,7 @@ class _TestTsuserverDR(TsuserverDR):
         self,
         transport: _ProactorSocketTransport,
         protocol: AOProtocol = None,
-        ) -> Tuple[_TestClientManager._TestClient, bool]:
+    ) -> Tuple[_TestClientManager._TestClient, bool]:
         """ Overwrites new_client only to override return type """
 
         return super().new_client(transport, protocol)
