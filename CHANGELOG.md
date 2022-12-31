@@ -893,3 +893,7 @@
 * Server logs now include the hub of the player that triggered the log message
 * Server logs now explicitly show when players change hubs
 * Fixed adding periods to a clock while the time is unknown failing halfway through
+
+## 221231a (5.1.0-beta1)
+* Updated network protocol to DRO 1.3.0
+* Extended /play, /rplay and /zone_play to include fade options. Refer to README.md for more details.
