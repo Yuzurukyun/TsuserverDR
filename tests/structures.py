@@ -391,14 +391,14 @@ class _TestClientManager(ClientManager):
                                  over=other_over(c))
             assert not self.is_staff()
 
-        def move_area(self, area_id, discard_packets=True, discard_trivial=False):
+        def move_area(self, area_id, fade_option: int = 0, discard_packets=True, discard_trivial=False):
             as_command = random.randint(0, 1)
             area = self.hub.area_manager.get_area_by_id(area_id)
             if as_command:
                 self.ooc('/area {}'.format(area_id))
             else:
                 name = area.name
-                buffer = 'MC#{}-{}#{}#%'.format(area_id, name, self.char_id)
+                buffer = 'MC#{}-{}#{}#{}#%'.format(area_id, name, self.char_id, fade_option)
                 self.send_command_cts(buffer)
 
             assert self.area.id == area_id, (self.area.id, area_id, as_command)
