@@ -733,7 +733,7 @@ class AreaManager(AssetManager):
 
         def play_track(self, name: str, client: ClientManager.Client,
                        raise_if_not_found: bool = False, reveal_sneaked: bool = False,
-                       force_same_restart: int = 1, fade_option: int = 0,
+                       force_same_restart: int = 1, fade_option: FadeOption = FadeOption.NO_FADE,
                        pargs: Dict[str, Any] = None):
             """
             Play a music track in an area.
@@ -796,7 +796,7 @@ class AreaManager(AssetManager):
             if 'char_id' not in pargs:
                 pargs['char_id'] = client.char_id
             if 'fade_option' not in pargs:
-                pargs['fade_option'] = fade_option
+                pargs['fade_option'] = fade_option.value
             pargs['showname'] = client.showname  # Ignore AO shownames
             if 'loop' not in pargs:
                 pargs['loop'] = -1

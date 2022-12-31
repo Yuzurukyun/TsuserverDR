@@ -27,7 +27,7 @@ import typing
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, TypeVar, Union
 
 from server import client_changearea, clients, logger
-from server.constants import Constants, TargetType
+from server.constants import Constants, FadeOption, TargetType
 from server.exceptions import (AreaError, ClientError, HubError, PartyError,
                                TaskError, TrialError)
 from server.hub_manager import _Hub

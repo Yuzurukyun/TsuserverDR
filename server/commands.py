@@ -7325,7 +7325,7 @@ def ooc_cmd_play(client: ClientManager.Client, arg: str):
         pass
 
     client.area.play_track(
-        track_name, client, raise_if_not_found=False, reveal_sneaked=False, fade_option=fade_option.value)
+        track_name, client, raise_if_not_found=False, reveal_sneaked=False, fade_option=fade_option)
 
     client.send_ooc('You have played track `{}` in your area.'
                     .format(track_name))
@@ -8007,18 +8007,18 @@ def ooc_cmd_rplay(client: ClientManager.Client, arg: str):
              for reachable_area_name in client.area.visible_areas}
 
     track_name = arg
-    fade_type = FadeOption.NO_FADE
+    fade_option = FadeOption.NO_FADE
 
     try:
         arg_list = arg.split()
-        fade_type = FadeOption[arg_list.pop().upper()]
+        fade_option = FadeOption[arg_list.pop().upper()]
         track_name = ' '.join(arg_list)
     except Exception:
         pass
 
     for area in areas:
         area.play_track(track_name, client, raise_if_not_found=False,
-                        reveal_sneaked=False, fade_option=fade_type)
+                        reveal_sneaked=False, fade_option=fade_option)
 
     client.send_ooc('You have played track `{}` in the areas reachable from your area.'
                     .format(track_name))
@@ -11960,18 +11960,18 @@ def ooc_cmd_zone_play(client: ClientManager.Client, arg: str):
         raise ZoneError('You are not watching a zone.')
 
     track_name = arg
-    fade_type = FadeOption.NO_FADE
+    fade_option = FadeOption.NO_FADE
 
     try:
         arg_list = arg.split()
-        fade_type = FadeOption[arg_list.pop().upper()]
+        fade_option = FadeOption[arg_list.pop().upper()]
         track_name = ' '.join(arg_list)
     except Exception:
         pass
 
     for zone_area in client.zone_watched.get_areas():
         zone_area.play_track(
-            track_name, client, raise_if_not_found=False, reveal_sneaked=False, fade_option=fade_type)
+            track_name, client, raise_if_not_found=False, reveal_sneaked=False, fade_option=fade_option)
 
     client.send_ooc('You have played track `{}` in your zone.'
                     .format(track_name))
