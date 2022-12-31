@@ -37,7 +37,7 @@ import typing
 import warnings
 import yaml
 
-from enum import Enum
+from enum import Enum, IntEnum
 from io import TextIOWrapper
 from typing import Awaitable, Any, Callable, Iterable, List, Set, Tuple, Union
 
