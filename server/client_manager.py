@@ -794,14 +794,14 @@ class ClientManager:
                 'health': health
             })
 
-        def send_music(self, name=None, char_id=None, fade=None, showname=None, force_same_restart=None,
+        def send_music(self, name=None, char_id=None, fade_option=None, showname=None, force_same_restart=None,
                        loop=None, channel=None, effects=None):
             self.send_command_dict('MC', {
                 'name': name,
                 'char_id': char_id,
                 'showname': showname,
                 'force_same_restart': force_same_restart,
-                'fade': fade,
+                'fade_option': fade_option,
                 'loop': loop,
                 'channel': channel,
                 'effects': effects,

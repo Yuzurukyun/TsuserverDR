@@ -28,7 +28,7 @@ import string
 import time
 
 from server import logger
-from server.constants import Constants, FadeType, TargetType
+from server.constants import Constants, FadeOption, TargetType
 from server.exceptions import ArgumentError, AreaError, ClientError, HubError, MusicError, ServerError, TaskError
 from server.exceptions import PartyError, ZoneError, TrialError, NonStopDebateError
 from server.client_manager import ClientManager
@@ -7270,7 +7270,7 @@ def ooc_cmd_play(client: ClientManager.Client, arg: str):
     Plays a given track, even if not explicitly in the music list. It is the way to play custom
     music. If the area parameter 'song_switch_allowed' is set to true, anyone in the area can use
     this command even if they are not logged in as game master.
-    
+
     Returns an error if you are not a game master and the area does not allow the use of
     /play, if you are IC-muted, if you do not have DJ privileges, or if you trigger the server
     music flood guard.
@@ -7315,17 +7315,17 @@ def ooc_cmd_play(client: ClientManager.Client, arg: str):
                           f'{Constants.time_format(delay)}.')
 
     track_name = arg
-    fade_type = FadeType.NO_FADE
+    fade_option = FadeOption.NO_FADE
 
     try:
         arg_list = arg.split()
-        fade_type = FadeType[arg_list.pop().upper()]
+        fade_option = FadeOption[arg_list.pop().upper()]
         track_name = ' '.join(arg_list)
     except Exception:
         pass
 
     client.area.play_track(
-        track_name, client, raise_if_not_found=False, reveal_sneaked=False, fade_type=fade_type.value)
+        track_name, client, raise_if_not_found=False, reveal_sneaked=False, fade_option=fade_option.value)
 
     client.send_ooc('You have played track `{}` in your area.'
                     .format(track_name))
@@ -8007,18 +8007,18 @@ def ooc_cmd_rplay(client: ClientManager.Client, arg: str):
              for reachable_area_name in client.area.visible_areas}
 
     track_name = arg
-    fade_type = FadeType.NO_FADE
+    fade_type = FadeOption.NO_FADE
 
     try:
         arg_list = arg.split()
-        fade_type = FadeType[arg_list.pop().upper()]
+        fade_type = FadeOption[arg_list.pop().upper()]
         track_name = ' '.join(arg_list)
     except Exception:
         pass
 
     for area in areas:
         area.play_track(track_name, client, raise_if_not_found=False,
-                        reveal_sneaked=False, fade_type=fade_type)
+                        reveal_sneaked=False, fade_option=fade_type)
 
     client.send_ooc('You have played track `{}` in the areas reachable from your area.'
                     .format(track_name))
@@ -11960,18 +11960,18 @@ def ooc_cmd_zone_play(client: ClientManager.Client, arg: str):
         raise ZoneError('You are not watching a zone.')
 
     track_name = arg
-    fade_type = FadeType.NO_FADE
+    fade_type = FadeOption.NO_FADE
 
     try:
         arg_list = arg.split()
-        fade_type = FadeType[arg_list.pop().upper()]
+        fade_type = FadeOption[arg_list.pop().upper()]
         track_name = ' '.join(arg_list)
     except Exception:
         pass
 
     for zone_area in client.zone_watched.get_areas():
         zone_area.play_track(
-            track_name, client, raise_if_not_found=False, reveal_sneaked=False, fade_type=fade_type)
+            track_name, client, raise_if_not_found=False, reveal_sneaked=False, fade_option=fade_type)
 
     client.send_ooc('You have played track `{}` in your zone.'
                     .format(track_name))

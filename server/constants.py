@@ -62,7 +62,7 @@ FADE_MIX: A combination of FadeIn and FadeOut.
 """
 
 
-class FadeType(Enum):
+class FadeOption(IntEnum):
     NO_FADE = 0
     FADE_IN = 1
     FADE_OUT = 2
@@ -75,7 +75,7 @@ class FadeType(Enum):
 
     @staticmethod
     def from_str(in_str: str):
-        return str.upper() in FadeType or FadeType.NO_FADE
+        return str.upper() in FadeOption or FadeOption.NO_FADE
 
 
 class ArgType(Enum):

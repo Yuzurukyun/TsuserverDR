@@ -220,7 +220,7 @@ class DefaultDROProtocol(_Singleton):
     MC_INBOUND = [
         ('name', ArgType.STR),  # 0
         ('char_id', ArgType.INT),  # 1
-        ('fade', ArgType.INT),  # 2
+        ('fade_option', ArgType.INT),  # 2
     ]
 
     MC_OUTBOUND = [
@@ -228,7 +228,7 @@ class DefaultDROProtocol(_Singleton):
         ('char_id', -1),  # 1
         ('showname', ''),  # 2
         ('force_same_restart', 1),  # 3
-        ('fade', ArgType.INT),  # 4
+        ('fade_option', ArgType.INT),  # 4
     ]
 
     RT_INBOUND = [

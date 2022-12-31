@@ -36,7 +36,7 @@ from typing import Any, Callable, Dict, List, Set, Tuple, Union
 
 from server import logger
 from server.asset_manager import AssetManager
-from server.constants import Constants, FadeType
+from server.constants import Constants, FadeOption
 from server.evidence import EvidenceList
 from server.exceptions import AreaError, MusicError, ServerError, TaskError
 from server.subscriber import Publisher
@@ -733,7 +733,7 @@ class AreaManager(AssetManager):
 
         def play_track(self, name: str, client: ClientManager.Client,
                        raise_if_not_found: bool = False, reveal_sneaked: bool = False,
-                       force_same_restart: int = 1, fade_type: int = FadeType.NO_FADE.value,
+                       force_same_restart: int = 1, fade_option: int = 0,
                        pargs: Dict[str, Any] = None):
             """
             Play a music track in an area.
@@ -757,8 +757,8 @@ class AreaManager(AssetManager):
                 If 0, the server allows a player's client to not restart their music if it happens
                 to be the case the client is already playing it. If 1, no such permission is given
                 and a track must always be restarted from the beginning. Defaults to 1.
-            fade: MusicFade, optional
-                See enum MusicFade
+            fade_option: FadeOption, optional
+                See enum FadeOption
             pargs : dict of str to Any
                 If given, they are arguments to an MC packet that was given when the track was
                 requested, and will override any other arguments given. If not, this is ignored.
@@ -795,8 +795,8 @@ class AreaManager(AssetManager):
                 pargs['name'] = name
             if 'char_id' not in pargs:
                 pargs['char_id'] = client.char_id
-            if 'fade' not in pargs:
-                pargs['fade'] = fade_type
+            if 'fade_option' not in pargs:
+                pargs['fade_option'] = fade_option
             pargs['showname'] = client.showname  # Ignore AO shownames
             if 'loop' not in pargs:
                 pargs['loop'] = -1
