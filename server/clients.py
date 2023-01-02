@@ -360,6 +360,18 @@ class ClientDRO1d2d3(DefaultDROProtocol):
         ('legacy_music_ao2_list', list()),  # 0
     ]
 
+    MC_INBOUND = [
+        ('name', ArgType.STR),  # 0
+        ('char_id', ArgType.INT),  # 1
+    ]
+
+    MC_OUTBOUND = [
+        ('name', ''),  # 0
+        ('char_id', -1),  # 1
+        ('showname', ''),  # 2
+        ('force_same_restart', 1),  # 3
+    ]
+
 
 class ClientDRO1d2d2(ClientDRO1d2d3):
     VERSION_TO_SEND = [1, 2, 2]
