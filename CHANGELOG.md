@@ -897,3 +897,6 @@
 ## 221231a (5.1.0)
 * Updated network protocol to DRO 1.3.0
 * Extended /play, /rplay and /zone_play to include fade options. Refer to README.md for more details.
+* Music behavior has been changed. When entering an area, music will immediately switch rather than wait for an internal timer. The old behavior may be restored by using the following commands:
+  - /toggle_legacy_jukebox: will toggle on and off the behavior in the area you're currently in. (Staff+ only)
+  - /zone_set_legacy_jukebox <true/1/false/0>: will set on or off depending on the value provided. (Staff+ only)
