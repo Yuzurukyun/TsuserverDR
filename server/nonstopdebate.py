@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
 #           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
+#           (C) 2022 Tricky Leifa (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -158,7 +159,7 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
     def get_players(
         self,
         cond: Callable[[ClientManager.Client, ], bool] = None
-        ) -> Set[ClientManager.Client]:
+    ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of players of this nonstop debate that satisfy a
         condition if given.
@@ -282,7 +283,7 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
     def get_invitations(
         self,
         cond: Callable[[ClientManager.Client, ], bool] = None
-        ) -> Set[ClientManager.Client]:
+    ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of invited users of this nonstop debate that satisfy a
         condition if given.
@@ -463,7 +464,7 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
     def get_leaders(
         self,
         cond: Callable[[ClientManager.Client, ], bool] = None
-        ) -> Set[ClientManager.Client]:
+    ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of leaders of this nonstop debate that satisfy a condition
         if given.
@@ -486,7 +487,7 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
     def get_regulars(
         self,
         cond: Callable[[ClientManager.Client, ], bool] = None
-        ) -> Set[ClientManager.Client]:
+    ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of players of this nonstop debate that are regulars and
         satisfy a condition if given.
@@ -690,7 +691,7 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
         max_value: Union[float, None] = None,
         auto_restart: bool = False,
         auto_destroy: bool = True
-        ) -> Timer:
+    ) -> Timer:
         """
         Create a new timer managed by this nonstop debate with given parameters.
 
@@ -757,7 +758,7 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
         max_value: Union[float, None] = None,
         auto_restart: bool = False,
         auto_destroy: bool = True
-        ) -> Timer:
+    ) -> Timer:
         """
         Create a new timer managed by this nonstop debate with given parameters.
 
@@ -954,7 +955,7 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
         require_invitations: bool = False,
         require_players: bool = True,
         require_leaders: bool = True
-        ) -> _Team:
+    ) -> _Team:
         """
         Create a new team managed by this nonstop debate.
 
@@ -1016,7 +1017,7 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
         require_invitations: bool = False,
         require_players: bool = True,
         require_leaders: bool = True
-        ) -> _Team:
+    ) -> _Team:
         """
         Create a new team managed by this nonstop debate.
 
@@ -1649,8 +1650,7 @@ class _NonStopDebateTrivialInherited(_TrialMinigame):
         self,
         trial: _Trial,
         player: ClientManager.Client = None
-        ):
-
+    ):
         """
         Default callback when the parent trial adds a player.
         If a player was added to the trial of the nonstop debate, attempt to add the player to the
@@ -2437,7 +2437,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
         self,
         player: ClientManager.Client,
         contents: Dict[str, Any] = None
-        ):
+    ):
         """
         Check if any of the following situations occur: They want to send a message...
         * Within 5 seconds of the mode being set to recording or intermission and not leader.
@@ -2480,14 +2480,14 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
             raise ClientError('You may not speak now except if using a bullet.')
         # For perjury
         if contents['button'] == 8:
-            func = lambda c: 8 if c in {player}.union(self.get_leaders()) else 7
+            def func(c): return 8 if c in {player}.union(self.get_leaders()) else 7
             contents['PER_CLIENT_button'] = func
 
     def _on_client_inbound_ms_final(
         self,
         player: ClientManager.Client,
         contents: Dict[str, Any] = None
-        ):
+    ):
         """
         Add message of player to record of messages.
 
@@ -2552,7 +2552,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
         old_char_name: str = '',
         new_char_id: int = -1,
         new_char_name: str = '',
-        ):
+    ):
         """
         It checks if the player is now no longer having a participant character. If that is
         the case and the NSD requires all players have participant characters, the player is
@@ -2674,7 +2674,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
         old_displayname: str = None,
         ignore_bleeding: bool = False,
         ignore_autopass: bool = False
-        ):
+    ):
         """
         If a player left to an area not part of the NSD, remove the player and warn them and
         the leaders of the NSD.
@@ -2748,7 +2748,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
         old_displayname: str = None,
         ignore_bleeding: bool = False,
         ignore_autopass: bool = False
-        ):
+    ):
         """
         If a non-player entered, warn them and the leaders of the NSD.
 
@@ -2819,7 +2819,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
         area: AreaManager.Area,
         client: ClientManager.Client = None,
         contents: Dict[str, Any] = None
-        ):
+    ):
         """
         Check if any of the following situations occur:
         * If the user is not part of the nonstop debate.
@@ -2954,7 +2954,7 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
             # 6: 'cut',
             7: 'countered',
             8: 'committed perjury by countering',
-            }
+        }
         regular_bullet_actions = bullet_actions.copy()
         regular_bullet_actions[8] = 'countered'
 
@@ -2997,16 +2997,16 @@ class _NonStopDebate(_NonStopDebateTrivialInherited):
             if regular != player:
                 if broken_player == regular:
                     regular.send_ooc(f"{player.displayname} {regular_action} "
-                                    f"your statement "
-                                    f"`{broken_ic['text']}` and halted the debate.")
+                                     f"your statement "
+                                     f"`{broken_ic['text']}` and halted the debate.")
                 elif broken_player == player:
                     regular.send_ooc(f"{player.displayname} {regular_action} "
-                                    f"their own statement "
-                                    f"`{broken_ic['text']}` and halted the debate.")
+                                     f"their own statement "
+                                     f"`{broken_ic['text']}` and halted the debate.")
                 else:
                     regular.send_ooc(f"{player.displayname} {regular_action} "
-                                    f"{broken_player.displayname}'s statement "
-                                    f"`{broken_ic['text']}` and halted the debate.")
+                                     f"{broken_player.displayname}'s statement "
+                                     f"`{broken_ic['text']}` and halted the debate.")
 
         self._set_intermission_postbreak(player, blankpost=False)
 

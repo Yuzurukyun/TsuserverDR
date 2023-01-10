@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
 #           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
+#           (C) 2022 Tricky Leifa (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -78,7 +79,7 @@ class AOProtocol(asyncio.Protocol):
             self.client.send_command_dict('PN', {
                 'player_count': self.server.get_player_count(),
                 'player_limit': self.server.config['playerlimit']
-                })
+            })
             self.client.disconnect()
             return
 
@@ -150,7 +151,7 @@ class AOProtocol(asyncio.Protocol):
                 self.client.server.config['timeout'], self.client.disconnect)
         except AOProtocolError.InvalidInboundPacketArguments:
             pass
-        except Exception as ex: # pylint: disable=broad-except
+        except Exception as ex:  # pylint: disable=broad-except
             self.server.send_error_report(self.client, cmd, args, ex)
         return True
 
@@ -193,7 +194,6 @@ class AOProtocol(asyncio.Protocol):
             logger.log_server(f'Terminated {self.client.get_ipreal()} (packet syntax '
                               f'unrecognized): sent {self._shortened_buffer()}.')
             self.client.disconnect()
-
 
     def _validate_net_cmd(self, args, *types, needs_auth=True):
         """ Makes sure the net command's arguments match expectations.

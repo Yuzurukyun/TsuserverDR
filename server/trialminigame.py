@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
 #           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
+#           (C) 2022 Tricky Leifa (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,7 +26,7 @@ Module that contains the trial minigame class.
 from __future__ import annotations
 
 import typing
-from typing import Callable, Dict, Set, Any, Tuple, Type, Union
+from typing import Callable,                  Dict, Set, Any, Tuple, Type, Union
 
 import enum
 

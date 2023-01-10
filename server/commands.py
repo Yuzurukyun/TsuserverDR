@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
 #           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
+#           (C) 2022 Tricky Leifa (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,7 +28,7 @@ import string
 import time
 
 from server import logger
-from server.constants import Constants, TargetType
+from server.constants import Constants, FadeOption, TargetType
 from server.exceptions import ArgumentError, AreaError, ClientError, HubError, MusicError, ServerError, TaskError
 from server.exceptions import PartyError, ZoneError, TrialError, NonStopDebateError
 from server.client_manager import ClientManager
@@ -64,7 +65,8 @@ def ooc_cmd_ambient(client: ClientManager.Client, arg: str):
     for target in client.area.clients:
         target.send_area_ambient(name=arg)
 
-    client.send_ooc(f'You have set the ambient sound effect of your area to `{arg}`.')
+    client.send_ooc(
+        f'You have set the ambient sound effect of your area to `{arg}`.')
     client.send_ooc_others(f'The ambient sound effect of your area was set to `{arg}`.',
                            in_area=True, is_zstaff_flex=False)
     client.send_ooc_others(f'(X) {client.displayname} [{client.id}] set the ambient sound effect '
@@ -92,7 +94,8 @@ def ooc_cmd_ambient_end(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
     if not client.area.ambient:
-        raise ClientError('There already is no ambient sound effect in your area.')
+        raise ClientError(
+            'There already is no ambient sound effect in your area.')
 
     client.area.ambient = ''
 
@@ -125,9 +128,11 @@ def ooc_cmd_ambient_info(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, parameters='=0')
 
     if not client.area.ambient:
-        raise ClientError('There already is no ambient sound effect in your area.')
+        raise ClientError(
+            'There already is no ambient sound effect in your area.')
 
-    client.send_ooc(f'The current ambient sound effect of your area is `{client.area.ambient}`.')
+    client.send_ooc(
+        f'The current ambient sound effect of your area is `{client.area.ambient}`.')
 
 
 def ooc_cmd_announce(client: ClientManager.Client, arg: str):
@@ -315,11 +320,13 @@ def ooc_cmd_autoglance(client: ClientManager.Client, arg: str):
     status = {False: 'off', True: 'on'}
 
     if client == target:
-        client.send_ooc(f'You turned {status[client.autoglance]} your autoglance.')
+        client.send_ooc(
+            f'You turned {status[client.autoglance]} your autoglance.')
     else:
         client.send_ooc(f'You turned {status[target.autoglance]} the autoglance for '
                         f'{target.displayname} [{target.id}].')
-        target.send_ooc(f'Your autoglance was turned {status[target.autoglance]}.')
+        target.send_ooc(
+            f'Your autoglance was turned {status[target.autoglance]}.')
         client.send_ooc_others(f'(X) {client.displayname} [{client.id}] turned '
                                f'{status[target.autoglance]} the autoglance for '
                                f'{target.displayname} [{target.id}] ({client.area.id}).',
@@ -405,11 +412,13 @@ def ooc_cmd_ban(client: ClientManager.Client, arg: str):
     if arg.isdigit():
         # IPID
         idnt = int(arg)
-        targets = client.server.client_manager.get_targets(client, TargetType.IPID, idnt, False)
+        targets = client.server.client_manager.get_targets(
+            client, TargetType.IPID, idnt, False)
     else:
         # IP Address
         idnt = arg
-        targets = client.server.client_manager.get_targets(client, TargetType.IP, idnt, False)
+        targets = client.server.client_manager.get_targets(
+            client, TargetType.IP, idnt, False)
 
     # Try and add the user to the ban list based on the given identifier
     client.server.ban_manager.add_ban(idnt)
@@ -417,7 +426,8 @@ def ooc_cmd_ban(client: ClientManager.Client, arg: str):
     # Kick+ban all clients opened by the targeted user.
     if targets:
         for c in targets:
-            client.send_ooc('You banned {} [{}/{}].'.format(c.displayname, c.ipid, c.hdid))
+            client.send_ooc(
+                'You banned {} [{}/{}].'.format(c.displayname, c.ipid, c.hdid))
             client.send_ooc_others('{} was banned.'.format(c.displayname),
                                    is_officer=False, in_area=True, in_hub=True)
             client.send_ooc_others('{} [{}] banned {} [{}/{}].'
@@ -473,12 +483,14 @@ def ooc_cmd_banhdid(client: ClientManager.Client, arg: str):
     client.server.ban_manager.add_ban(identifier)
 
     # Try and kick the user from the server, as well as announce their ban.
-    targets = client.server.client_manager.get_targets(client, TargetType.HDID, arg, False)
+    targets = client.server.client_manager.get_targets(
+        client, TargetType.HDID, arg, False)
 
     # Kick+ban all clients opened by the targeted user.
     if targets:
         for c in targets:
-            client.send_ooc('You HDID banned {} [{}/{}].'.format(c.displayname, c.ipid, c.hdid))
+            client.send_ooc(
+                'You HDID banned {} [{}/{}].'.format(c.displayname, c.ipid, c.hdid))
             client.send_ooc_others('{} was banned.'.format(c.displayname), is_officer=False,
                                    in_area=True, in_hub=True)
             client.send_ooc_others('{} [{}] HDID banned {} [{}/{}].'
@@ -519,7 +531,8 @@ def ooc_cmd_bg(client: ClientManager.Client, arg: str):
     if not client.is_mod and client.area.bg_lock:
         raise AreaError("This area's background is locked.")
 
-    client.area.change_background(arg, validate=not (client.is_staff() or client.area.cbg_allowed))
+    client.area.change_background(arg, validate=not (
+        client.is_staff() or client.area.cbg_allowed))
     client.area.broadcast_ooc('{} changed the background to {}.'
                               .format(client.displayname, arg))
     logger.log_server('[{}][{}]Changed background to {}'
@@ -632,8 +645,8 @@ def ooc_cmd_bg_period(client: ClientManager.Client, arg: str):
     client.send_ooc(f'You changed the background associated with period `{tod_name}` to '
                     f'`{bg_name}`.')
     client.send_ooc_others(f'(X) {client.displayname} [{client.id}] changed the background '
-                            f'associated with period `{tod_name}` to `{bg_name}`.',
-                            is_zstaff_flex=True)
+                           f'associated with period `{tod_name}` to `{bg_name}`.',
+                           is_zstaff_flex=True)
     logger.log_server('[{}][{}]Changed background associated with period `{}` to {}'
                       .format(client.area.id, client.get_char_name(), tod_name, bg_name), client)
 
@@ -660,10 +673,11 @@ def ooc_cmd_bg_period_end(client: ClientManager.Client, arg: str):
         raise AreaError("This area's background is locked.")
 
     client.area.change_background_tod('', arg, validate=False)
-    client.send_ooc(f'You removed the background associated with period `{arg}`.')
+    client.send_ooc(
+        f'You removed the background associated with period `{arg}`.')
     client.send_ooc_others(f'(X) {client.displayname} [{client.id}] removed the background '
-                            f'associated with period `{arg}`.',
-                            is_zstaff_flex=True)
+                           f'associated with period `{arg}`.',
+                           is_zstaff_flex=True)
     logger.log_server('[{}][{}]Removed background associated with period `{}`'
                       .format(client.area.id, client.get_char_name(), arg), client)
 
@@ -710,14 +724,15 @@ def ooc_cmd_bilock(client: ClientManager.Client, arg: str):
     areas = Constants.parse_two_area_names(client, areas, area_duplicate=False,
                                            check_valid_range=False)
     now_reachable = client.hub.area_manager.change_passage_lock(client, areas, bilock=True,
-                                                                   change_passage_visibility=False)
+                                                                change_passage_visibility=False)
 
     status = {True: 'unlocked', False: 'locked'}
     now0, now1 = status[now_reachable[0]], status[now_reachable[1]]
     name0, name1 = areas[0].name, areas[1].name
 
     if now_reachable[0] == now_reachable[1]:
-        client.send_ooc('You have {} the passage between {} and {}.'.format(now0, name0, name1))
+        client.send_ooc(
+            'You have {} the passage between {} and {}.'.format(now0, name0, name1))
         client.send_ooc_others('(X) {} [{}] has {} the passage between {} and {} ({}).'
                                .format(client.displayname, client.id, now0,
                                        name0, name1, client.area.id),
@@ -764,19 +779,21 @@ def ooc_cmd_bilockh(client: ClientManager.Client, arg: str):
     the command.
     """
 
-    Constants.assert_command(client, arg, parameters='&1-2', is_staff=True, split_commas=True)
+    Constants.assert_command(
+        client, arg, parameters='&1-2', is_staff=True, split_commas=True)
 
     areas = Constants.parse_two_area_names(client, arg.split(', '), area_duplicate=False,
                                            check_valid_range=False)
     now_reachable = client.hub.area_manager.change_passage_lock(client, areas, bilock=True,
-                                                                   change_passage_visibility=True)
+                                                                change_passage_visibility=True)
 
     status = {True: 'unlocked and revealed', False: 'locked and hid'}
     now0, now1 = status[now_reachable[0]], status[now_reachable[1]]
     name0, name1 = areas[0].name, areas[1].name
 
     if now_reachable[0] == now_reachable[1]:
-        client.send_ooc('You have {} the passage between {} and {}.'.format(now0, name0, name1))
+        client.send_ooc(
+            'You have {} the passage between {} and {}.'.format(now0, name0, name1))
         client.send_ooc_others('(X) {} [{}] has {} the passage between {} and {} ({}).'
                                .format(client.displayname, client.id, now0,
                                        name0, name1, client.area.id),
@@ -871,8 +888,10 @@ def ooc_cmd_blockdj(client: ClientManager.Client, arg: str):
     # Block DJ permissions to matching targets
     for c in Constants.parse_id_or_ipid(client, arg):
         c.is_dj = False
-        logger.log_server('Revoked DJ permissions to {}.'.format(c.ipid), client)
-        client.area.broadcast_ooc('{} had their DJ permissions revoked.'.format(c.displayname))
+        logger.log_server(
+            'Revoked DJ permissions to {}.'.format(c.ipid), client)
+        client.area.broadcast_ooc(
+            '{} had their DJ permissions revoked.'.format(c.displayname))
 
 
 def ooc_cmd_bloodtrail(client: ClientManager.Client, arg: str):
@@ -962,7 +981,8 @@ def ooc_cmd_bloodtrail_clean(client: ClientManager.Client, arg: str):
             raise ClientError('You must be authorized to do that.')
         # Make sure the input is valid before starting
         raw_areas_to_clean = arg.split(", ")
-        areas_to_clean = set(Constants.parse_area_names(client, raw_areas_to_clean))
+        areas_to_clean = set(Constants.parse_area_names(
+            client, raw_areas_to_clean))
 
     successful_cleans = set()
     for area in areas_to_clean:
@@ -1047,13 +1067,15 @@ def ooc_cmd_bloodtrail_clean(client: ClientManager.Client, arg: str):
 
         elif len(successful_cleans) == 1:
             message = str(successful_cleans.pop())
-            client.send_ooc('You cleaned the blood trail in area {}.'.format(message))
+            client.send_ooc(
+                'You cleaned the blood trail in area {}.'.format(message))
             client.send_ooc_others('(X) {} [{}] cleaned the blood trail in area {}.'
                                    .format(client.displayname, client.id, message),
                                    is_zstaff_flex=True)
         elif len(successful_cleans) > 1:
             message = Constants.cjoin(successful_cleans)
-            client.send_ooc('You cleaned the blood trails in areas {}.'.format(message))
+            client.send_ooc(
+                'You cleaned the blood trails in areas {}.'.format(message))
             client.send_ooc_others('(X) {} [{}] cleaned the blood trails in areas {}.'
                                    .format(client.displayname, client.id, message),
                                    is_zstaff_flex=True)
@@ -1145,8 +1167,10 @@ def ooc_cmd_bloodtrail_set(client: ClientManager.Client, arg: str):
     else:
         # Make sure the input is valid before starting
         raw_areas_to_link = arg.split(", ")
-        areas_to_link = set(Constants.parse_area_names(client, raw_areas_to_link) + [client.area])
-        message = 'go to {}'.format(Constants.cjoin([a.name for a in areas_to_link], the=True))
+        areas_to_link = set(Constants.parse_area_names(
+            client, raw_areas_to_link) + [client.area])
+        message = 'go to {}'.format(Constants.cjoin(
+            [a.name for a in areas_to_link], the=True))
 
     client.send_ooc('Set the blood trail in this area to {}.'.format(message))
     client.send_ooc_others('The blood trail in this area was set to {}.'.format(message),
@@ -1190,7 +1214,8 @@ def ooc_cmd_bloodtrail_smear(client: ClientManager.Client, arg: str):
             raise ClientError('You must be authorized to do that.')
         # Make sure the input is valid before starting
         raw_areas_to_smear = arg.split(", ")
-        areas_to_smear = set(Constants.parse_area_names(client, raw_areas_to_smear))
+        areas_to_smear = set(Constants.parse_area_names(
+            client, raw_areas_to_smear))
 
     successful_smears = set()
     for area in areas_to_smear:
@@ -1203,12 +1228,13 @@ def ooc_cmd_bloodtrail_smear(client: ClientManager.Client, arg: str):
             continue
 
         if area.blood_smeared:
-            client.send_ooc('Area {} already has its blood trails smeared.'.format(area.name))
+            client.send_ooc(
+                'Area {} already has its blood trails smeared.'.format(area.name))
         else:
             if area.lights:
                 client.send_ooc_others('{} smeared the blood trail in your area.'
-                                    .format(client.displayname), is_zstaff_flex=False,
-                                    in_area=area, to_blind=False)
+                                       .format(client.displayname), is_zstaff_flex=False,
+                                       in_area=area, to_blind=False)
             area.blood_smeared = True
             successful_smears.add(area.name)
 
@@ -1227,13 +1253,15 @@ def ooc_cmd_bloodtrail_smear(client: ClientManager.Client, arg: str):
                                    is_zstaff_flex=True, in_area=False)
         elif len(successful_smears) == 1:
             message = str(successful_smears.pop())
-            client.send_ooc("You smeared the blood trail in area {}.".format(message))
+            client.send_ooc(
+                "You smeared the blood trail in area {}.".format(message))
             client.send_ooc_others('(X) {} [{}] smeared the blood trail in area {}.'
                                    .format(client.displayname, client.id, message),
                                    is_zstaff_flex=True)
         elif len(successful_smears) > 1:
             message = Constants.cjoin(successful_smears)
-            client.send_ooc("You smeared the blood trails in areas {}.".format(message))
+            client.send_ooc(
+                "You smeared the blood trails in areas {}.".format(message))
             client.send_ooc_others('(X) {} [{}] smeared the blood trails in areas {}.'
                                    .format(client.displayname, client.id, message),
                                    is_zstaff_flex=True)
@@ -1507,9 +1535,11 @@ def ooc_cmd_charselect(client: ClientManager.Client, arg: str):
             raise ClientError('You must be authorized to do that.')
 
         for c in Constants.parse_id_or_ipid(client, arg):
-            client.send_ooc(f'You forced {c.displayname} to open the character select screen.')
+            client.send_ooc(
+                f'You forced {c.displayname} to open the character select screen.')
             if client != c:
-                c.send_ooc('You were forced to open the character select screen.')
+                c.send_ooc(
+                    'You were forced to open the character select screen.')
             client.send_ooc_others(f'{client.name} [{client.id}] forced {c.displayname} [{c.id}] '
                                    f'to open the character select screen ({c.area.id}).',
                                    not_to={c}, is_officer=True, in_hub=None)
@@ -1542,7 +1572,8 @@ def ooc_cmd_char_restrict(client: ClientManager.Client, arg: str):
         raise ArgumentError('This command takes one character name.')
 
     if not client.hub.character_manager.is_character(arg):
-        raise ArgumentError('Unrecognized character folder name: {}'.format(arg))
+        raise ArgumentError(
+            'Unrecognized character folder name: {}'.format(arg))
 
     status = {True: 'enabled', False: 'disabled'}
     new_stat = status[arg in client.area.restricted_chars]
@@ -1562,7 +1593,8 @@ def ooc_cmd_char_restrict(client: ClientManager.Client, arg: str):
         for c in client.area.clients:
             if not c.is_staff() and c.get_char_name() == arg:
                 try:
-                    new_char_id = c.area.get_rand_avail_char_id(allow_restricted=False)
+                    new_char_id = c.area.get_rand_avail_char_id(
+                        allow_restricted=False)
                 except AreaError:
                     # Force into spectator mode if all other available characters are taken
                     new_char_id = -1
@@ -1664,7 +1696,8 @@ def ooc_cmd_cleardoc(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, parameters='=0')
 
-    client.area.broadcast_ooc('{} cleared the doc link.'.format(client.displayname))
+    client.area.broadcast_ooc(
+        '{} cleared the doc link.'.format(client.displayname))
     logger.log_server('[{}][{}]Cleared document. Old link: {}'
                       .format(client.area.id, client.get_char_name(), client.area.doc), client)
     client.area.change_doc()
@@ -1710,7 +1743,8 @@ def ooc_cmd_cleargm(client: ClientManager.Client, arg: str):
         target = targets[0]
         if not gm_list:
             raise ClientError(f'Client {target.id} is already not a GM.')
-        client.send_ooc(f'You have logged out client {client.id} from their GM rank.')
+        client.send_ooc(
+            f'You have logged out client {client.id} from their GM rank.')
         client.send_ooc_others(f'{client.name} [{client.id}] has logged out {target.name} '
                                f'[{target.id}] from their GM rank.',
                                is_officer=True, in_hub=None)
@@ -1718,7 +1752,8 @@ def ooc_cmd_cleargm(client: ClientManager.Client, arg: str):
         if not gm_list:
             raise ClientError('No GMs are currently connected.')
         output = Constants.cjoin(gm_list, sort=False)
-        client.send_ooc(f'You have logged out the following clients from their GM rank: {output}.')
+        client.send_ooc(
+            f'You have logged out the following clients from their GM rank: {output}.')
         client.send_ooc_others(f'{client.name} [{client.id}] has logged out these clients '
                                f'from their GM rank: {output}.',
                                is_officer=True, in_hub=None)
@@ -1754,7 +1789,8 @@ def ooc_cmd_clock(client: ClientManager.Client, arg: str):
     Starts a 10-second hour clock of 15 hours spanning areas 0 through 5, with starting hour 7 PM.
     """
 
-    Constants.assert_command(client, arg, is_staff=True, parameters='&4-5', split_spaces=True)
+    Constants.assert_command(client, arg, is_staff=True,
+                             parameters='&4-5', split_spaces=True)
 
     # Inputs already validated, move on
     args = arg.split(' ')
@@ -1764,7 +1800,8 @@ def ooc_cmd_clock(client: ClientManager.Client, arg: str):
     else:
         pre_area_1, pre_area_2, pre_hour_length, pre_hour_start, hours_in_day = args
 
-    areas = Constants.parse_two_area_names(client, [pre_area_1, pre_area_2], check_valid_range=True)
+    areas = Constants.parse_two_area_names(
+        client, [pre_area_1, pre_area_2], check_valid_range=True)
     area_1, area_2 = areas[0].id, areas[1].id
 
     try:
@@ -1792,7 +1829,8 @@ def ooc_cmd_clock(client: ClientManager.Client, arg: str):
 
     # If already existing day cycle. Will overwrite preexisting one
     # But first, make sure normies do not get a new notification.
-    normie_notif = not client.server.task_manager.is_task(client, 'as_day_cycle')
+    normie_notif = not client.server.task_manager.is_task(
+        client, 'as_day_cycle')
 
     client.send_ooc(f'You initiated a day cycle of length {hour_length} seconds per hour in areas '
                     f'{area_1} through {area_2}. The cycle ID is {client.id}.')
@@ -1846,7 +1884,8 @@ def ooc_cmd_clock_end(client: ClientManager.Client, arg: str):
     try:
         client.server.task_manager.delete_task(c, 'as_day_cycle')
     except TaskError.TaskNotFoundError:
-        raise ClientError('Client {} has not initiated any day cycles.'.format(arg))
+        raise ClientError(
+            'Client {} has not initiated any day cycles.'.format(arg))
 
 
 def ooc_cmd_clock_pause(client: ClientManager.Client, arg: str):
@@ -1883,10 +1922,12 @@ def ooc_cmd_clock_pause(client: ClientManager.Client, arg: str):
     try:
         task = client.server.task_manager.get_task(c, 'as_day_cycle')
     except TaskError.TaskNotFoundError:
-        raise ClientError('Client {} has not initiated any day cycles.'.format(arg))
+        raise ClientError(
+            'Client {} has not initiated any day cycles.'.format(arg))
 
     if task.parameters['is_unknown']:
-        raise ClientError('You may not pause the day cycle while the time is unknown.')
+        raise ClientError(
+            'You may not pause the day cycle while the time is unknown.')
     if task.parameters['is_paused']:
         raise ClientError('Day cycle is already paused.')
 
@@ -2153,10 +2194,12 @@ def ooc_cmd_clock_unpause(client: ClientManager.Client, arg: str):
     try:
         task = client.server.task_manager.get_task(c, 'as_day_cycle')
     except TaskError.TaskNotFoundError:
-        raise ClientError('Client {} has not initiated any day cycles.'.format(arg))
+        raise ClientError(
+            'Client {} has not initiated any day cycles.'.format(arg))
 
     if task.parameters['is_unknown']:
-        raise ClientError('You may not unpause the day cycle while the time is unknown.')
+        raise ClientError(
+            'You may not unpause the day cycle while the time is unknown.')
     if not task.parameters['is_paused']:
         raise ClientError('Day cycle is already unpaused.')
 
@@ -2188,7 +2231,8 @@ def ooc_cmd_coinflip(client: ClientManager.Client, arg: str):
     coin = ['heads', 'tails']
     flip = random.choice(coin)
     if arg:
-        mes = '{} called `{}`, flipped a coin and got {}.'.format(client.displayname, arg, flip)
+        mes = '{} called `{}`, flipped a coin and got {}.'.format(
+            client.displayname, arg, flip)
     else:
         mes = '{} flipped a coin and got {}.'.format(client.displayname, flip)
     client.area.broadcast_ooc(mes)
@@ -2242,7 +2286,8 @@ def ooc_cmd_cure(client: ClientManager.Client, arg: str):
             pass  # Do nothing if not subject to one
 
         if target != client:
-            target.send_ooc('You were cured of the effect `{}`.'.format(effect.name))
+            target.send_ooc(
+                'You were cured of the effect `{}`.'.format(effect.name))
             client.send_ooc('You cured {} [{}] of the effect `{}`.'
                             .format(target.displayname, target.id, effect.name))
             client.send_ooc_others('(X) {} [{}] cured {} [{}] of the effect `{}` ({}).'
@@ -2250,7 +2295,8 @@ def ooc_cmd_cure(client: ClientManager.Client, arg: str):
                                            target.id, effect.name, client.area.id),
                                    is_zstaff_flex=True, not_to={target})
         else:
-            client.send_ooc('You cured yourself of the effect `{}`.'.format(effect.name))
+            client.send_ooc(
+                'You cured yourself of the effect `{}`.'.format(effect.name))
             client.send_ooc_others('(X) {} [{}] cured themselves of the effect `{}` ({}).'
                                    .format(client.displayname, client.id, effect.name,
                                            client.area.id),
@@ -2362,7 +2408,8 @@ def ooc_cmd_defaultarea(client: ClientManager.Client, arg: str):
     except ValueError:
         raise ArgumentError('Expected numerical value for area ID.')
     except AreaError:
-        raise ClientError('ID {} does not correspond to a valid area ID.'.format(arg))
+        raise ClientError(
+            'ID {} does not correspond to a valid area ID.'.format(arg))
 
     client.hub.area_manager.set_default_area(area)
     client.send_ooc('Set default area of your hub to {}.'.format(arg))
@@ -2448,7 +2495,8 @@ def ooc_cmd_discord(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, parameters='=0')
 
-    client.send_ooc('Discord Invite Link: {}'.format(client.server.config['discord_link']))
+    client.send_ooc('Discord Invite Link: {}'.format(
+        client.server.config['discord_link']))
 
 
 def ooc_cmd_disemconsonant(client: ClientManager.Client, arg: str):
@@ -2480,7 +2528,8 @@ def ooc_cmd_disemconsonant(client: ClientManager.Client, arg: str):
     for c in Constants.parse_id_or_ipid(client, arg):
         c.disemconsonant = True
         logger.log_server('Disemconsonanted {}.'.format(c.ipid), client)
-        client.area.broadcast_ooc("{} was disemconsonanted.".format(c.displayname))
+        client.area.broadcast_ooc(
+            "{} was disemconsonanted.".format(c.displayname))
 
 
 def ooc_cmd_disemvowel(client: ClientManager.Client, arg: str):
@@ -2512,7 +2561,8 @@ def ooc_cmd_disemvowel(client: ClientManager.Client, arg: str):
     for c in Constants.parse_id_or_ipid(client, arg):
         c.disemvowel = True
         logger.log_server('Disemvowelled {}.'.format(c.ipid), client)
-        client.area.broadcast_ooc("{} was disemvowelled.".format(c.displayname))
+        client.area.broadcast_ooc(
+            "{} was disemvowelled.".format(c.displayname))
 
 
 def ooc_cmd_dj_list(client: ClientManager.Client, arg: str):
@@ -2550,6 +2600,7 @@ def ooc_cmd_dj_list(client: ClientManager.Client, arg: str):
         else:
             target.send_ooc('As you had a personal music list loaded, you will not be shown the '
                             'hub music list. Display the hub music list by running /music_list.')
+
 
 def ooc_cmd_dj_list_info(client: ClientManager.Client, arg: str):
     """ (STAFF ONLY)
@@ -2597,7 +2648,8 @@ def ooc_cmd_doc(client: ClientManager.Client, arg: str):
     # Set new doc case
     else:
         client.area.change_doc(arg)
-        client.area.broadcast_ooc('{} changed the doc link.'.format(client.displayname))
+        client.area.broadcast_ooc(
+            '{} changed the doc link.'.format(client.displayname))
         logger.log_server('[{}][{}]Changed document to: {}'
                           .format(client.area.id, client.get_char_name(), arg), client)
 
@@ -2674,25 +2726,30 @@ def ooc_cmd_files(client: ClientManager.Client, arg: str):
     """
 
     if arg:
-        target, match, _ = client.server.client_manager.get_target_public(client, arg)
+        target, match, _ = client.server.client_manager.get_target_public(
+            client, arg)
 
         if target.files:
             if match.isdigit():
                 match = 'client {}'.format(match)
             client.send_ooc('Files set by {} for `{}`: {}'
                             .format(match, target.files[0], target.files[1]))
-            client.send_ooc('Links are spoopy. Exercise caution when opening external links.')
+            client.send_ooc(
+                'Links are spoopy. Exercise caution when opening external links.')
         else:
             if match.isdigit():
                 match = 'Client {}'.format(match)
-            raise ClientError('{} has not provided a download link for their files.'.format(match))
+            raise ClientError(
+                '{} has not provided a download link for their files.'.format(match))
     else:
         if client.files:
             client.send_ooc('Files set by yourself for `{}`: {}'
                             .format(client.files[0], client.files[1]))
-            client.send_ooc('Links are spoopy. Exercise caution when opening external links.')
+            client.send_ooc(
+                'Links are spoopy. Exercise caution when opening external links.')
         else:
-            raise ClientError('You have not provided a download link for your files.')
+            raise ClientError(
+                'You have not provided a download link for your files.')
 
 
 def ooc_cmd_files_area(client: ClientManager.Client, arg: str):
@@ -2729,10 +2786,12 @@ def ooc_cmd_files_area(client: ClientManager.Client, arg: str):
         msg = '(X) '
     if not client.area.lights:
         if not client.is_staff():
-            raise ClientError('The lights are off, so you cannot see anything.')
+            raise ClientError(
+                'The lights are off, so you cannot see anything.')
         msg = '(X) '
 
-    players = [player for player in client.get_visible_clients(client.area) if player.files]
+    players = [player for player in client.get_visible_clients(
+        client.area) if player.files]
 
     if not players:
         raise ClientError(msg + 'No players in the area have set their files.')
@@ -2769,14 +2828,16 @@ def ooc_cmd_files_area(client: ClientManager.Client, arg: str):
             )
         else:
             player_description += (
-                '\r\n[{}] {} ({}): {}'.format(player.id, name, player.files[0], player.files[1])
+                '\r\n[{}] {} ({}): {}'.format(player.id, name,
+                                              player.files[0], player.files[1])
             )
 
     msg += (
         f"=== Players in area {client.area.name} who have set their files ==={player_description}"
-        )
+    )
     client.send_ooc(msg)
-    client.send_ooc('Links are spoopy. Exercise caution when opening external links.')
+    client.send_ooc(
+        'Links are spoopy. Exercise caution when opening external links.')
 
 
 def ooc_cmd_files_set(client: ClientManager.Client, arg: str):
@@ -2865,7 +2926,8 @@ def ooc_cmd_g(client: ClientManager.Client, arg: str):
     if not client.is_officer() and not client.server.global_allowed:
         raise ClientError('Global chat is currently locked.')
     if not client.is_officer() and not client.area.global_allowed:
-        raise ClientError('You must be authorized to send global messages in this area.')
+        raise ClientError(
+            'You must be authorized to send global messages in this area.')
     if client.muted_global:
         raise ClientError('You have the global chat muted.')
 
@@ -3054,13 +3116,15 @@ def ooc_cmd_globalic(client: ClientManager.Client, arg: str):
     Send IC messages to areas "Courtroom, 2" through "Courtroom 3" (note the escape character).
     """
 
-    Constants.assert_command(client, arg, parameters='&1-2', is_staff=True, split_commas=True)
+    Constants.assert_command(
+        client, arg, parameters='&1-2', is_staff=True, split_commas=True)
     areas = Constants.parse_two_area_names(client, arg.split(', '))
 
     client.multi_ic = areas
 
     if areas[0] == areas[1]:
-        client.send_ooc('Your IC messages will now be sent to area {}.'.format(areas[0].name))
+        client.send_ooc(
+            'Your IC messages will now be sent to area {}.'.format(areas[0].name))
     else:
         client.send_ooc('Your IC messages will now be sent to areas {} through {}.'
                         .format(areas[0].name, areas[1].name))
@@ -3125,7 +3189,8 @@ def ooc_cmd_glock(client: ClientManager.Client, arg: str):
     client.server.global_allowed = not client.server.global_allowed
     status = {False: 'locked', True: 'unlocked'}
 
-    client.send_ooc('You have {} the global chat.'.format(status[client.server.global_allowed]))
+    client.send_ooc('You have {} the global chat.'.format(
+        status[client.server.global_allowed]))
     client.send_ooc_others('A mod has {} the global chat.'
                            .format(status[client.server.global_allowed]),
                            is_officer=False, in_hub=None)
@@ -3189,7 +3254,8 @@ def ooc_cmd_gmself(client: ClientManager.Client, arg: str):
 
     targets = [c for c in client.get_multiclients() if not c.is_gm]
     if not targets:
-        raise ClientError('All opened clients are already logged in as game master.')
+        raise ClientError(
+            'All opened clients are already logged in as game master.')
 
     for target in targets:
         target.login(client.server.config['gmpass'], target.auth_gm, 'game master',
@@ -3237,14 +3303,16 @@ def ooc_cmd_guide(client: ClientManager.Client, arg: str):
 
     cm = client.server.client_manager
     target, _, msg = cm.get_target_public(client, arg)
-    msg = msg[:256] # Cap
+    msg = msg[:256]  # Cap
 
     if client == target:
         raise ClientError('You cannot guide yourself.')
 
-    client.send_ooc(f'You gave the following guidance to {target.displayname}: `{msg}`.')
+    client.send_ooc(
+        f'You gave the following guidance to {target.displayname}: `{msg}`.')
     target.send_ooc(f'You hear a guiding voice in your head say `{msg}`.')
-    target.send_ic(msg=msg, showname='[G] ???', hide_character=1, bypass_text_replace=True)
+    target.send_ic(msg=msg, showname='[G] ???',
+                   hide_character=1, bypass_text_replace=True)
 
     client.send_ooc_others('(X) {} [{}] gave the following guidance to {}: `{}` ({}).'
                            .format(client.displayname, client.id, target.displayname, msg,
@@ -3291,7 +3359,8 @@ def ooc_cmd_handicap(client: ClientManager.Client, arg: str):
     not send notifications once the timer expires.
     """
 
-    Constants.assert_command(client, arg, is_staff=True, parameters='&2-4', split_spaces=True)
+    Constants.assert_command(client, arg, is_staff=True,
+                             parameters='&2-4', split_spaces=True)
 
     args = arg.split(' ')
 
@@ -3322,7 +3391,8 @@ def ooc_cmd_handicap(client: ClientManager.Client, arg: str):
                                        client.area.name, client.area.id),
                                is_zstaff_flex=True, not_to={c})
 
-        c.change_handicap(True, length=length, name=name, announce_if_over=announce_if_over)
+        c.change_handicap(True, length=length, name=name,
+                          announce_if_over=announce_if_over)
 
 
 def ooc_cmd_help(client: ClientManager.Client, arg: str):
@@ -3361,7 +3431,7 @@ def ooc_cmd_help(client: ClientManager.Client, arg: str):
         ('gm', client.is_staff()),
         ('cm', client.is_officer()),
         ('mod', client.is_mod)
-        ]
+    ]
 
     # Try and find the most elevated description
     command_info, found_match, command_authorization = None, False, False
@@ -3376,7 +3446,8 @@ def ooc_cmd_help(client: ClientManager.Client, arg: str):
             break  # If not authorized now, won't be authorized later, so break out
 
         command_info = pre_info
-        command_authorization = True  # This means at least one suitable variant of the command
+        # This means at least one suitable variant of the command
+        command_authorization = True
         # that can be run with the user's rank was found
 
     # If a command was found somewhere among the user's available commands, command_info
@@ -3548,6 +3619,7 @@ def ooc_cmd_hub(client: ClientManager.Client, arg: str):
 
         client.change_hub(hub, from_party=(client.party is not None))
 
+
 def ooc_cmd_hub_create(client: ClientManager.Client, arg: str):
     """ (OFFICER ONLY)
     Creates a new hub with the given name, or with a default generated name if not given one.
@@ -3580,13 +3652,15 @@ def ooc_cmd_hub_create(client: ClientManager.Client, arg: str):
         target.send_music_list_view()
 
     if arg:
-        client.send_ooc(f'You created hub {hub.get_numerical_id()} with name {hub.get_name()}.')
+        client.send_ooc(
+            f'You created hub {hub.get_numerical_id()} with name {hub.get_name()}.')
         client.send_ooc_others(f'{client.name} [{client.id}] created hub {hub.get_numerical_id()} '
                                f'with name {hub.get_name()}.', is_officer=True, in_hub=None)
     else:
         client.send_ooc(f'You created hub {hub.get_numerical_id()}.')
         client.send_ooc_others(f'{client.name} [{client.id}] created hub {hub.get_numerical_id()}.',
                                is_officer=True, in_hub=None)
+
 
 def ooc_cmd_hub_end(client: ClientManager.Client, arg: str):
     """ (VARYING REQUIREMENTS)
@@ -3626,7 +3700,8 @@ def ooc_cmd_hub_end(client: ClientManager.Client, arg: str):
     try:
         client.hub.manager.delete_managee(hub)
     except HubError.ManagerCannotManageeNoManagees:
-        raise ClientError(f'You cannot delete a hub when it is the only one of the server.')
+        raise ClientError(
+            f'You cannot delete a hub when it is the only one of the server.')
 
     for target in client.server.get_clients():
         target.send_music_list_view()
@@ -3799,12 +3874,14 @@ def ooc_cmd_iclock(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
     if not client.is_officer() and (client.is_gm and not client.area.gm_iclock_allowed):
-        raise ClientError('GMs are not authorized to change IC locks in this area.')
+        raise ClientError(
+            'GMs are not authorized to change IC locks in this area.')
 
     client.area.ic_lock = not client.area.ic_lock
     status = {True: 'locked', False: 'unlocked'}
 
-    client.send_ooc('You {} the IC chat in this area.'.format(status[client.area.ic_lock]))
+    client.send_ooc('You {} the IC chat in this area.'.format(
+        status[client.area.ic_lock]))
     client.send_ooc_others(f'The IC chat has been {status[client.area.ic_lock]} in this area.'
                            .format(), is_zstaff_flex=False, in_area=True)
     client.send_ooc_others(f'(X) {client.displayname} [{client.id}] has '
@@ -3856,16 +3933,19 @@ def ooc_cmd_iclock_bypass(client: ClientManager.Client, arg: str):
     target = Constants.parse_id(client, arg)
 
     if target.is_staff():
-        raise ClientError('Target is already staff and thus does not require an IC lock bypass.')
+        raise ClientError(
+            'Target is already staff and thus does not require an IC lock bypass.')
     # As we require staff to run the command, but the target cannot be staff, we are guaranteed
     # that target != client.
     if not target.area.ic_lock:
-        raise ClientError('The IC chat in the area of the target is not locked.')
+        raise ClientError(
+            'The IC chat in the area of the target is not locked.')
 
     target.can_bypass_iclock = not target.can_bypass_iclock
 
     if target.can_bypass_iclock:
-        client.send_ooc(f'You have granted {target.displayname} [{target.id}] an IC lock bypass.')
+        client.send_ooc(
+            f'You have granted {target.displayname} [{target.id}] an IC lock bypass.')
         target.send_ooc('You have been granted an IC lock bypass.')
         target.send_ooc_others(f'(X) {client.displayname} [{client.id}] has granted '
                                f'{target.displayname} [{target.id}] an IC lock bypass '
@@ -3907,10 +3987,12 @@ def ooc_cmd_ignore(client: ClientManager.Client, arg: str):
     if target == client:
         raise ClientError('You may not ignore yourself.')
     if target in client.ignored_players:
-        raise ClientError(f'You are already ignoring {target.displayname} [{target.id}].')
+        raise ClientError(
+            f'You are already ignoring {target.displayname} [{target.id}].')
 
     client.ignored_players.add(target)
-    client.send_ooc(f'You are now ignoring {target.displayname} [{target.id}].')
+    client.send_ooc(
+        f'You are now ignoring {target.displayname} [{target.id}].')
 
 
 def ooc_cmd_invite(client: ClientManager.Client, arg: str):
@@ -3945,13 +4027,15 @@ def ooc_cmd_invite(client: ClientManager.Client, arg: str):
 
     targets = list()  # Start with empty list
     if client.is_officer() and arg.isdigit():
-        targets = client.server.client_manager.get_targets(client, TargetType.IPID, int(arg), False)
+        targets = client.server.client_manager.get_targets(
+            client, TargetType.IPID, int(arg), False)
         if targets:
             some_target = targets[0]
     if not targets:
         # Under the hood though, we need the IPID of the target, so we will still end up obtaining
         # it anyway. We want to get all clients whose IPID match the IPID of whatever we match
-        some_target, _, _ = client.server.client_manager.get_target_public(client, arg)
+        some_target, _, _ = client.server.client_manager.get_target_public(
+            client, arg)
         targets = client.server.client_manager.get_targets(client, TargetType.IPID,
                                                            some_target.ipid, False)
 
@@ -3966,8 +4050,10 @@ def ooc_cmd_invite(client: ClientManager.Client, arg: str):
         if client == c:
             client.send_ooc('You have invited yourself to this area.')
         else:
-            client.send_ooc('Client {} has been invited to your area.'.format(c.id))
-            c.send_ooc('You have been invited to area {}.'.format(client.area.name))
+            client.send_ooc(
+                'Client {} has been invited to your area.'.format(c.id))
+            c.send_ooc('You have been invited to area {}.'.format(
+                client.area.name))
 
 
 def ooc_cmd_judgelog(client: ClientManager.Client, arg: str):
@@ -4040,7 +4126,8 @@ def ooc_cmd_kick(client: ClientManager.Client, arg: str):
 
     # Kick matching targets
     for c in Constants.parse_id_or_ipid(client, arg):
-        client.send_ooc('You kicked {} [{}/{}].'.format(c.displayname, c.ipid, c.hdid))
+        client.send_ooc(
+            'You kicked {} [{}/{}].'.format(c.displayname, c.ipid, c.hdid))
         client.send_ooc_others('{} was kicked.'.format(c.displayname),
                                is_officer=False, in_area=True, in_hub=True)
         client.send_ooc_others('{} [{}] kicked {} [{}/{}].'
@@ -4127,7 +4214,8 @@ def ooc_cmd_knock(client: ClientManager.Client, arg: str):
         raise ClientError('You tried to knock on the door to {} but you realized the room is too '
                           'far away.'.format(target_area.name))
 
-    client.send_ooc('You knocked on the door to area {}.'.format(target_area.name))
+    client.send_ooc(
+        'You knocked on the door to area {}.'.format(target_area.name))
     client.send_ooc_others('Someone knocked on your door from area {}.'.format(client.area.name),
                            is_zstaff_flex=False, in_area=target_area, to_deaf=False)
     client.send_ooc_others('(X) {} [{}] knocked on the door to area {} in area {} ({}).'
@@ -4185,7 +4273,8 @@ def ooc_cmd_lasterror(client: ClientManager.Client, arg: str):
                           'bootup.')
 
     pre_info, _, _, _ = client.server.last_error
-    client.send_ooc(f'The last uncaught error message was the following:\n{pre_info}')
+    client.send_ooc(
+        f'The last uncaught error message was the following:\n{pre_info}')
 
 
 def ooc_cmd_lights(client: ClientManager.Client, arg: str):
@@ -4252,7 +4341,7 @@ def ooc_cmd_lights(client: ClientManager.Client, arg: str):
         client.area.change_lights(new_lights, initiator=client)
     else:
         # Must be staff to be here.
-        areas = args[1: ]
+        areas = args[1:]
         target_areas = Constants.parse_area_names(client, areas)
 
         cannot_change = list()
@@ -4307,7 +4396,8 @@ def ooc_cmd_lm(client: ClientManager.Client, arg: str):
         raise ArgumentError('You cannot send an empty message.')
 
     for c in client.area.clients:
-        c.send_ooc(arg, '{}[MOD][{}]'.format(client.server.config['hostname'], client.displayname))
+        c.send_ooc(arg, '{}[MOD][{}]'.format(
+            client.server.config['hostname'], client.displayname))
     logger.log_server('[{}][{}][LOCAL-MOD]{}.'
                       .format(client.area.id, client.get_char_name(), arg), client)
 
@@ -4341,6 +4431,20 @@ def ooc_cmd_lock(client: ClientManager.Client, arg: str):
         client.area.invite_list[i.ipid] = None
 
     client.area.broadcast_ooc('Area locked.')
+
+
+def ooc_cmd_toggle_legacy_jukebox(client: ClientManager.Client, arg: str):
+    """
+    Toggles legacy jukebox behavior in the current area. When enabled,
+    the current song do not automatically play whenever
+    a client joins the area.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True)
+
+    client.area.legacy_jukebox = not client.area.legacy_jukebox
+    state_string = ("disabled", "enabled")[client.area.legacy_jukebox]
+    client.area.broadcast_ooc(f'Legacy jukebox is now {state_string}.')
 
 
 def ooc_cmd_login(client: ClientManager.Client, arg: str):
@@ -4455,7 +4559,8 @@ def ooc_cmd_look(client: ClientManager.Client, arg: str):
         msg = '(X) '
     if not client.area.lights:
         if not client.is_staff():
-            raise ClientError('The lights are off, so you cannot see anything.')
+            raise ClientError(
+                'The lights are off, so you cannot see anything.')
         msg = '(X) '
 
     if arg:
@@ -4466,13 +4571,14 @@ def ooc_cmd_look(client: ClientManager.Client, arg: str):
         else:
             msg += f'You look at {target.displayname} and note this: {target.status}'
     else:
-        _, _, area_description, _, player_description = client.area.get_look_output_for(client)
+        _, _, area_description, _, player_description = client.area.get_look_output_for(
+            client)
 
         msg += (
             f'=== Look results for {client.area.name} ===\r\n'
             f'*About the people: you see {player_description}\r\n'
             f'*About the area: {area_description}'
-            )
+        )
 
     client.send_ooc(msg)
 
@@ -4507,7 +4613,8 @@ def ooc_cmd_look_clean(client: ClientManager.Client, arg: str):
     else:
         # Make sure the input is valid before starting
         raw_areas_to_clean = arg.split(", ")
-        areas_to_clean = set(Constants.parse_area_names(client, raw_areas_to_clean))
+        areas_to_clean = set(Constants.parse_area_names(
+            client, raw_areas_to_clean))
 
     successful_cleans = set()
     for area in areas_to_clean:
@@ -4567,7 +4674,8 @@ def ooc_cmd_look_list(client: ClientManager.Client, arg: str):
     # Otherwise, build the list of all areas with changed descriptions
     else:
         for area in areas:
-            info += '\r\n*({}) {}: {}'.format(area.id, area.name, area.description)
+            info += '\r\n*({}) {}: {}'.format(area.id,
+                                              area.name, area.description)
 
     client.send_ooc(info)
 
@@ -4789,9 +4897,11 @@ def ooc_cmd_mindreader(client: ClientManager.Client, arg: str):
         client.send_ooc_others(f'(X) {client.displayname} ({client.id}) made {target.displayname} '
                                f'({target.id}) be {status2[target.is_mindreader]} mind reader '
                                f'({client.area.id}).', is_zstaff_flex=True)
-        target.send_ooc(f'You are {status[target.is_transient]} a mind reader.')
+        target.send_ooc(
+            f'You are {status[target.is_transient]} a mind reader.')
     else:
-        client.send_ooc(f'You made yourself be {status2[target.is_mindreader]} mind reader.')
+        client.send_ooc(
+            f'You made yourself be {status2[target.is_mindreader]} mind reader.')
         client.send_ooc_others(f'(X) {client.displayname} ({client.id}) made themselves be '
                                f'{status2[target.is_mindreader]} mind reader '
                                f'({client.area.id}).', is_zstaff_flex=True)
@@ -4965,7 +5075,8 @@ def ooc_cmd_music_list(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg)
 
-    client.music_manager.command_list_load(client, arg, send_notifications=False)
+    client.music_manager.command_list_load(
+        client, arg, send_notifications=False)
 
     if arg:
         client.send_ooc(f'You are now seeing the personal music list `{arg}`.')
@@ -4973,7 +5084,8 @@ def ooc_cmd_music_list(client: ClientManager.Client, arg: str):
         if client.music_manager.if_default_show_hub_music:
             client.send_ooc('You are now seeing the hub music list.')
         else:
-            client.send_ooc('You are now seeing the default server music list.')
+            client.send_ooc(
+                'You are now seeing the default server music list.')
     client.send_music_list_view()
 
 
@@ -5124,7 +5236,8 @@ def ooc_cmd_notecard_clear_area(client: ClientManager.Client, arg: str):
 
     targets = [target for target in client.area.clients if target.notecard]
     if not targets:
-        raise ClientError('No players in your current area have a notecard set.')
+        raise ClientError(
+            'No players in your current area have a notecard set.')
 
     for target in targets:
         target.notecard = ''
@@ -5175,7 +5288,8 @@ def ooc_cmd_notecard_info(client: ClientManager.Client, arg: str):
         client.send_ooc(f'Your notecard says `{client.notecard}`.')
     else:
         if not target.notecard:
-            raise ClientError(f'The notecard of {target.displayname} [{target.id}] is empty.')
+            raise ClientError(
+                f'The notecard of {target.displayname} [{target.id}] is empty.')
         client.send_ooc(f'The notecard of {target.displayname} [{target.id}] says '
                         f'`{target.notecard}`.')
 
@@ -5198,7 +5312,8 @@ def ooc_cmd_notecard_check(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
-    with_notecards = [target for target in client.area.clients if target.notecard]
+    with_notecards = [
+        target for target in client.area.clients if target.notecard]
     if not with_notecards:
         raise ClientError('No players in your current have any notecards set.')
 
@@ -5228,7 +5343,8 @@ def ooc_cmd_notecard_list(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
-    with_notecards = [target for target in client.hub.get_players() if target.notecard]
+    with_notecards = [
+        target for target in client.hub.get_players() if target.notecard]
     if not with_notecards:
         raise ClientError('No players in the hub have any notecards set.')
 
@@ -5258,7 +5374,8 @@ def ooc_cmd_notecard_reveal(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
-    with_notecards = [target for target in client.area.clients if target.notecard]
+    with_notecards = [
+        target for target in client.area.clients if target.notecard]
 
     output = ''
     for target in sorted(with_notecards):
@@ -5269,7 +5386,8 @@ def ooc_cmd_notecard_reveal(client: ClientManager.Client, arg: str):
     client.send_ooc('You revealed all notecards in the area.')
     client.send_ooc_others(f'(X) {client.displayname} [{client.id}] revealed all notecards in '
                            f'area {client.area.name} ({client.area.id}).', is_zstaff_flex=True)
-    client.area.broadcast_ooc(f'The notecards in the area were revealed: {output}')
+    client.area.broadcast_ooc(
+        f'The notecards in the area were revealed: {output}')
 
 
 def ooc_cmd_notecard_reveal_count(client: ClientManager.Client, arg: str):
@@ -5293,7 +5411,8 @@ def ooc_cmd_notecard_reveal_count(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
-    raw_notecards = [target.notecard for target in client.area.clients if target.notecard]
+    raw_notecards = [
+        target.notecard for target in client.area.clients if target.notecard]
     if not raw_notecards:
         output = '\r\n*No player in the area has set a notecard.'
     else:
@@ -5313,7 +5432,8 @@ def ooc_cmd_notecard_reveal_count(client: ClientManager.Client, arg: str):
     client.send_ooc_others(f'(X) {client.displayname} [{client.id}] revealed the tally of all '
                            f'notecards in area {client.area.name} ({client.area.id}).',
                            is_zstaff_flex=True)
-    client.area.broadcast_ooc(f'The tally of all notecards in the area was revealed: {output}')
+    client.area.broadcast_ooc(
+        f'The tally of all notecards in the area was revealed: {output}')
 
 
 def ooc_cmd_noteworthy(client: ClientManager.Client, arg: str):
@@ -5406,7 +5526,8 @@ def ooc_cmd_noteworthy_set(client: ClientManager.Client, arg: str):
 
     if not arg:
         client.area.noteworthy_text = client.area.default_noteworthy_text
-        client.send_ooc('Reset the area noteworthy text to its original value.')
+        client.send_ooc(
+            'Reset the area noteworthy text to its original value.')
         client.send_ooc_others('(X) {} [{}] reset the area noteworthy text of your area to its '
                                'original value.'
                                .format(client.displayname, client.id),
@@ -5420,7 +5541,8 @@ def ooc_cmd_noteworthy_set(client: ClientManager.Client, arg: str):
 
     else:
         client.area.noteworthy_text = arg
-        client.send_ooc('Updated the area noteworthy text to `{}`.'.format(arg))
+        client.send_ooc(
+            'Updated the area noteworthy text to `{}`.'.format(arg))
         client.send_ooc_others('(X) {} [{}] set the area noteworthy text of your area to `{}`.'
                                .format(client.displayname, client.id, client.area.noteworthy_text),
                                is_zstaff_flex=True, in_area=True)
@@ -5468,7 +5590,8 @@ def ooc_cmd_nsd(client: ClientManager.Client, arg: str):
         if not arg or arg == "0":
             seconds = 0
         else:
-            seconds = Constants.parse_time_length(arg)  # Also internally validates
+            seconds = Constants.parse_time_length(
+                arg)  # Also internally validates
 
     try:
         trial = client.hub.trial_manager.get_managee_of_user(client)
@@ -5485,16 +5608,18 @@ def ooc_cmd_nsd(client: ClientManager.Client, arg: str):
             timer_start_value=seconds,
             require_participant_character=True,
             autoadd_on_trial_player_add=trial.get_autoadd_on_client_enter()
-            )
+        )
     except TrialError.ManagerTooManyGamesError:
         raise ClientError('The trial already has an active nonstop debate. End the previous one '
                           'with /nsd_end.')
     except NonStopDebateError.AreaHitGameConcurrentLimitError:
         raise ClientError('This area already hosts another nonstop debate.')
     except NonStopDebateError.UserHitGameConcurrentLimitError:
-        raise ClientError('You are already part of another minigame in your trial.')
+        raise ClientError(
+            'You are already part of another minigame in your trial.')
     except NonStopDebateError.UserHasNoCharacterError:
-        raise ClientError('You must have a participant character to create a nonstop debate.')
+        raise ClientError(
+            'You must have a participant character to create a nonstop debate.')
 
     if seconds > 0:
         client.send_ooc(f'You have created nonstop debate `{nsd.get_id()}` in area '
@@ -5523,7 +5648,7 @@ def ooc_cmd_nsd(client: ClientManager.Client, arg: str):
     players = sorted(nsd.get_players(), key=lambda c: c.displayname)
     player_list = '\n'.join([
         f'[{player.id}] {player.displayname}' for player in players
-        ])
+    ])
 
     client.send_ooc(f'These players were automatically added to your nonstop debate: '
                     f'\n{player_list}')
@@ -5574,7 +5699,8 @@ def ooc_cmd_nsd_accept(client: ClientManager.Client, arg: str):
     try:
         existing = nsd.accept_break()
     except NonStopDebateError.NSDNotInModeError:
-        raise ClientError('You may not accept a break for your nonstop debate at this moment.')
+        raise ClientError(
+            'You may not accept a break for your nonstop debate at this moment.')
 
     if existing:
         client.send_ooc('You accepted the break and ended the nonstop debate. The breaker '
@@ -5639,16 +5765,20 @@ def ooc_cmd_nsd_add(client: ClientManager.Client, arg: str):
     except NonStopDebateError.UserNotPlayerError:
         raise ClientError('This player is not part of your trial.')
     except NonStopDebateError.UserNotInAreaError:
-        raise ClientError('This player is not part of an area part of this nonstop debate.')
+        raise ClientError(
+            'This player is not part of an area part of this nonstop debate.')
     except NonStopDebateError.UserHasNoCharacterError:
         raise ClientError('This player must have a participant character to join this nonstop '
                           'debate.')
     except NonStopDebateError.UserHitGameConcurrentLimitError:
-        raise ClientError('This player is already part of another nonstop debate.')
+        raise ClientError(
+            'This player is already part of another nonstop debate.')
     except NonStopDebateError.UserAlreadyPlayerError:
-        raise ClientError('This player is already part of this nonstop debate.')
+        raise ClientError(
+            'This player is already part of this nonstop debate.')
 
-    client.send_ooc(f'You added {target.displayname} [{target.id}] to your nonstop debate.')
+    client.send_ooc(
+        f'You added {target.displayname} [{target.id}] to your nonstop debate.')
     client.send_ooc_others(f'(X) {client.displayname} added {target.displayname} [{target.id}] '
                            f'to your nonstop debate.',
                            pred=lambda c: c in trial.get_leaders())
@@ -5777,8 +5907,10 @@ def ooc_cmd_nsd_info(client: ClientManager.Client, arg: str):
     regulars = nsd.get_regulars()
 
     num_members = len(leaders.union(regulars))
-    leaders = ', '.join([f'{c.displayname} [{c.id}]' for c in leaders]) if leaders else 'None'
-    regulars = ', '.join([f'{c.displayname} [{c.id}]' for c in regulars]) if regulars else 'None'
+    leaders = ', '.join(
+        [f'{c.displayname} [{c.id}]' for c in leaders]) if leaders else 'None'
+    regulars = ', '.join(
+        [f'{c.displayname} [{c.id}]' for c in regulars]) if regulars else 'None'
     info = (f'Nonstop debate {nid} [{num_members}/-] ({area.id}). '
             f'Leaders: {leaders}. Regular members: {regulars}.')
     client.send_ooc(info)
@@ -5817,9 +5949,11 @@ def ooc_cmd_nsd_join(client: ClientManager.Client, arg: str):
     try:
         nsd.add_player(client)
     except NonStopDebateError.UserNotInAreaError:
-        raise ClientError('You are not part of an area part of this nonstop debate.')
+        raise ClientError(
+            'You are not part of an area part of this nonstop debate.')
     except NonStopDebateError.UserHasNoCharacterError:
-        raise ClientError('You must have a participant character to join this nonstop debate.')
+        raise ClientError(
+            'You must have a participant character to join this nonstop debate.')
     except NonStopDebateError.UserHitGameConcurrentLimitError:
         raise ClientError('You are already part of another nonstop debate.')
     except NonStopDebateError.UserAlreadyPlayerError:
@@ -5872,7 +6006,8 @@ def ooc_cmd_nsd_kick(client: ClientManager.Client, arg: str):
     except NonStopDebateError.UserNotPlayerError:
         raise ClientError('This player is not part of your nonstop debate.')
 
-    client.send_ooc(f'You have kicked {target.displayname} [{target.id}] off your nonstop debate.')
+    client.send_ooc(
+        f'You have kicked {target.displayname} [{target.id}] off your nonstop debate.')
     target.send_ooc('You were kicked off your nonstop debate.')
     client.send_ooc_others(f'(X) {client.name} [{client.id}] has kicked {target.displayname} '
                            f'[{target.id}] off your nonstop debate.',
@@ -5947,7 +6082,8 @@ def ooc_cmd_nsd_leave(client: ClientManager.Client, arg: str):
     except TrialError.UserNotInMinigameError:
         raise ClientError('You are not part of a nonstop debate.')
     nid = nsd.get_id()  # Get ID now because NSD may be deleted
-    nonplayers = nsd.get_nonplayer_users_in_areas()  # Get nonplayers now because NSD may be deleted
+    # Get nonplayers now because NSD may be deleted
+    nonplayers = nsd.get_nonplayer_users_in_areas()
     client.send_ooc(f'You have left nonstop debate `{nid}`.')
     client.send_ooc_others(f'(X) {client.displayname} [{client.id}] has left your nonstop debate.',
                            pred=lambda c: c in nsd.get_leaders())
@@ -6094,12 +6230,14 @@ def ooc_cmd_nsd_resume(client: ClientManager.Client, arg: str):
     try:
         resumed_mode = nsd.resume()
     except NonStopDebateError.NSDNotInModeError:
-        raise ClientError('You may not resume a nonstop debate at this moment.')
+        raise ClientError(
+            'You may not resume a nonstop debate at this moment.')
     else:
         mode = resumed_mode.name.lower()
         if mode == 'prerecording':
             mode = 'recording'
-        client.send_ooc(f'You have put your nonstop debate back in {mode} mode.')
+        client.send_ooc(
+            f'You have put your nonstop debate back in {mode} mode.')
         client.send_ooc_others(f'(X) {client.displayname} [{client.id}] has put your nonstop '
                                f'debate back in {mode} mode.',
                                pred=lambda c: c in nsd.get_leaders())
@@ -6144,10 +6282,12 @@ def ooc_cmd_nsd_reject(client: ClientManager.Client, arg: str):
     try:
         existing = nsd.reject_break()
     except NonStopDebateError.NSDNotInModeError:
-        raise ClientError('You may not reject a break for your nonstop debate at this moment.')
+        raise ClientError(
+            'You may not reject a break for your nonstop debate at this moment.')
 
     if existing:
-        client.send_ooc('You rejected the break. The breaker lost 1 influence.')
+        client.send_ooc(
+            'You rejected the break. The breaker lost 1 influence.')
         client.send_ooc_others(f'(X) {client.displayname} [{client.id}] rejected the break. The '
                                f'breaker lost 1 influence.',
                                pred=lambda c: c in nsd.get_leaders())
@@ -6159,7 +6299,8 @@ def ooc_cmd_nsd_reject(client: ClientManager.Client, arg: str):
                                f'their influence remained unchanged.',
                                pred=lambda c: c in nsd.get_leaders())
 
-    client.send_ooc('Send /nsd_resume to resume the debate, /nsd_end to end the debate.')
+    client.send_ooc(
+        'Send /nsd_resume to resume the debate, /nsd_end to end the debate.')
     client.send_ooc_others('The break was rejected, so the debate continues!',
                            pred=lambda c: c in nsd.get_regulars())
     client.send_ooc_others('The break was rejected, so the debate continues!',
@@ -6197,7 +6338,8 @@ def ooc_cmd_nsd_unlead(client: ClientManager.Client, arg: str):
     try:
         nsd.remove_leader(client)
     except TrialError.UserNotLeaderError:
-        raise ClientError('You are already not a leader of this nonstop debate.')
+        raise ClientError(
+            'You are already not a leader of this nonstop debate.')
 
     client.send_ooc('You are no longer a leader of your nonstop debate.')
     client.send_ooc_others(f'(X) {client.displayname} [{client.id}] is no longer a leader of your '
@@ -6246,9 +6388,11 @@ def ooc_cmd_ooc_mute(client: ClientManager.Client, arg: str):
     try:
         Constants.assert_command(client, arg, is_officer=True, parameters='>0')
     except ArgumentError:
-        raise ArgumentError('You must specify a target. Use /ooc_mute <ooc_name>.')
+        raise ArgumentError(
+            'You must specify a target. Use /ooc_mute <ooc_name>.')
 
-    targets = client.server.client_manager.get_targets(client, TargetType.OOC_NAME, arg, False)
+    targets = client.server.client_manager.get_targets(
+        client, TargetType.OOC_NAME, arg, False)
     if not targets:
         raise ArgumentError('Targets not found. Use /ooc_mute <ooc_name>.')
 
@@ -6278,9 +6422,11 @@ def ooc_cmd_ooc_unmute(client: ClientManager.Client, arg: str):
     try:
         Constants.assert_command(client, arg, is_officer=True, parameters='>0')
     except ArgumentError:
-        raise ArgumentError('You must specify a target. Use /ooc_unmute <ooc_name>.')
+        raise ArgumentError(
+            'You must specify a target. Use /ooc_unmute <ooc_name>.')
 
-    targets = client.server.client_manager.get_targets(client, TargetType.OOC_NAME, arg, False)
+    targets = client.server.client_manager.get_targets(
+        client, TargetType.OOC_NAME, arg, False)
     if not targets:
         raise ArgumentError('Target not found. Use /ooc_mute <ooc_name>.')
 
@@ -6329,7 +6475,8 @@ def ooc_cmd_paranoia(client: ClientManager.Client, arg: str):
     except ValueError:
         raise ClientError('New player paranoia value must be a number.')
     if not (-100 <= paranoia <= 100):
-        raise ClientError('New player paranoia value must be a number from -100 to 100.')
+        raise ClientError(
+            'New player paranoia value must be a number from -100 to 100.')
 
     target.paranoia = paranoia
     client.send_ooc(f'You set the player paranoia level of {target.displayname} [{target.id}] to '
@@ -6513,7 +6660,8 @@ def ooc_cmd_party_invite(client: ClientManager.Client, arg: str):
 
     party.add_invite(c, tc=False)
 
-    client.send_ooc('You have invited {} to join your party.'.format(c.displayname))
+    client.send_ooc(
+        'You have invited {} to join your party.'.format(c.displayname))
     for x in party.get_leaders(uninclude={client}):
         x.send_ooc('{} has invited {} to join your party.'
                    .format(client.displayname, c.displayname))
@@ -6584,7 +6732,8 @@ def ooc_cmd_party_kick(client: ClientManager.Client, arg: str):
     party.remove_member(c)
     client.send_ooc('You have kicked {} off your party.'.format(c.displayname))
     if c.is_staff() or client.is_visible:
-        c.send_ooc('{} has kicked you off your party.'.format(client.displayname))
+        c.send_ooc('{} has kicked you off your party.'.format(
+            client.displayname))
     for x in party.get_leaders(uninclude={client}):
         if x.is_staff() or client.is_visible:
             x.send_ooc('{} has kicked {} off your party.'
@@ -6615,7 +6764,8 @@ def ooc_cmd_party_lead(client: ClientManager.Client, arg: str):
     client.send_ooc('You are now a leader of your party.')
     for c in party.get_leaders(uninclude={client}):
         if c.is_staff() or client.is_visible:
-            c.send_ooc('{} is now a leader of your party.'.format(client.displayname))
+            c.send_ooc('{} is now a leader of your party.'.format(
+                client.displayname))
 
 
 def ooc_cmd_party_leave(client: ClientManager.Client, arg: str):
@@ -6673,8 +6823,10 @@ def ooc_cmd_party_list(client: ClientManager.Client, arg: str):
     for party in client.server.party_manager.get_parties():
         pid, area, player_limit, raw_leaders, raw_regulars = party.get_details()
         num_members = len(raw_leaders.union(raw_regulars))
-        leaders = ', '.join([c.displayname for c in raw_leaders]) if raw_leaders else 'None'
-        regulars = ', '.join([c.displayname for c in raw_regulars]) if raw_regulars else 'None'
+        leaders = ', '.join(
+            [c.displayname for c in raw_leaders]) if raw_leaders else 'None'
+        regulars = ', '.join(
+            [c.displayname for c in raw_regulars]) if raw_regulars else 'None'
         info += ('\r\n*Party {} [{}/{}] ({}). Leaders: {}. Regular members: {}.'
                  .format(pid, num_members, player_limit, area.id, leaders, regulars))
     client.send_ooc(info)
@@ -6744,7 +6896,8 @@ def ooc_cmd_party_uninvite(client: ClientManager.Client, arg: str):
     c, _, _ = client.server.client_manager.get_target_public(client, arg)
     party.remove_invite(c, tc=False)
 
-    client.send_ooc('You have uninvited {} to join your party.'.format(c.displayname))
+    client.send_ooc(
+        'You have uninvited {} to join your party.'.format(c.displayname))
     for x in party.get_leaders(uninclude={client}):
         x.send_ooc('{} has uninvited {} to join your party.'
                    .format(client.displayname, c.displayname))
@@ -6776,7 +6929,8 @@ def ooc_cmd_party_unlead(client: ClientManager.Client, arg: str):
     client.send_ooc('You are no longer a leader of your party.')
     for x in party.get_leaders(uninclude={client}):
         if x.is_staff() or client.is_visible:
-            x.send_ooc('{} is no longer a leader of your party.'.format(client.displayname))
+            x.send_ooc('{} is no longer a leader of your party.'.format(
+                client.displayname))
 
 
 def ooc_cmd_party_whisper(client: ClientManager.Client, arg: str):
@@ -6819,7 +6973,8 @@ def ooc_cmd_party_whisper(client: ClientManager.Client, arg: str):
     if client.is_muted:
         raise ClientError('You have been muted by a moderator.')
     if client.is_gagged:
-        raise ClientError('Your attempt at whispering failed because you are gagged.')
+        raise ClientError(
+            'Your attempt at whispering failed because you are gagged.')
 
     msg = arg[:256]  # Cap
     public_area = not client.area.private_area
@@ -6844,7 +6999,8 @@ def ooc_cmd_party_whisper(client: ClientManager.Client, arg: str):
             target.send_ic(msg=msg, pos=client.pos, char_id=client.char_id,
                            folder=client.char_folder,
                            showname='[PW] ' + client.showname_else_char_showname, hide_character=1,
-                           pred=lambda _: not (target.is_deaf and target.is_blind),
+                           pred=lambda _: not (
+                               target.is_deaf and target.is_blind),
                            bypass_deafened_starters=True)  # send_ic handles nerfing for deafened
             target.send_ic(msg=msg, pos=client.pos, char_id=client.char_id,
                            folder=None, showname='???', hide_character=1,
@@ -6877,7 +7033,8 @@ def ooc_cmd_party_whisper(client: ClientManager.Client, arg: str):
             target.send_ic(msg=msg, pos=client.pos, char_id=client.char_id,
                            folder=client.char_folder,
                            showname='[PW] ' + client.showname_else_char_showname, hide_character=1,
-                           pred=lambda _: not (target.is_deaf and target.is_blind),
+                           pred=lambda _: not (
+                               target.is_deaf and target.is_blind),
                            bypass_deafened_starters=True)  # send_ic handles nerfing for deafened
             target.send_ic(msg=msg, pos=client.pos, char_id=client.char_id,
                            folder=None, showname='???', hide_character=1,
@@ -6887,7 +7044,8 @@ def ooc_cmd_party_whisper(client: ClientManager.Client, arg: str):
         for target in not_sneaked:
             target.send_ooc(f'You heard someone whisper `{msg}`, but you could not seem to tell '
                             f'where it came from.', to_deaf=False)
-            target.send_ooc('Your ears seemed to pick up something.', to_deaf=True)
+            target.send_ooc(
+                'Your ears seemed to pick up something.', to_deaf=True)
             target.send_ic(msg=msg, pos='jud', showname='???', hide_character=1,
                            bypass_deafened_starters=True)
 
@@ -6933,7 +7091,8 @@ def ooc_cmd_passage_clear(client: ClientManager.Client, arg: str):
     Restores the passages starting in areas 16 through 116.
     """
 
-    Constants.assert_command(client, arg, is_staff=True, parameters='<3', split_commas=True)
+    Constants.assert_command(client, arg, is_staff=True,
+                             parameters='<3', split_commas=True)
 
     areas = Constants.parse_two_area_names(client, arg.split(', '))
 
@@ -6942,7 +7101,8 @@ def ooc_cmd_passage_clear(client: ClientManager.Client, arg: str):
         area.reachable_areas = client.hub.area_manager.area_names
 
     if areas[0] == areas[1]:
-        client.send_ooc('Area passage locks have been removed in {}.'.format(areas[0].name))
+        client.send_ooc(
+            'Area passage locks have been removed in {}.'.format(areas[0].name))
     else:
         client.send_ooc('Area passage locks have been removed in areas {} through {}'
                         .format(areas[0].name, areas[1].name))
@@ -6971,7 +7131,8 @@ def ooc_cmd_passage_restore(client: ClientManager.Client, arg: str):
     Restores the passages starting in areas 16 through 116.
     """
 
-    Constants.assert_command(client, arg, is_staff=True, parameters='<3', split_commas=True)
+    Constants.assert_command(client, arg, is_staff=True,
+                             parameters='<3', split_commas=True)
 
     areas = Constants.parse_two_area_names(client, arg.split(', '))
 
@@ -6981,7 +7142,8 @@ def ooc_cmd_passage_restore(client: ClientManager.Client, arg: str):
         area.change_reachability_allowed = area.default_change_reachability_allowed
 
     if areas[0] == areas[1]:
-        client.send_ooc('Passages in this area have been restored to their original state.')
+        client.send_ooc(
+            'Passages in this area have been restored to their original state.')
     else:
         client.send_ooc('Passages in areas {} through {} have been restored to their original '
                         'state.'.format(areas[0].name, areas[1].name))
@@ -7037,7 +7199,8 @@ def ooc_cmd_peek(client: ClientManager.Client, arg: str):
 
     if area_lock_ok and reachable_ok:
         if target_area.lights:
-            _, _, area_description, _, player_description = target_area.get_look_output_for(client)
+            _, _, area_description, _, player_description = target_area.get_look_output_for(
+                client)
             client.send_ooc(
                 f'You peek into area {target_area.name} and note the following:\r\n'
                 f'*About the people in there: you see {player_description}\r\n'
@@ -7107,21 +7270,30 @@ def ooc_cmd_play(client: ClientManager.Client, arg: str):
     Plays a given track, even if not explicitly in the music list. It is the way to play custom
     music. If the area parameter 'song_switch_allowed' is set to true, anyone in the area can use
     this command even if they are not logged in as game master.
+
     Returns an error if you are not a game master and the area does not allow the use of
     /play, if you are IC-muted, if you do not have DJ privileges, or if you trigger the server
     music flood guard.
 
     SYNTAX
     /play <track_name>
+    /play <track_name> <fade_type>
 
     PARAMETERS
     <track_name>: Track to play
+    <fade_type>: The fade behavior for the new song. May be: in, out, mix
 
     EXAMPLES
     >>> /play Trial(AJ).opus
     Plays Trial(AJ).opus.
     >>> /play CustomTrack.opus
     Plays CustomTrack.opus, which will only be audible to users with CustomTrack.opus.
+    >>> /play CustomTrack.opus in
+    Plays CustomTrack.opus, the song will be faded in as it begins playing.
+    >>> /play CustomTrack.opus out
+    Plays CustomTrack.opus, the previous song will fade out before the new one begins playing.
+    >>> /play CustomTrack.opus mix
+    Plays CustomTrack.opus, fade will combine both in and out behavior.
     """
 
     try:
@@ -7142,19 +7314,30 @@ def ooc_cmd_play(client: ClientManager.Client, arg: str):
         raise ClientError(f'You changed song too many times recently. Please try again after '
                           f'{Constants.time_format(delay)}.')
 
-    client.area.play_track(arg, client, raise_if_not_found=False, reveal_sneaked=False)
+    track_name = arg
+    fade_option = FadeOption.NO_FADE
+
+    try:
+        arg_list = arg.split()
+        fade_option = FadeOption[arg_list.pop().upper()]
+        track_name = ' '.join(arg_list)
+    except Exception:
+        pass
+
+    client.area.play_track(
+        track_name, client, raise_if_not_found=False, reveal_sneaked=False, fade_option=fade_option)
 
     client.send_ooc('You have played track `{}` in your area.'
-                    .format(arg))
+                    .format(track_name))
     client.send_ooc_others('(X) {} [{}] has played track `{}` in your area.'
-                           .format(client.displayname, client.id, arg),
+                           .format(client.displayname, client.id, track_name),
                            is_zstaff_flex=True, in_area=True)
 
     # Warn if track is not in the music list
     try:
-        client.music_manager.get_music_data(arg)
+        client.music_manager.get_music_data(track_name)
     except MusicError.MusicNotFoundError:
-        client.send_ooc(f'Warning: `{arg}` is not a recognized track name, so the server will not '
+        client.send_ooc(f'Warning: `{track_name}` is not a recognized track name, so the server will not '
                         f'loop it.')
 
 
@@ -7221,7 +7404,8 @@ def ooc_cmd_pm_gms(client: ClientManager.Client, arg: str):
     if client.pm_mute:
         raise ClientError('You have muted all PM conversations.')
 
-    targets = {target for target in client.hub.get_players() if target.is_staff()}
+    targets = {target for target in client.hub.get_players()
+               if target.is_staff()}
     targets = targets-{client}
     if not targets:
         raise ClientError('No GMs are available in your hub.')
@@ -7232,7 +7416,8 @@ def ooc_cmd_pm_gms(client: ClientManager.Client, arg: str):
         raise ClientError('No GMs available in your hub have PMs enabled.')
 
     msg = arg
-    client.send_ooc(f'PM sent to all GMs in hub {client.hub.get_numerical_id()}. Message: {msg}.')
+    client.send_ooc(
+        f'PM sent to all GMs in hub {client.hub.get_numerical_id()}. Message: {msg}.')
     for target in targets:
         target.send_ooc(f'(X) PM from {client.displayname} [{client.id}] in {client.area.name} '
                         f'({client.area.id}) to all GMs in your hub: {msg}')
@@ -7408,12 +7593,14 @@ def ooc_cmd_pos_force(client: ClientManager.Client, arg: str):
         target.area.broadcast_evidence_list()
 
     if all_in_area:
-        client.send_ooc(f'You forced all players in your area to be in position {pos}.')
+        client.send_ooc(
+            f'You forced all players in your area to be in position {pos}.')
         client.send_ooc_others(f'(X) {client.displayname} [{client.id}] forced the position of all '
                                f'players in area {client.area.name} to {pos} ({client.area.id}).',
                                is_zstaff_flex=True)
     else:
-        client.send_ooc(f'You forced {client.displayname} [{client.id}] to be in position {pos}.')
+        client.send_ooc(
+            f'You forced {client.displayname} [{client.id}] to be in position {pos}.')
         client.send_ooc_others(f'(X) {client.displayname} [{client.id}] forced the position of '
                                f'{targets[0].displayname} [{targets[0].id}] to {pos} '
                                f'({client.area.id}).',
@@ -7440,9 +7627,11 @@ def ooc_cmd_randomchar(client: ClientManager.Client, arg: str):
 
     Constants.assert_command(client, arg, parameters='=0')
 
-    free_id = client.area.get_rand_avail_char_id(allow_restricted=client.is_staff())
+    free_id = client.area.get_rand_avail_char_id(
+        allow_restricted=client.is_staff())
     client.change_character(free_id)
-    client.send_ooc('Randomly switched to `{}`.'.format(client.get_char_name()))
+    client.send_ooc('Randomly switched to `{}`.'.format(
+        client.get_char_name()))
 
 
 def ooc_cmd_randommusic(client: ClientManager.Client, arg: str):
@@ -7488,7 +7677,8 @@ def ooc_cmd_randommusic(client: ClientManager.Client, arg: str):
         raise ClientError('No music tracks found in the current music list.')
 
     random_music = random.choice(music_names)
-    client.area.play_track(random_music, client, raise_if_not_found=False, reveal_sneaked=False)
+    client.area.play_track(random_music, client,
+                           raise_if_not_found=False, reveal_sneaked=False)
 
     client.send_ooc('You have played the randomly chosen track `{}` in your area.'
                     .format(random_music))
@@ -7562,7 +7752,8 @@ def ooc_cmd_reload_commands(client: ClientManager.Client, arg: str):
     outcome = client.server.reload_commands()
     if outcome:
         info = "\n{}: {}".format(type(outcome).__name__, outcome)
-        raise ClientError('Server ran into a problem while reloading the commands: {}'.format(info))
+        raise ClientError(
+            'Server ran into a problem while reloading the commands: {}'.format(info))
 
     client.send_ooc("The commands have been reloaded.")
 
@@ -7701,7 +7892,8 @@ def ooc_cmd_roll(client: ClientManager.Client, arg: str):
     roll_result, num_faces = Constants.dice_roll(arg, 'roll', client.server)
     roll_message = 'rolled {} out of {}'.format(roll_result, num_faces)
     client.send_ooc('You {}.'.format(roll_message))
-    client.send_ooc_others('{} {}.'.format(client.displayname, roll_message), in_area=True)
+    client.send_ooc_others('{} {}.'.format(
+        client.displayname, roll_message), in_area=True)
     client.send_ooc_others('(X) {} [{}] {} in {} ({}).'
                            .format(client.displayname, client.id, roll_message,
                                    client.area.name, client.area.id),
@@ -7752,12 +7944,15 @@ def ooc_cmd_rollp(client: ClientManager.Client, arg: str):
     """
 
     if not client.area.rollp_allowed and not client.is_staff():
-        raise ClientError('This command has been restricted to authorized users only in this area.')
+        raise ClientError(
+            'This command has been restricted to authorized users only in this area.')
 
     roll_result, num_faces = Constants.dice_roll(arg, 'rollp', client.server)
-    roll_message = 'privately rolled {} out of {}'.format(roll_result, num_faces)
+    roll_message = 'privately rolled {} out of {}'.format(
+        roll_result, num_faces)
     client.send_ooc('You {}.'.format(roll_message))
-    client.send_ooc_others('Someone rolled.', is_zstaff_flex=False, in_area=True)
+    client.send_ooc_others(
+        'Someone rolled.', is_zstaff_flex=False, in_area=True)
     client.send_ooc_others('(X) {} [{}] {}.'.format(client.displayname, client.id, roll_message),
                            is_zstaff_flex=True, in_area=True)
     client.send_ooc_others('(X) {} [{}] {} in {} ({}).'
@@ -7769,8 +7964,10 @@ def ooc_cmd_rollp(client: ClientManager.Client, arg: str):
     client.add_to_dicelog(roll_message + '.')
     client.area.add_to_dicelog(client, roll_message + '.')
 
-    salt = ''.join(random.choices(string.ascii_uppercase + string.digits, k=16))
-    encoding = hashlib.sha1((str(roll_result) + salt).encode('utf-8')).hexdigest() + '|' + salt
+    salt = ''.join(random.choices(
+        string.ascii_uppercase + string.digits, k=16))
+    encoding = hashlib.sha1(
+        (str(roll_result) + salt).encode('utf-8')).hexdigest() + '|' + salt
     logger.log_server('[{}][{}]Used /rollp and got {} out of {}.'
                       .format(client.area.id, client.get_char_name(), encoding, num_faces), client)
 
@@ -7782,15 +7979,23 @@ def ooc_cmd_rplay(client: ClientManager.Client, arg: str):
 
     SYNTAX
     /rplay <track_name>
+    /rplay <track_name> <fade_type>
 
     PARAMETERS
     <track_name>: Track to play
+    <fade_type>: The fade behavior for the new song. May be: in, out, mix
 
     EXAMPLES
     >>> /rplay Trial(AJ).opus
     Plays Trial(AJ).opus.
     >>> /rplay CustomTrack.opus
     Plays CustomTrack.opus, which will only be audible to users with CustomTrack.opus.
+    >>> /rplay CustomTrack.opus in
+    Plays CustomTrack.opus, the song will be faded in as it begins playing.
+    >>> /rplay CustomTrack.opus out
+    Plays CustomTrack.opus, the previous song will fade out before the new one begins playing.
+    >>> /rplay CustomTrack.opus mix
+    Plays CustomTrack.opus, fade will combine both in and out behavior.
     """
 
     try:
@@ -7801,25 +8006,36 @@ def ooc_cmd_rplay(client: ClientManager.Client, arg: str):
     areas = {client.hub.area_manager.get_area_by_name(reachable_area_name)
              for reachable_area_name in client.area.visible_areas}
 
+    track_name = arg
+    fade_option = FadeOption.NO_FADE
+
+    try:
+        arg_list = arg.split()
+        fade_option = FadeOption[arg_list.pop().upper()]
+        track_name = ' '.join(arg_list)
+    except Exception:
+        pass
+
     for area in areas:
-        area.play_track(arg, client, raise_if_not_found=False, reveal_sneaked=False)
+        area.play_track(track_name, client, raise_if_not_found=False,
+                        reveal_sneaked=False, fade_option=fade_option)
 
     client.send_ooc('You have played track `{}` in the areas reachable from your area.'
-                    .format(arg))
+                    .format(track_name))
     client.send_ooc_others('(X) {} [{}] has played track `{}` in the areas reachable from your '
                            'area.'
-                           .format(client.displayname, client.id, arg),
+                           .format(client.displayname, client.id, track_name),
                            is_zstaff_flex=True, in_area=True)
     client.send_ooc_others('(X) {} [{}] has played track `{}` in the areas reachable from area '
                            '{}, which included your area.'
-                           .format(client.displayname, client.id, arg, client.area.name),
+                           .format(client.displayname, client.id, track_name, client.area.name),
                            is_zstaff_flex=True, in_area=areas-{client.area})
 
     # Warn if track is not in the music list
     try:
-        client.music_manager.get_music_data(arg)
+        client.music_manager.get_music_data(track_name)
     except MusicError.MusicNotFoundError:
-        client.send_ooc(f'(X) Warning: `{arg}` is not a recognized track name, so the server will '
+        client.send_ooc(f'(X) Warning: `{track_name}` is not a recognized track name, so the server will '
                         f'not loop it.')
 
 
@@ -7885,7 +8101,8 @@ def ooc_cmd_scream(client: ClientManager.Client, arg: str):
 
         if not client.area.private_area:
             client.send_ic_others(msg=arg, to_deaf=False,
-                                  showname='[S] ' + client.showname_else_char_showname,
+                                  showname='[S] ' +
+                                  client.showname_else_char_showname,
                                   folder=client.char_folder, char_id=client.char_id,
                                   bypass_deafened_starters=True,  # send_ic handles nerfing for deaf
                                   pred=lambda c: (not c.muted_global and
@@ -7902,7 +8119,8 @@ def ooc_cmd_scream(client: ClientManager.Client, arg: str):
                                                     c.area.name in client.area.scream_range))))
         else:
             client.send_ic_others(msg=arg, to_deaf=False,
-                                  showname='[S]' + client.showname_else_char_showname,
+                                  showname='[S]' +
+                                  client.showname_else_char_showname,
                                   folder=client.char_folder, char_id=client.char_id,
                                   in_area=client.area,
                                   bypass_deafened_starters=True,  # send_ic handles nerfing for deaf
@@ -7918,7 +8136,8 @@ def ooc_cmd_scream(client: ClientManager.Client, arg: str):
                                is_zstaff_flex=True, pred=lambda c: not c.muted_global)
 
     client.check_lurk()
-    logger.log_server(f'[{client.area.id}][{client.get_char_name()}][SCREAM]{arg}.', client)
+    logger.log_server(
+        f'[{client.area.id}][{client.get_char_name()}][SCREAM]{arg}.', client)
 
 
 def ooc_cmd_scream_range(client: ClientManager.Client, arg: str):
@@ -7982,11 +8201,14 @@ def ooc_cmd_scream_set(client: ClientManager.Client, arg: str):
     # This should just return a list with one area
     intended_area = Constants.parse_area_names(client, arg.split(', '))
     if len(intended_area) > 1:
-        raise ArgumentError('This command takes one area name (did you mean /scream_set_range ?).')
+        raise ArgumentError(
+            'This command takes one area name (did you mean /scream_set_range ?).')
 
-    intended_area = intended_area[0]  # Convert the one element list into the area name
+    # Convert the one element list into the area name
+    intended_area = intended_area[0]
     if intended_area == client.area:
-        raise ArgumentError('You cannot add or remove the current area from the scream range.')
+        raise ArgumentError(
+            'You cannot add or remove the current area from the scream range.')
 
     # If intended area not in range, add it
     if intended_area.name not in client.area.scream_range:
@@ -8064,11 +8286,13 @@ def ooc_cmd_scream_set_range(client: ClientManager.Client, arg: str):
                 raise ArgumentError('You may not include multiple areas when including a special '
                                     'keyword.')
             area_names = '<REACHABLE_AREAS>'
-            client.area.scream_range = client.area.reachable_areas.copy() - {client.area.name}
+            client.area.scream_range = client.area.reachable_areas.copy() - \
+                {client.area.name}
         else:
             areas = Constants.parse_area_names(client, raw_areas)
             if client.area in areas:
-                raise ArgumentError('You cannot add the current area to the scream range.')
+                raise ArgumentError(
+                    'You cannot add the current area to the scream range.')
             area_names = {area.name for area in areas}
             client.area.scream_range = area_names
 
@@ -8172,7 +8396,8 @@ def ooc_cmd_showname_freeze(client: ClientManager.Client, arg: str):
     client.server.showname_freeze = not client.server.showname_freeze
     status = {False: 'unfrozen', True: 'frozen'}
 
-    client.send_ooc('You have {} all shownames.'.format(status[client.server.showname_freeze]))
+    client.send_ooc('You have {} all shownames.'.format(
+        status[client.server.showname_freeze]))
     client.send_ooc_others('A mod has {} all shownames.'
                            .format(status[client.server.showname_freeze]),
                            is_officer=False, in_hub=None)
@@ -8244,10 +8469,12 @@ def ooc_cmd_showname_nuke(client: ClientManager.Client, arg: str):
             c.change_showname('')
 
     client.send_ooc('You have nuked all shownames.')
-    client.send_ooc_others('A mod has nuked all shownames.', is_officer=False, in_hub=None)
+    client.send_ooc_others('A mod has nuked all shownames.',
+                           is_officer=False, in_hub=None)
     client.send_ooc_others('{} [{}] has nuked all shownames.'
                            .format(client.name, client.id), is_officer=True, in_hub=None)
-    logger.log_server('{} has nuked all shownames.'.format(client.name), client)
+    logger.log_server(
+        '{} has nuked all shownames.'.format(client.name), client)
 
 
 def ooc_cmd_showname_set(client: ClientManager.Client, arg: str):
@@ -8304,7 +8531,8 @@ def ooc_cmd_showname_set(client: ClientManager.Client, arg: str):
         try:
             c.change_showname(showname)
         except (ClientError, ValueError) as exc:
-            client.send_ooc(f'Unable to set the showname of client {c.id}: {exc}')
+            client.send_ooc(
+                f'Unable to set the showname of client {c.id}: {exc}')
             continue
 
         if showname:
@@ -8316,23 +8544,27 @@ def ooc_cmd_showname_set(client: ClientManager.Client, arg: str):
                              .format(client.displayname, client.id, c.id, old_showname, c.showname,
                                      c.area.id))
                 o_message = ('Your showname was changed from `{}` to `{}` by a staff member.'
-                            .format(old_showname, showname))
+                             .format(old_showname, showname))
                 l_message = ('Changed showname of {} from {} to {}.'
-                            .format(c.ipid, old_showname, showname))
+                             .format(c.ipid, old_showname, showname))
             else:
-                s_message = 'You have set the showname of client {} to `{}`.'.format(c.id, showname)
+                s_message = 'You have set the showname of client {} to `{}`.'.format(
+                    c.id, showname)
                 w_message = ('(X) {} [{}] set the showname of client {} to `{}` in your zone ({}).'
                              .format(client.displayname, client.id, c.id, c.showname, c.area.id))
                 o_message = ('Your showname was set to `{}` by a staff member.'
-                            .format(showname))
+                             .format(showname))
                 l_message = ('Set showname of {} to {}.'
-                            .format(c.ipid, showname))
+                             .format(c.ipid, showname))
         else:
-            s_message = 'You have cleared the showname of client {}.'.format(c.id)
+            s_message = 'You have cleared the showname of client {}.'.format(
+                c.id)
             w_message = ('(X) {} [{}] cleared the showname `{}` of client {} in your zone ({}).'
                          .format(client.displayname, client.id, old_showname, c.id, c.area.id))
-            o_message = 'Your showname `{}` was cleared by a staff member.'.format(old_showname)
-            l_message = 'Cleared showname {} of {}.'.format(old_showname, c.ipid)
+            o_message = 'Your showname `{}` was cleared by a staff member.'.format(
+                old_showname)
+            l_message = 'Cleared showname {} of {}.'.format(
+                old_showname, c.ipid)
 
         client.send_ooc(s_message)
         client.send_ooc_others(w_message, not_to={c}, is_zstaff=c.area)
@@ -8398,8 +8630,8 @@ def ooc_cmd_sneak(client: ClientManager.Client, arg: str):
                                    not_to={c}, is_zstaff=True)
         else:
             client.send_ooc_others('(X) {} [{}] sneaked themselves ({}).'
-                                .format(client.displayname, client.id, c.area.id),
-                                is_zstaff=True)
+                                   .format(client.displayname, client.id, c.area.id),
+                                   is_zstaff=True)
         c.change_visibility(False)
 
 
@@ -8440,8 +8672,10 @@ def ooc_cmd_sneakself(client: ClientManager.Client, arg: str):
 
     non_targets = [c for c in client.get_multiclients() if c not in targets]
     if non_targets:
-        s_non_targets = Constants.cjoin([f'{c.displayname} [{c.id}]' for c in non_targets])
-        client.send_ooc(f'The following clients could not be sneaked: {s_non_targets}')
+        s_non_targets = Constants.cjoin(
+            [f'{c.displayname} [{c.id}]' for c in non_targets])
+        client.send_ooc(
+            f'The following clients could not be sneaked: {s_non_targets}')
 
 
 def ooc_cmd_spectate(client: ClientManager.Client, arg: str):
@@ -8503,12 +8737,14 @@ def ooc_cmd_summon(client: ClientManager.Client, arg: str):
     Summons the user with client ID 1 to Class Trial Room, 2 (note the ,\).
     """
 
-    Constants.assert_command(client, arg, is_staff=True, parameters='>0', split_spaces=True)
+    Constants.assert_command(client, arg, is_staff=True,
+                             parameters='>0', split_spaces=True)
 
     arg = arg.split(' ')
 
     if client.area.lobby_area and not client.is_officer():
-        raise ClientError('You must be authorized to summon clients in lobby areas.')
+        raise ClientError(
+            'You must be authorized to summon clients in lobby areas.')
 
     if len(arg) == 1:
         area = client.area
@@ -8530,7 +8766,8 @@ def ooc_cmd_summon(client: ClientManager.Client, arg: str):
         else:
             client.send_ooc('You summoned {} [{}] from area {} to area {}.'
                             .format(old_displayname, c.id, old_area.id, area.id))
-            c.send_ooc('You were summoned from the area to area {}.'.format(area.id))
+            c.send_ooc(
+                'You were summoned from the area to area {}.'.format(area.id))
             client.send_ooc_others('(X) {} [{}] summoned {} [{}] from area {} to area {}.'
                                    .format(client.displayname, client.id, old_displayname, c.id,
                                            old_area.id, area.id),
@@ -8548,7 +8785,8 @@ def ooc_cmd_summon(client: ClientManager.Client, arg: str):
                 party.remove_member(client)
                 client.send_ooc('You were also kicked off your party.')
                 for member in party.get_members():
-                    member.send_ooc('{} was summoned off your party.'.format(old_displayname))
+                    member.send_ooc(
+                        '{} was summoned off your party.'.format(old_displayname))
 
 
 def ooc_cmd_st(client: ClientManager.Client, arg: str):
@@ -8605,17 +8843,21 @@ def ooc_cmd_status(client: ClientManager.Client, arg: str):
         msg = '(X) '
     if not client.area.lights:
         if not client.is_staff():
-            raise ClientError('The lights are off, so you cannot see anything.')
+            raise ClientError(
+                'The lights are off, so you cannot see anything.')
         msg = '(X) '
 
     if arg:
         cm = client.server.client_manager
-        target, _, _ = cm.get_target_public(client, arg, only_in_area=not client.is_staff())
+        target, _, _ = cm.get_target_public(
+            client, arg, only_in_area=not client.is_staff())
 
         if target.status:
-            msg += (f'You note the following about {target.displayname}: {target.status}')
+            msg += (
+                f'You note the following about {target.displayname}: {target.status}')
         else:
-            msg += (f'You do not note anything unusual about {target.displayname}.')
+            msg += (
+                f'You do not note anything unusual about {target.displayname}.')
     else:
         if client.status:
             msg += (f'You note the following about yourself: {client.status}')
@@ -8658,7 +8900,8 @@ def ooc_cmd_status_set(client: ClientManager.Client, arg: str):
             c.send_ooc(f'You note something different about {client.displayname}.',
                        is_zstaff_flex=False)
 
-        client.area.broadcast_ic_attention(cond=lambda c: c in refreshed_clients, ding=False)
+        client.area.broadcast_ic_attention(
+            cond=lambda c: c in refreshed_clients, ding=False)
 
     else:
         client.status = ''
@@ -8702,9 +8945,11 @@ def ooc_cmd_status_set_other(client: ClientManager.Client, arg: str):
     if client == target:
         raise ClientError('You cannot set your own status with this command.')
     if not new_status and not target.status:
-        raise ClientError(f'{target.displayname} already does not have a player status.')
+        raise ClientError(
+            f'{target.displayname} already does not have a player status.')
 
-    client.send_ooc(f'You set the player status of {target.displayname} to `{new_status}`.')
+    client.send_ooc(
+        f'You set the player status of {target.displayname} to `{new_status}`.')
     if not (target.is_blind and target.is_deaf):
         target.send_ooc('Your status was updated. Do /status to check it out.')
 
@@ -8807,7 +9052,7 @@ def ooc_cmd_think(client: ClientManager.Client, arg: str):
                           is_zstaff_flex=False, in_area=True, pred=lambda c: c.is_mindreader)
     client.send_ooc_others(f'(X) {client.displayname} [{client.id}] thought `{arg}` '
                            f'({client.area.id}).',
-                          is_zstaff_flex=False, pred=lambda c: c.is_mindreader)
+                           is_zstaff_flex=False, pred=lambda c: c.is_mindreader)
 
 
 def ooc_cmd_time(client: ClientManager.Client, arg: str):
@@ -8833,8 +9078,10 @@ def ooc_cmd_time(client: ClientManager.Client, arg: str):
         current_time = time.strftime('%a %b %e %H:%M:%S %Y')
     else:
         offset_str = offset if float(offset) < 0 else '+{}'.format(offset)
-        current_time_str = datetime.datetime.utcnow() + datetime.timedelta(hours=float(offset))
-        current_time = current_time_str.strftime('%a %b %e %H:%M:%S (UTC{}) %Y'.format(offset_str))
+        current_time_str = datetime.datetime.utcnow(
+        ) + datetime.timedelta(hours=float(offset))
+        current_time = current_time_str.strftime(
+            '%a %b %e %H:%M:%S (UTC{}) %Y'.format(offset_str))
     client.send_ooc(current_time)
 
 
@@ -8862,7 +9109,8 @@ def ooc_cmd_time12(client: ClientManager.Client, arg: str):
         current_time = time.strftime('%a %b %e %I:%M:%S %p (%z) %Y')
     else:
         offset_str = offset if float(offset) < 0 else '+{}'.format(offset)
-        current_time_str = datetime.datetime.utcnow() + datetime.timedelta(hours=float(offset))
+        current_time_str = datetime.datetime.utcnow(
+        ) + datetime.timedelta(hours=float(offset))
         current_time = current_time_str.strftime('%a %b %e %I:%M:%S %p (UTC{}) %Y'
                                                  .format(offset_str))
     client.send_ooc(current_time)
@@ -8921,8 +9169,10 @@ def ooc_cmd_timer(client: ClientManager.Client, arg: str):
     else:
         is_public = True
 
-    client.server.task_manager.active_timers[name] = client #Add to active timers list
-    client.send_ooc('You initiated a timer "{}" of length {} seconds.'.format(name, length))
+    # Add to active timers list
+    client.server.task_manager.active_timers[name] = client
+    client.send_ooc(
+        'You initiated a timer "{}" of length {} seconds.'.format(name, length))
     client.send_ooc_others('(X) {} [{}] initiated a timer "{}" of length {} seconds in area {} '
                            '({}).'
                            .format(client.displayname, client.id, name, length,
@@ -8965,7 +9215,8 @@ def ooc_cmd_timer_end(client: ClientManager.Client, arg: str):
     try:
         timer_client = client.server.task_manager.active_timers[timer_name]
     except KeyError:
-        raise ClientError('Timer {} is not an active timer.'.format(timer_name))
+        raise ClientError(
+            'Timer {} is not an active timer.'.format(timer_name))
 
     # Non-staff are only allowed to end their own timers
     if not client.is_staff() and client != timer_client:
@@ -9011,7 +9262,8 @@ def ooc_cmd_timer_get(client: ClientManager.Client, arg: str):
         # Check specific timer
         timer_name = arg[0]
         if timer_name not in client.server.task_manager.active_timers:
-            raise ClientError('Timer {} is not an active timer.'.format(timer_name))
+            raise ClientError(
+                'Timer {} is not an active timer.'.format(timer_name))
         timers_to_check = [timer_name]
     else:  # Case len(arg) == 0
         # List all timers
@@ -9037,13 +9289,15 @@ def ooc_cmd_timer_get(client: ClientManager.Client, arg: str):
             continue
 
         _, remain_text = Constants.time_remaining(start, length)
-        string_of_timers += 'Timer {} has {} remaining.\n*'.format(timer_name, remain_text)
+        string_of_timers += 'Timer {} has {} remaining.\n*'.format(
+            timer_name, remain_text)
 
     if string_of_timers == "":  # No matching timers
         if len(arg) == 1:  # Checked for a specific timer
             # This case happens when a non-authorized user attempts to check
             # a non-public timer
-            string_of_timers = "Timer {} is not an active timer.  ".format(timer_name)
+            string_of_timers = "Timer {} is not an active timer.  ".format(
+                timer_name)
             # Double space intentional
         else:  # len(arg) == 0
             # This case happens when a non-authorized user attempts to check
@@ -9074,7 +9328,8 @@ def ooc_cmd_ToD(client: ClientManager.Client, arg: str):
 
     coin = ['truth', 'dare']
     flip = random.choice(coin)
-    client.area.broadcast_ooc('{} has to do a {}.'.format(client.displayname, flip))
+    client.area.broadcast_ooc(
+        '{} has to do a {}.'.format(client.displayname, flip))
     logger.log_server('[{}][{}]has to do a {}.'
                       .format(client.area.id, client.get_char_name(), flip), client)
 
@@ -9160,7 +9415,8 @@ def ooc_cmd_toggle_fp(client: ClientManager.Client, arg: str):
     client.first_person = not client.first_person
     status = {True: 'now', False: 'no longer'}
 
-    client.send_ooc('You are {} in first person mode.'.format(status[client.first_person]))
+    client.send_ooc('You are {} in first person mode.'.format(
+        status[client.first_person]))
 
 
 def ooc_cmd_toggle_fs(client: ClientManager.Client, arg: str):
@@ -9188,7 +9444,8 @@ def ooc_cmd_toggle_fs(client: ClientManager.Client, arg: str):
     client.forward_sprites = not client.forward_sprites
     status = {True: 'now', False: 'no longer'}
 
-    client.send_ooc('You are {} in forward sprites mode.'.format(status[client.forward_sprites]))
+    client.send_ooc('You are {} in forward sprites mode.'.format(
+        status[client.forward_sprites]))
 
 
 def ooc_cmd_toggle_global(client: ClientManager.Client, arg: str):
@@ -9214,7 +9471,8 @@ def ooc_cmd_toggle_global(client: ClientManager.Client, arg: str):
     client.muted_global = not client.muted_global
     status = {True: 'no longer', False: 'now'}
 
-    client.send_ooc('You will {} receive global messages.'.format(status[client.muted_global]))
+    client.send_ooc('You will {} receive global messages.'.format(
+        status[client.muted_global]))
 
 
 def ooc_cmd_toggle_music_list_default(client: ClientManager.Client, arg: str):
@@ -9271,7 +9529,8 @@ def ooc_cmd_toggle_pm(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, parameters='=0')
 
     client.pm_mute = not client.pm_mute
-    status = {True: 'You will no longer receive PMs.', False: 'You will now receive PMs.'}
+    status = {True: 'You will no longer receive PMs.',
+              False: 'You will now receive PMs.'}
 
     client.send_ooc(status[client.pm_mute])
 
@@ -9300,7 +9559,8 @@ def ooc_cmd_toggle_shownames(client: ClientManager.Client, arg: str):
     client.show_shownames = not client.show_shownames
     status = {False: 'off', True: 'on'}
 
-    client.send_ooc('Shownames turned {}.'.format(status[client.show_shownames]))
+    client.send_ooc('Shownames turned {}.'.format(
+        status[client.show_shownames]))
 
 
 def ooc_cmd_transient(client: ClientManager.Client, arg: str):
@@ -9337,7 +9597,8 @@ def ooc_cmd_transient(client: ClientManager.Client, arg: str):
         c.is_transient = not c.is_transient
         client.send_ooc('{} ({}) is {} transient to passage locks.'
                         .format(c.displayname, c.area.id, status[c.is_transient]))
-        c.send_ooc('You are {} transient to passage locks.'.format(status[c.is_transient]))
+        c.send_ooc('You are {} transient to passage locks.'.format(
+            status[c.is_transient]))
         c.send_music_list_view()  # Update their music list to reflect their new status
 
 
@@ -9371,7 +9632,7 @@ def ooc_cmd_trial(client: ClientManager.Client, arg: str):
             require_participant_character=True,
             autoadd_on_client_enter=False,
             autoadd_minigame_on_player_added=False
-            )
+        )
     except TrialError.AreaDisallowsBulletsError:
         raise ClientError('This area disallows bullets.')
     except TrialError.AreaHitGameConcurrentLimitError:
@@ -9381,9 +9642,11 @@ def ooc_cmd_trial(client: ClientManager.Client, arg: str):
     except TrialError.UserHitGameConcurrentLimitError:
         raise ClientError('You are already part of another trial.')
     except TrialError.UserHasNoCharacterError:
-        raise ClientError('You must have a participant character to create a trial.')
+        raise ClientError(
+            'You must have a participant character to create a trial.')
 
-    client.send_ooc(f'You have created trial `{trial.get_id()}` in area {client.area.name}.')
+    client.send_ooc(
+        f'You have created trial `{trial.get_id()}` in area {client.area.name}.')
     trial.add_leader(client)
 
     for user in client.area.clients:
@@ -9401,9 +9664,10 @@ def ooc_cmd_trial(client: ClientManager.Client, arg: str):
     players = sorted(trial.get_players(), key=lambda c: c.displayname)
     player_list = '\n'.join([
         f'[{player.id}] {player.displayname}' for player in players
-        ])
+    ])
 
-    client.send_ooc(f'These players were automatically added to your trial: \n{player_list}')
+    client.send_ooc(
+        f'These players were automatically added to your trial: \n{player_list}')
     client.send_ooc_others(f'(X) {client.displayname} [{client.id}] created trial '
                            f'`{trial.get_id()}` in area {client.area.name} ({client.area.id}).',
                            is_zstaff_flex=True)
@@ -9448,15 +9712,18 @@ def ooc_cmd_trial_add(client: ClientManager.Client, arg: str):
     try:
         trial.add_player(target)
     except TrialError.UserNotInAreaError:
-        raise ClientError('This player is not part of an area part of this trial.')
+        raise ClientError(
+            'This player is not part of an area part of this trial.')
     except TrialError.UserHasNoCharacterError:
-        raise ClientError('This player must have a participant character to join this trial.')
+        raise ClientError(
+            'This player must have a participant character to join this trial.')
     except TrialError.UserHitGameConcurrentLimitError:
         raise ClientError('This player is already part of another trial.')
     except TrialError.UserAlreadyPlayerError:
         raise ClientError('This player is already part of this trial.')
 
-    client.send_ooc(f'You added {target.displayname} [{target.id}] to your trial.')
+    client.send_ooc(
+        f'You added {target.displayname} [{target.id}] to your trial.')
     client.send_ooc_others(f'(X) {client.displayname} [{client.id}] added {target.displayname} '
                            f'[{target.id}] to your trial.',
                            pred=lambda c: c in trial.get_leaders())
@@ -9586,7 +9853,8 @@ def ooc_cmd_trial_focus(client: ClientManager.Client, arg: str):
     except TrialError.UserNotPlayerError:
         raise ClientError('This player is not part of your trial.')
     except TrialError.FocusIsInvalidError:
-        raise ClientError(f'This new focus value {new_focus} is outside the valid range.')
+        raise ClientError(
+            f'This new focus value {new_focus} is outside the valid range.')
 
     client.send_ooc(f'You have set the focus level of {target.displayname} [{target.id}] to '
                     f'{new_focus}.')
@@ -9639,7 +9907,8 @@ def ooc_cmd_trial_influence(client: ClientManager.Client, arg: str):
     except TrialError.UserNotPlayerError:
         raise ClientError('This player is not part of your trial.')
     except TrialError.InfluenceIsInvalidError:
-        raise ClientError(f'This new influence value {new_influence} is outside the valid range.')
+        raise ClientError(
+            f'This new influence value {new_influence} is outside the valid range.')
 
     client.send_ooc(f'You have set the influence level of {target.displayname} [{target.id}] to '
                     f'{new_influence}.')
@@ -9708,7 +9977,8 @@ def ooc_cmd_trial_join(client: ClientManager.Client, arg: str):
     except TrialError.UserNotInAreaError:
         raise ClientError('You are not part of an area part of this trial.')
     except TrialError.UserHasNoCharacterError:
-        raise ClientError('You must have a participant character to join this trial.')
+        raise ClientError(
+            'You must have a participant character to join this trial.')
     except TrialError.UserHitGameConcurrentLimitError:
         raise ClientError('You are already part of another trial.')
     except TrialError.UserAlreadyPlayerError:
@@ -9750,14 +10020,16 @@ def ooc_cmd_trial_kick(client: ClientManager.Client, arg: str):
     cm = client.server.client_manager
     target, _, _ = cm.get_target_public(client, arg, only_in_area=True)
     if client == target:
-        raise TrialError('You cannot kick yourself off your trial (consider using /trial_leave).')
+        raise TrialError(
+            'You cannot kick yourself off your trial (consider using /trial_leave).')
 
     try:
         trial.remove_player(target)
     except TrialError.UserNotPlayerError:
         raise ClientError('This player is not part of your trial.')
 
-    client.send_ooc(f'You have kicked {target.displayname} [{target.id}] off your trial.')
+    client.send_ooc(
+        f'You have kicked {target.displayname} [{target.id}] off your trial.')
     target.send_ooc('You were kicked off your trial.')
     client.send_ooc_others(f'(X) {client.name} [{client.id}] has kicked {target.displayname} '
                            f'[{target.id}] off your trial.',
@@ -9981,8 +10253,10 @@ def ooc_cmd_unblockdj(client: ClientManager.Client, arg: str):
     # Restore DJ permissions to matching targets
     for c in Constants.parse_id_or_ipid(client, arg):
         c.is_dj = True
-        logger.log_server('Restored DJ permissions to {}.'.format(c.ipid), client)
-        client.area.broadcast_ooc('{} had their DJ permissions restored.'.format(c.displayname))
+        logger.log_server(
+            'Restored DJ permissions to {}.'.format(c.ipid), client)
+        client.area.broadcast_ooc(
+            '{} had their DJ permissions restored.'.format(c.displayname))
 
 
 def ooc_cmd_undisemconsonant(client: ClientManager.Client, arg: str):
@@ -10015,7 +10289,8 @@ def ooc_cmd_undisemconsonant(client: ClientManager.Client, arg: str):
     for c in Constants.parse_id_or_ipid(client, arg):
         c.disemconsonant = False
         logger.log_server('Undisemconsonanted {}.'.format(c.ipid), client)
-        client.area.broadcast_ooc("{} was undisemconsonanted.".format(c.displayname))
+        client.area.broadcast_ooc(
+            "{} was undisemconsonanted.".format(c.displayname))
 
 
 def ooc_cmd_undisemvowel(client: ClientManager.Client, arg: str):
@@ -10048,7 +10323,8 @@ def ooc_cmd_undisemvowel(client: ClientManager.Client, arg: str):
     for c in Constants.parse_id_or_ipid(client, arg):
         c.disemvowel = False
         logger.log_server('Undisemvowelled {}.'.format(c.ipid), client)
-        client.area.broadcast_ooc("{} was undisemvowelled.".format(c.displayname))
+        client.area.broadcast_ooc(
+            "{} was undisemvowelled.".format(c.displayname))
 
 
 def ooc_cmd_unfollow(client: ClientManager.Client, arg: str):
@@ -10128,7 +10404,8 @@ def ooc_cmd_unglobalic(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
     client.multi_ic = None
-    client.send_ooc('Your IC messages will now be only sent to your current area.')
+    client.send_ooc(
+        'Your IC messages will now be only sent to your current area.')
 
 
 def ooc_cmd_unhandicap(client: ClientManager.Client, arg: str):
@@ -10203,10 +10480,12 @@ def ooc_cmd_unignore(client: ClientManager.Client, arg: str):
     if target == client:
         raise ClientError('You are already not ignoring yourself.')
     if target not in client.ignored_players:
-        raise ClientError(f'You are already not ignoring {target.displayname} [{target.id}].')
+        raise ClientError(
+            f'You are already not ignoring {target.displayname} [{target.id}].')
 
     client.ignored_players.remove(target)
-    client.send_ooc(f'You are no longer ignoring {target.displayname} [{target.id}].')
+    client.send_ooc(
+        f'You are no longer ignoring {target.displayname} [{target.id}].')
 
 
 def ooc_cmd_unilock(client: ClientManager.Client, arg: str):
@@ -10251,7 +10530,7 @@ def ooc_cmd_unilock(client: ClientManager.Client, arg: str):
     areas = Constants.parse_two_area_names(client, areas, area_duplicate=False,
                                            check_valid_range=False)
     now_reachable = client.hub.area_manager.change_passage_lock(client, areas, bilock=False,
-                                                                   change_passage_visibility=False)
+                                                                change_passage_visibility=False)
 
     status = {True: 'unlocked', False: 'locked'}
     now0 = status[now_reachable[0]]
@@ -10293,12 +10572,13 @@ def ooc_cmd_unilockh(client: ClientManager.Client, arg: str):
     Locks the passage in from Class Trial Room, 2 to area 0 (note the ,\ in the command).
     """
 
-    Constants.assert_command(client, arg, parameters='&1-2', is_staff=True, split_commas=True)
+    Constants.assert_command(
+        client, arg, parameters='&1-2', is_staff=True, split_commas=True)
 
     areas = Constants.parse_two_area_names(client, arg.split(', '), area_duplicate=False,
                                            check_valid_range=False)
     now_reachable = client.hub.area_manager.change_passage_lock(client, areas, bilock=False,
-                                                                   change_passage_visibility=True)
+                                                                change_passage_visibility=True)
 
     status = {True: 'unlocked and revealed', False: 'locked and hid'}
     now0 = status[now_reachable[0]]
@@ -10346,13 +10626,15 @@ def ooc_cmd_uninvite(client: ClientManager.Client, arg: str):
 
     targets = list()  # Start with empty list
     if client.is_officer() and arg.isdigit():
-        targets = client.server.client_manager.get_targets(client, TargetType.IPID, int(arg), False)
+        targets = client.server.client_manager.get_targets(
+            client, TargetType.IPID, int(arg), False)
         if targets:
             some_target = targets[0]
     if not targets:
         # Under the hood though, we need the IPID of the target, so we will still end up obtaining
         # it anyway. We want to get all clients whose IPID match the IPID of whatever we match
-        some_target, _, _ = client.server.client_manager.get_target_public(client, arg)
+        some_target, _, _ = client.server.client_manager.get_target_public(
+            client, arg)
         targets = client.server.client_manager.get_targets(client, TargetType.IPID,
                                                            some_target.ipid, False)
 
@@ -10368,8 +10650,10 @@ def ooc_cmd_uninvite(client: ClientManager.Client, arg: str):
         if client == c:
             client.send_ooc('You have uninvited yourself from this area.')
         else:
-            client.send_ooc('Client {} has been uninvited from your area.'.format(c.id))
-            c.send_ooc('You have been uninvited from area {}.'.format(client.area.name))
+            client.send_ooc(
+                'Client {} has been uninvited from your area.'.format(c.id))
+            c.send_ooc('You have been uninvited from area {}.'.format(
+                client.area.name))
 
 
 def ooc_cmd_unlock(client: ClientManager.Client, arg: str):
@@ -10470,8 +10754,10 @@ def ooc_cmd_unremove_h(client: ClientManager.Client, arg: str):
     # Remove the 'Remove H' effect on matching targets
     for c in Constants.parse_id_or_ipid(client, arg):
         c.remove_h = False
-        logger.log_server("Removed 'Remove H' effect on {}.".format(c.ipid), client)
-        client.area.broadcast_ooc("{} had the 'Remove H' effect removed.".format(c.displayname))
+        logger.log_server(
+            "Removed 'Remove H' effect on {}.".format(c.ipid), client)
+        client.area.broadcast_ooc(
+            "{} had the 'Remove H' effect removed.".format(c.displayname))
 
 
 def ooc_cmd_version(client: ClientManager.Client, arg: str):
@@ -10568,7 +10854,8 @@ def ooc_cmd_whisper(client: ClientManager.Client, arg: str):
     if client.is_muted:
         raise ClientError('You have been muted by a moderator.')
     if client.is_gagged:
-        raise ClientError('Your attempt at whispering failed because you are gagged.')
+        raise ClientError(
+            'Your attempt at whispering failed because you are gagged.')
 
     cm = client.server.client_manager
     target, _, msg = cm.get_target_public(client, arg, only_in_area=True)
@@ -10577,7 +10864,8 @@ def ooc_cmd_whisper(client: ClientManager.Client, arg: str):
     public_area = not client.area.private_area
 
     final_sender = client.displayname
-    final_rec_sender = 'Someone' if (target.is_deaf and target.is_blind) else client.displayname
+    final_rec_sender = 'Someone' if (
+        target.is_deaf and target.is_blind) else client.displayname
     final_st_sender = client.displayname
     final_target = target.displayname
     final_message = msg
@@ -10598,7 +10886,8 @@ def ooc_cmd_whisper(client: ClientManager.Client, arg: str):
                        bypass_deafened_starters=True)
         client.check_lurk()
 
-        target.send_ooc(f'{final_sender} whispered `{final_message}` to you.', to_deaf=False)
+        target.send_ooc(
+            f'{final_sender} whispered `{final_message}` to you.', to_deaf=False)
         target.send_ooc(f'{final_rec_sender} seemed to whisper something to you, but you could not '
                         f'make it out.', to_deaf=True)
         target.send_ic(msg=msg, pos=client.pos, folder=client.char_folder, char_id=client.char_id,
@@ -10706,19 +10995,23 @@ def ooc_cmd_whois(client: ClientManager.Client, arg: str):
 
     # If needed, pretend the identifier is a client ID
     if not targets and arg.isdigit():
-        targets = client.server.client_manager.get_targets(client, TargetType.ID, int(arg), False)
+        targets = client.server.client_manager.get_targets(
+            client, TargetType.ID, int(arg), False)
 
     # If still needed, pretend the identifier is a client IPID (only CM and mod)
     if not targets and arg.isdigit() and client.is_officer():
-        targets = client.server.client_manager.get_targets(client, TargetType.IPID, int(arg), False)
+        targets = client.server.client_manager.get_targets(
+            client, TargetType.IPID, int(arg), False)
 
     # If still needed, pretend the identifier is a client IPID (only CM and mod)
     if not targets and client.is_officer():
-        targets = client.server.client_manager.get_targets(client, TargetType.HDID, arg, False)
+        targets = client.server.client_manager.get_targets(
+            client, TargetType.HDID, arg, False)
 
     # If still needed, pretend the identifier is a character name
     if not targets:
-        targets = client.server.client_manager.get_targets(client, TargetType.CHAR_NAME, arg, True)
+        targets = client.server.client_manager.get_targets(
+            client, TargetType.CHAR_NAME, arg, True)
 
     # If still needed, pretend the identifier is an edited-to name
     if not targets:
@@ -10727,7 +11020,8 @@ def ooc_cmd_whois(client: ClientManager.Client, arg: str):
 
     # If still needed, pretend the identifier is a showname
     if not targets:
-        targets = client.server.client_manager.get_targets(client, TargetType.SHOWNAME, arg, True)
+        targets = client.server.client_manager.get_targets(
+            client, TargetType.SHOWNAME, arg, True)
 
     # If still needed, pretend the identifier is a character showname
     if not targets:
@@ -10736,14 +11030,16 @@ def ooc_cmd_whois(client: ClientManager.Client, arg: str):
 
     # If still needed, pretend the identifier is an OOC username
     if not targets:
-        targets = client.server.client_manager.get_targets(client, TargetType.OOC_NAME, arg, True)
+        targets = client.server.client_manager.get_targets(
+            client, TargetType.OOC_NAME, arg, True)
 
     # If still not found, too bad
     if not targets:
         raise ArgumentError('Target not found.')
 
     # Otherwise, send information
-    info = targets[0].get_info(as_mod=client.is_mod, as_cm=client.is_cm, identifier=arg)
+    info = targets[0].get_info(
+        as_mod=client.is_mod, as_cm=client.is_cm, identifier=arg)
     client.send_ooc(info)
 
 
@@ -10785,7 +11081,8 @@ def ooc_cmd_zone(client: ClientManager.Client, arg: str):
     try:
         zone_id = client.hub.zone_manager.new_zone(areas, {client})
     except ZoneError.AreaConflictError:
-        raise ZoneError('Some of the areas of your new zone are already part of some other zone.')
+        raise ZoneError(
+            'Some of the areas of your new zone are already part of some other zone.')
     except ZoneError.WatcherConflictError:
         raise ZoneError('You cannot create a zone while watching another.')
 
@@ -10795,7 +11092,8 @@ def ooc_cmd_zone(client: ClientManager.Client, arg: str):
     else:
         output = 'areas {} through {}'.format(lower_area.id, upper_area.id)
 
-    client.send_ooc('You have created zone `{}` containing {}.'.format(zone_id, output))
+    client.send_ooc(
+        'You have created zone `{}` containing {}.'.format(zone_id, output))
     client.send_ooc_others('(X) {} [{}] has created zone `{}` containing {} ({}).'
                            .format(client.displayname, client.id, zone_id, output, client.area.id),
                            is_officer=True)
@@ -10805,6 +11103,7 @@ def ooc_cmd_zone(client: ClientManager.Client, arg: str):
                            .format(zone_id, zone_id), is_staff=True, in_area=areas)
     client.send_ooc_others('Your area has been made part of zone `{}`.'.format(zone_id),
                            is_staff=False, in_area=areas)
+
 
 def ooc_cmd_zone_add(client: ClientManager.Client, arg: str):
     """ (STAFF ONLY)
@@ -10853,7 +11152,8 @@ def ooc_cmd_zone_add(client: ClientManager.Client, arg: str):
                        'its notifications, start watching it with /zone_watch {}'
                        .format(zone_id, zone_id))
         else:
-            c.send_ooc('Your area has been made part of zone `{}`.'.format(zone_id))
+            c.send_ooc(
+                'Your area has been made part of zone `{}`.'.format(zone_id))
 
 
 def ooc_cmd_zone_ambient(client: ClientManager.Client, arg: str):
@@ -10884,7 +11184,8 @@ def ooc_cmd_zone_ambient(client: ClientManager.Client, arg: str):
     zone = client.zone_watched
 
     targets = zone.get_players()
-    client.send_ooc(f'You have set the ambient sound effect of all areas of your zone to `{arg}`.')
+    client.send_ooc(
+        f'You have set the ambient sound effect of all areas of your zone to `{arg}`.')
     client.send_ooc_others(f'(X) {client.displayname} [{client.id}] have set the ambient sound '
                            f'effect of all areas of your zone to `{arg}` ({client.area.id}).',
                            is_zstaff=True)
@@ -10927,7 +11228,8 @@ def ooc_cmd_zone_ambient_end(client: ClientManager.Client, arg: str):
     zone = client.zone_watched
 
     targets = zone.get_players()
-    client.send_ooc('You have removed the area ambient sound effect of all areas of your zone.')
+    client.send_ooc(
+        'You have removed the area ambient sound effect of all areas of your zone.')
     client.send_ooc_others(f'(X) {client.displayname} [{client.id}] removed the area ambient sound '
                            f'effect of all areas of your zone ({client.area.id}).', is_zstaff=True)
 
@@ -10982,7 +11284,8 @@ def ooc_cmd_zone_autoglance(client: ClientManager.Client, arg: str):
     zone.set_property('Autoglance', zone_autoglance)
 
     status = {True: 'on', False: 'off'}
-    client.send_ooc(f'You turned {status[zone_autoglance]} autoglance in your zone.')
+    client.send_ooc(
+        f'You turned {status[zone_autoglance]} autoglance in your zone.')
     client.send_ooc_others(f'(X) {client.displayname} [{client.id}] has turned '
                            f'{status[zone_autoglance]} autoglance in your zone '
                            f'({client.area.id}).', is_zstaff=True)
@@ -11041,7 +11344,8 @@ def ooc_cmd_zone_autopass(client: ClientManager.Client, arg: str):
     zone.set_property('Autopass', zone_autopass)
 
     status = {True: 'on', False: 'off'}
-    client.send_ooc(f'You turned {status[zone_autopass]} autopass in your zone.')
+    client.send_ooc(
+        f'You turned {status[zone_autopass]} autopass in your zone.')
     client.send_ooc_others(f'(X) {client.displayname} [{client.id}] has turned '
                            f'{status[zone_autopass]} autopass in your zone '
                            f'({client.area.id}).', is_zstaff=True)
@@ -11083,7 +11387,8 @@ def ooc_cmd_zone_end(client: ClientManager.Client, arg: str):
     except ClientError.UnauthorizedError:
         # Case GM, who can only delete a zone they are watching
         try:
-            Constants.assert_command(client, arg, is_staff=True, parameters='=0')
+            Constants.assert_command(
+                client, arg, is_staff=True, parameters='=0')
         except ArgumentError:
             raise ClientError.UnauthorizedError('You must be authorized to use a zone name with '
                                                 'this command.')
@@ -11098,7 +11403,8 @@ def ooc_cmd_zone_end(client: ClientManager.Client, arg: str):
             raise ZoneError('You are not watching a zone.')
         target_zone = client.zone_watched
 
-    backup_watchers = target_zone.get_watchers()  # Keep backup reference to send to others
+    # Keep backup reference to send to others
+    backup_watchers = target_zone.get_watchers()
     backup_id = target_zone.get_id()
 
     target_zone.manager.delete_zone(backup_id)
@@ -11148,13 +11454,15 @@ def ooc_cmd_zone_global(client: ClientManager.Client, arg: str):
     if not client.is_officer() and not client.server.global_allowed:
         raise ClientError('Global chat is currently locked.')
     if not client.is_officer() and not client.area.global_allowed:
-        raise ClientError('You must be authorized to send global messages in this area.')
+        raise ClientError(
+            'You must be authorized to send global messages in this area.')
     if client.muted_global:
         raise ClientError('You have the global chat muted.')
 
     targets = target_zone.get_watchers()
     for area in target_zone.get_areas():
-        targets.update({c for c in area.clients if c.zone_watched in [None, target_zone]})
+        targets.update(
+            {c for c in area.clients if c.zone_watched in [None, target_zone]})
 
     for target in targets:
         if target.muted_global:
@@ -11164,7 +11472,8 @@ def ooc_cmd_zone_global(client: ClientManager.Client, arg: str):
             target.send_ooc(arg, username=(f'<dollar>ZG[{client.area.id}][{client.displayname}]'
                                            f'[{client.ipid}]'))
         elif target.is_gm:
-            target.send_ooc(arg, username=f'<dollar>ZG[{client.area.id}][{client.displayname}]')
+            target.send_ooc(
+                arg, username=f'<dollar>ZG[{client.area.id}][{client.displayname}]')
         else:
             target.send_ooc(arg, username=f'<dollar>ZG[{client.displayname}]')
 
@@ -11206,7 +11515,8 @@ def ooc_cmd_zone_handicap(client: ClientManager.Client, arg: str):
     send notifications once the timer expires.
     """
 
-    Constants.assert_command(client, arg, is_staff=True, parameters='&1-3', split_spaces=True)
+    Constants.assert_command(client, arg, is_staff=True,
+                             parameters='&1-3', split_spaces=True)
 
     if not client.zone_watched:
         raise ZoneError('You are not watching a zone.')
@@ -11235,14 +11545,15 @@ def ooc_cmd_zone_handicap(client: ClientManager.Client, arg: str):
     client.send_ooc('You imposed a movement handicap "{}" of length {} seconds in your zone.'
                     .format(name, length))
     client.send_ooc_others('(X) {} [{}] imposed a movement handicap "{}" of length {} seconds '
-                            'in your zone. ({}).'
-                            .format(client.displayname, client.id, name, length, client.area.id),
-                            is_zstaff=True)
+                           'in your zone. ({}).'
+                           .format(client.displayname, client.id, name, length, client.area.id),
+                           is_zstaff=True)
 
     zone.set_property('Handicap', (length, name, announce_if_over))
 
     for c in targets:
-        c.change_handicap(True, length=length, name=name, announce_if_over=announce_if_over)
+        c.change_handicap(True, length=length, name=name,
+                          announce_if_over=announce_if_over)
 
 
 def ooc_cmd_zone_handicap_affect(client: ClientManager.Client, arg: str):
@@ -11273,7 +11584,8 @@ def ooc_cmd_zone_handicap_affect(client: ClientManager.Client, arg: str):
     if not zone.is_property('Handicap'):
         raise ZoneError('Your zone currently does not have a handicap set up.')
 
-    current_zlength, current_zname, current_zannounce_if_over = zone.get_property('Handicap')
+    current_zlength, current_zname, current_zannounce_if_over = zone.get_property(
+        'Handicap')
 
     target = Constants.parse_id(client, arg)
     if not zone.is_area(target.area):
@@ -11283,10 +11595,10 @@ def ooc_cmd_zone_handicap_affect(client: ClientManager.Client, arg: str):
                     'to {} [{}].'
                     .format(current_zname, current_zlength, target.displayname, target.id))
     client.send_ooc_others('(X) {} [{}] made the movement handicap "{}" of length {} seconds '
-                            'in your zone apply to {} [{}]. ({}).'
-                            .format(client.displayname, client.id, current_zname, current_zlength,
-                                    client.area.id, target.displayname, target.id),
-                            is_zstaff=True, not_to={target})
+                           'in your zone apply to {} [{}]. ({}).'
+                           .format(client.displayname, client.id, current_zname, current_zlength,
+                                   client.area.id, target.displayname, target.id),
+                           is_zstaff=True, not_to={target})
 
     target.change_handicap(True, length=current_zlength, name=current_zname,
                            announce_if_over=current_zannounce_if_over)
@@ -11337,7 +11649,8 @@ def ooc_cmd_zone_iclock(client: ClientManager.Client, arg: str):
     zone.set_property('Ic_lock', zone_ic_lock)
 
     status = {True: 'locked', False: 'unlocked'}
-    client.send_ooc('You {} the IC chat in your zone.'.format(status[zone_ic_lock]))
+    client.send_ooc(
+        'You {} the IC chat in your zone.'.format(status[zone_ic_lock]))
     client.send_ooc_others(f'(X) {client.displayname} [{client.id}] has '
                            f'{status[zone_ic_lock]} the IC chat in your zone '
                            f'({client.area.id}).', is_zstaff_flex=True)
@@ -11346,7 +11659,7 @@ def ooc_cmd_zone_iclock(client: ClientManager.Client, arg: str):
         area.ic_lock = zone_ic_lock
 
         client.send_ooc_others(f'The IC chat has been {status[area.ic_lock]} in this area.'
-                            .format(), is_zstaff_flex=False, in_area=area)
+                               .format(), is_zstaff_flex=False, in_area=area)
 
         logger.log_server('[{}][{}]Changed IC lock in zone to {}'
                           .format(area.id, client.get_char_name(), area.ic_lock), client)
@@ -11566,7 +11879,8 @@ def ooc_cmd_zone_paranoia(client: ClientManager.Client, arg: str):
     except ValueError:
         raise ClientError('New zone paranoia level must be a number.')
     if not (-100 <= paranoia <= 100):
-        raise ClientError('New zone paranoia level must be a number from -100 to 100.')
+        raise ClientError(
+            'New zone paranoia level must be a number from -100 to 100.')
 
     zone.set_property('Paranoia', (paranoia,))
     client.send_ooc(f'You set the zone paranoia level of your zone to '
@@ -11616,9 +11930,11 @@ def ooc_cmd_zone_play(client: ClientManager.Client, arg: str):
 
     SYNTAX
     /zone_play <track_name>
+    /zone_play <track_name> <fade_type>
 
     PARAMETERS
     <track_name>: Track to play
+    <fade_type>: The fade behavior for the new song. May be: in, out, mix
 
     EXAMPLES
     Assuming you are watching zone z0...
@@ -11627,6 +11943,12 @@ def ooc_cmd_zone_play(client: ClientManager.Client, arg: str):
     >>> /zone_play CustomTrack.opus
     Plays CustomTrack.opus, which will only be audible to users with CustomTrack.opus) for all areas
     in zone z0.
+    >>> /play CustomTrack.opus in
+    Plays CustomTrack.opus in all areas in zone z0, the song will be faded in as it begins playing.
+    >>> /play CustomTrack.opus out
+    Plays CustomTrack.opus in all areas in zone z0, the previous song will fade out before the new one begins playing.
+    >>> /play CustomTrack.opus mix
+    Plays CustomTrack.opus in all areas in zone z0, fade will combine both in and out behavior.
     """
 
     try:
@@ -11637,21 +11959,58 @@ def ooc_cmd_zone_play(client: ClientManager.Client, arg: str):
     if not client.zone_watched:
         raise ZoneError('You are not watching a zone.')
 
+    track_name = arg
+    fade_option = FadeOption.NO_FADE
+
+    try:
+        arg_list = arg.split()
+        fade_option = FadeOption[arg_list.pop().upper()]
+        track_name = ' '.join(arg_list)
+    except Exception:
+        pass
+
     for zone_area in client.zone_watched.get_areas():
-        zone_area.play_track(arg, client, raise_if_not_found=False, reveal_sneaked=False)
+        zone_area.play_track(
+            track_name, client, raise_if_not_found=False, reveal_sneaked=False, fade_option=fade_option)
 
     client.send_ooc('You have played track `{}` in your zone.'
-                    .format(arg))
+                    .format(track_name))
     client.send_ooc_others('(X) {} [{}] has played track `{}` in your zone ({}).'
-                           .format(client.displayname, client.id, arg, client.area.id),
+                           .format(client.displayname, client.id, track_name, client.area.id),
                            is_zstaff=True)
 
     # Warn if track is not in the music list
     try:
-        client.music_manager.get_music_data(arg)
+        client.music_manager.get_music_data(track_name)
     except MusicError.MusicNotFoundError:
-        client.send_ooc(f'(X) Warning: `{arg}` is not a recognized track name, so the server will '
+        client.send_ooc(f'(X) Warning: `{track_name}` is not a recognized track name, so the server will '
                         f'not loop it.')
+
+
+def ooc_cmd_zone_set_legacy_jukebox(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Sets legacy jukebox behavior in the zone. When enabled,
+    the current song do not automatically play whenever
+    a client joins the area.
+    """
+
+    try:
+        Constants.assert_command(client, arg, is_staff=True, parameters='>0')
+    except ArgumentError:
+        raise ArgumentError('You must specify a state.')
+
+    if not client.zone_watched:
+        raise ZoneError('You are not watching a zone.')
+
+    state = arg.lower() in ["true", "1"]
+    for zone_area in client.zone_watched.get_areas():
+        zone_area.legacy_jukebox = state
+
+    state_string = ("disabled", "enabled")[state]
+    client.send_ooc(f'You have {state} legacy jukebox behavior in your zone.')
+    client.send_ooc_others('(X) {} [{}] has {} legacy jukebox behavior track in your zone ({}).'
+                           .format(client.displayname, client.id, state, client.area.id),
+                           is_zstaff=True)
 
 
 def ooc_cmd_zone_remove(client: ClientManager.Client, arg: str):
@@ -11682,7 +12041,8 @@ def ooc_cmd_zone_remove(client: ClientManager.Client, arg: str):
     area = Constants.parse_area_names(client, arg).pop()
 
     target_zone = client.zone_watched
-    backup_watchers = client.zone_watched.get_watchers()  # In case zone gets automatically deleted
+    # In case zone gets automatically deleted
+    backup_watchers = client.zone_watched.get_watchers()
     try:
         target_zone.remove_area(area)
     except ZoneError.AreaNotInZoneError:
@@ -11698,7 +12058,8 @@ def ooc_cmd_zone_remove(client: ClientManager.Client, arg: str):
     zone_id = target_zone.get_id()
     if not target_zone.get_areas():
         for c in backup_watchers:
-            c.send_ooc('(X) As your zone no longer covers any areas, it has been deleted.')
+            c.send_ooc(
+                '(X) As your zone no longer covers any areas, it has been deleted.')
         client.send_ooc_others('(X) Zone `{}` was automatically ended as it no longer covered '
                                'any areas.'.format(zone_id), is_officer=True,
                                not_to=backup_watchers)
@@ -11746,13 +12107,15 @@ def ooc_cmd_zone_tick(client: ClientManager.Client, arg: str):
         raise ClientError(f'Invalid chat tick rate {arg}')
 
     if chat_tick_rate <= 0 or chat_tick_rate >= 1000:
-        raise ClientError(f'The chat tick rate must be a number between 0 and 1000 exclusive.')
+        raise ClientError(
+            f'The chat tick rate must be a number between 0 and 1000 exclusive.')
 
     targets = zone.get_players()
-    client.send_ooc('You have set the zone chat tick rate to {} ms.'.format(chat_tick_rate))
+    client.send_ooc(
+        'You have set the zone chat tick rate to {} ms.'.format(chat_tick_rate))
     client.send_ooc_others('(X) {} [{}] have set the chat tick rate of your zone to {} ms. ({}).'
-                            .format(client.displayname, client.id, chat_tick_rate, client.area.id),
-                            is_zstaff=True)
+                           .format(client.displayname, client.id, chat_tick_rate, client.area.id),
+                           is_zstaff=True)
 
     zone.set_property('Chat_tick_rate', chat_tick_rate)
 
@@ -11796,8 +12159,8 @@ def ooc_cmd_zone_tick_remove(client: ClientManager.Client, arg: str):
     targets = zone.get_players()
     client.send_ooc('You have removed the chat tick rate of your zone.')
     client.send_ooc_others('(X) {} [{}] removed the chat tick rate of your zone. ({}).'
-                            .format(client.displayname, client.id, client.area.id),
-                            is_zstaff=True)
+                           .format(client.displayname, client.id, client.area.id),
+                           is_zstaff=True)
 
     for c in targets:
         c.send_chat_tick_rate(chat_tick_rate=None)
@@ -11839,8 +12202,8 @@ def ooc_cmd_zone_unhandicap(client: ClientManager.Client, arg: str):
 
     client.send_ooc('You removed the movement handicap in your zone.')
     client.send_ooc_others('(X) {} [{}] removed the movement handicap in your zone ({}).'
-                            .format(client.displayname, client.id, client.area.id),
-                            is_zstaff=True)
+                           .format(client.displayname, client.id, client.area.id),
+                           is_zstaff=True)
 
     for c in targets:
         try:
@@ -11872,7 +12235,8 @@ def ooc_cmd_zone_unwatch(client: ClientManager.Client, arg: str):
     target_zone = client.zone_watched
     target_zone.remove_watcher(client)
 
-    client.send_ooc('You are no longer watching zone `{}`.'.format(target_zone.get_id()))
+    client.send_ooc(
+        'You are no longer watching zone `{}`.'.format(target_zone.get_id()))
     if target_zone.get_watchers():
         client.send_ooc_others('(X) {} [{}] is no longer watching your zone.'
                                .format(client.displayname, client.id),
@@ -11919,7 +12283,8 @@ def ooc_cmd_zone_watch(client: ClientManager.Client, arg: str):
     except ZoneError.WatcherConflictError:
         raise ZoneError('You cannot watch a zone while watching another.')
 
-    client.send_ooc('You are now watching zone `{}`.'.format(target_zone.get_id()))
+    client.send_ooc(
+        'You are now watching zone `{}`.'.format(target_zone.get_id()))
     for c in target_zone.get_watchers():
         if c == client:
             continue
@@ -12095,7 +12460,8 @@ def ooc_cmd_exec(client: Union[ClientManager.Client, None], arg: str):
             # client.send_ooc("Executed {}".format(arg))
         except Exception as e:
             try:
-                client.send_ooc('Python error: {}: {}'.format(type(e).__name__, e), username='')
+                client.send_ooc('Python error: {}: {}'.format(
+                    type(e).__name__, e), username='')
             except Exception:
                 pass
     globals().pop('client', None)  # Don't really want "client" to be a global variable

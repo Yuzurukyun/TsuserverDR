@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
 #           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
+#           (C) 2022 Tricky Leifa (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -40,6 +41,7 @@ if typing.TYPE_CHECKING:
     from server.hub_manager import _Hub
     from server.tsuserver import TsuserverDR
 
+
 class ZoneManager:
     """
     A mutable data type for a manager for the zones in a server.
@@ -53,13 +55,13 @@ class ZoneManager:
         """
 
         def __init__(
-            self,
-            server: TsuserverDR,
-            manager: ZoneManager,
-            hub: _Hub,
-            zone_id: str,
-            areas: Set[AreaManager.Area],
-            watchers: Set[ClientManager.Client]):
+                self,
+                server: TsuserverDR,
+                manager: ZoneManager,
+                hub: _Hub,
+                zone_id: str,
+                areas: Set[AreaManager.Area],
+                watchers: Set[ClientManager.Client]):
             """
             Initialization method for a zone.
 
@@ -93,10 +95,10 @@ class ZoneManager:
 
             self._is_deleted = False
             self.listener = Listener(self, {
-                        'area_client_left_final': self._on_area_client_left_final,
-                        'area_client_entered_final': self._on_area_client_entered_final,
-                        'client_destroyed': self._on_client_destroyed,
-                        })
+                'area_client_left_final': self._on_area_client_left_final,
+                'area_client_entered_final': self._on_area_client_entered_final,
+                'client_destroyed': self._on_client_destroyed,
+            })
 
             self._add_areas(areas)
             self._add_watchers(watchers)
@@ -450,7 +452,7 @@ class ZoneManager:
         def _remove_player(self, user: ClientManager.Client):
             if user not in self._players:
                 raise ZoneError.PlayerNotInZoneError('User {} is not a player of zone {}.'
-                                                      .format(user, self))
+                                                     .format(user, self))
 
             self._players.remove(user)
             self._cleanup_removed_player(user)
@@ -619,7 +621,7 @@ class ZoneManager:
             watchers = sorted(self._watchers)
             if watchers:
                 watcher_infos = ['[{}] {} ({})'
-                                .format(c.id, c.displayname, c.area.id) for c in watchers]
+                                 .format(c.id, c.displayname, c.area.id) for c in watchers]
                 watcher_description = Constants.cjoin(watcher_infos)
             else:
                 watcher_description = 'None'
@@ -1031,14 +1033,14 @@ class ZoneManager:
         assert len(self._zones.keys()) < self._zone_limit, (
             'Expected the server cap of {} to be enforced, found the server linked to '
             '{} zones instead.'.format(self._zone_limit, len(self._zones.keys()))
-            )
+        )
 
         # 2.
         for zone_id, zone in self._zones.items():
             assert zone._zone_id == zone_id, (
                 'Expected zone {} associated with ID {} to have the same ID, found it had ID '
                 '{} instead.'.format(zone, zone_id, zone._zone_id)
-                )
+            )
 
         for zone in self._zones.values():
             # 3.
@@ -1046,14 +1048,14 @@ class ZoneManager:
             assert not conflicting_areas, (
                 'Expected no conflicting areas, but zone {} introduces repeated areas {}.'
                 .format(zone, conflicting_areas)
-                )
+            )
 
             # 4.
             for area in zone._areas:
                 assert area.in_zone == zone, (
                     'Expected area {} to recognize it being a part of zone {}, found it '
                     'recognized {} instead.'.format(area, zone, area.in_zone)
-                    )
+                )
                 areas_so_far.add(area)
 
             # 5.
@@ -1061,14 +1063,14 @@ class ZoneManager:
             assert not conflicting_watchers, (
                 'Expected no conflicting watchers, but zone {} introduces conflicting watchers '
                 '{}.'.format(zone, conflicting_watchers)
-                )
+            )
 
             # 6.
             for watcher in zone._watchers:
                 assert watcher.zone_watched == zone, (
                     'Expected watcher {} to recognize it is watching zone {}, found it '
                     'recognized {} instead.'.format(watcher, zone, watcher.zone_watched)
-                    )
+                )
                 watchers_so_far.add(watcher)
 
         # 7.
@@ -1078,7 +1080,7 @@ class ZoneManager:
             assert area.in_zone is None, (
                 'Expected area {} not part of a zone to recognize it not being in a zone, '
                 'found it recognized {} instead.'.format(area, area.in_zone)
-                )
+            )
 
         # 8.
         for watcher in self.hub.get_players():
@@ -1087,4 +1089,4 @@ class ZoneManager:
             assert watcher.zone_watched is None, (
                 'Expected watcher {} to recognize that it is not watching a zone, found it '
                 'recognized it watched {} instead.'.format(watcher, watcher.zone_watched)
-                )
+            )

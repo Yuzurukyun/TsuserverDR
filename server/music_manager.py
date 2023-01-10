@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
 #           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
+#           (C) 2022 Tricky Leifa (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -30,6 +31,7 @@ from server.validate.music import ValidateMusic
 if typing.TYPE_CHECKING:
     from server.hub_manager import _Hub
     from server.tsuserver import TsuserverDR
+
 
 class MusicManager(AssetManager):
     """
@@ -250,7 +252,16 @@ class MusicManager(AssetManager):
         except MusicError.MusicNotFoundError:
             return False
 
-    def get_client_view(self) -> List[str]:
+    def get_music_list(self) -> List[str]:
+        music_list = list()
+        for item in self._music:
+            music_list.append("category")
+            music_list.append(item['category'])
+            for song in item["songs"]:
+                music_list.append(song["name"])
+        return music_list
+
+    def get_legacy_music_list(self) -> List[str]:
         """
         Return the list of music of the music manager in a format a client can understand.
 
@@ -268,7 +279,6 @@ class MusicManager(AssetManager):
             for song in songs:
                 name = song['name']
                 prepared_music_list.append(name)
-
         return prepared_music_list
 
     def _check_structure(self):

@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
 #           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
+#           (C) 2022 Tricky Leifa (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -60,7 +61,7 @@ class ValidateAreas(Validate):
             'rp_getareas_allowed': True,
             'scream_range': '',
             'song_switch_allowed': False,
-            }
+        }
 
         current_area_id = 0
         area_parameters = list()
@@ -81,7 +82,7 @@ class ValidateAreas(Validate):
             reserved_names = {
                 '<ALL>',
                 '<REACHABLE_AREAS>',
-                }
+            }
 
             for name in reserved_names:
                 if item['area'] == name:
