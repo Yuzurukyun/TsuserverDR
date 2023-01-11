@@ -34,7 +34,7 @@ class DefaultDROProtocol(_Singleton):
 
     VERSION_TO_SEND = [1, 3, 0]
 
-    HAS_CLIENTSIDE_MUSIC_LOOPING = False
+    HAS_CLIENTSIDE_MUSIC_LOOPING = True
     HAS_DISTINCT_AREA_AND_MUSIC_LIST_OUTGOING_PACKETS = True
     HAS_ACKMS = False
     HAS_JOINED_AREA = True
@@ -345,12 +345,17 @@ class DefaultDROProtocol(_Singleton):
     ]
 
 
+class ClientDRO1d4d0(DefaultDROProtocol):
+    VERSION_TO_SEND = [1, 4, 0]
+
+
 class ClientDRO1d3d0(DefaultDROProtocol):
     VERSION_TO_SEND = [1, 3, 0]
 
 
 class ClientDRO1d2d3(DefaultDROProtocol):
     VERSION_TO_SEND = [1, 2, 3]
+    HAS_CLIENTSIDE_MUSIC_LOOPING = False
 
     FM_OUTBOUND = [
         ('legacy_music_ao2_list', list()),  # 0
@@ -394,7 +399,6 @@ class ClientDRO1d1d0(ClientDRO1d2d3):
 
 class ClientDRO1d0d0(ClientDRO1d2d3):
     VERSION_TO_SEND = [1, 0, 0]
-    HAS_CLIENTSIDE_MUSIC_LOOPING = False
     HAS_DISTINCT_AREA_AND_MUSIC_LIST_OUTGOING_PACKETS = False
     HAS_ACKMS = True
     HAS_JOINED_AREA = False

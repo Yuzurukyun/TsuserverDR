@@ -139,9 +139,11 @@ def net_cmd_id(client: ClientManager.Client, pargs: Dict[str, Any]):
             if release >= 2:
                 # DRO 2???
                 # Placeholder
-                client.packet_handler = clients.ClientDRO1d3d0()
+                client.packet_handler = clients.ClientDRO1d4d0()
             elif release >= 1:
-                if major >= 3:
+                if major >= 4:
+                    client.packet_handler = clients.ClientDRO1d4d0()
+                elif major >= 3:
                     client.packet_handler = clients.ClientDRO1d3d0()
                 elif major >= 2:
                     if minor >= 3:
