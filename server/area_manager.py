@@ -810,7 +810,7 @@ class AreaManager(AssetManager):
 
             def loop(zeroth_loop):
                 for player in self.clients:
-                    if zeroth_loop or not player.packet_handler.HAS_CLIENTSIDE_MUSIC_LOOPING:
+                    if zeroth_loop or self.legacy_jukebox or not player.packet_handler.HAS_CLIENTSIDE_MUSIC_LOOPING:
                         player.send_music(**loop_pargs)
 
                 if self.music_looper:

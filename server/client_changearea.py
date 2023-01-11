@@ -959,11 +959,11 @@ class ClientChangeArea:
         if not old_dname:
             old_dname = client.displayname
 
-        try:
-            area.play_current_track(only_for={client}, force_same_restart=0)
-        except AreaError:
-            # This should only happen if there's no music
-            pass
+        if not area.legacy_jukebox:
+            try:
+                area.play_current_track(only_for={client}, force_same_restart=0)
+            except AreaError:
+                pass
 
         client.send_health(side=1, health=client.area.hp_def)
         client.send_health(side=2, health=client.area.hp_pro)
@@ -1028,12 +1028,6 @@ class ClientChangeArea:
             client.remembered_locked_passages[area.id] = set()
 
         client.send_area_ambient(area.ambient)
-
-        if not area.legacy_jukebox and area.music_looper:
-            try:
-                area.play_current_track(only_for={client}, force_same_restart=0)
-            except AreaError:
-                pass
 
         if old_area:
             old_area.publisher.publish('area_client_left_final', {
