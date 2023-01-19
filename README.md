@@ -357,9 +357,9 @@ GMs can:
     - Messages will not be sent if sneaking. Altered messages will be sent if the area's lights are turned off.
     - If no ID is given, target is yourself.
 * **bilock** "area 1", "area 2"
-    - Changes the passage locked status (locked/unlocked) between two areas, or from the current area to area 1 if just given one area. Locking a passage in such a way does not change its current visibility to non-GMs.
+    - Changes the passage locked status (locked/unlocked) between two areas, or from the current area to area 1 if just given one area. Locking a passage in such a way does not change its current visibility to non-GMs. Areas do not need to be initially connected for this to work.
 * **bilockh** "area 1", "area 2"
-    - Changes the passage locked status (locked/unlocked) between two areas, or from the current area to area 1 if just given one area. Locking a passage in such a way hides it from non-GMs; unlocking it reveals it to non-GMs.
+    - Changes the passage locked status (locked/unlocked) between two areas, or from the current area to area 1 if just given one area. Locking a passage in such a way hides it from non-GMs; unlocking it reveals it to non-GMs. Areas do not need to be initially connected for this to work.
 * **blind** "ID"
     - Changes the blind status of a target.
     - Blind players will receive no character sprites nor background with IC messages and cannot use "visual" commands such as /look, /getarea, etc.
