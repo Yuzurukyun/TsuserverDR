@@ -450,7 +450,7 @@ class ClientDRO1d0d0(ClientDRO1d2d3):
     ]
 
 
-class ClientAO2d10(ClientDRO1d2d3):
+class ClientAO2d10(DefaultDROProtocol):
     HAS_JOINED_AREA = False
     ALLOWS_REPEATED_MESSAGES_FROM_SAME_CHAR = False
     ALLOWS_CLEARING_MODIFIED_MESSAGE_FROM_SELF = False
