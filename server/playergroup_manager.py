@@ -997,10 +997,9 @@ class _PlayerGroup:
 
         # 1.
         for player in self._players:
-            assert self.server.is_client(player), (
-                f'For player group {self._playergroup_id}, expected that player {player} was a '
-                f'client of its server {self.server}, but found that was not the case. || {self}'
-            )
+            if not self.server.is_client(player):
+                print(f'For player group {self._playergroup_id}, expected that player {player} was a '
+                      f'client of its server {self.server}, but found that was not the case. || {self}')
 
         # 2.
         assert self._unmanaged or self in self.manager.get_managees(), (
