@@ -194,9 +194,10 @@ class ClientChangeArea:
         1. True if such RP related notifications to be sent should include a "ding" effect, False
         otherwise.
         """
-
+        
         found_something, ding_something = self.notify_me(area, old_dname,
                                                          ignore_bleeding=ignore_bleeding)
+        
         if not just_me:
             self.notify_others(area, old_dname, ignore_bleeding=ignore_bleeding,
                                ignore_autopass=ignore_autopass)
@@ -912,6 +913,7 @@ class ClientChangeArea:
             return
 
         old_area.remove_client(client)
+        client.send_player_list_to_area()
         client.area = area
         client.new_area = area  # Update again, as it may have not been set in _do_change_area
         area.new_client(client)
@@ -985,6 +987,7 @@ class ClientChangeArea:
                                    tod_backgrounds=client.area.get_background_tod())
         client.send_evidence_list()
         if client.packet_handler.HAS_JOINED_AREA:
+            client.send_player_list_to_area()
             client.send_joined_area()
         else:
             client.send_ic_blankpost()

@@ -67,6 +67,10 @@ class DefaultDROProtocol(_Singleton):
         ('player_limit', 0),  # 1
     ]
 
+    LP_OUTBOUND = [
+        ('player_data_ao2_list', list()), 
+    ]
+
     ID_INBOUND = [
         ('client_software', ArgType.STR),  # 0
         ('client_software_version', ArgType.STR),  # 1

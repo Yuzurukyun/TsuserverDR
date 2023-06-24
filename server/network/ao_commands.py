@@ -941,6 +941,7 @@ def net_cmd_sn(client: ClientManager.Client, pargs: Dict[str, Any]):
 
     try:
         client.command_change_showname(pargs['showname'], False)
+        client.send_player_list_to_area()
     except ClientError as exc:
         client.send_ooc(exc)
 
@@ -952,6 +953,7 @@ def net_cmd_chrini(client: ClientManager.Client, pargs: Dict[str, Any]):
 
     client.change_character_ini_details(pargs['actual_folder_name'],
                                         pargs['actual_character_showname'])
+    client.send_player_list_to_area()
 
 
 def net_cmd_re(self, _):
