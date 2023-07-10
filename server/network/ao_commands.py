@@ -393,7 +393,7 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
         return
     if pargs['evidence'] < 0:
         return
-    if pargs['ding'] not in (0, 1, 2, 3, 4, 5, 6, 7):  # Effects
+    if pargs['ding'] not in (0, 1, 2, 3, 4, 5, 6, 7, 8):  # Effects
         return
     if pargs['color'] not in (0, 1, 2, 3, 4, 5, 6, 7, 8):
         return
