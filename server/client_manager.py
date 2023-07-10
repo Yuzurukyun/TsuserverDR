@@ -1065,15 +1065,16 @@ class ClientManager:
             return area_list+music_list
         
         def send_player_list(self):
-            player_stuff = list()
-            for c in self.area.clients: 
-                if(c != self and c.is_visible and c.char_id is not None):
-                    player_stuff.append(str(c.id))
-                    player_stuff.append(str(c.showname_else_char_showname))
-                    player_stuff.append(str(c.char_folder))
-            self.send_command_dict('LP', {
-                'player_data_ao2_list': player_stuff
-            })
+            if self.area.rp_getarea_allowed and self.area.lights:
+                player_stuff = list()
+                for c in self.area.clients: 
+                    if(c != self and c.is_visible and c.char_id is not None):
+                        player_stuff.append(str(c.id))
+                        player_stuff.append(str(c.showname_else_char_showname))
+                        player_stuff.append(str(c.char_folder))
+                self.send_command_dict('LP', {
+                   'player_data_ao2_list': player_stuff
+                })
 
         def send_player_list_to_area(self):
             for c in self.area.clients: 
