@@ -349,6 +349,9 @@ class DefaultDROProtocol(_Singleton):
     ]
 
 
+class ClientDRO1d5d0(DefaultDROProtocol):
+    VERSION_TO_SEND = [1, 5, 0]
+
 class ClientDRO1d4d0(DefaultDROProtocol):
     VERSION_TO_SEND = [1, 4, 0]
 
