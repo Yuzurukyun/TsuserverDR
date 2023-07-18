@@ -1063,25 +1063,10 @@ class ClientManager:
             music_list = self.music_manager.get_legacy_music_list()
 
             return area_list+music_list
-        
-        def send_player_list(self):
-            if self.area.rp_getarea_allowed and self.area.lights:
-                player_stuff = list()
-                for c in self.area.clients: 
-                    if(c != self and c.is_visible and c.char_id is not None):
-                        player_stuff.append(str(c.id))
-                        player_stuff.append(str(c.showname_else_char_showname))
-                        player_stuff.append(str(c.char_folder))
-                self.send_command_dict('LP', {
-                   'player_data_ao2_list': player_stuff
-                })
 
         def send_player_list_to_area(self):
-            for c in self.area.clients: 
-                c.send_player_list()                       
+            self.area.broadcast_player_list()                   
 
-
-                
         def send_music_list_view(self):
             if self.viewing_hubs:
                 area_list = self.hub.manager.get_client_view(self)
@@ -1344,6 +1329,7 @@ class ClientManager:
             if new_status:  # Changed to visible (e.g. through /reveal)
                 self.send_ooc("You are no longer sneaking.")
                 self.is_visible = True
+                self.send_player_list_to_area()
 
                 # Player should also no longer be under the effect of the server's sneaked handicap.
                 # Thus, we check if there existed a previous movement handicap that had a shorter
@@ -1389,6 +1375,7 @@ class ClientManager:
             else:  # Changed to invisible (e.g. through /sneak)
                 self.send_ooc("You are now sneaking.")
                 self.is_visible = False
+                self.send_player_list_to_area()
                 shandicap = self.server.config['sneak_handicap']
                 # Check to see if should impose the server's sneak handicap on the player
                 # This should only happen if two conditions are satisfied:

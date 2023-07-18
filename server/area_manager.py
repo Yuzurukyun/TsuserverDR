@@ -243,6 +243,22 @@ class AreaManager(AssetManager):
             for client in self.clients:
                 client.send_command_dict(cmd, dargs)
 
+        def broadcast_player_list(self):
+            """
+            Send the player list packet to everyone in the area.
+            """
+            for target_client in self.clients:
+                player_stuff = list()
+                if self.rp_getarea_allowed and self.lights:
+                    for c in self.clients: 
+                        if(c != target_client and c.is_visible and c.char_id is not None):
+                            player_stuff.append(str(c.id))
+                            player_stuff.append(str(c.showname_else_char_showname))
+                            player_stuff.append(str(c.char_folder))
+                target_client.send_command_dict('LP', {
+                    'player_data_ao2_list': player_stuff
+                })
+
         def broadcast_ooc(self, msg: str):
             """
             Send an OOC server message to the clients in the area.
@@ -668,7 +684,6 @@ class AreaManager(AssetManager):
                 raise AreaError('The lights are already turned {}.'.format(status[new_lights]))
 
             self.lights = new_lights
-
             self.change_background(self.background, validate=False)  # Allow restoring custom bg.
 
             # Announce light status change
@@ -693,6 +708,8 @@ class AreaManager(AssetManager):
                                           is_zstaff_flex=True, in_area=area if area else True)
             else:  # Otherwise, send generic message
                 self.broadcast_ooc('The lights were turned {}.'.format(status[new_lights]))
+
+            self.broadcast_player_list()
 
             # Notify the parties in the area that the lights have changed
             for party in self.parties:
