@@ -251,7 +251,7 @@ class AreaManager(AssetManager):
                 player_stuff = list()
                 if self.rp_getarea_allowed and self.lights:
                     for c in self.clients: 
-                        if(c != target_client and c.is_visible and c.char_id is not None):
+                        if(c != target_client and c.is_visible and c.char_id is not None and c.char_id is not -1):
                             player_stuff.append(str(c.id))
                             player_stuff.append(str(c.showname_else_char_showname))
                             player_stuff.append(str(c.char_folder))

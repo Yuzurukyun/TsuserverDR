@@ -1006,6 +1006,7 @@ class ClientManager:
                 'char_id_tag': 'CID',
                 'char_id': self.char_id,
             })
+            self.send_player_list_to_area()
             self.publisher.publish('client_change_character', {
                 'old_char_id': old_char_id,
                 'old_char_name': old_char,
