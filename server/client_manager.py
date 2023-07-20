@@ -1063,6 +1063,38 @@ class ClientManager:
             music_list = self.music_manager.get_legacy_music_list()
 
             return area_list+music_list
+        
+        def broadcast_player_list_reason(self, reason : int):
+            """
+            Send the player list prompt packet to the client.
+            """
+            area_desc = "Nothing particularly interesting."
+            if(self.area.description != "No description."): 
+                area_desc = self.area.description
+            self.send_command_dict('LIST_REASON', {
+                'player_list_reason': reason,
+                'player_list_area_info': area_desc
+            })
+        
+        def broadcast_player_list_reason_auto(self):
+            """
+            Send the player list prompt packet to the client.
+            """
+            reason = 0
+            area_desc = "Nothing particularly interesting."
+            if(self.area.description != "No description."): 
+                area_desc = self.area.description
+            if(not self.area.lobby_area and len(self.area.clients) > 1):
+                reason = 2
+            if(not self.area.lights):
+                area_desc = "The lights are off, so you cannot see anything."
+                reason = 1
+
+
+            self.send_command_dict('LIST_REASON', {
+                'player_list_reason': reason,
+                'player_list_area_info': area_desc
+            })
 
         def send_player_list_to_area(self):
             self.area.broadcast_player_list()                   

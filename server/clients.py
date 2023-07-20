@@ -71,6 +71,11 @@ class DefaultDROProtocol(_Singleton):
         ('player_data_ao2_list', list()), 
     ]
 
+    LIST_REASON_OUTBOUND = [
+        ('player_list_reason', int), 
+        ('player_list_area_info', ArgType.STR), 
+    ]
+
     ID_INBOUND = [
         ('client_software', ArgType.STR),  # 0
         ('client_software_version', ArgType.STR),  # 1

@@ -258,6 +258,12 @@ class AreaManager(AssetManager):
                 target_client.send_command_dict('LP', {
                     'player_data_ao2_list': player_stuff
                 })
+        def broadcast_player_list_prompt(self, reason : int):
+            """
+            Send the player list prompt packet to everyone in the area.
+            """
+            for target_client in self.clients:
+                target_client.broadcast_player_list_reason_auto()
 
         def broadcast_ooc(self, msg: str):
             """
@@ -709,6 +715,11 @@ class AreaManager(AssetManager):
             else:  # Otherwise, send generic message
                 self.broadcast_ooc('The lights were turned {}.'.format(status[new_lights]))
 
+            if(new_lights): 
+                self.broadcast_player_list_prompt(0)
+            else: 
+                self.broadcast_player_list_prompt(1)
+            
             self.broadcast_player_list()
 
             # Notify the parties in the area that the lights have changed
