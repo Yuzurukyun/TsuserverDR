@@ -251,10 +251,17 @@ class AreaManager(AssetManager):
                 player_stuff = list()
                 if self.rp_getarea_allowed and self.lights:
                     for c in self.clients: 
+                        
                         if(c != target_client and c.is_visible and c.char_id is not None and c.char_id != -1):
                             player_stuff.append(str(c.id))
-                            player_stuff.append(str(c.showname_else_char_showname))
-                            player_stuff.append(str(c.char_folder))
+                            if(target_client.is_gm or target_client.is_mod or target_client.is_cm):
+                                player_stuff.append(f"[{str(c.id)}] {str(c.showname_else_char_showname)}")
+                            else:
+                                player_stuff.append(str(c.showname_else_char_showname))
+                            if(c.icon_visible):
+                                player_stuff.append(str(c.char_folder))
+                            else:
+                                player_stuff.append("")
                 target_client.send_command_dict('LP', {
                     'player_data_ao2_list': player_stuff
                 })

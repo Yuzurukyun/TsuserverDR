@@ -3420,7 +3420,7 @@ def ooc_cmd_help(client: ClientManager.Client, arg: str):
     """
 
     if not arg:
-        url = 'https://github.com/Chrezm/TsuserverDR#commands'
+        url = 'https://github.com/Keightiie/TsuserverDR#commands'
         help_msg = ('Available commands, source code and issues can be found here: {} . If you are '
                     'looking for help with a specific command, do /help <command_name>'.format(url))
         client.send_ooc(help_msg)
@@ -12466,3 +12466,19 @@ def ooc_cmd_exec(client: Union[ClientManager.Client, None], arg: str):
                 pass
     globals().pop('client', None)  # Don't really want "client" to be a global variable
     return 1  # Indication that /exec is live
+
+
+def ooc_cmd_hide_icon(client: ClientManager.Client, arg: str):
+    """
+    Toggles if your character icon will show up in the player list.
+
+    SYNTAX
+    /hide_icon
+    """
+    message = "You must be authorized to do that."
+    if(client.is_gm or client.is_mod or client.is_cm):
+        client.icon_visible = not client.icon_visible
+        client.area.broadcast_player_list()
+        status = {False: 'disabled', True: 'enabled'}
+        message = f'You have {status[client.icon_visible]} your character icon.'
+    client.send_ooc(message)

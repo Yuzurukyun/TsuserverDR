@@ -150,6 +150,7 @@ class ClientManager:
             self.notecard = ''
             self.is_mindreader = False
             self.autoglance = False
+            self.icon_visible = True
 
             # Pairing stuff
             self.charid_pair = -1
