@@ -28,6 +28,7 @@ all necessary actions in order to simulate different rooms.
 from __future__ import annotations
 
 import asyncio
+import json
 import random
 import time
 import typing
@@ -247,21 +248,55 @@ class AreaManager(AssetManager):
             """
             Send the player list packet to everyone in the area.
             """
+            return_data = {}
+            return_data['packet'] = 'player_list'
+
+
             for target_client in self.clients:
+                player_data_to_send = list()
                 player_stuff = list()
                 if self.rp_getarea_allowed and self.lights:
                     for c in self.clients: 
                         
                         if(c != target_client and c.is_visible and c.char_id is not None and c.char_id != -1):
+                            chara_client_info = {}
                             player_stuff.append(str(c.id))
-                            if(target_client.is_gm or target_client.is_mod or target_client.is_cm):
-                                player_stuff.append(f"[{str(c.id)}] {str(c.showname_else_char_showname)}")
-                            else:
-                                player_stuff.append(str(c.showname_else_char_showname))
+                            chara_client_info["id"] = str(c.id)
+
+                            #Append the Showname
+                            ## 1.5
+                            player_stuff.append(str(c.showname_else_char_showname))
+                            chara_client_info["showname"] = str(c.showname_else_char_showname)
+
+                            ## 1.5.1
+                            
+
+                            #Append the Character Name
+                            ## 1.5
                             if(c.icon_visible):
                                 player_stuff.append(str(c.char_folder))
+                                chara_client_info["character"] = str(c.char_folder)
                             else:
                                 player_stuff.append("")
+                                chara_client_info["character"] = "NO_CHARA"
+
+                            ## 1.5.1
+                                
+                            if(c.files):
+                                chara_client_info["url"] = c.files[1]    
+
+                            if(c.status):
+                                chara_client_info["status"] = c.status 
+                            player_data_to_send.append(chara_client_info)
+                            
+
+                return_data['data'] = player_data_to_send
+                
+                json_data = json.dumps(return_data)
+                target_client.send_command_dict('JSN', {
+                    'json_data': json_data
+                })
+                
                 target_client.send_command_dict('LP', {
                     'player_data_ao2_list': player_stuff
                 })

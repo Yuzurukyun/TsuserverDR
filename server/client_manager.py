@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import datetime
 import random
+import string
 import time
 import typing
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, TypeVar, Union
@@ -152,8 +153,12 @@ class ClientManager:
             self.autoglance = False
             self.icon_visible = True
 
+            # Sender stuff
+            self.response_key = 'DEFAULT'
+
             # Pairing stuff
             self.charid_pair = -1
+            self.pair_owner = False
             self.offset_pair = 0
             self.last_sprite = ''
             self.flip = 0
@@ -172,6 +177,10 @@ class ClientManager:
             self.mflood_times = self.server.config['music_change_floodguard']['times_per_interval']
             self.mflood_mutelength = self.server.config['music_change_floodguard']['mute_length']
             self.mflood_log = list()
+
+        def generate_response_key(self):
+            letters = string.ascii_lowercase
+            self.response_key  = ''.join(random.choice(letters) for i in range(6))
 
         def send_command(self, command: str, *args: List):
             self.protocol.data_send(command, *args)
@@ -1091,7 +1100,9 @@ class ClientManager:
             if(not self.area.lights):
                 area_desc = "The lights are off, so you cannot see anything."
                 reason = 1
-
+            if(self.is_blind):
+                area_desc = "You can't see anything as you are currently blinded."
+                reason = 3
 
             self.send_command_dict('LIST_REASON', {
                 'player_list_reason': reason,
@@ -2221,6 +2232,7 @@ class ClientManager:
                 else:
                     raise ClientError(
                         'You have not provided a download link for your files.')
+            self.send_player_list_to_area()
 
         def get_info(self, as_mod: bool = False, as_cm: bool = False, identifier=None):
             if identifier is None:

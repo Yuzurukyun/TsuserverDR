@@ -67,9 +67,9 @@ class TsuserverDR:
         self._server = None  # Internal server object, changed to proper object later
 
         self.release = 5
-        self.major_version = 2
+        self.major_version = 3
         self.minor_version = 0
-        self.segment_version = 'release'
+        self.segment_version = 'b1'
         self.internal_version = '231013a'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)

@@ -334,4 +334,8 @@ class AOProtocol(asyncio.Protocol):
                                needs_auth=True),  # character availability request
         'FS': _command(function=ao_commands.net_cmd_fs,
                        needs_auth=True),  # set files
+        'PR': _command(function=ao_commands.net_cmd_pr,
+                       needs_auth=False),  # pair request
+        'PAIR': _command(function=ao_commands.net_cmd_pair,
+                       needs_auth=False),  # Pair
     }

@@ -27,6 +27,7 @@ import random
 import re
 import time
 import typing
+import json
 from typing import Any, Dict
 
 from server import clients, logger
@@ -978,6 +979,83 @@ def net_cmd_fs(client: ClientManager.Client, pargs: Dict[str, Any]):
 
     client.change_files(pargs['url'])
 
+def net_cmd_pr(client: ClientManager.Client, pargs: Dict[str, Any]):
+    """ Pair Request
+
+    PR#<target:int>#%
+
+    """
+
+    target_id = pargs['partner_target']
+    target, _, msg = client.server.client_manager.get_target_public(client, str(target_id), only_in_area=True)
+    
+    #Generate a response key to avoid request conflicts.
+    client.generate_response_key()
+
+    #Send a request to the target player.
+    return_data = {}
+    return_data['packet'] = 'notify_request'
+    return_data['data'] = {}
+    return_data['data']['request_type'] = 'pair'
+    return_data['data']['requester_id'] = client.id
+    return_data['data']['requester_name'] = client.showname
+    return_data['data']['requester_character'] = client.char_showname
+    return_data['data']['requester_key'] = client.response_key
+
+    json_data = json.dumps(return_data)
+    target.send_command_dict('JSN', {
+        'json_data': json_data
+    })
+
+
+def net_cmd_pair(client: ClientManager.Client, pargs: Dict[str, Any]):
+    """ Pair
+
+    PAIR#<target:int>#<request_key:string>%
+
+    """
+
+    #Grab required arguments from packet
+    target_id = pargs['pair_target']
+    response_key = pargs['response_key']
+
+    target, _, msg = client.server.client_manager.get_target_public(client, str(target_id), only_in_area=True)
+
+    if(target.charid_pair != -1):
+        client.send_ooc(f'Player with ID of "{target_id}" is already in a pair.')
+        return
+    
+    if(client.charid_pair != -1):
+        client.send_ooc(f'You are already in a pair.')
+        return
+    
+    if(target.response_key != response_key):
+        client.send_ooc(f'Request cancelled by sender.')
+        return
+    
+    #Change the target to match positions with the sender.
+    target.change_position(target.pos) 
+
+    #Create the data to send to the client
+    return_data = {}
+    return_data['packet'] = 'pair'
+    return_data['data'] = {}
+    return_data['data']['pair_owner'] = int(client.id)
+    return_data['data']['partner'] = int(target_id)
+
+    #Set the pair in the clients
+    target.charid_pair = client.id
+    client.charid_pair = target_id
+    target.pair_owner = False
+    client.pair_owner = False
+
+    #Create a JSON dump and send to area.
+    json_data = json.dumps(return_data)
+    client.area.send_command_dict('JSN', {
+        'json_data': json_data
+    })
+
+    
 
 def net_cmd_pw(self, _):
     # Ignore packet

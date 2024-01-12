@@ -858,6 +858,14 @@ def ooc_cmd_blind(client: ClientManager.Client, arg: str):
                                is_zstaff_flex=True)
 
     target.change_blindness(new_blind)
+    target.broadcast_player_list_reason_auto()
+
+def ooc_cmd_disable_player_list(client: ClientManager.Client, arg: str):
+    """
+    Disables the player list in the hub. 
+    """
+
+    
 
 
 def ooc_cmd_blockdj(client: ClientManager.Client, arg: str):
@@ -8913,6 +8921,7 @@ def ooc_cmd_status_set(client: ClientManager.Client, arg: str):
         for c in refreshed_clients:
             c.send_ooc(f'You no longer note something different about {client.displayname}.',
                        is_zstaff_flex=False)
+    client.send_player_list_to_area()
 
 
 def ooc_cmd_status_set_other(client: ClientManager.Client, arg: str):

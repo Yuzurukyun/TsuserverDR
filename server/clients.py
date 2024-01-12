@@ -71,6 +71,10 @@ class DefaultDROProtocol(_Singleton):
         ('player_data_ao2_list', list()), 
     ]
 
+    JSN_OUTBOUND = [
+        ('json_data', ArgType.STR), 
+    ]
+
     LIST_REASON_OUTBOUND = [
         ('player_list_reason', int), 
         ('player_list_area_info', ArgType.STR), 
@@ -141,6 +145,15 @@ class DefaultDROProtocol(_Singleton):
 
     MM_OUTBOUND = [
         ('unknown', 1),  # 0
+    ]
+
+    PR_INBOUND = [
+        ('partner_target', ArgType.INT), 
+    ]
+
+    PAIR_INBOUND = [
+        ('pair_target', ArgType.INT),
+        ('response_key', ArgType.STR) 
     ]
 
     OPPASS_OUTBOUND = [
