@@ -151,6 +151,14 @@ class DefaultDROProtocol(_Singleton):
         ('partner_target', ArgType.INT), 
     ]
 
+    UPR_INBOUND = [
+        ('partner_target', ArgType.INT), 
+    ]
+
+    POFF_INBOUND = [
+        ('pair_offset', ArgType.INT), 
+    ]
+
     PAIR_INBOUND = [
         ('pair_target', ArgType.INT),
         ('response_key', ArgType.STR) 

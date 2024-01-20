@@ -336,6 +336,10 @@ class AOProtocol(asyncio.Protocol):
                        needs_auth=True),  # set files
         'PR': _command(function=ao_commands.net_cmd_pr,
                        needs_auth=False),  # pair request
+        'UPR': _command(function=ao_commands.net_cmd_upr,
+                       needs_auth=False),  # unpair request
+        'POFF': _command(function=ao_commands.net_cmd_poff,
+                       needs_auth=False),  # pair offset
         'PAIR': _command(function=ao_commands.net_cmd_pair,
                        needs_auth=False),  # Pair
     }

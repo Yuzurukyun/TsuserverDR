@@ -31,7 +31,7 @@ import json
 from typing import Any, Dict
 
 from server import clients, logger
-from server.constants import Constants
+from server.constants import Constants, TargetType
 from server.exceptions import (AreaError, ClientError, HubError, MusicError,
                                PartyError, ServerError, TsuserverException)
 
@@ -434,6 +434,29 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
         client.send_ooc(ex)
         return
 
+    if client.charid_pair != -1:
+        try:
+            target, _pair, msg_pair = client.server.client_manager.get_target_public(client, str(client.charid_pair), only_in_area=True)
+            if target.id == client.charid_pair:
+                pair_jsn_packet = {}
+                pair_jsn_packet['packet'] = 'pair_data'
+                pair_jsn_packet['data'] = {}
+                pair_jsn_packet['data']['last_sprite'] = target.last_sprite
+                pair_jsn_packet['data']['flipped'] = bool(target.flip)
+                pair_jsn_packet['data']['character'] = target.char_folder
+                pair_jsn_packet['data']['offset_pair'] = target.offset_pair
+                pair_jsn_packet['data']['self_offset'] = client.offset_pair
+
+                json_data = json.dumps(pair_jsn_packet)
+                client.area.send_command_dict('JSN', {
+                    'json_data': json_data
+                })
+        except:
+            client.detatch_pair()
+
+        
+
+
     # At this point, the message is guaranteed to be sent
     if client.packet_handler.HAS_ACKMS:
         client.send_command_dict('ackMS', dict())
@@ -528,8 +551,8 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
         pargs['charid_pair'] = -1
         pargs['charid_pair_pair_order'] = -1
 
-    client.charid_pair = pargs['charid_pair'] if 'charid_pair' in pargs else -1
-    client.offset_pair = pargs['offset_pair'] if 'offset_pair' in pargs else 0
+    #client.charid_pair = pargs['charid_pair'] if 'charid_pair' in pargs else -1
+    #client.offset_pair = pargs['offset_pair'] if 'offset_pair' in pargs else 0
     client.flip = pargs['flip']
     if not client.char_folder:
         client.char_folder = pargs['folder']
@@ -979,6 +1002,31 @@ def net_cmd_fs(client: ClientManager.Client, pargs: Dict[str, Any]):
 
     client.change_files(pargs['url'])
 
+def net_cmd_upr(client: ClientManager.Client, pargs: Dict[str, Any]):
+    """ Pair Request
+
+    UPR#<target:int>#%
+
+    """
+
+    client.detatch_pair()
+
+def net_cmd_poff(client: ClientManager.Client, pargs: Dict[str, Any]):
+    """ Pair Offset
+
+    POFF#<offset:int>#%
+
+    """
+    if pargs['pair_offset'] < 0 :
+        client.offset_pair = 0
+        return
+
+    if pargs['pair_offset'] > 960: 
+        client.offset_pair = 960
+        return
+    
+    client.offset_pair = pargs['pair_offset']
+
 def net_cmd_pr(client: ClientManager.Client, pargs: Dict[str, Any]):
     """ Pair Request
 
@@ -986,9 +1034,10 @@ def net_cmd_pr(client: ClientManager.Client, pargs: Dict[str, Any]):
 
     """
 
+    #Grab the 
     target_id = pargs['partner_target']
     target, _, msg = client.server.client_manager.get_target_public(client, str(target_id), only_in_area=True)
-    
+
     #Generate a response key to avoid request conflicts.
     client.generate_response_key()
 
@@ -1036,19 +1085,28 @@ def net_cmd_pair(client: ClientManager.Client, pargs: Dict[str, Any]):
     #Change the target to match positions with the sender.
     target.change_position(target.pos) 
 
+    target.charid_pair = client.id
+    client.charid_pair = target_id
+
+    client.offset_pair = 240
+    target.offset_pair = 720
+
+    target.pair_owner = False
+    client.pair_owner = False
+
+    target.change_position(client.pos)
+
     #Create the data to send to the client
     return_data = {}
     return_data['packet'] = 'pair'
     return_data['data'] = {}
-    return_data['data']['pair_owner'] = int(client.id)
-    return_data['data']['partner'] = int(target_id)
+    return_data['data']['pair_left'] = int(client.id)
+    return_data['data']['pair_right'] = int(target_id)
+    return_data['data']['offset_left'] = int(client.offset_pair)
+    return_data['data']['offset_right'] = int(target.offset_pair)
 
-    #Set the pair in the clients
-    target.charid_pair = client.id
-    client.charid_pair = target_id
-    target.pair_owner = False
-    client.pair_owner = False
-
+    client.send_ooc('You are now paired up.')
+    target.send_ooc('You are now paired up.')
     #Create a JSON dump and send to area.
     json_data = json.dumps(return_data)
     client.area.send_command_dict('JSN', {

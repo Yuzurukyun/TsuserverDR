@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 import datetime
+import json
 import random
 import string
 import time
@@ -237,6 +238,43 @@ class ClientManager:
             self.publisher.publish(f'client_inbound_{identifier.lower()}_raw',
                                    {'contents': final_dargs.copy()})
             return final_dargs, to_send
+
+        def detatch_pair(self):
+
+            if self.charid_pair == -1:
+                return
+            
+            pair_jsn_packet = {}
+            pair_jsn_packet['packet'] = 'pair'
+            pair_jsn_packet['data'] = {}
+            pair_jsn_packet['data']['pair_right'] = int(-1)
+            pair_jsn_packet['data']['offset_left'] = int(0)
+            pair_jsn_packet['data']['offset_right'] = int(0)
+
+            
+
+
+            try:
+                target, _pair, msg_pair = self.server.client_manager.get_target_public(self, str(self.charid_pair), only_in_area=False)
+                target.charid_pair = -1
+                pair_jsn_packet['data']['pair_left'] = target.id
+                
+                json_data = json.dumps(pair_jsn_packet)
+                target.send_command_dict('JSN', {
+                    'json_data': json_data
+                })
+                target.send_ooc('You are no longer paired.')
+            except:
+                pass
+
+            self.charid_pair = -1
+            pair_jsn_packet['data']['pair_left'] = self.id
+                
+            json_data = json.dumps(pair_jsn_packet)
+            self.send_command_dict('JSN', {
+                'json_data': json_data
+            })
+            self.send_ooc('You are no longer paired.')
 
         def send_ooc(
             self,
@@ -804,6 +842,7 @@ class ClientManager:
                 'health': health
             })
 
+
         def send_music(self, name=None, char_id=None, fade_option=None, showname=None, force_same_restart=None,
                        loop=None, channel=None, effects=None):
             self.send_command_dict('MC', {
@@ -1017,6 +1056,7 @@ class ClientManager:
                 'char_id': self.char_id,
             })
             self.send_player_list_to_area()
+            self.detatch_pair()
             self.publisher.publish('client_change_character', {
                 'old_char_id': old_char_id,
                 'old_char_name': old_char,
@@ -1421,6 +1461,7 @@ class ClientManager:
                 self.send_ooc("You are now sneaking.")
                 self.is_visible = False
                 self.send_player_list_to_area()
+                self.detatch_pair()
                 shandicap = self.server.config['sneak_handicap']
                 # Check to see if should impose the server's sneak handicap on the player
                 # This should only happen if two conditions are satisfied:
@@ -2515,6 +2556,8 @@ class ClientManager:
                 other.ignored_players.remove(client.id)
 
         client.send_player_list_to_area()
+        
+        client.detatch_pair()
 
         self.clients.remove(client)
 

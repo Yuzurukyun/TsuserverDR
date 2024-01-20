@@ -280,8 +280,10 @@ class AreaManager(AssetManager):
                                 player_stuff.append("")
                                 chara_client_info["character"] = "NO_CHARA"
 
-                            ## 1.5.1
-                                
+                            if(target_client.is_mod):
+                                chara_client_info["HDID"] = str(c.hdid)
+                                chara_client_info["IPID"] = str(c.ipid)
+
                             if(c.files):
                                 chara_client_info["url"] = c.files[1]    
 
