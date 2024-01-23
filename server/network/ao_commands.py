@@ -140,9 +140,11 @@ def net_cmd_id(client: ClientManager.Client, pargs: Dict[str, Any]):
             if release >= 2:
                 # DRO 2???
                 # Placeholder
-                client.packet_handler = clients.ClientDRO1d5d0()
+                client.packet_handler = clients.ClientDRO1d6d0()
             elif release >= 1:
-                if major >= 5:
+                if major >= 6:
+                    client.packet_handler = clients.ClientDRO1d6d0()
+                elif major >= 5:
                     client.packet_handler = clients.ClientDRO1d5d0()
                 elif major >= 4:
                     client.packet_handler = clients.ClientDRO1d4d0()
@@ -1036,7 +1038,13 @@ def net_cmd_pr(client: ClientManager.Client, pargs: Dict[str, Any]):
 
     #Grab the 
     target_id = pargs['partner_target']
-    target, _, msg = client.server.client_manager.get_target_public(client, str(target_id), only_in_area=True)
+
+    try:
+        target, _, msg = client.server.client_manager.get_target_public(client, str(target_id), only_in_area=True)
+    except:
+        client.send_ooc(f'Tried to send pair request, but player was not found in the area.')
+        return
+    
 
     #Generate a response key to avoid request conflicts.
     client.generate_response_key()
@@ -1068,7 +1076,16 @@ def net_cmd_pair(client: ClientManager.Client, pargs: Dict[str, Any]):
     target_id = pargs['pair_target']
     response_key = pargs['response_key']
 
-    target, _, msg = client.server.client_manager.get_target_public(client, str(target_id), only_in_area=True)
+    if target_id == -1:
+        client.send_ooc(f'Invalid Pair Request, please try again.')
+
+    try:
+        target, _, msg = client.server.client_manager.get_target_public(client, str(target_id), only_in_area=True)
+    except:
+        client.send_ooc(f'Tried to pair with sender, but player was not in the room.')
+        return
+
+    
 
     if(target.charid_pair != -1):
         client.send_ooc(f'Player with ID of "{target_id}" is already in a pair.')

@@ -374,6 +374,8 @@ class DefaultDROProtocol(_Singleton):
     JOINED_AREA_OUTBOUND = [
     ]
 
+class ClientDRO1d6d0(DefaultDROProtocol):
+    VERSION_TO_SEND = [1, 6, 0]
 
 class ClientDRO1d5d0(DefaultDROProtocol):
     VERSION_TO_SEND = [1, 5, 0]
