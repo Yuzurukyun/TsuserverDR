@@ -1056,7 +1056,6 @@ class ClientManager:
                 'char_id': self.char_id,
             })
             self.send_player_list_to_area()
-            self.detatch_pair()
             self.publisher.publish('client_change_character', {
                 'old_char_id': old_char_id,
                 'old_char_name': old_char,
