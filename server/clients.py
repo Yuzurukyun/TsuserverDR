@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
 #           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
+#           (C) 2022 Tricky Leifa (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,17 +20,19 @@
 
 from server.constants import ArgType
 
+
 class _Singleton():
     def __new__(cls):
         if not hasattr(cls, 'instance'):
             cls.instance = super(_Singleton, cls).__new__(cls)
         return cls.instance
 
+
 class DefaultDROProtocol(_Singleton):
     def __eq__(self, other):
         return type(self).__name__ == type(other).__name__
 
-    VERSION_TO_SEND = [1, 2, 2]
+    VERSION_TO_SEND = [1, 3, 0]
 
     HAS_CLIENTSIDE_MUSIC_LOOPING = False
     HAS_DISTINCT_AREA_AND_MUSIC_LIST_OUTGOING_PACKETS = True
@@ -44,34 +47,43 @@ class DefaultDROProtocol(_Singleton):
 
     DECRYPTOR_OUTBOUND = [
         ('key', 34),  # 0
-        ]
+    ]
 
     HI_INBOUND = [
         ('client_hdid', ArgType.STR),  # 0
-        ]
+    ]
 
     BD_OUTBOUND = [
-        ]
+    ]
 
     ID_OUTBOUND = [
         ('client_id', 0),  # 0
         ('server_software', 'TsuserverDR'),  # 1
         ('server_software_version', '0.0.0'),  # 2
-        ]
+    ]
 
     PN_OUTBOUND = [
         ('player_count', 0),  # 0
         ('player_limit', 0),  # 1
-        ]
+    ]
+
+    LP_OUTBOUND = [
+        ('player_data_ao2_list', list()), 
+    ]
+
+    LIST_REASON_OUTBOUND = [
+        ('player_list_reason', int), 
+        ('player_list_area_info', ArgType.STR), 
+    ]
 
     ID_INBOUND = [
         ('client_software', ArgType.STR),  # 0
         ('client_software_version', ArgType.STR),  # 1
-        ]
+    ]
 
     FL_OUTBOUND = [
         ('fl_ao2_list', list()),  # 0
-        ]
+    ]
 
     CLIENT_VERSION_OUTBOUND = [
         ('dro_version_ao2_list', list()),  # 0
@@ -79,97 +91,97 @@ class DefaultDROProtocol(_Singleton):
 
     CH_INBOUND = [
         ('char_id', ArgType.INT),  # 0
-        ]
+    ]
 
     CHECK_OUTBOUND = [
-        ]
+    ]
 
     ASKCHAA_INBOUND = [
-        ]
+    ]
 
     SI_OUTBOUND = [
         ('char_count', 0),  # 0
         ('evidence_count', 0),  # 1
         ('music_list_count', 0),  # 2
-        ]
+    ]
 
     AE_INBOUND = [
         ('evidence_page', ArgType.INT),  # 0
-        ]
+    ]
 
     RC_INBOUND = [
-        ]
+    ]
 
     SC_OUTBOUND = [
         ('chars_ao2_list', list()),  # 0
-        ]
+    ]
 
     RM_INBOUND = [
-        ]
+    ]
 
     SM_OUTBOUND = [
         ('music_ao2_list', list()),  # 0
-        ]
+    ]
 
     RD_INBOUND = [
-        ]
+    ]
 
     CHARSCHECK_OUTBOUND = [
         ('chars_status_ao2_list', list()),  # 0
-        ]
+    ]
 
     BN_OUTBOUND = [
         ('name', ''),  # 0
         ('tod_backgrounds_ao2_list', list()),  # 1
-        ]
+    ]
 
     LE_OUTBOUND = [
         ('evidence_ao2_list', list()),  # 0
-        ]
+    ]
 
     MM_OUTBOUND = [
         ('unknown', 1),  # 0
-        ]
+    ]
 
     OPPASS_OUTBOUND = [
         ('guard_pass', ''),  # 0
-        ]
+    ]
 
     DONE_OUTBOUND = [
-        ]
+    ]
 
     FM_OUTBOUND = [
         ('music_ao2_list', list()),  # 0
-        ]
+    ]
 
     FA_OUTBOUND = [
         ('areas_ao2_list', list()),  # 0
-        ]
+    ]
 
     CC_INBOUND = [
         ('client_id', ArgType.INT),
         ('char_id', ArgType.INT),
         ('client_hdid', ArgType.STR),
-        ]
+    ]
 
     PV_OUTBOUND = [
         ('client_id', 0),  # 0
         ('char_id_tag', 'CID'),  # 1
         ('char_id', -1),  # 2
-        ]
+    ]
 
     CT_INBOUND = [
         ('username', ArgType.STR),  # 0
         ('message', ArgType.STR),  # 1
-        ]
+    ]
 
     CT_OUTBOUND = [
         ('username', ''),  # 0
         ('message', ''),  # 1
-        ]
+    ]
 
     ACKMS_OUTBOUND = [
-        ]
+    ]
 
     MS_INBOUND = [
         ('msg_type', ArgType.STR),  # 0
@@ -190,7 +202,7 @@ class DefaultDROProtocol(_Singleton):
         ('showname', ArgType.STR_OR_EMPTY),  # 15
         ('video', ArgType.STR_OR_EMPTY),  # 16
         ('hide_character', ArgType.INT),  # 17
-        ]
+    ]
 
     MS_OUTBOUND = [
         ('msg_type', 0),  # 0
@@ -212,121 +224,123 @@ class DefaultDROProtocol(_Singleton):
         ('video', '0'),  # 16
         ('hide_character', 0),  # 17
         ('client_id', -1),  # 18
-        ]
+    ]
 
     MC_INBOUND = [
         ('name', ArgType.STR),  # 0
         ('char_id', ArgType.INT),  # 1
-        ]
+        ('fade_option', ArgType.INT),  # 2
+    ]
 
     MC_OUTBOUND = [
         ('name', ''),  # 0
         ('char_id', -1),  # 1
         ('showname', ''),  # 2
         ('force_same_restart', 1),  # 3
-        ]
+        ('fade_option', ArgType.INT),  # 4
+    ]
 
     RT_INBOUND = [
         ('name', ArgType.STR),  # 0
-        ]
+    ]
 
     RT_OUTBOUND = [
         ('name', ''),  # 0
-        ]
+    ]
 
     HP_INBOUND = [
         ('side', ArgType.INT),  # 0
         ('health', ArgType.INT),  # 1
-        ]
+    ]
 
     HP_OUTBOUND = [
         ('side', 1),  # 0
         ('health', 0),  # 1
-        ]
+    ]
 
     PE_INBOUND = [
         ('name', ArgType.STR),  # 0
         ('description', ArgType.STR),  # 1
         ('image', ArgType.STR),  # 2
-        ]
+    ]
 
     DE_INBOUND = [
         ('evi_id', ArgType.INT),  # 0
-        ]
+    ]
 
     EE_INBOUND = [
         ('evi_id', ArgType.INT),  # 0
         ('name', ArgType.STR),  # 1
         ('description', ArgType.STR),  # 2
         ('image', ArgType.STR),  # 3
-        ]
+    ]
 
     ZZ_INBOUND = [
-        ]
+    ]
 
     ZZ_OUTBOUND = [
         ('message', ''),  # 0
-        ]
+    ]
 
     SP_OUTBOUND = [
         ('position', ''),  # 0
-        ]
+    ]
 
     CL_OUTBOUND = [
         ('client_id', 0),  # 0
         ('hour', 0),  # 0
-        ]
+    ]
 
     TR_OUTBOUND = [
         ('timer_id', 0),  # 0
-        ]
+    ]
 
     TP_OUTBOUND = [
         ('timer_id', 0),  # 0
-        ]
+    ]
 
     TST_OUTBOUND = [
         ('timer_id', 0),  # 0
         ('new_time', 0),  # 1
-        ]
+    ]
 
     TSS_OUTBOUND = [
         ('timer_id', 0),  # 0
         ('new_step_length', 0),  # 1
-        ]
+    ]
 
     TSF_OUTBOUND = [
         ('timer_id', 0),  # 0
         ('new_firing_interval', 0),  # 1
-        ]
+    ]
 
     GM_OUTBOUND = [
         ('name', ''),  # 0
-        ]
+    ]
 
     TOD_OUTBOUND = [
         ('name', ''),  # 0
-        ]
+    ]
 
     SN_INBOUND = [
         ('showname', ArgType.STR_OR_EMPTY),  # 0
-        ]
+    ]
 
     SN_OUTBOUND = [
         ('showname', ''),  # 0
-        ]
+    ]
 
     CHRINI_INBOUND = [
         ('actual_folder_name', ArgType.STR),  # 0
         ('actual_character_showname', ArgType.STR),  # 1
-        ]
+    ]
 
     CHAT_TICK_RATE_OUTBOUND = [
         ('chat_tick_rate', -1),  # 0
-        ]
+    ]
 
     CHARSCHECK_INBOUND = [
-        ]
+    ]
 
     FS_INBOUND = [
         ('url', ArgType.STR_OR_EMPTY),  # 0
@@ -340,21 +354,63 @@ class DefaultDROProtocol(_Singleton):
     ]
 
 
-class ClientDRO1d2d2(DefaultDROProtocol):
+class ClientDRO1d5d0(DefaultDROProtocol):
+    VERSION_TO_SEND = [1, 5, 0]
+
+class ClientDRO1d4d0(DefaultDROProtocol):
+    VERSION_TO_SEND = [1, 4, 0]
+
+
+class ClientDRO1d3d0(DefaultDROProtocol):
+    VERSION_TO_SEND = [1, 3, 0]
+
+
+class ClientDRO1d2d3(DefaultDROProtocol):
+    VERSION_TO_SEND = [1, 2, 3]
+    HAS_CLIENTSIDE_MUSIC_LOOPING = False
+
+    FM_OUTBOUND = [
+        ('legacy_music_ao2_list', list()),  # 0
+    ]
+
+    SM_OUTBOUND = [
+        ('legacy_music_ao2_list', list()),  # 0
+    ]
+
+    MC_INBOUND = [
+        ('name', ArgType.STR),  # 0
+        ('char_id', ArgType.INT),  # 1
+    ]
+
+    MC_OUTBOUND = [
+        ('name', ''),  # 0
+        ('char_id', -1),  # 1
+        ('showname', ''),  # 2
+        ('force_same_restart', 1),  # 3
+    ]
+
+
+class ClientDRO1d2d2(ClientDRO1d2d3):
     VERSION_TO_SEND = [1, 2, 2]
 
-class ClientDRO1d2d0(DefaultDROProtocol):
+
+class ClientDRO1d2d1(ClientDRO1d2d3):
+    VERSION_TO_SEND = [1, 2, 1]
+
+
+class ClientDRO1d2d0(ClientDRO1d2d3):
     VERSION_TO_SEND = [1, 2, 0]
     ALLOWS_CHAR_LIST_RELOAD = False
 
-class ClientDRO1d1d0(DefaultDROProtocol):
+
+class ClientDRO1d1d0(ClientDRO1d2d3):
     VERSION_TO_SEND = [1, 1, 0]
     HAS_JOINED_AREA = False
     ALLOWS_CHAR_LIST_RELOAD = False
 
-class ClientDRO1d0d0(DefaultDROProtocol):
+
+class ClientDRO1d0d0(ClientDRO1d2d3):
     VERSION_TO_SEND = [1, 0, 0]
-    HAS_CLIENTSIDE_MUSIC_LOOPING = False
     HAS_DISTINCT_AREA_AND_MUSIC_LIST_OUTGOING_PACKETS = False
     HAS_ACKMS = True
     HAS_JOINED_AREA = False
@@ -397,13 +453,13 @@ class ClientDRO1d0d0(DefaultDROProtocol):
         ('ding', -1),  # 13
         ('color', 0),  # 14
         ('showname', ' '),  # 15
-        ]
+    ]
 
     MC_OUTBOUND = [
         ('name', ''),  # 0
         ('char_id', -1),  # 1
         ('showname', ''),  # 2
-        ]
+    ]
 
 
 class ClientAO2d10(DefaultDROProtocol):
@@ -442,7 +498,7 @@ class ClientAO2d10(DefaultDROProtocol):
         ('frame_sfx', ArgType.STR_OR_EMPTY),  # 23
         ('additive', ArgType.INT),  # 24
         ('effect', ArgType.STR),  # 25
-        ]
+    ]
 
     MS_OUTBOUND = [
         ('msg_type', 1),  # 0
@@ -475,14 +531,14 @@ class ClientAO2d10(DefaultDROProtocol):
         ('frame_sfx', ''),  # 27
         ('additive', 0),  # 28
         ('effect', ''),  # 29
-        ]
+    ]
 
     MC_INBOUND = [
         ('name', ArgType.STR),  # 0
         ('char_id', ArgType.INT),  # 1
         ('showname', ArgType.STR_OR_EMPTY),  # 2
         ('effects', ArgType.INT),  # 3
-        ]
+    ]
 
     MC_OUTBOUND = [
         ('name', ''),  # 0
@@ -491,13 +547,13 @@ class ClientAO2d10(DefaultDROProtocol):
         ('loop', 1),  # 3
         ('channel', 0),  # 4
         ('effects', 0),  # 5
-        ]
+    ]
 
     BN_OUTBOUND = [
         ('name', ''),  # 0
         ('pos', ''),  # 1
-        ]
+    ]
 
     PW_INBOUND = [
         ('password', ArgType.STR_OR_EMPTY),  # 0
-        ]
+    ]
