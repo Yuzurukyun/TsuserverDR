@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
 #           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
+#           (C) 2022 Tricky Leifa (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -137,7 +138,7 @@ class _HubbedGameTrivialInherited(_GameWithAreas):
     def get_players(
         self,
         cond: Callable[[ClientManager.Client, ], bool] = None
-        ) -> Set[ClientManager.Client]:
+    ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of players of this hubbed game that satisfy a
         condition if given.
@@ -343,7 +344,7 @@ class _HubbedGameTrivialInherited(_GameWithAreas):
     def get_invitations(
         self,
         cond: Callable[[ClientManager.Client, ], bool] = None
-        ) -> Set[ClientManager.Client]:
+    ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of invited users of this hubbed game that satisfy a
         condition if given.
@@ -524,7 +525,7 @@ class _HubbedGameTrivialInherited(_GameWithAreas):
     def get_leaders(
         self,
         cond: Callable[[ClientManager.Client, ], bool] = None
-        ) -> Set[ClientManager.Client]:
+    ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of leaders of this hubbed game that satisfy a condition
         if given.
@@ -547,7 +548,7 @@ class _HubbedGameTrivialInherited(_GameWithAreas):
     def get_regulars(
         self,
         cond: Callable[[ClientManager.Client, ], bool] = None
-        ) -> Set[ClientManager.Client]:
+    ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of players of this hubbed game that are regulars and
         satisfy a condition if given.
@@ -751,7 +752,7 @@ class _HubbedGameTrivialInherited(_GameWithAreas):
         max_value: Union[float, None] = None,
         auto_restart: bool = False,
         auto_destroy: bool = True
-        ) -> Timer:
+    ) -> Timer:
         """
         Create a new timer managed by this hubbed game with given parameters.
 
@@ -818,7 +819,7 @@ class _HubbedGameTrivialInherited(_GameWithAreas):
         max_value: Union[float, None] = None,
         auto_restart: bool = False,
         auto_destroy: bool = True
-        ) -> Timer:
+    ) -> Timer:
         """
         Create a new timer managed by this hubbed game with given parameters.
 
@@ -1015,7 +1016,7 @@ class _HubbedGameTrivialInherited(_GameWithAreas):
         require_invitations: bool = False,
         require_players: bool = True,
         require_leaders: bool = True
-        ) -> _Team:
+    ) -> _Team:
         """
         Create a new team managed by this hubbed game.
 
@@ -1077,7 +1078,7 @@ class _HubbedGameTrivialInherited(_GameWithAreas):
         require_invitations: bool = False,
         require_players: bool = True,
         require_leaders: bool = True
-        ) -> _Team:
+    ) -> _Team:
         """
         Create a new team managed by this hubbed game.
 
@@ -1613,7 +1614,7 @@ class _HubbedGameTrivialInherited(_GameWithAreas):
         self,
         player: ClientManager.Client,
         contents: Dict[str, Any] = None
-        ):
+    ):
         """
         Default callback for hubbed game player signaling it wants to check if sending an IC
         message is appropriate. The IC arguments can be passed by reference, so this also serves as
@@ -1641,7 +1642,7 @@ class _HubbedGameTrivialInherited(_GameWithAreas):
         self,
         player: ClientManager.Client,
         contents: Dict[str, Any] = None
-        ):
+    ):
         """
         Default callback for hubbed game player signaling it has sent an IC message.
         This callback is executed after the server is done making all modifications to the MS packet
@@ -1671,7 +1672,7 @@ class _HubbedGameTrivialInherited(_GameWithAreas):
         old_char_name: str = '',
         new_char_id: int = -1,
         new_char_name: str = '',
-        ):
+    ):
         """
         Default callback for hubbed game player signaling it has changed character.
 
@@ -1740,7 +1741,7 @@ class _HubbedGameTrivialInherited(_GameWithAreas):
         old_displayname: str = None,
         ignore_bleeding: bool = False,
         ignore_autopass: bool = False,
-        ):
+    ):
         """
         Default callback for hubbed game area signaling a client left. This is executed after
         all other actions related to moving the player to a new area have been executed:
@@ -1787,7 +1788,7 @@ class _HubbedGameTrivialInherited(_GameWithAreas):
         old_displayname: str = None,
         ignore_bleeding: bool = False,
         ignore_autopass: bool = False,
-        ):
+    ):
         """
         Default callback for hubbed game area signaling a client entered.
 
@@ -1831,7 +1832,7 @@ class _HubbedGameTrivialInherited(_GameWithAreas):
         area: AreaManager.Area,
         client: ClientManager.Client = None,
         contents: Dict[str, Any] = None
-        ):
+    ):
         """
         Default callback for hubbed game area signaling a client in the area sent an IC message.
         Unlike the ClientManager.Client callback for send_ic_check, this one is triggered
@@ -2071,7 +2072,7 @@ class _HubbedGame(_HubbedGameTrivialInherited):
         self.listener.subscribe(self.hub.area_manager)
         self.listener.update_events({
             'areas_loaded': self._on_areas_loaded,
-            })
+        })
         self.manager: HubbedGameManager  # Setting for typing
 
     def get_type_name(self) -> str:
@@ -2144,7 +2145,7 @@ class _HubbedGame(_HubbedGameTrivialInherited):
             assert area.hub == self.hub, (
                 f'For hubbed game {self}, expected all its areas belong to hub {self.hub}, '
                 f'found area {area} belonged to hub {area.hub} instead'
-                )
+            )
 
         # 2.
         super()._check_structure()
@@ -2196,6 +2197,7 @@ class _HubbedGame(_HubbedGameTrivialInherited):
                 f'unmanaged={self.is_unmanaged()}), '
                 f')')
 
+
 class _HubbedGameManagerTrivialInherited(GameWithAreasManager):
     """
     This class should not be instantiated.
@@ -2220,7 +2222,7 @@ class _HubbedGameManagerTrivialInherited(GameWithAreasManager):
         require_areas: bool = True,
         hub: Union[_Hub, None] = None,
         **kwargs: Any,
-        ) -> _HubbedGame:
+    ) -> _HubbedGame:
         """
         Create a new hubbed game managed by this manager.
 
@@ -2320,7 +2322,7 @@ class _HubbedGameManagerTrivialInherited(GameWithAreasManager):
             require_areas=require_areas,
             hub=hub,
             **kwargs,
-            )
+        )
         self._check_structure()
         return game
 
@@ -2343,8 +2345,7 @@ class _HubbedGameManagerTrivialInherited(GameWithAreasManager):
         require_areas: bool = True,
         hub: Union[_Hub, None] = None,
         **kwargs: Any,
-        ) -> _HubbedGame:
-
+    ) -> _HubbedGame:
         """
         Create a new hubbed game managed by this manager.
 
@@ -2499,7 +2500,7 @@ class _HubbedGameManagerTrivialInherited(GameWithAreasManager):
     def unchecked_delete_managee(
         self,
         managee: _HubbedGame
-        ) -> Tuple[str, Set[ClientManager.Client]]:
+    ) -> Tuple[str, Set[ClientManager.Client]]:
         """
         Delete a hubbed game managed by this manager, so all its players no longer belong to
         this hubbed game.
@@ -2757,7 +2758,7 @@ class _HubbedGameManagerTrivialInherited(GameWithAreasManager):
     def find_area_concurrent_limiting_managee(
         self,
         area: AreaManager.Area
-        ) -> Union[_HubbedGame, None]:
+    ) -> Union[_HubbedGame, None]:
         """
         For area `area`, find a hubbed game `most_restrictive_game` managed by this manager
         such that, if `area` were to be added to another hubbed game managed by this manager,
@@ -2783,7 +2784,7 @@ class _HubbedGameManagerTrivialInherited(GameWithAreasManager):
     def find_player_concurrent_limiting_managee(
         self,
         user: ClientManager.Client
-        ) -> Union[_HubbedGame, None]:
+    ) -> Union[_HubbedGame, None]:
         """
         For user `user`, find a hubbed game `most_restrictive_game` managed by this manager such
         that, if `user` were to join another hubbed game managed by this manager, they would
@@ -2819,6 +2820,7 @@ class _HubbedGameManagerTrivialInherited(GameWithAreasManager):
 
         return super().get_areas_to_managees_map()
 
+
 class HubbedGameManager(_HubbedGameManagerTrivialInherited):
     """
     A hubbed game manager is a game manager with dedicated area management functions.
@@ -2838,7 +2840,7 @@ class HubbedGameManager(_HubbedGameManagerTrivialInherited):
         server: TsuserverDR,
         managee_limit: Union[int, None] = None,
         default_managee_type: Type[_HubbedGame] = None,
-        ):
+    ):
         """
         Create a hubbed game manager object.
 

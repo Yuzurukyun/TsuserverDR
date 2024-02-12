@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
 #           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
+#           (C) 2022 Tricky Leifa (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -50,7 +51,7 @@ class Task:
         name: str,
         creation_time: float,
         parameters: Dict[str, Any]
-        ):
+    ):
         """
         Create a task
 
@@ -76,6 +77,7 @@ class Task:
         self.creation_time = creation_time
         self.parameters = parameters.copy()
 
+
 class TaskManager:
     """
     A task manager is a manager for tasks.
@@ -100,7 +102,7 @@ class TaskManager:
         owner: Hashable,
         name: str,
         parameters: Dict[str, Any] = None
-        ) -> Task:
+    ) -> Task:
         """
         Create a new task with a particular name and owner. If a task linked to that owner and name
         already exists, it will be scheduled for cancellation and replaced with this new task.
@@ -189,7 +191,7 @@ class TaskManager:
         self,
         owner: Hashable,
         name: str,
-        ) -> Task:
+    ) -> Task:
         """
         Attempt to get a task linked to an owner and name.
 
@@ -656,7 +658,7 @@ class TaskManager:
                                 f'Period hour start: {formatted_time} '
                                 f'({client.area.id}).',
                                 is_zstaff_flex=True, in_hub=hub,
-                                )
+                            )
                         else:
                             # Case removed a period
                             client.send_ooc(f'(X) You have removed period `{name}`.')

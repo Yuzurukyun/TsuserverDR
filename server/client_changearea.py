@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
 #           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
+#           (C) 2022 Tricky Leifa (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -122,7 +123,6 @@ class ClientChangeArea:
 
             return False, -1
 
-
         def _update_char_id() -> Tuple[bool, Union[int, None]]:
             # Check if using a non-participating character. Those are trivial
             if not client.has_participant_character():
@@ -194,9 +194,10 @@ class ClientChangeArea:
         1. True if such RP related notifications to be sent should include a "ding" effect, False
         otherwise.
         """
-
+        
         found_something, ding_something = self.notify_me(area, old_dname,
                                                          ignore_bleeding=ignore_bleeding)
+        
         if not just_me:
             self.notify_others(area, old_dname, ignore_bleeding=ignore_bleeding,
                                ignore_autopass=ignore_autopass)
@@ -237,7 +238,7 @@ class ClientChangeArea:
             # area.in_zone.add_player(client)
 
         # Check if someone in the new area has the same showname
-        try: # Verify that showname is still valid
+        try:  # Verify that showname is still valid
             client.check_change_showname(client.showname, target_area=area)
         except ValueError:
             client.send_ooc('Your showname `{}` was already used in this area, so it has been '
@@ -252,7 +253,7 @@ class ClientChangeArea:
                               .format(client.ipid), client)
 
         # Check if someone in the new area has the same character showname
-        try: # Verify that the character showname is still valid
+        try:  # Verify that the character showname is still valid
             client.check_change_showname(client.char_showname, target_area=area)
         except ValueError:
             client.send_ooc('Your character showname `{}` was already used in this area, so it has '
@@ -372,10 +373,10 @@ class ClientChangeArea:
 
         ###########
         # If there are blood trails in the area, send notification if one of the following is true
-        ## 1. You are staff
-        ## 2. Lights are on and you are not blind.
-        ## If the blood in the area is smeared, just indicate there is smeared blood for non-staff
-        ## and the regular blood trail message with extra text for staff.
+        # 1. You are staff
+        # 2. Lights are on and you are not blind.
+        # If the blood in the area is smeared, just indicate there is smeared blood for non-staff
+        # and the regular blood trail message with extra text for staff.
         # If neither is true, send 'smell' notification as long as the following is true:
         # 1. Lights turned off or you are blind
         # 2. A notification was not sent in the previous part
@@ -395,7 +396,7 @@ class ClientChangeArea:
             elif len(area.bleeds_to) > 1:
                 bleed_to_areas = list(area.bleeds_to - set([area.name]))
                 if client.is_staff() and area.blood_smeared:
-                    start_connector = '(X) ' # Force staff indication
+                    start_connector = '(X) '  # Force staff indication
 
                 bloodtrail_info = ('{}You spot a {}blood trail leading to {}.'
                                    .format(start_connector, smeared_connector,
@@ -543,14 +544,14 @@ class ClientChangeArea:
             self.notify_others_status(client, area, new_dname, status='arrived')
             status_refreshed_clients = client.refresh_remembered_status(area=area)
         else:
-            status_refreshed_clients = list() # Do not IC ping if client has no status
+            status_refreshed_clients = list()  # Do not IC ping if client has no status
 
         area.broadcast_ic_attention(cond=lambda c: (ic_attention_others or
                                                     c in status_refreshed_clients), ding=False)
 
     def notify_others_moving(self, client: ClientManager.Client, area: AreaManager.Area,
                              autopass_mes: str, blind_mes: str):
-        staff = nbnd = ybnd = nbyd = '' # nbnd = notblindnotdeaf ybnd=yesblindnotdeaf
+        staff = nbnd = ybnd = nbyd = ''  # nbnd = notblindnotdeaf ybnd=yesblindnotdeaf
 
         # Autopass: at most footsteps if no lights
         # No autopass: at most footsteps if no lights
@@ -574,7 +575,7 @@ class ClientChangeArea:
             nbnd = blind_mes
             ybnd = blind_mes
             nbyd = ''
-        if not client.is_visible: # This should be the last statement
+        if not client.is_visible:  # This should be the last statement
             staff = '(X) {} while sneaking.'.format(autopass_mes)
             nbnd = ''
             ybnd = ''
@@ -604,7 +605,7 @@ class ClientChangeArea:
         others_bleeding = len([c for c in area.clients if c.is_bleeding and c != client])
 
         if client.is_bleeding and (status == 'stay' or status == 'arrived'):
-            discriminant = (others_bleeding > 0) # Check if someone was bleeding already
+            discriminant = (others_bleeding > 0)  # Check if someone was bleeding already
 
             dsh = {True: 'You start hearing more drops of blood.',
                    False: 'You faintly start hearing drops of blood.'}
@@ -616,7 +617,7 @@ class ClientChangeArea:
             vis_status = 'now'
         elif ((client.is_bleeding and status == 'left')
               or (not client.is_bleeding and status == 'stay')):
-            discriminant = (others_bleeding == 0) # Check if no one else in area was bleeding
+            discriminant = (others_bleeding == 0)  # Check if no one else in area was bleeding
             dsh = {True: 'You stop hearing drops of blood.',
                    False: 'You start hearing less drops of blood.'}
             dshs = {True: 'You stop hearing and smelling drops of blood.',
@@ -631,9 +632,9 @@ class ClientChangeArea:
             raise KeyError('Invalid call of notify_others_blood with client {}. Bleeding: {}.'
                            'Status: {}'.format(client, client.is_bleeding, status))
 
-        h_mes = dsh[discriminant] # hearing message
-        s_mes = dss[discriminant] # smelling message
-        hs_mes = dshs[discriminant] # hearing and smelling message
+        h_mes = dsh[discriminant]  # hearing message
+        s_mes = dss[discriminant]  # smelling message
+        hs_mes = dshs[discriminant]  # hearing and smelling message
         ybyd = hs_mes
         darkened = 'darkened ' if not area.lights else ''
 
@@ -669,7 +670,7 @@ class ClientChangeArea:
             staff = ('(X) {} {} bleeding and sneaking.'.format(char, pconnector))
 
         staff = staff.replace('no longer bleeding and sneaking.',
-                              'no longer bleeding, but is still sneaking.') # Ugly
+                              'no longer bleeding, but is still sneaking.')  # Ugly
 
         client.send_ooc_others(norm, is_zstaff_flex=False, in_area=area, in_hub=area.hub,
                                to_blind=False, to_deaf=False)
@@ -688,7 +689,7 @@ class ClientChangeArea:
         # If client has custom status, send reminder in OOC to everyone but those not staff,
         # blind and deaf simultaneously.
 
-        norm_mes =  f'You note something about {name} {{}}'
+        norm_mes = f'You note something about {name} {{}}'
         vague_mes = 'You think there is something odd about someone'
         staff_mes = f'(X) {name} [{client.id}] {{}} and has a custom status: {client.status}'
 
@@ -735,7 +736,6 @@ class ClientChangeArea:
                                to_blind=False, to_deaf=True)
         client.send_ooc_others(staff, is_zstaff_flex=True, in_area=area, in_hub=area.hub)
 
-
     def _do_change_area(
         self,
         area: AreaManager.Area,
@@ -749,7 +749,7 @@ class ClientChangeArea:
         more_unavail_chars: Set[int] = None,
         change_to: int = None,
         from_party: bool = False
-        ) -> Tuple[bool, bool, bool]:
+    ) -> Tuple[bool, bool, bool]:
 
         client = self.client
         old_area = client.area
@@ -771,7 +771,7 @@ class ClientChangeArea:
                 override_passages=override_passages,
                 override_effects=override_effects,
                 more_unavail_chars=more_unavail_chars
-                )
+            )
 
         # Code after this line assumes that the area change will be successful
         # (but has not yet been performed)
@@ -792,18 +792,18 @@ class ClientChangeArea:
                 client.send_ooc('Your character was restricted in your new area, switched '
                                 'to `{}`.'.format(new_char))
                 client.send_ooc_others('(X) Client {} had their character changed from `{}` to '
-                                        '`{}` in your zone as their old character was '
-                                        'restricted in their new area ({}).'
-                                        .format(client.id, old_char, new_char, area.id),
-                                        is_zstaff=area, in_hub=area.hub)
+                                       '`{}` in your zone as their old character was '
+                                       'restricted in their new area ({}).'
+                                       .format(client.id, old_char, new_char, area.id),
+                                       is_zstaff=area, in_hub=area.hub)
             else:
                 client.send_ooc('Your character was unavailable in your new area, switched to `{}`.'
                                 .format(client.get_char_name()))
                 client.send_ooc_others('(X) Client {} had their character changed from `{}` to '
-                                        '`{}` in your zone as their old character was '
-                                        'unavailable in their new area ({}).'
-                                        .format(client.id, old_char, new_char, area.id),
-                                        is_zstaff=area, in_hub=area.hub)
+                                       '`{}` in your zone as their old character was '
+                                       'unavailable in their new area ({}).'
+                                       .format(client.id, old_char, new_char, area.id),
+                                       is_zstaff=area, in_hub=area.hub)
 
         # IC lock bypasses only last the old area
         if client.can_bypass_iclock:
@@ -847,13 +847,13 @@ class ClientChangeArea:
             'old_displayname': old_dname,
             'ignore_bleeding': ignore_bleeding,
             'ignore_autopass': ignore_autopass,
-            })
+        })
         area.publisher.publish('area_client_entered', {
             'client': client,
             'old_displayname': old_dname,
             'ignore_bleeding': ignore_bleeding,
             'ignore_autopass': ignore_autopass,
-            })
+        })
         return True, found_something, ding_something
 
     def change_area(
@@ -869,7 +869,7 @@ class ClientChangeArea:
         more_unavail_chars: Set[int] = None,
         change_to: int = None,
         from_party: bool = False
-        ):
+    ):
         """
         PARAMETERS:
         *override_passages: ignore passages existing from the source area to the target area
@@ -907,12 +907,13 @@ class ClientChangeArea:
             more_unavail_chars=more_unavail_chars,
             change_to=change_to,
             from_party=from_party
-            )
+        )
 
         if not proceed:
             return
 
         old_area.remove_client(client)
+        client.send_player_list_to_area()
         client.area = area
         client.new_area = area  # Update again, as it may have not been set in _do_change_area
         area.new_client(client)
@@ -934,7 +935,7 @@ class ClientChangeArea:
             more_unavail_chars=more_unavail_chars,
             change_to=change_to,
             from_party=from_party
-            )
+        )
 
     def post_area_changed(
         self,
@@ -955,16 +956,16 @@ class ClientChangeArea:
         more_unavail_chars: Set[int] = None,
         change_to: int = None,
         from_party: bool = False
-        ):
+    ):
         client = self.client
         if not old_dname:
             old_dname = client.displayname
 
-        try:
-            area.play_current_track(only_for={client}, force_same_restart=0)
-        except AreaError:
-            # This should only happen if there's no music
-            pass
+        if not area.legacy_jukebox:
+            try:
+                area.play_current_track(only_for={client}, force_same_restart=0)
+            except AreaError:
+                pass
 
         client.send_health(side=1, health=client.area.hp_def)
         client.send_health(side=2, health=client.area.hp_pro)
@@ -986,6 +987,9 @@ class ClientChangeArea:
                                    tod_backgrounds=client.area.get_background_tod())
         client.send_evidence_list()
         if client.packet_handler.HAS_JOINED_AREA:
+            client.send_player_list_to_area()
+            
+            client.broadcast_player_list_reason_auto()
             client.send_joined_area()
         else:
             client.send_ic_blankpost()
@@ -993,7 +997,7 @@ class ClientChangeArea:
         if found_something:
             client.send_ic_attention(ding=ding_something)
 
-        client.send_music_list_view() # Update music list to include new area's reachable areas
+        client.send_music_list_view()  # Update music list to include new area's reachable areas
         # If new area has lurk callout timer, reset it to that, provided it makes sense
         client.check_lurk()
         client.server.task_manager.new_task(client, 'as_afk_kick', {
@@ -1036,14 +1040,14 @@ class ClientChangeArea:
                 'old_displayname': old_dname,
                 'ignore_autopass': ignore_autopass,
                 'ignore_bleeding': ignore_bleeding,
-                })
+            })
         area.publisher.publish('area_client_entered_final', {
             'client': client,
             'old_area': old_area,
             'old_displayname': old_dname,
             'ignore_autopass': ignore_autopass,
             'ignore_bleeding': ignore_bleeding,
-            })
+        })
 
         if old_area and old_area.hub != area.hub:
             client.hub = area.hub
@@ -1086,10 +1090,9 @@ class ClientChangeArea:
                 msg += '(X) '
 
             if (has_area_description and
-                (client.is_staff() or (not client.is_blind and area.lights))):
+                    (client.is_staff() or (not client.is_blind and area.lights))):
                 msg += f'You note this about the area: `{area_description}`.'
                 client.send_ooc(msg)
-
 
         if client.followedby and not ignore_followers:
             for c in client.followedby:

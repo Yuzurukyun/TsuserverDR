@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
 #           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
+#           (C) 2022 Tricky Leifa (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -41,7 +42,8 @@ class EvidenceList:
 
     def __init__(self):
         self.evidences = []
-        self.poses = {'def':['def', 'hld'], 'pro':['pro', 'hlp'], 'wit':['wit'], 'hlp':['hlp', 'pro'], 'hld':['hld', 'def'], 'jud':['jud'], 'all':['hlp', 'hld', 'wit', 'jud', 'pro', 'def', ''], 'pos':[]}
+        self.poses = {'def': ['def', 'hld'], 'pro': ['pro', 'hlp'], 'wit': ['wit'], 'hlp': ['hlp', 'pro'], 'hld': [
+            'hld', 'def'], 'jud': ['jud'], 'all': ['hlp', 'hld', 'wit', 'jud', 'pro', 'def', ''], 'pos': []}
 
     def login(self, client):
         if client.area.evidence_mod == 'FFA':
@@ -61,13 +63,12 @@ class EvidenceList:
         if client.area.evidence_mod != 'HiddenCM':
             return True
         else:
-            #correct format: <owner = pos>\ndesc
+            # correct format: <owner = pos>\ndesc
             if desc[:9] == '<owner = ' and desc[9:12] in self.poses and desc[12:14] == '>\n':
                 return True
             return False
 
-
-    def add_evidence(self, client, name, description, image, pos = 'all'):
+    def add_evidence(self, client, name, description, image, pos='all'):
         if self.login(client):
             if client.area.evidence_mod == 'HiddenCM':
                 pos = 'pos'
@@ -84,7 +85,8 @@ class EvidenceList:
             if client.area.evidence_mod == 'HiddenCM' and self.login(client):
                 nums_list.append(i + 1)
                 evi = self.evidences[i]
-                evi_list.append(self.Evidence(evi.name, '<owner = {}>\n{}'.format(evi.pos, evi.desc), evi.image, evi.pos).to_string())
+                evi_list.append(self.Evidence(evi.name, '<owner = {}>\n{}'.format(
+                    evi.pos, evi.desc), evi.image, evi.pos).to_string())
             elif client.pos in self.poses[self.evidences[i].pos]:
                 nums_list.append(i + 1)
                 evi_list.append(self.evidences[i].to_string())

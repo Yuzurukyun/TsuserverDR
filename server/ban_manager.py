@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
 #           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
+#           (C) 2022 Tricky Leifa (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,6 +30,7 @@ from server.exceptions import ServerError
 
 if typing.TYPE_CHECKING:
     from server.tsuserver import TsuserverDR
+
 
 class BanManager:
     def __init__(self, server: TsuserverDR):

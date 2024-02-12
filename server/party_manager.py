@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
 #           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
+#           (C) 2022 Tricky Leifa (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,10 +27,11 @@ from server.constants import Constants
 
 from server.exceptions import AreaError, ClientError, PartyError
 
+
 class PartyManager:
     # This class and related functions will be rewritten for 4.4.
     class Party:
-        #tc=True means the target called the party function to do something on themselves
+        # tc=True means the target called the party function to do something on themselves
         def __init__(self, server, pid, area, player_limit, leaders):
             self.server = server
             self.pid = pid
@@ -94,7 +96,7 @@ class PartyManager:
 
         def get_random_member(self, cond=None):
             if cond is None:
-                cond = lambda c: True
+                def cond(c): return True
 
             filtered_members = [x for x in self.members if cond(x)]
             return random.choice(filtered_members)
@@ -169,7 +171,7 @@ class PartyManager:
                     member.send_ooc('Your party has been ended for being in a dark room for '
                                     'too long.')
 
-                rando = self.get_random_member() # Just need a client for this next part
+                rando = self.get_random_member()  # Just need a client for this next part
                 rando.send_ooc_others('(X) Party {} was ended for being in a dark room for too '
                                       'long ({}).'.format(self.get_id(), self.area.id),
                                       is_zstaff_flex=True)
@@ -247,7 +249,7 @@ class PartyManager:
         return self.parties.values()
 
     def move_party(self, party, initiator, new_area):
-        ini_name = initiator.displayname # Backup in case initiator's char changes.
+        ini_name = initiator.displayname  # Backup in case initiator's char changes.
         movers = self.check_move_party(party, initiator, new_area)
         moving, staying = movers[True], movers[False]
 
@@ -283,11 +285,11 @@ class PartyManager:
         # 2. Sneaked who stayed as they were not allowed
         # 3. Visible who stayed (keeps party ID)
         split = list()
-        split.append({c: i for c, i in moving.items()}) # Guaranteed non-empty
+        split.append({c: i for c, i in moving.items()})  # Guaranteed non-empty
         split.append({c: i for c, i in staying.items() if c.is_visible})
         split.append({c: i for c, i in staying.items() if not c.is_visible})
-        s = lambda x: set(split[x].keys())
-        parties = [None, None, None] # Store party divisions, assumes only parties[0] moves
+        def s(x): return set(split[x].keys())
+        parties = [None, None, None]  # Store party divisions, assumes only parties[0] moves
 
         if initiator.is_visible:
             # Assumes parties[og_party_id] contains the initiator
@@ -304,7 +306,7 @@ class PartyManager:
             else:
                 party_3 = None
 
-            parties[og_party_id] = party # Convenient hack for parties[0] requirement!
+            parties[og_party_id] = party  # Convenient hack for parties[0] requirement!
             parties[1-og_party_id] = party_2
             parties[2] = party_3
 
@@ -320,7 +322,7 @@ class PartyManager:
                     msg = '{} started moving your party.'.format(ini_name)
                 member.send_ooc(msg)
                 member.change_area(new_area, ignore_checks=True, change_to=new_char)
-                if split[1]: # Announce split only if visible people were left behind.
+                if split[1]:  # Announce split only if visible people were left behind.
                     member.send_ooc('Your party was split.')
 
             for (member, _) in split[1].items():
@@ -473,7 +475,7 @@ class PartyManager:
         # Put a Brexit joke here
         # Jerm70: Because we needed to split the Brexit vote to stop the damn plebs from leaving
 
-        party = self.get_party(party) # Assert that it is a party
+        party = self.get_party(party)  # Assert that it is a party
         common = remainers.intersection(leavers)
         if common:
             raise PartyError('Invalid party split: {} would belong in two parties.'
@@ -502,7 +504,7 @@ class PartyManager:
         return leave_party
 
     def split_party(self, party, members1, members2):
-        party = self.get_party(party) # Assert that it is a party
+        party = self.get_party(party)  # Assert that it is a party
         common = members1.intersection(members2)
         if common:
             raise PartyError('Invalid party split: {} would belong in two parties.'

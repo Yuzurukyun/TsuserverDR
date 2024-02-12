@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
 #           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
+#           (C) 2022 Tricky Leifa (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -45,6 +46,7 @@ if typing.TYPE_CHECKING:
     from server.game_manager import _Team
     from server.timer_manager import Timer
     from server.tsuserver import TsuserverDR
+
 
 class _HubTrivialInherited(_GameWithAreas):
     """
@@ -144,7 +146,7 @@ class _HubTrivialInherited(_GameWithAreas):
     def get_players(
         self,
         cond: Callable[[ClientManager.Client, ], bool] = None
-        ) -> Set[ClientManager.Client]:
+    ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of players of this hub that satisfy a
         condition if given.
@@ -351,7 +353,7 @@ class _HubTrivialInherited(_GameWithAreas):
     def get_invitations(
         self,
         cond: Callable[[ClientManager.Client, ], bool] = None
-        ) -> Set[ClientManager.Client]:
+    ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of invited users of this hub that satisfy a
         condition if given.
@@ -532,7 +534,7 @@ class _HubTrivialInherited(_GameWithAreas):
     def get_leaders(
         self,
         cond: Callable[[ClientManager.Client, ], bool] = None
-        ) -> Set[ClientManager.Client]:
+    ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of leaders of this hub that satisfy a condition
         if given.
@@ -555,7 +557,7 @@ class _HubTrivialInherited(_GameWithAreas):
     def get_regulars(
         self,
         cond: Callable[[ClientManager.Client, ], bool] = None
-        ) -> Set[ClientManager.Client]:
+    ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of players of this hub that are regulars and
         satisfy a condition if given.
@@ -762,7 +764,7 @@ class _HubTrivialInherited(_GameWithAreas):
         max_value: Union[float, None] = None,
         auto_restart: bool = False,
         auto_destroy: bool = True
-        ) -> Timer:
+    ) -> Timer:
         """
         Create a new timer managed by this hub with given parameters.
 
@@ -829,7 +831,7 @@ class _HubTrivialInherited(_GameWithAreas):
         max_value: Union[float, None] = None,
         auto_restart: bool = False,
         auto_destroy: bool = True
-        ) -> Timer:
+    ) -> Timer:
         """
         Create a new timer managed by this hub with given parameters.
 
@@ -1026,7 +1028,7 @@ class _HubTrivialInherited(_GameWithAreas):
         require_invitations: bool = False,
         require_players: bool = True,
         require_leaders: bool = True
-        ) -> _Team:
+    ) -> _Team:
         """
         Create a new team managed by this hub.
 
@@ -1088,7 +1090,7 @@ class _HubTrivialInherited(_GameWithAreas):
         require_invitations: bool = False,
         require_players: bool = True,
         require_leaders: bool = True
-        ) -> _Team:
+    ) -> _Team:
         """
         Create a new team managed by this hub.
 
@@ -1649,7 +1651,7 @@ class _HubTrivialInherited(_GameWithAreas):
         self,
         player: ClientManager.Client,
         contents: Dict[str, Any] = None
-        ):
+    ):
         """
         Default callback for hub player signaling it wants to check if sending an IC
         message is appropriate. The IC arguments can be passed by reference, so this also serves as
@@ -1677,7 +1679,7 @@ class _HubTrivialInherited(_GameWithAreas):
         self,
         player: ClientManager.Client,
         contents: Dict[str, Any] = None
-        ):
+    ):
         """
         Default callback for hub player signaling it has sent an IC message.
         This callback is executed after the server is done making all modifications to the MS packet
@@ -1705,7 +1707,7 @@ class _HubTrivialInherited(_GameWithAreas):
         area: AreaManager.Area,
         client: ClientManager.Client = None,
         contents: Dict[str, Any] = None
-        ):
+    ):
         """
         Default callback for hub area signaling a client in the area sent an IC message.
         Unlike the ClientManager.Client callback for send_ic_check, this one is triggered
@@ -1750,6 +1752,7 @@ class _HubTrivialInherited(_GameWithAreas):
 
         super()._on_area_destroyed(area)
 
+
 class _Hub(_HubTrivialInherited):
     """
     A hub is a game with areas that hosts asset managers.
@@ -1785,7 +1788,6 @@ class _Hub(_HubTrivialInherited):
     # Invariants
     # ----------
     # 1. The invariants from the parent class GameWithArea are satisfied.
-
 
     def __init__(
         self,
@@ -2217,7 +2219,7 @@ class _Hub(_HubTrivialInherited):
         old_displayname: str = None,
         ignore_bleeding: bool = False,
         ignore_autopass: bool = False,
-        ):
+    ):
         """
         Default callback for hub area signaling a client left. This is executed after
         all other actions related to moving the player to a new area have been executed:
@@ -2264,7 +2266,7 @@ class _Hub(_HubTrivialInherited):
         old_displayname: str = None,
         ignore_bleeding: bool = False,
         ignore_autopass: bool = False,
-        ):
+    ):
         """
         Default callback for hub area signaling a client entered.
 
@@ -2310,7 +2312,7 @@ class _Hub(_HubTrivialInherited):
         old_char_name: str = '',
         new_char_id: int = -1,
         new_char_name: str = '',
-        ):
+    ):
         """
         Default callback for hub player signaling it has changed character.
 
@@ -2434,7 +2436,7 @@ class _HubManagerTrivialInherited(GameWithAreasManager):
         autoadd_on_creation_existing_users: bool = False,
         require_areas: bool = False,  # Overriden from parent
         **kwargs: Any,
-        ) -> _Hub:
+    ) -> _Hub:
         """
         Create a new hub managed by this manager. Overriden default parameters include:
         * A hub does not require leaders.
@@ -2519,7 +2521,7 @@ class _HubManagerTrivialInherited(GameWithAreasManager):
             autoadd_on_creation_existing_users=autoadd_on_creation_existing_users,
             require_areas=require_areas,
             **kwargs,
-            )
+        )
         self._check_structure()
 
         return hub
@@ -2784,7 +2786,7 @@ class _HubManagerTrivialInherited(GameWithAreasManager):
     def find_area_concurrent_limiting_managee(
         self,
         area: AreaManager.Area
-        ) -> Union[_Hub, None]:
+    ) -> Union[_Hub, None]:
         """
         For area `area`, find a hub `most_restrictive_game` managed by this manager
         such that, if `area` were to be added to another hub managed by this manager,
@@ -2837,7 +2839,7 @@ class _HubManagerTrivialInherited(GameWithAreasManager):
     def find_player_concurrent_limiting_managee(
         self,
         user: ClientManager.Client
-        ) -> Union[_Hub, None]:
+    ) -> Union[_Hub, None]:
         """
         For user `user`, find a hub `most_restrictive_game` managed by this manager such
         that, if `user` were to join another hub managed by this manager, they would
@@ -2882,7 +2884,7 @@ class HubManager(_HubManagerTrivialInherited):
         server: TsuserverDR,
         managee_limit: Union[int, None] = None,
         default_managee_type: Type[_Hub] = None,
-        ):
+    ):
         """
         Create a hub manager object.
 
@@ -2928,7 +2930,7 @@ class HubManager(_HubManagerTrivialInherited):
         autoadd_on_creation_existing_users: bool = False,
         require_areas: bool = False,  # Overriden from parent
         **kwargs: Any,
-        ) -> _Hub:
+    ) -> _Hub:
         """
         Create a new hub managed by this manager. Overriden default parameters include:
         * A hub does not require leaders.
@@ -3017,7 +3019,7 @@ class HubManager(_HubManagerTrivialInherited):
                 require_areas=require_areas,
                 # kwargs
                 **kwargs,
-                )
+            )
         except GameWithAreasError.ManagerTooManyGamesError:
             raise HubError.ManagerTooManyGamesError
 
@@ -3027,7 +3029,7 @@ class HubManager(_HubManagerTrivialInherited):
     def unchecked_delete_managee(
         self,
         managee: _Hub
-        ) -> Tuple[str, Set[ClientManager.Client]]:
+    ) -> Tuple[str, Set[ClientManager.Client]]:
         """
         Delete a hub managed by this manager, so all its players no longer belong to
         this hub.
@@ -3153,7 +3155,7 @@ class HubManager(_HubManagerTrivialInherited):
                 f'never had any hubs or the server was shutting down, found it managed no hubs '
                 f'after it had hubs {hubs} beforehand and the server is currently not shutting '
                 f'down.'
-                )
+            )
 
         # 2.
         super()._check_structure()

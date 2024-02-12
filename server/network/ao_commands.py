@@ -53,7 +53,8 @@ def net_cmd_hi(client: ClientManager.Client, pargs: Dict[str, Any]):
         # Prevent duplicate 'HI' packets
         client.disconnect()
         return
-    client.required_packets_received.add('HI')  # One of two conditions to allow joining
+    # One of two conditions to allow joining
+    client.required_packets_received.add('HI')
 
     # Record new HDID and IPID if needed
     client.hdid = pargs['client_hdid']
@@ -82,11 +83,11 @@ def net_cmd_hi(client: ClientManager.Client, pargs: Dict[str, Any]):
         'client_id': client.id,
         'server_software': client.server.software,
         'server_software_version': client.server.get_version_string(),
-        })
+    })
     client.send_command_dict('PN', {
         'player_count': client.server.get_player_count(),
         'player_limit': client.server.config['playerlimit'],
-        })
+    })
 
 
 def net_cmd_id(client: ClientManager.Client, pargs: Dict[str, Any]):
@@ -100,7 +101,8 @@ def net_cmd_id(client: ClientManager.Client, pargs: Dict[str, Any]):
         # Prevent duplicate 'ID' packets
         client.disconnect()
         return
-    client.required_packets_received.add('ID')  # One of two conditions to allow joining
+    # One of two conditions to allow joining
+    client.required_packets_received.add('ID')
 
     def check_client_version():
         raw_software, raw_version = pargs['client_software'], pargs['client_software_version']
@@ -137,11 +139,21 @@ def net_cmd_id(client: ClientManager.Client, pargs: Dict[str, Any]):
             if release >= 2:
                 # DRO 2???
                 # Placeholder
-                client.packet_handler = clients.ClientDRO1d2d2()
+                client.packet_handler = clients.ClientDRO1d5d0()
             elif release >= 1:
-                if major >= 2:
-                    if minor >= 2:
+                if major >= 5:
+                    client.packet_handler = clients.ClientDRO1d5d0()
+                elif major >= 4:
+                    client.packet_handler = clients.ClientDRO1d4d0()
+                elif major >= 3:
+                    client.packet_handler = clients.ClientDRO1d3d0()
+                elif major >= 2:
+                    if minor >= 3:
+                        client.packet_handler = clients.ClientDRO1d2d3()
+                    elif minor >= 2:
                         client.packet_handler = clients.ClientDRO1d2d2()
+                    elif minor >= 1:
+                        client.packet_handler = clients.ClientDRO1d2d1()
                     else:
                         client.packet_handler = clients.ClientDRO1d2d0()
                 elif major >= 1:
@@ -176,8 +188,8 @@ def net_cmd_id(client: ClientManager.Client, pargs: Dict[str, Any]):
                         'noencryption', 'deskmod', 'evidence', 'cccc_ic_support', 'looping_sfx',
                         'additive', 'effects', 'y_offset',
                         # DRO exclusive stuff
-                        'ackMS', 'showname', 'chrini', 'charscheck', 'v110',]
-        })
+                        'ackMS', 'showname', 'chrini', 'charscheck', 'v110', ]
+    })
 
     client.send_command_dict('client_version', {
         'dro_version_ao2_list': client.packet_handler.VERSION_TO_SEND
@@ -220,7 +232,7 @@ def net_cmd_askchaa(client: ClientManager.Client, pargs: Dict[str, Any]):
         'char_count': char_cnt,
         'evidence_count': evi_cnt,
         'music_list_count': music_cnt+area_cnt,
-        })
+    })
 
 
 def net_cmd_ae(client: ClientManager.Client, pargs: Dict[str, Any]):
@@ -265,7 +277,7 @@ def net_cmd_rm(client: ClientManager.Client, pargs: Dict[str, Any]):
     area_and_music_list = client.get_area_and_music_list_view()
     client.send_command_dict('SM', {
         'music_ao2_list': area_and_music_list,
-        })
+    })
 
 
 def net_cmd_rd(client: ClientManager.Client, pargs: Dict[str, Any]):
@@ -283,7 +295,8 @@ def net_cmd_rd(client: ClientManager.Client, pargs: Dict[str, Any]):
     if client.server.config['announce_areas']:
         client.send_limited_area_list()
     client.send_motd()
-    client.can_askchaa = True  # Allow rejoining if left to lobby but did not dc.
+    # Allow rejoining if left to lobby but did not dc.
+    client.can_askchaa = True
 
 
 def net_cmd_cc(client: ClientManager.Client, pargs: Dict[str, Any]):
@@ -310,13 +323,14 @@ def net_cmd_cc(client: ClientManager.Client, pargs: Dict[str, Any]):
         if not client.ever_outbounded_gamemode:
             client.send_command_dict('GM', {
                 'name': ''
-                })
+            })
         if not client.ever_outbounded_time_of_day:
             client.send_command_dict('TOD', {
                 'name': ''
-                })
+            })
         try:
-            client.area.play_current_track(only_for={client}, force_same_restart=1)
+            client.area.play_current_track(
+                only_for={client}, force_same_restart=1)
         except AreaError:
             # Only if there is no current music in the area
             pass
@@ -333,7 +347,7 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
         client.send_ooc("You have been muted by a moderator.")
         return
     if (client.area.ic_lock and not client.is_staff()
-        and not client.can_bypass_iclock):
+            and not client.can_bypass_iclock):
         client.send_ooc('The IC chat in this area is currently locked.')
         return
     if not client.area.can_send_message():
@@ -351,12 +365,12 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
     # filter these out
     if (pargs['text'] == client.last_ic_raw_message
         and client.last_received_ic[0] == client
-        and client.get_char_name() == client.last_ic_char):
+            and client.get_char_name() == client.last_ic_char):
         return
 
     if not client.area.iniswap_allowed:
         if client.area.is_iniswap(client, pargs['pre'], pargs['anim'],
-                                        pargs['folder']):
+                                  pargs['folder']):
             client.send_ooc("Iniswap is blocked in this area.")
             return
     if pargs['folder'] in client.area.restricted_chars and not client.is_staff():
@@ -370,7 +384,7 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
         return
     if Constants.includes_relative_directories(pargs['sfx']):
         client.send_ooc(f'Sound effects and voicelines may not not reference parent or '
-                                f'current directories: {pargs["sfx"]}')
+                        f'current directories: {pargs["sfx"]}')
         return
     if pargs['sfx_delay'] < 0:
         return
@@ -381,7 +395,7 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
         return
     if pargs['evidence'] < 0:
         return
-    if pargs['ding'] not in (0, 1, 2, 3, 4, 5, 6, 7):  # Effects
+    if pargs['ding'] not in (0, 1, 2, 3, 4, 5, 6, 7, 8):  # Effects
         return
     if pargs['color'] not in (0, 1, 2, 3, 4, 5, 6, 7, 8):
         return
@@ -405,7 +419,7 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
         client.area.publisher.publish('area_client_inbound_ms_check', {
             'client': client,
             'contents': pargs,
-            })
+        })
     except TsuserverException as ex:
         client.send_ooc(ex)
         return
@@ -414,7 +428,7 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
     try:
         client.publisher.publish('client_inbound_ms_check', {
             'contents': pargs,
-            })
+        })
     except TsuserverException as ex:
         client.send_ooc(ex)
         return
@@ -483,7 +497,8 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
             client.send_ooc(f'Sent global IC message "{truncated_msg}" to areas '
                             f'{start_area.name} through {end_area.name}.')
         else:
-            client.send_ooc(f'Sent global IC message "{truncated_msg}" to area {start_area.name}.')
+            client.send_ooc(
+                f'Sent global IC message "{truncated_msg}" to area {start_area.name}.')
 
     pargs['msg'] = msg
     # Try to change our showname if showname packet exists, and doesn't match our current showname
@@ -502,7 +517,8 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
     # messages. Thus, we 'invent' the missing arguments based on available info.
     if 'charid_pair_pair_order' in pargs:
         # AO 2.8 sender
-        pargs['charid_pair'] = int(pargs['charid_pair_pair_order'].split('^')[0])
+        pargs['charid_pair'] = int(
+            pargs['charid_pair_pair_order'].split('^')[0])
     elif 'charid_pair' in pargs:
         # AO 2.6 sender
         pargs['charid_pair_pair_order'] = f'{pargs["charid_pair"]}^0'
@@ -557,7 +573,8 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
     for area_id in area_range:
         target_area = client.hub.area_manager.get_area_by_id(area_id)
         for target in target_area.clients:
-            target.send_ic(params=pargs, sender=client, gag_replaced=gag_replaced)
+            target.send_ic(params=pargs, sender=client,
+                           gag_replaced=gag_replaced)
 
         target_area.set_next_msg_delay(len(msg))
 
@@ -567,7 +584,8 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
             target_area.add_to_shoutlog(client, info)
 
     client.area.set_next_msg_delay(len(msg))
-    logger.log_server(f'[IC][{client.area.id}][{client.get_char_name()}]{msg}', client)
+    logger.log_server(
+        f'[IC][{client.area.id}][{client.get_char_name()}]{msg}', client)
 
     # Sending IC messages reveals sneaked players
     if not client.is_staff() and not client.is_visible:
@@ -585,20 +603,23 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
     client.last_ic_message = msg
     client.last_active = Constants.get_time()
 
+
 def _process_ooc_command(cmd: str, client: ClientManager.Client):
     called_function = f'ooc_cmd_{cmd}'
     if hasattr(client.server.commands, called_function):
         function = getattr(client.server.commands, called_function)
         return function
 
-    get_command_alias = getattr(client.server.commands_alt, 'get_command_alias')
+    get_command_alias = getattr(
+        client.server.commands_alt, 'get_command_alias')
     command_alias = get_command_alias(cmd)
     if command_alias:
         called_function = f'ooc_cmd_{command_alias}'
         function = getattr(client.server.commands, called_function)
         return function
 
-    get_command_deprecated = getattr(client.server.commands_alt, 'get_command_deprecated')
+    get_command_deprecated = getattr(
+        client.server.commands_alt, 'get_command_deprecated')
     command_deprecated = get_command_deprecated(cmd)
     if command_deprecated:
         called_function = f'ooc_cmd_{command_deprecated}'
@@ -637,7 +658,7 @@ def net_cmd_ct(client: ClientManager.Client, pargs: Dict[str, Any]):
         client.send_ooc('Your name contains an illegal character.')
         return
     if (Constants.decode_ao_packet([client.server.config['hostname']])[0] in username
-        or '$G' in username):
+            or '$G' in username):
         client.send_ooc('That name is reserved.')
         return
 
@@ -650,7 +671,8 @@ def net_cmd_ct(client: ClientManager.Client, pargs: Dict[str, Any]):
         arg = ''
         if len(spl) == 2:
             arg = spl[1][:1024]
-        arg = Constants.trim_extra_whitespace(arg)  # Do it again because args may be weird
+        # Do it again because args may be weird
+        arg = Constants.trim_extra_whitespace(arg)
 
         function = _process_ooc_command(cmd, client)
         if function:
@@ -680,7 +702,7 @@ def net_cmd_ct(client: ClientManager.Client, pargs: Dict[str, Any]):
             target.send_ooc(message, username=client.name)
         client.last_ooc_message = pargs['message']
         logger.log_server(f'[OOC][{client.area.id}][{client.get_char_name()}]'
-                            f'[{client.name}]{message}', client)
+                          f'[{client.name}]{message}', client)
     client.last_active = Constants.get_time()
 
 
@@ -724,7 +746,8 @@ def _attempt_to_change_area(client: ClientManager.Client, pargs: Dict[str, Any])
             return False
 
         try:
-            client.change_area(area, from_party=True if client.party else False)
+            client.change_area(
+                area, from_party=True if client.party else False)
         except (ClientError, PartyError) as ex:
             client.send_ooc(ex)
 
@@ -751,7 +774,7 @@ def _attempt_to_play_music(client: ClientManager.Client, pargs: Dict[str, Any]) 
         return False
 
     try:
-        client.area.play_track(name, client, raise_if_not_found=True,
+        client.area.play_track(name, client, raise_if_not_found=not client.is_staff(),
                                reveal_sneaked=True, pargs=pargs)
     except ServerError.FileInvalidNameError:
         client.send_ooc(f'Invalid area or music `{name}`.')
@@ -854,7 +877,8 @@ def net_cmd_de(client: ClientManager.Client, pargs: Dict[str, Any]):
 
     """
 
-    client.area.evi_list.del_evidence(client, client.evi_list[int(pargs['evi_id'])])
+    client.area.evi_list.del_evidence(
+        client, client.evi_list[int(pargs['evi_id'])])
     client.area.broadcast_evidence_list()
     client.last_active = Constants.get_time()
 
@@ -894,11 +918,11 @@ def net_cmd_zz(client: ClientManager.Client, pargs: Dict[str, Any]):
         if target.is_officer():
             target.send_command_dict('ZZ', {
                 'message': message
-                })
+            })
 
     client.set_mod_call_delay()
     logger.log_server(f'[{client.get_ip()}][{client.area.id}]'
-                        f'{client.get_char_name()} called a moderator.')
+                      f'{client.get_char_name()} called a moderator.')
 
 
 def net_cmd_sp(client: ClientManager.Client, pargs: Dict[str, Any]):
@@ -919,6 +943,7 @@ def net_cmd_sn(client: ClientManager.Client, pargs: Dict[str, Any]):
 
     try:
         client.command_change_showname(pargs['showname'], False)
+        client.send_player_list_to_area()
     except ClientError as exc:
         client.send_ooc(exc)
 
@@ -930,6 +955,7 @@ def net_cmd_chrini(client: ClientManager.Client, pargs: Dict[str, Any]):
 
     client.change_character_ini_details(pargs['actual_folder_name'],
                                         pargs['actual_character_showname'])
+    client.send_player_list_to_area()
 
 
 def net_cmd_re(self, _):
@@ -943,6 +969,7 @@ def net_cmd_charscheck(client: ClientManager.Client, pargs: Dict[str, Any]):
     """
 
     client.refresh_visible_char_list()
+
 
 def net_cmd_fs(client: ClientManager.Client, pargs: Dict[str, Any]):
     """
