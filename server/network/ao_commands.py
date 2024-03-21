@@ -1049,16 +1049,14 @@ def net_cmd_pr(client: ClientManager.Client, pargs: Dict[str, Any]):
     #Generate a response key to avoid request conflicts.
     client.generate_response_key()
 
-    pairSender = client.char_showname
-    if not pairSender:
-        pairSender = client.char_folder
+    pairSender = client.char_folder
     #Send a request to the target player.
     return_data = {}
     return_data['packet'] = 'notify_request'
     return_data['data'] = {}
     return_data['data']['request_type'] = 'pair'
     return_data['data']['requester_id'] = client.id
-    return_data['data']['requester_name'] = client.showname
+    return_data['data']['requester_name'] = client.showname_else_char_showname
     return_data['data']['requester_character'] = pairSender
     return_data['data']['requester_key'] = client.response_key
 
