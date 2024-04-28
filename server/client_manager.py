@@ -294,7 +294,10 @@ class ClientManager:
             to_deaf: Union[bool, None] = None,
             is_zstaff: Union[bool, AreaManager.Area, None] = None,
             is_zstaff_flex: Union[bool, AreaManager.Area, None] = None,
-            pred: Callable[[ClientManager.Client], bool] = None
+            pred: Callable[[ClientManager.Client], bool] = None,
+            localization: str = None,
+            loc_var_one: str = None,
+            loc_var_two: str = None,
         ):
             if not allow_empty and not msg:
                 return
@@ -326,6 +329,9 @@ class ClientManager:
                 self.send_command_dict('CT', {
                     'username': username,
                     'message': msg,
+                    'localization': localization,
+                    'variable_one': loc_var_one,
+                    'variable_two': loc_var_two
                 })
 
         def send_ooc_others(
@@ -1146,6 +1152,25 @@ class ClientManager:
             self.send_command_dict('LIST_REASON', {
                 'player_list_reason': reason,
                 'player_list_area_info': area_desc
+            })
+
+        def send_evidence_to_player(self):
+            return_data = {}
+            return_data['packet'] = 'evidence'
+            
+            evidence_to_send = list()
+            for evidence_item in self.hub.evidence:
+                evidence_data = {}
+                evidence_data["name"] = evidence_item.name
+                evidence_data["image"] = evidence_item.image
+                evidence_data["description"]  = evidence_item.description
+                evidence_to_send.append(evidence_data)
+                
+            return_data['data'] = evidence_to_send
+
+            json_data = json.dumps(return_data)
+            self.send_command_dict('JSN', {
+                'json_data': json_data
             })
 
         def send_player_list_to_area(self):
@@ -2262,12 +2287,12 @@ class ClientManager:
             if url:
                 self.files = [self.char_folder, url]
                 self.send_ooc(f'You have set the download link for the files of '
-                              f'`{self.char_folder}` to {url}')
-                self.send_ooc(f'Let others access them with /files {self.id}')
+                              f'`{self.char_folder}` to {url}', localization="S_CHAR_SET", loc_var_one=self.char_folder, loc_var_two=url)
+                self.send_ooc(f'Let others access them with /files {self.id}', localization="S_CHAR_ACCESS", loc_var_one=str(self.id))
             else:
                 if self.files:
                     self.send_ooc(f'You have removed the download link for the files of '
-                                  f'`{self.files[0]}`.')
+                                  f'`{self.files[0]}`.', localization="S_CHAR_UNSET", loc_var_one=self.files[0])
                     self.files = None
                 else:
                     raise ClientError(

@@ -140,9 +140,11 @@ def net_cmd_id(client: ClientManager.Client, pargs: Dict[str, Any]):
             if release >= 2:
                 # DRO 2???
                 # Placeholder
-                client.packet_handler = clients.ClientDRO1d6d0()
+                client.packet_handler = clients.ClientDRO1d7d0()
             elif release >= 1:
-                if major >= 6:
+                if major >= 7:
+                    client.packet_handler = clients.ClientDRO1d7d0()
+                elif major >= 6:
                     client.packet_handler = clients.ClientDRO1d6d0()
                 elif major >= 5:
                     client.packet_handler = clients.ClientDRO1d5d0()
@@ -1131,7 +1133,27 @@ def net_cmd_pair(client: ClientManager.Client, pargs: Dict[str, Any]):
         'json_data': json_data
     })
 
-    
+def net_cmd_eva(client: ClientManager.Client, pargs: Dict[str, Any]):
+    """ Add evidence.
+
+    EVA#<name:str>#<desc:str>#<image:str>%
+
+    """
+    evidence_name = pargs['name']
+    evidence_desc = pargs['desc']
+    evidence_image = pargs['image']
+
+    client.hub.add_evidence(evidence_name, evidence_desc, evidence_image)
+
+def net_cmd_evr(client: ClientManager.Client, pargs: Dict[str, Any]):
+    """ Add evidence.
+
+    EVR#<id:int>%
+
+    """
+    evidence_id = pargs['id']
+
+    #client.hub.add_evidence(evidence_name, evidence_desc, evidence_image)
 
 def net_cmd_pw(self, _):
     # Ignore packet

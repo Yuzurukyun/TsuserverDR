@@ -606,7 +606,7 @@ class AreaManager(AssetManager):
             """
 
             for client in self.clients:
-                client.send_evidence_list()
+                client.send_evidence_to_player()
 
         def change_hp(self, side: int, health: int):
             """

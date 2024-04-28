@@ -3431,7 +3431,7 @@ def ooc_cmd_help(client: ClientManager.Client, arg: str):
         url = 'https://github.com/Keightiie/TsuserverDR#commands'
         help_msg = ('Available commands, source code and issues can be found here: {} . If you are '
                     'looking for help with a specific command, do /help <command_name>'.format(url))
-        client.send_ooc(help_msg)
+        client.send_ooc(help_msg, localization="S_HELP", loc_var_one=url)
         return
 
     ranks_to_try = [
@@ -6769,11 +6769,11 @@ def ooc_cmd_party_lead(client: ClientManager.Client, arg: str):
 
     party = client.get_party()
     party.add_leader(client, tc=True)
-    client.send_ooc('You are now a leader of your party.')
+    client.send_ooc('You are now a leader of your party.', localization='S_PARTY_LEADER')
     for c in party.get_leaders(uninclude={client}):
         if c.is_staff() or client.is_visible:
             c.send_ooc('{} is now a leader of your party.'.format(
-                client.displayname))
+                client.displayname), localization='S_PARTY_LEADER_O', loc_var_one=client.displayname)
 
 
 def ooc_cmd_party_leave(client: ClientManager.Client, arg: str):
@@ -6798,11 +6798,11 @@ def ooc_cmd_party_leave(client: ClientManager.Client, arg: str):
     party = client.get_party(tc=True)
     party.remove_member(client)
 
-    client.send_ooc('You have left party {}.'.format(party.get_id()))
+    client.send_ooc('You have left party {}.'.format(party.get_id()), localization='S_PARTY_LEAVE', loc_var_one=str(party.get_id()))
 
     for c in party.get_members(uninclude={client}):
         if c.is_staff() or client.is_visible:
-            c.send_ooc('{} has left your party.'.format(client.displayname))
+            c.send_ooc('{} has left your party.'.format(client.displayname), localization='S_PARTY_LEFT', loc_var_one=client.displayname)
 
 
 def ooc_cmd_party_list(client: ClientManager.Client, arg: str):
@@ -7713,7 +7713,7 @@ def ooc_cmd_refresh(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, is_staff=True, parameters='=0')
 
     client.hub.refresh()
-    client.send_ooc('You have refreshed your hub.')
+    client.send_ooc('You have refreshed your hub.', localization='S_HUB_REFRESH')
 
 
 def ooc_cmd_reload(client: ClientManager.Client, arg: str):
@@ -7734,7 +7734,7 @@ def ooc_cmd_reload(client: ClientManager.Client, arg: str):
     Constants.assert_command(client, arg, parameters='=0')
 
     client.reload_character()
-    client.send_ooc('Character reloaded.')
+    client.send_ooc('Character reloaded.', localization='S_RELOAD')
 
 
 def ooc_cmd_reload_commands(client: ClientManager.Client, arg: str):
@@ -8673,8 +8673,8 @@ def ooc_cmd_sneakself(client: ClientManager.Client, arg: str):
     for c in targets:
         c.change_visibility(False)
 
-    client.send_ooc("You sneaked all of your valid multiclients.")
-    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] sneaked all their valid '
+    client.send_ooc("You snuck all of your valid multiclients.")
+    client.send_ooc_others(f'(X) {client.displayname} [{client.id}] snuck all their valid '
                            f'multiclients [{client.id}] ({client.area.id}).',
                            not_to=set(targets), is_zstaff=True)
 
@@ -12484,10 +12484,9 @@ def ooc_cmd_hide_icon(client: ClientManager.Client, arg: str):
     SYNTAX
     /hide_icon
     """
-    message = "You must be authorized to do that."
-    if(client.is_gm or client.is_mod or client.is_cm):
-        client.icon_visible = not client.icon_visible
-        client.area.broadcast_player_list()
-        status = {False: 'disabled', True: 'enabled'}
-        message = f'You have {status[client.icon_visible]} your character icon.'
-    client.send_ooc(message)
+    client.icon_visible = not client.icon_visible
+    client.area.broadcast_player_list()
+    status = {False: 'disabled', True: 'enabled'}
+    localizationType = "S_ICON_HIDE"
+    message = f'You have {status[client.icon_visible]} your character icon.'
+    client.send_ooc(message, localization=localizationType, loc_var_one=status[client.icon_visible])

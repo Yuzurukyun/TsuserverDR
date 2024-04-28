@@ -28,6 +28,7 @@ from __future__ import annotations
 import secrets
 import typing
 
+from server.evidence_manager import Evidence
 from server.area_manager import AreaManager
 from server.background_manager import BackgroundManager
 from server.character_manager import CharacterManager
@@ -1904,7 +1905,17 @@ class _Hub(_HubTrivialInherited):
 
         self._password = str(secrets.randbelow(9000) + 1000)  # Cute trick to get 4-digit number
 
+        self.evidence = []
         self.manager: HubManager  # Setting for typing
+
+    def broadcast_evidence(self):
+        for area in self.get_areas():
+            area.broadcast_evidence_list()
+
+    def add_evidence(self, name, description, image):
+        evidence_item = Evidence(name, image, description)
+        self.evidence.append(evidence_item)
+        self.broadcast_evidence()
 
     def get_type_name(self) -> str:
         """

@@ -199,6 +199,9 @@ class DefaultDROProtocol(_Singleton):
     CT_OUTBOUND = [
         ('username', ''),  # 0
         ('message', ''),  # 1
+        ('localization', ''),  # 1
+        ('variable_one', ''), # 1
+        ('variable_two', ''), # 1
     ]
 
     ACKMS_OUTBOUND = [
@@ -372,6 +375,19 @@ class DefaultDROProtocol(_Singleton):
     ]
 
     JOINED_AREA_OUTBOUND = [
+    ]
+
+class ClientDRO1d7d0(DefaultDROProtocol):
+    VERSION_TO_SEND = [1, 7, 0]
+
+    EVA_INBOUND = [
+        ('name', ArgType.STR),  # 0
+        ('desc', ArgType.STR),  # 1
+        ('image', ArgType.STR)  # 2
+    ]
+
+    EVR_INBOUND = [
+        ('id', ArgType.INT)  # 0
     ]
 
 class ClientDRO1d6d0(DefaultDROProtocol):
