@@ -799,6 +799,11 @@ class ClientManager:
                 'chars_ao2_list': characters,
             })
 
+        def send_weather(self):
+            self.send_command_dict('WEA', {
+                'name': self.area.weather
+            })
+
         def send_background(self, name: str = None, pos: str = None,
                             tod_backgrounds: Dict[str, str] = None):
             """
@@ -836,6 +841,8 @@ class ClientManager:
                 'pos': pos,
                 'tod_backgrounds_ao2_list': tod_backgrounds_ao2_list,
             })
+            self.send_weather()
+
 
         def send_evidence_list(self):
             self.send_command_dict('LE', {

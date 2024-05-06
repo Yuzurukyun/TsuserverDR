@@ -139,6 +139,10 @@ class DefaultDROProtocol(_Singleton):
         ('tod_backgrounds_ao2_list', list()),  # 1
     ]
 
+    WEA_OUTBOUND = [
+        ('name', ''),  # 0
+    ]
+
     LE_OUTBOUND = [
         ('evidence_ao2_list', list()),  # 0
     ]
