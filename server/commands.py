@@ -12501,6 +12501,9 @@ def ooc_cmd_set_weather(client: ClientManager.Client, arg: str):
     
     args = arg.split(' ')
     
+    if len(args) != 3:
+        return
+    
     range_start, range_end, weather_name = args
     areas = Constants.parse_two_area_names(client, [range_start, range_end], check_valid_range=True)
 
