@@ -342,8 +342,4 @@ class AOProtocol(asyncio.Protocol):
                        needs_auth=False),  # pair offset
         'PAIR': _command(function=ao_commands.net_cmd_pair,
                        needs_auth=False),  # Pair
-        'EVA': _command(function=ao_commands.net_cmd_eva,
-                       needs_auth=False),  # Pair
-        'EVR': _command(function=ao_commands.net_cmd_evr,
-                       needs_auth=False),  # Pair
     }

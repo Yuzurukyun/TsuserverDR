@@ -988,7 +988,7 @@ class ClientChangeArea:
         client.send_evidence_list()
         if client.packet_handler.HAS_JOINED_AREA:
             client.send_player_list_to_area()
-            client.send_evidence_to_player()
+            
             client.broadcast_player_list_reason_auto()
             client.send_joined_area()
         else:

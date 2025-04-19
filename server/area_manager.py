@@ -123,7 +123,6 @@ class AreaManager(AssetManager):
 
             self.name = parameters['area']
             self.background = parameters['background']
-            self.weather = parameters['weather']
             self.background_tod = parameters['background_tod']
             self.bg_lock = parameters['bglock']
             self.evidence_mod = parameters['evidence_mod']
@@ -599,14 +598,6 @@ class AreaManager(AssetManager):
             client.evi_list, evi_list = self.evi_list.create_evi_list(client)
             return evi_list
 
-        def broadcast_weather(self):
-            """
-
-            """
-
-            for client in self.clients:
-                client.send_weather()
-
         def broadcast_evidence_list(self):
             """
             Resend all clients in the area their evidence list.
@@ -615,7 +606,7 @@ class AreaManager(AssetManager):
             """
 
             for client in self.clients:
-                client.send_evidence_to_player()
+                client.send_evidence_list()
 
         def change_hp(self, side: int, health: int):
             """

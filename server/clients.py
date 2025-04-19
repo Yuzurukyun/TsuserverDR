@@ -139,10 +139,6 @@ class DefaultDROProtocol(_Singleton):
         ('tod_backgrounds_ao2_list', list()),  # 1
     ]
 
-    WEA_OUTBOUND = [
-        ('name', ''),  # 0
-    ]
-
     LE_OUTBOUND = [
         ('evidence_ao2_list', list()),  # 0
     ]
@@ -203,9 +199,6 @@ class DefaultDROProtocol(_Singleton):
     CT_OUTBOUND = [
         ('username', ''),  # 0
         ('message', ''),  # 1
-        ('localization', ''),  # 1
-        ('variable_one', ''), # 1
-        ('variable_two', ''), # 1
     ]
 
     ACKMS_OUTBOUND = [
@@ -379,46 +372,6 @@ class DefaultDROProtocol(_Singleton):
     ]
 
     JOINED_AREA_OUTBOUND = [
-    ]
-
-class ClientDRO1d7d0(DefaultDROProtocol):
-    VERSION_TO_SEND = [1, 7, 0]
-
-    MS_OUTBOUND = [
-        ('msg_type', 0),  # 0
-        ('pre', '-'),  # 1
-        ('folder', '<NOCHAR>'),  # 2
-        ('anim', '../../misc/blank'),  # 3
-        ('msg', ''),  # 4
-        ('pos', 'jud'),  # 5
-        ('sfx', 0),  # 6
-        ('anim_type', 0),  # 7
-        ('char_id', -1),  # 8
-        ('sfx_delay', 0),  # 9
-        ('button', 0),  # 10
-        ('evidence', 0),  # 11
-        ('flip', 0),  # 12
-        ('ding', -1),  # 13
-        ('color', 0),  # 14
-        ('showname', ''),  # 15
-        ('video', '0'),  # 16
-        ('hide_character', 0),  # 17
-        ('client_id', -1),  # 18
-        ('offset_x', 0), # 19
-        ('pair_folder', ''), #20
-        ('pair_anim', ''), #21
-        ('pair_flip', 0), #22
-        ('pair_offset_x', 0), # 23
-    ]
-
-    EVA_INBOUND = [
-        ('name', ArgType.STR),  # 0
-        ('desc', ArgType.STR),  # 1
-        ('image', ArgType.STR)  # 2
-    ]
-
-    EVR_INBOUND = [
-        ('id', ArgType.INT)  # 0
     ]
 
 class ClientDRO1d6d0(DefaultDROProtocol):
