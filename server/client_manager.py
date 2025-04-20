@@ -77,6 +77,7 @@ class ClientManager:
             self.char_id = None
             self.name = ''
             self.char_folder = ''
+            self.char_outfit = ''
             self.char_showname = ''
             self.pos = 'wit'
             self.showname = ''
@@ -1041,6 +1042,7 @@ class ClientManager:
             self.char_id = char_id
             # Assumes players are not iniswapped initially, waiting for chrini packet
             self.char_folder = new_char
+            self.char_outfit = ''
             self.char_showname = ''
             self.pos = 'wit'
 

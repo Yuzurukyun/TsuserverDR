@@ -374,6 +374,15 @@ class DefaultDROProtocol(_Singleton):
     JOINED_AREA_OUTBOUND = [
     ]
 
+class ClientDRO1d7d0(DefaultDROProtocol):
+    VERSION_TO_SEND = [1, 7, 0]
+
+    CHRINI_INBOUND = [
+        ('actual_folder_name', ArgType.STR),  # 0
+        ('actual_character_showname', ArgType.STR),  # 1
+        ('character_outfit', ArgType.STR),  # 2
+    ]
+
 class ClientDRO1d6d0(DefaultDROProtocol):
     VERSION_TO_SEND = [1, 6, 0]
 

@@ -287,6 +287,9 @@ class AreaManager(AssetManager):
                             if(c.files):
                                 chara_client_info["url"] = c.files[1]    
 
+                            if(c.char_outfit):
+                                chara_client_info["outfit"] = c.char_outfit 
+
                             if(c.status):
                                 chara_client_info["status"] = c.status 
                             player_data_to_send.append(chara_client_info)

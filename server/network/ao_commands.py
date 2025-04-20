@@ -140,9 +140,11 @@ def net_cmd_id(client: ClientManager.Client, pargs: Dict[str, Any]):
             if release >= 2:
                 # DRO 2???
                 # Placeholder
-                client.packet_handler = clients.ClientDRO1d6d0()
+                client.packet_handler = clients.ClientDRO1d7d0()
             elif release >= 1:
-                if major >= 6:
+                if major >= 7:
+                    client.packet_handler = clients.ClientDRO1d7d0()
+                elif major >= 6:
                     client.packet_handler = clients.ClientDRO1d6d0()
                 elif major >= 5:
                     client.packet_handler = clients.ClientDRO1d5d0()
@@ -446,6 +448,7 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
                 pair_jsn_packet['data']['last_sprite'] = target.last_sprite
                 pair_jsn_packet['data']['flipped'] = bool(target.flip)
                 pair_jsn_packet['data']['character'] = target.char_folder
+                pair_jsn_packet['data']['outfit'] = target.char_outfit
                 pair_jsn_packet['data']['offset_pair'] = target.offset_pair
                 pair_jsn_packet['data']['self_offset'] = client.offset_pair
 
@@ -979,8 +982,8 @@ def net_cmd_chrini(client: ClientManager.Client, pargs: Dict[str, Any]):
     Char.ini information
     """
 
-    client.change_character_ini_details(pargs['actual_folder_name'],
-                                        pargs['actual_character_showname'])
+    client.change_character_ini_details(pargs['actual_folder_name'], pargs['actual_character_showname'])
+    client.char_outfit = pargs.get('character_outfit', '')
     client.send_player_list_to_area()
 
 
