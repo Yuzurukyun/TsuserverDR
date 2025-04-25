@@ -419,6 +419,10 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
             client.send_ooc(exc)
             return
 
+    if 'offset_v' in pargs:
+        client.scale = pargs['offset_s']
+        client.vertical = pargs['offset_v']
+
     # Make sure the areas are ok with this
     try:
         client.area.publisher.publish('area_client_inbound_ms_check', {
@@ -451,8 +455,8 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
                 pair_jsn_packet['data']['outfit'] = target.char_outfit
                 pair_jsn_packet['data']['offset_pair'] = target.offset_pair
                 pair_jsn_packet['data']['self_offset'] = client.offset_pair
-                pair_jsn_packet['data']['pair_vertical'] = 0
-                pair_jsn_packet['data']['pair_scale'] = 1000
+                pair_jsn_packet['data']['pair_vertical'] = target.vertical
+                pair_jsn_packet['data']['pair_scale'] = target.scale
 
                 json_data = json.dumps(pair_jsn_packet)
                 client.area.send_command_dict('JSN', {

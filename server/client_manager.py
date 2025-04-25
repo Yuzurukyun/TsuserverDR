@@ -80,6 +80,8 @@ class ClientManager:
             self.char_outfit = ''
             self.char_showname = ''
             self.pos = 'wit'
+            self.scale = 1000
+            self.vertical = 0
             self.showname = ''
             self.joined = time.time()
             self.last_active = Constants.get_time()
@@ -1045,6 +1047,8 @@ class ClientManager:
             self.char_outfit = ''
             self.char_showname = ''
             self.pos = 'wit'
+            self.scale = 1000
+            self.vertical = 0
 
             if announce_zwatch:
                 self.send_ooc_others('(X) Client {} has changed from character `{}` to `{}` in '
