@@ -28,7 +28,7 @@ class _Singleton():
         return cls.instance
 
 
-class DefaultDROProtocol(_Singleton):
+class DefaultDROProtocol():
     def __eq__(self, other):
         return type(self).__name__ == type(other).__name__
 
