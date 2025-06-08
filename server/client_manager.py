@@ -156,6 +156,11 @@ class ClientManager:
             self.is_mindreader = False
             self.autoglance = False
             self.icon_visible = True
+            self.whitelisted = False
+
+            # TODO: Demo Playback-esque idea?
+            self.is_recording_actions = False
+            self.recorded_actions = []
 
             # Sender stuff
             self.response_key = 'DEFAULT'
@@ -405,6 +410,7 @@ class ClientManager:
 
             msg=None,
             folder=None,
+            anim=None,
             pos=None,
             char_id=None,
             ding=None,
@@ -435,6 +441,7 @@ class ClientManager:
             if params is None:
                 pargs['msg'] = msg
                 pargs['folder'] = folder
+                pargs['anim'] = anim
                 pargs['pos'] = pos
                 pargs['char_id'] = char_id
                 pargs['ding'] = ding
@@ -705,6 +712,7 @@ class ClientManager:
                     self.last_received_ic[2],
                 )
 
+            print(final_pargs)
             self.send_command_dict('MS', final_pargs)
 
         def send_ic_others(

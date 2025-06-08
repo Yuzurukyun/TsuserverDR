@@ -347,7 +347,6 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
     Refer to the implementation for details.
 
     """
-
     if client.is_muted:  # Checks to see if the client has been muted by a mod
         client.send_ooc("You have been muted by a moderator.")
         return
@@ -637,6 +636,11 @@ def net_cmd_ms(client: ClientManager.Client, pargs: Dict[str, Any]):
 
     client.last_ic_message = msg
     client.last_active = Constants.get_time()
+    if client.server.discord_bot:
+        web_name: str = client.showname_else_char_showname
+        current_hub_id = client.area.id
+        current_area_id = client.area.hub.get_numerical_id()
+        client.server.discord_bot.queue_message(web_name, Constants.ic_msg_to_discord(msg), current_hub_id, current_area_id)
 
 
 def _process_ooc_command(cmd: str, client: ClientManager.Client):

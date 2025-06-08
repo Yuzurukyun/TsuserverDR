@@ -22,7 +22,7 @@
 # This class will suffer major reworkings for 4.3
 
 from __future__ import annotations
-from typing import Any,             Callable, Dict, List, Tuple, Type
+from typing import Any, Callable, Dict, List, Tuple, Type
 
 import asyncio
 import errno
@@ -51,6 +51,8 @@ from server.timer_manager import TimerManager
 
 from server.validate.config import ValidateConfig
 from server.validate.gimp import ValidateGimp
+
+from server.discordbot import DiscordBot
 
 if typing.TYPE_CHECKING:
     from asyncio.proactor_events import _ProactorSocketTransport
@@ -102,8 +104,10 @@ class TsuserverDR:
         self.ipid_list = {}
         self.hdid_list = {}
         self.gimp_list = list()
+        self.discord_data = dict()
         self.load_commandhelp()
         self.load_ids()
+        self.load_discord_data()
         self.load_gimp()
 
         self.ms_client = None
@@ -116,6 +120,7 @@ class TsuserverDR:
         logger.log_print('Server configurations loaded successfully!')
 
         self.error_queue = None
+        self.discord_bot = None
 
     async def start(self):
         self.loop = asyncio.get_event_loop()
@@ -189,6 +194,14 @@ class TsuserverDR:
             logger.log_print('*Server description: {}'
                              .format(self.config['masterserver_description']))
 
+        if "discord_bot" in self.config and self.config["discord_bot"]["enabled"]:
+            try:
+                self.discord_bot = DiscordBot(self)
+                asyncio.create_task(self.discord_bot.init(self.config["discord_bot"]["token"]))
+            except Exception as e:
+                # Don't end the whole server if discord_bot destroys itself
+                print(e)
+
         raise await self.error_queue.get()
 
     async def normal_shutdown(self):
@@ -253,9 +266,9 @@ class TsuserverDR:
         self.logged_packets.append(entry)
 
     def new_client(
-        self,
-        transport: _ProactorSocketTransport,
-        protocol: AOProtocol = None,
+            self,
+            transport: _ProactorSocketTransport,
+            protocol: AOProtocol = None,
     ) -> Tuple[ClientManager.Client, bool]:
         c, valid = self.client_manager.new_client(
             hub=self.hub_manager.get_default_managee(),
@@ -415,6 +428,56 @@ class TsuserverDR:
             # Do nothing about them
             continue  # Not really needed, but made explicit
 
+    def load_discord_data(self):
+        self.discord_data = dict()
+        try:
+            with Constants.fopen('storage/discord_data.json', 'r', encoding='utf-8') as whole_list:
+                self.discord_data = json.load(whole_list)
+        except ServerError.FileNotFoundError:
+            with Constants.fopen('storage/discord_data.json', 'w', encoding='utf-8') as whole_list:
+                json.dump(dict(), whole_list, indent=4)
+            message = 'WARNING: File not found: storage/discord_data.json. Creating a new one...'
+            logger.log_pdebug(message)
+        except Exception as ex:
+            message = 'WARNING: Error loading storage/discord_data.json. Will assume empty values.\n'
+            message += '{}: {}'.format(type(ex).__name__, ex)
+            logger.log_pdebug(message)
+
+        self.dump_discord_data()
+
+    def dump_discord_data(self) -> None:
+        with Constants.fopen('storage/discord_data.json', 'w', encoding='utf-8') as whole_list:
+            json.dump(self.discord_data, whole_list, indent=4)
+
+    def insert_discord_data(self, channel_id, hub_id=0, area_id=0) -> None:
+        # TODO: Make things more flexible and extensive for certain gamemodes?
+        self.discord_data[str(channel_id)] = [hub_id, area_id]
+        self.dump_discord_data()
+
+    def send_discord_chat(self, name, message, hub_id, area_id):
+        try:
+            area = self.hub_manager.get_managee_by_numerical_id(hub_id).area_manager.get_area_by_id(area_id)
+        except Exception as e:
+            raise e
+
+        name = f"{self.config['discord_bot']['showname_prefix']} {name}"
+        message = Constants.discord_msg_to_ic(message)
+        message = self.config["discord_bot"]["message_prefix"] + message
+
+        if len(name) > 40:  # it's originally 14 but idk the limit here...
+            name = name[:40].rstrip() + "."
+        for c in area.clients:
+            try:
+                c.send_ic(
+                    folder=self.config['discord_bot']['character'],
+                    anim=self.config['discord_bot']['emote'],
+                    showname=name,
+                    msg=message,
+                    pos=self.config['discord_bot']['pos'],
+                )
+            except Exception as e:
+                raise e
+
     def load_ids(self):
         self.ipid_list = dict()
         self.hdid_list = dict()
@@ -516,7 +579,7 @@ class TsuserverDR:
     def get_ipid(self, ip: str) -> int:
         if ip not in self.ipid_list:
             while True:
-                ipid = random.randint(0, 10**10-1)
+                ipid = random.randint(0, 10 ** 10 - 1)
                 if ipid not in self.ipid_list.values():
                     break
             self.ipid_list[ip] = ipid
@@ -544,7 +607,7 @@ class TsuserverDR:
         tb = traceback.extract_tb(tb=etraceback)
         current_time = Constants.get_time()
         file, line_num, module, func = tb[-1]
-        file = file[file.rfind('\\')+1:]  # Remove unnecessary directories
+        file = file[file.rfind('\\') + 1:]  # Remove unnecessary directories
         version = self.version
         info += '\r\n*Server version: {}'.format(version)
         info += '\r\n*Server time: {}'.format(current_time)

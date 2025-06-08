@@ -35,12 +35,40 @@ from server.client_manager import ClientManager
 
 from typing import Union
 
+
 # <parameter_name>: required parameter
 # {parameter_name}: optional parameter
 
 # (STAFF ONLY): need to be logged in as GM, CM or mod
 # (OFFICER ONLY): need to be logged in as CM or mod
 
+
+def ooc_cmd_set_bridgebot(client: ClientManager.Client, arg: str):
+    """ (STAFF ONLY)
+    Sets up the bridge bot between Discord and this area. To clear data, refer to discordbot.py
+
+    SYNTAX
+    /set_bridgebot <channel_id>
+
+    PARAMETERS
+    <channel_id>: ID of the Discord Channel
+
+    EXAMPLES
+    >>> /set_bridgebot 1234567890
+    >>> /sbb 1234567890
+    Sets the bridge bot for this area to the dedicated channel.
+    """
+
+    Constants.assert_command(client, arg, is_staff=True, parameters='>0')
+    arg = str(arg.strip())
+    client.server.insert_discord_data(arg, client.area.hub.get_numerical_id(), client.area.id)
+
+    client.send_ooc(
+        f'You have set the bridgebot for this area to channel id `{arg}`.')
+    client.send_ooc_others(f'The bridgebot for this area was set to channel id `{arg}`.',
+                           in_area=True, is_zstaff_flex=False)
+
+# ---------- #
 
 def ooc_cmd_ambient(client: ClientManager.Client, arg: str):
     """ (STAFF ONLY)
@@ -532,7 +560,7 @@ def ooc_cmd_bg(client: ClientManager.Client, arg: str):
         raise AreaError("This area's background is locked.")
 
     client.area.change_background(arg, validate=not (
-        client.is_staff() or client.area.cbg_allowed))
+            client.is_staff() or client.area.cbg_allowed))
     client.area.broadcast_ooc('{} changed the background to {}.'
                               .format(client.displayname, arg))
     logger.log_server('[{}][{}]Changed background to {}'
@@ -860,12 +888,11 @@ def ooc_cmd_blind(client: ClientManager.Client, arg: str):
     target.change_blindness(new_blind)
     target.broadcast_player_list_reason_auto()
 
+
 def ooc_cmd_disable_player_list(client: ClientManager.Client, arg: str):
     """
     Disables the player list in the hub. 
     """
-
-    
 
 
 def ooc_cmd_blockdj(client: ClientManager.Client, arg: str):
@@ -2818,9 +2845,9 @@ def ooc_cmd_files_area(client: ClientManager.Client, arg: str):
 
         priority = 0
         if player.status:
-            priority -= 2**2
+            priority -= 2 ** 2
         if player.party and player.party == client.party:
-            priority -= 2**1
+            priority -= 2 ** 1
 
         player_list.append([priority, name, player.id, player])
         # We add player.id as a tiebreaker if both priority and name are the same
@@ -5113,7 +5140,7 @@ def ooc_cmd_music_list_info(client: ClientManager.Client, arg: str):
     | $H: The current music list is the custom list `trial`.
     """
 
-    Constants.assert_command(client, arg,  parameters='=0')
+    Constants.assert_command(client, arg, parameters='=0')
 
     client.music_manager.command_list_info(client)
 
@@ -6992,7 +7019,7 @@ def ooc_cmd_party_whisper(client: ClientManager.Client, arg: str):
                    showname='[PW] ' + client.showname_else_char_showname, hide_character=1,
                    bypass_deafened_starters=True)  # send_ic handles nerfing for deafened
 
-    members = party.get_members()-{client}
+    members = party.get_members() - {client}
     pid = party.get_id()
 
     if client.is_visible:
@@ -7008,7 +7035,7 @@ def ooc_cmd_party_whisper(client: ClientManager.Client, arg: str):
                            folder=client.char_folder,
                            showname='[PW] ' + client.showname_else_char_showname, hide_character=1,
                            pred=lambda _: not (
-                               target.is_deaf and target.is_blind),
+                                   target.is_deaf and target.is_blind),
                            bypass_deafened_starters=True)  # send_ic handles nerfing for deafened
             target.send_ic(msg=msg, pos=client.pos, char_id=client.char_id,
                            folder=None, showname='???', hide_character=1,
@@ -7028,7 +7055,7 @@ def ooc_cmd_party_whisper(client: ClientManager.Client, arg: str):
                                    in_area=True, is_zstaff_flex=True, not_to=members)
     else:
         sneaked = {member for member in members if not member.is_visible}
-        not_sneaked = members-sneaked
+        not_sneaked = members - sneaked
         for target in sneaked:
             target.send_ooc(f'{client.displayname} whispered `{msg}` to your party while '
                             f'sneaking.', to_deaf=False)
@@ -7042,7 +7069,7 @@ def ooc_cmd_party_whisper(client: ClientManager.Client, arg: str):
                            folder=client.char_folder,
                            showname='[PW] ' + client.showname_else_char_showname, hide_character=1,
                            pred=lambda _: not (
-                               target.is_deaf and target.is_blind),
+                                   target.is_deaf and target.is_blind),
                            bypass_deafened_starters=True)  # send_ic handles nerfing for deafened
             target.send_ic(msg=msg, pos=client.pos, char_id=client.char_id,
                            folder=None, showname='???', hide_character=1,
@@ -7104,7 +7131,7 @@ def ooc_cmd_passage_clear(client: ClientManager.Client, arg: str):
 
     areas = Constants.parse_two_area_names(client, arg.split(', '))
 
-    for i in range(areas[0].id, areas[1].id+1):
+    for i in range(areas[0].id, areas[1].id + 1):
         area = client.hub.area_manager.get_area_by_id(i)
         area.reachable_areas = client.hub.area_manager.area_names
 
@@ -7144,7 +7171,7 @@ def ooc_cmd_passage_restore(client: ClientManager.Client, arg: str):
 
     areas = Constants.parse_two_area_names(client, arg.split(', '))
 
-    for i in range(areas[0].id, areas[1].id+1):
+    for i in range(areas[0].id, areas[1].id + 1):
         area = client.hub.area_manager.get_area_by_id(i)
         area.reachable_areas = set(list(area.default_reachable_areas)[:])
         area.change_reachability_allowed = area.default_change_reachability_allowed
@@ -7414,7 +7441,7 @@ def ooc_cmd_pm_gms(client: ClientManager.Client, arg: str):
 
     targets = {target for target in client.hub.get_players()
                if target.is_staff()}
-    targets = targets-{client}
+    targets = targets - {client}
     if not targets:
         raise ClientError('No GMs are available in your hub.')
 
@@ -8037,7 +8064,7 @@ def ooc_cmd_rplay(client: ClientManager.Client, arg: str):
     client.send_ooc_others('(X) {} [{}] has played track `{}` in the areas reachable from area '
                            '{}, which included your area.'
                            .format(client.displayname, client.id, track_name, client.area.name),
-                           is_zstaff_flex=True, in_area=areas-{client.area})
+                           is_zstaff_flex=True, in_area=areas - {client.area})
 
     # Warn if track is not in the music list
     try:
@@ -8110,7 +8137,7 @@ def ooc_cmd_scream(client: ClientManager.Client, arg: str):
         if not client.area.private_area:
             client.send_ic_others(msg=arg, to_deaf=False,
                                   showname='[S] ' +
-                                  client.showname_else_char_showname,
+                                           client.showname_else_char_showname,
                                   folder=client.char_folder, char_id=client.char_id,
                                   bypass_deafened_starters=True,  # send_ic handles nerfing for deaf
                                   pred=lambda c: (not c.muted_global and
@@ -8128,7 +8155,7 @@ def ooc_cmd_scream(client: ClientManager.Client, arg: str):
         else:
             client.send_ic_others(msg=arg, to_deaf=False,
                                   showname='[S]' +
-                                  client.showname_else_char_showname,
+                                           client.showname_else_char_showname,
                                   folder=client.char_folder, char_id=client.char_id,
                                   in_area=client.area,
                                   bypass_deafened_starters=True,  # send_ic handles nerfing for deaf
@@ -8295,7 +8322,7 @@ def ooc_cmd_scream_set_range(client: ClientManager.Client, arg: str):
                                     'keyword.')
             area_names = '<REACHABLE_AREAS>'
             client.area.scream_range = client.area.reachable_areas.copy() - \
-                {client.area.name}
+                                       {client.area.name}
         else:
             areas = Constants.parse_area_names(client, raw_areas)
             if client.area in areas:
@@ -8522,7 +8549,7 @@ def ooc_cmd_showname_set(client: ClientManager.Client, arg: str):
         separator = len(arg)
 
     user_id = arg[:separator]
-    showname = arg[separator+1:]
+    showname = arg[separator + 1:]
 
     # Set matching targets's showname
     for c in Constants.parse_id_or_ipid(client, user_id):
@@ -9294,7 +9321,7 @@ def ooc_cmd_timer_get(client: ClientManager.Client, arg: str):
         # Non-staff initiated public timers can only be consulted by all staff and
         # clients in the same area as the timer initiator
         if (is_public and not timer_client.is_staff() and not
-           (client.is_staff() or client == timer_client or client.area == timer_client.area)):
+        (client.is_staff() or client == timer_client or client.area == timer_client.area)):
             continue
 
         _, remain_text = Constants.time_remaining(start, length)
@@ -10874,7 +10901,7 @@ def ooc_cmd_whisper(client: ClientManager.Client, arg: str):
 
     final_sender = client.displayname
     final_rec_sender = 'Someone' if (
-        target.is_deaf and target.is_blind) else client.displayname
+            target.is_deaf and target.is_blind) else client.displayname
     final_st_sender = client.displayname
     final_target = target.displayname
     final_message = msg
@@ -12485,7 +12512,7 @@ def ooc_cmd_hide_icon(client: ClientManager.Client, arg: str):
     /hide_icon
     """
     message = "You must be authorized to do that."
-    if(client.is_gm or client.is_mod or client.is_cm):
+    if (client.is_gm or client.is_mod or client.is_cm):
         client.icon_visible = not client.icon_visible
         client.area.broadcast_player_list()
         status = {False: 'disabled', True: 'enabled'}
