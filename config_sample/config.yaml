@@ -57,6 +57,20 @@ hostname: <dollar>H
 discord_link: None
 utc_offset: local
 
+webhooks_enabled: false
+discord_bot:
+  enabled: false
+  token: ""
+  avatar_url: ""
+  showname_prefix: "[DISC]"
+  message_prefix: "}}"
+  pos: 'wit'
+  character: 'Takumi Sumino (THL)'
+  emote: 'outfits/Default/side_scratch3'
+  tickspeed: 0.25
+  whitelist_system: false
+
+
 # Roll configurations
 
 max_numdice: 20

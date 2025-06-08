@@ -100,9 +100,9 @@ class TargetType(Enum):
 
 class Effects(Enum):
     B = ('Blindness', 'blinded', lambda client,
-         value: client.change_blindness(value))
+                                        value: client.change_blindness(value))
     D = ('Deafness', 'deafened', lambda client,
-         value: client.change_deafened(value))
+                                        value: client.change_deafened(value))
     G = ('Gagged', 'gagged', lambda client, value: client.change_gagged(value))
 
     @property
@@ -263,8 +263,8 @@ class FileValidity:
             # To prevent "os" module calls from raising undesirable exceptions on
             # invalid pathnames, is_pathname_valid() is explicitly called first.
             return FileValidity.is_pathname_valid(pathname) and (
-                os.path.exists(pathname) or
-                FileValidity.is_path_sibling_creatable(pathname))
+                    os.path.exists(pathname) or
+                    FileValidity.is_path_sibling_creatable(pathname))
         # Report failure on non-fatal filesystem complaints (e.g., connection
         # timeouts, permissions issues) implying this path to be inaccessible. All
         # other exceptions are unrelated fatal issues and should not be caught here.
@@ -286,7 +286,59 @@ class FileValidity:
         return not os.path.exists(pathname)
 
 
-class Constants():
+class Constants:
+    @staticmethod
+    def ic_msg_to_discord(message: str) -> str:
+        text = (
+            message.replace("}", "")
+                .replace("{", "")
+                .replace("`", "")
+                .replace("|", "")
+                .replace("~", "")
+                .replace("º", "")
+                .replace("№", "")
+                .replace("√", "")
+                .replace("\\s", "")
+                .replace("\\f", "")
+        )
+        # escape chars
+        text = text.replace(
+            "@", "@\u200b"
+        )  # The only way to escape a Discord ping is a zero width space...
+        text = text.replace("<num>", "\\#")
+        text = text.replace("<and>", "&")
+        text = text.replace("<percent>", "%")
+        text = text.replace("<dollar>", "$")
+        text = text.replace("*", "\\*")
+        text = text.replace("_", "\\_")
+        # String is empty if we're strippin
+        if not text.strip():
+            # Discord blankpost
+            text = "_ _"
+        return text
+
+    @staticmethod
+    def discord_msg_to_ic(message: str) -> str:
+        message = Constants.remove_URL(message)
+        message = (
+            message.replace("}", "\\}")
+                .replace("{", "\\{")
+                .replace("`", "\\`")
+                .replace("|", "\\|")
+                .replace("~", "\\~")
+                .replace("º", "\\º")
+                .replace("№", "\\№")
+                .replace("√", "\\√")
+                .replace("\\s", "")
+                .replace("\\f", "")
+        )
+        return message
+
+    @staticmethod
+    def remove_URL(sample):
+        """Remove URLs from a sample string"""
+        return re.sub(r"http\S+", "", sample)
+
     @staticmethod
     def warn_deprecated(original_name: str, new_name: str, to_be_removed_in: str):
         message = (f'Code is using old {original_name} syntax. Please change it (or ask your '
@@ -404,7 +456,7 @@ class Constants():
 
         # Extract the name of the yaml in case of errors
         separator = max(file.name.rfind('\\'), file.name.rfind('/'))
-        file_name = file.name[separator+1:]
+        file_name = file.name[separator + 1:]
 
         try:
             contents = yaml.load(file, Loader=_UniqueKeySafeLoader)
@@ -446,13 +498,13 @@ class Constants():
     @staticmethod
     def time_remaining(start: float, length: float) -> Tuple[float, str]:
         current = time.time()
-        remaining = start+length-current
+        remaining = start + length - current
         return remaining, Constants.time_format(remaining)
 
     @staticmethod
     def time_elapsed(start: float) -> str:
         current = time.time()
-        return Constants.time_format(current-start)
+        return Constants.time_format(current - start)
 
     @staticmethod
     def time_format(length: float) -> str:
@@ -461,10 +513,10 @@ class Constants():
         elif length < 60:
             text = "{} seconds".format(int(length))
         elif length < 3600:
-            text = "{}:{}".format(int(length//60),
+            text = "{}:{}".format(int(length // 60),
                                   '{0:02d}'.format(int(length % 60)))
         else:
-            text = "{}:{}:{}".format(int(length//3600),
+            text = "{}:{}:{}".format(int(length // 3600),
                                      '{0:02d}'.format(
                                          int((length % 3600) // 60)),
                                      '{0:02d}'.format(int(length % 60)))
@@ -550,20 +602,20 @@ class Constants():
 
     @staticmethod
     def build_cond(
-        sender: ClientManager.Client,
-        is_staff: Union[bool, None] = None,
-        is_officer: Union[bool, None] = None,
-        is_mod: Union[bool, None] = None,
-        in_hub: Union[bool, _Hub, Set[_Hub], None] = None,
-        in_area: Union[bool, AreaManager.Area,
-                       Set[AreaManager.Area], None] = None,
-        not_to: Union[Set[ClientManager.Client], None] = None,
-        part_of: Union[Set[ClientManager.Client], None] = None,
-        to_blind: Union[bool, None] = None,
-        to_deaf: Union[bool, None] = None,
-        is_zstaff: Union[bool, AreaManager.Area, None] = None,
-        is_zstaff_flex: Union[bool, AreaManager.Area, None] = None,
-        pred: Callable[[ClientManager.Client], bool] = None,
+            sender: ClientManager.Client,
+            is_staff: Union[bool, None] = None,
+            is_officer: Union[bool, None] = None,
+            is_mod: Union[bool, None] = None,
+            in_hub: Union[bool, _Hub, Set[_Hub], None] = None,
+            in_area: Union[bool, AreaManager.Area,
+                           Set[AreaManager.Area], None] = None,
+            not_to: Union[Set[ClientManager.Client], None] = None,
+            part_of: Union[Set[ClientManager.Client], None] = None,
+            to_blind: Union[bool, None] = None,
+            to_deaf: Union[bool, None] = None,
+            is_zstaff: Union[bool, AreaManager.Area, None] = None,
+            is_zstaff_flex: Union[bool, AreaManager.Area, None] = None,
+            pred: Callable[[ClientManager.Client], bool] = None,
     ) -> Callable[[ClientManager.Client], bool]:
         """
         Acceptable conditions:
@@ -682,19 +734,19 @@ class Constants():
             conditions.append(lambda c: c.is_staff() and c.zone_watched)
             if sender.zone_watched:
                 conditions.append(lambda c: (
-                    c.zone_watched == sender.zone_watched))
+                        c.zone_watched == sender.zone_watched))
             elif sender.area.in_zone:
                 conditions.append(lambda c: (
-                    c.zone_watched == sender.area.in_zone))
+                        c.zone_watched == sender.area.in_zone))
             else:
                 conditions.append(lambda c: False)
         elif is_zstaff is False:
             if sender.zone_watched:
                 conditions.append(lambda c: (
-                    c.zone_watched != sender.zone_watched))
+                        c.zone_watched != sender.zone_watched))
             elif sender.area.in_zone:
                 conditions.append(lambda c: (
-                    c.zone_watched != sender.area.in_zone))
+                        c.zone_watched != sender.area.in_zone))
             else:
                 conditions.append(lambda c: False)
         elif isinstance(is_zstaff, sender.hub.area_manager.Area):
@@ -703,7 +755,7 @@ class Constants():
             target_zone = is_zstaff.in_zone
             if target_zone:
                 conditions.append(lambda c: c.is_staff()
-                                  and c.zone_watched == target_zone)
+                                            and c.zone_watched == target_zone)
             else:
                 conditions.append(lambda c: False)
         elif is_zstaff is None:
@@ -726,26 +778,29 @@ class Constants():
             conditions.append(lambda c: c.is_staff())
             if sender.zone_watched:
                 conditions.append(lambda c: (
-                    c.zone_watched == sender.zone_watched))
+                        c.zone_watched == sender.zone_watched))
             elif sender.area.in_zone:
                 conditions.append(lambda c: (
-                    c.zone_watched == sender.area.in_zone))
+                        c.zone_watched == sender.area.in_zone))
         elif is_zstaff_flex is False:
             if sender.zone_watched:
-                def condition1(c): return (
-                    c.zone_watched != sender.zone_watched)
+                def condition1(c):
+                    return (
+                            c.zone_watched != sender.zone_watched)
             elif sender.area.in_zone:
-                def condition1(c): return (
-                    c.zone_watched != sender.area.in_zone)
+                def condition1(c):
+                    return (
+                            c.zone_watched != sender.area.in_zone)
             else:
-                def condition1(c): return False
+                def condition1(c):
+                    return False
             conditions.append(lambda c: condition1(c) or not c.is_staff())
         elif isinstance(is_zstaff_flex, sender.hub.area_manager.Area):
             # Only staff members who are watching the area's zone will receive it, PROVIDED the area
             # is part of a zone. Otherwise, NO notification is sent.
             target_zone = is_zstaff_flex.in_zone
             conditions.append(lambda c: c.is_staff()
-                              and c.zone_watched == target_zone)
+                                        and c.zone_watched == target_zone)
         elif is_zstaff_flex is None:
             pass
         else:
@@ -755,7 +810,8 @@ class Constants():
         if pred is not None:
             conditions.append(pred)
 
-        def cond(c): return all([cond(c) for cond in conditions])
+        def cond(c):
+            return all([cond(c) for cond in conditions])
 
         return cond
 
@@ -949,7 +1005,7 @@ class Constants():
 
         info = '{}{}'.format(connector, new_structure[0])
         if len(new_structure) > 1:
-            for i in range(1, len(new_structure)-1):
+            for i in range(1, len(new_structure) - 1):
                 info += ', {}{}'.format(connector, new_structure[i])
             info += ' and {}{}'.format(connector, new_structure[-1])
         return info
@@ -1076,9 +1132,9 @@ class Constants():
         if len(length) == 1:
             length = length[0]
         elif len(length) == 2:
-            length = length[0]*60 + length[1]
+            length = length[0] * 60 + length[1]
         elif len(length) == 3:
-            length = length[0]*3600 + length[1]*60 + length[2]
+            length = length[0] * 3600 + length[1] * 60 + length[2]
         else:
             raise ClientError('Expected length of time.')
 
@@ -1151,7 +1207,7 @@ class Constants():
                 area_ranges.append('{}'.format(current_range[0]))
 
         for area_id in raw_area_ids[1:]:
-            if area_id != last_area+1:
+            if area_id != last_area + 1:
                 add_range()
                 current_range = [area_id, area_id]
             else:
@@ -1204,7 +1260,7 @@ class Constants():
 
             if not exception:
                 return
-            if isinstance(exception, (KeyboardInterrupt, )):
+            if isinstance(exception, (KeyboardInterrupt,)):
                 return
 
             try:
