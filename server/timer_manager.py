@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
 #           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
+#           (C) 2022 Tricky Leifa (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,6 +27,7 @@ import time
 
 from server.constants import Constants
 from server.exceptions import TimerError
+
 
 class Timer:
     """
@@ -157,8 +159,8 @@ class Timer:
 
     DEF_START_TIMER_VALUE = 0
     DEF_MIN_TIMER_VALUE = 0
-    DEF_MAX_TIMER_VALUE = 60*60*6 # 6 hours in seconds
-    DEF_TICK_RATE = 1 # Tick up 1 second per second
+    DEF_MAX_TIMER_VALUE = 60*60*6  # 6 hours in seconds
+    DEF_TICK_RATE = 1  # Tick up 1 second per second
 
     def __init__(self, server, manager, timer_id, tick_rate=None, start_value=None, min_value=None,
                  max_value=None, auto_restart=False, auto_destroy=True):
@@ -310,7 +312,7 @@ class Timer:
         # print(f'[{time.time()}] Timer {self.get_id()} started at {self._base_value}.')
         self._check_structure()
 
-        return self._base_value # This is the current internal time, as no seconds have passed.
+        return self._base_value  # This is the current internal time, as no seconds have passed.
 
     def get(self) -> float:
         """
@@ -748,42 +750,42 @@ class Timer:
 
         """
 
-        epsilon = 0.001 #  Account for rounding errors and floating point arithmetic
+        epsilon = 0.001  # Account for rounding errors and floating point arithmetic
         timer_value = self._get()
 
         # 1.
         assert self._min_value >= 0, (
             f'Expected the timer minimum timer value be a non-negative number, found '
             f'it was {self._min_value} instead. || {self}'
-            )
+        )
 
         assert timer_value >= self._min_value - epsilon, (
             f'Expected the timer value be at least the minimum timer value '
             f'{self._min_value}, found it was {timer_value} instead. || {self}'
-            )
+        )
 
         assert timer_value <= self._max_value + epsilon, (
             f'Expected the timer value be at most the maximum timer value '
             f'{self._max_value}, found it was {timer_value} instead. || {self}'
-            )
+        )
 
         # 2.
         assert self.DEF_MIN_TIMER_VALUE >= 0, (
             f'Expected the default timer minimum timer value be a non-negative number, '
             f'found it was {self.DEF_MIN_TIMER_VALUE} instead. || {self}'
-            )
+        )
 
         assert self.DEF_START_TIMER_VALUE >= self.DEF_MIN_TIMER_VALUE, (
             f'Expected the default timer value be at least the default minimum timer value '
             f'{self.DEF_MIN_TIMER_VALUE}, found it was {self.DEF_START_TIMER_VALUE} instead. '
             f'|| {self}.'
-            )
+        )
 
         assert self.DEF_START_TIMER_VALUE <= self.DEF_MAX_TIMER_VALUE, (
             f'Expected the default timer value be at most the default maximum timer value '
             f'{self.DEF_MAX_TIMER_VALUE}, found it was {self.DEF_START_TIMER_VALUE} instead. '
             f'|| {self}'
-            )
+        )
 
         # 3.
         assert self._tick_rate != 0, (
@@ -826,6 +828,7 @@ class Timer:
                 f'paused={self._paused}, '
                 f'terminated={self._terminated}, '
                 f'elapsed_per_tick_rate={self._elapsed_per_tick_rate}')
+
 
 class TimerManager():
     """
@@ -1142,7 +1145,7 @@ class TimerManager():
                 f'For timer manager {self._id}, expected that it managed at most '
                 f'{self._timer_limit} timers, but found it managed {len(self._id_to_timer)} '
                 f'timers. || {self}'
-                )
+            )
 
         # 2.
         for (timer_id, timer) in self._id_to_timer.items():
@@ -1150,14 +1153,14 @@ class TimerManager():
             assert timer.manager == self, (
                 f'For timer manager {self._id}, expected that its managed timer {timer} recognized '
                 f'that it was managed by it, but found it did not. || {self}'
-                )
+            )
 
             # 2b.
             assert timer.get_id() == timer_id, (
                 f'For timer manager {self._id}, expected that timer {timer} that appears in the '
                 f'ID to timer mapping has the same ID as in the mapping, but found it did not. '
                 f'|| {self}'
-                )
+            )
 
         # 3.
         for timer1 in self._id_to_timer.values():
@@ -1169,7 +1172,7 @@ class TimerManager():
                 assert timer1.get_id() != timer2.get_id(), (
                     f'For timer manager {self}, expected that its two managed timers {timer1}, '
                     f'{timer2} had unique timer ids, but found they did not. || {self}'
-                    )
+                )
 
         # Last.
         for timer in self._id_to_timer.values():

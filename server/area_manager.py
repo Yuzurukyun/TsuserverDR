@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
 #           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
+#           (C) 2022 Tricky Leifa (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,6 +28,7 @@ all necessary actions in order to simulate different rooms.
 from __future__ import annotations
 
 import asyncio
+import json
 import random
 import time
 import typing
@@ -35,7 +37,7 @@ from typing import Any, Callable, Dict, List, Set, Tuple, Union
 
 from server import logger
 from server.asset_manager import AssetManager
-from server.constants import Constants
+from server.constants import Constants, FadeOption
 from server.evidence import EvidenceList
 from server.exceptions import AreaError, MusicError, ServerError, TaskError
 from server.subscriber import Publisher
@@ -68,7 +70,7 @@ class AreaManager(AssetManager):
             hub: _Hub,
             area_id: int,
             parameters: Dict[str, Any]
-            ):
+        ):
             """
             Parameters
             ----------
@@ -100,6 +102,7 @@ class AreaManager(AssetManager):
             self.current_music = ''
             self.current_music_player = ''
             self.current_music_source = ''
+            self.legacy_jukebox = False
             self.evi_list = EvidenceList()
             self.recorded_messages = []
             self.ic_lock = False
@@ -151,7 +154,7 @@ class AreaManager(AssetManager):
 
             self.default_reachable_areas = self.reachable_areas.copy()
 
-            self.reachable_areas.add(self.name) # Area can always reach itself
+            self.reachable_areas.add(self.name)  # Area can always reach itself
 
         @property
         def clients(self) -> Set[ClientManager.Client]:
@@ -204,7 +207,7 @@ class AreaManager(AssetManager):
             try:
                 self.clients.remove(client)
             except KeyError:
-                if client.id != -1: # Ignore pre-clients (before getting playercount)
+                if client.id != -1:  # Ignore pre-clients (before getting playercount)
                     info = 'Area {} does not contain client {}'.format(self, client)
                     raise KeyError(info)
 
@@ -240,6 +243,74 @@ class AreaManager(AssetManager):
 
             for client in self.clients:
                 client.send_command_dict(cmd, dargs)
+
+        def broadcast_player_list(self):
+            """
+            Send the player list packet to everyone in the area.
+            """
+            return_data = {}
+            return_data['packet'] = 'player_list'
+
+
+            for target_client in self.clients:
+                player_data_to_send = list()
+                player_stuff = list()
+                if self.rp_getarea_allowed and self.lights:
+                    for c in self.clients: 
+                        
+                        if(c != target_client and c.is_visible and c.char_id is not None and c.char_id != -1):
+                            chara_client_info = {}
+                            player_stuff.append(str(c.id))
+                            chara_client_info["id"] = str(c.id)
+
+                            #Append the Showname
+                            ## 1.5
+                            player_stuff.append(str(c.showname_else_char_showname))
+                            chara_client_info["showname"] = str(c.showname_else_char_showname)
+
+                            ## 1.5.1
+                            
+
+                            #Append the Character Name
+                            ## 1.5
+                            if(c.icon_visible):
+                                player_stuff.append(str(c.char_folder))
+                                chara_client_info["character"] = str(c.char_folder)
+                            else:
+                                player_stuff.append("")
+                                chara_client_info["character"] = "NO_CHARA"
+
+                            if(target_client.is_mod):
+                                chara_client_info["HDID"] = str(c.hdid)
+                                chara_client_info["IPID"] = str(c.ipid)
+
+                            if(c.files):
+                                chara_client_info["url"] = c.files[1]    
+
+                            if(c.char_outfit):
+                                chara_client_info["outfit"] = c.char_outfit 
+
+                            if(c.status):
+                                chara_client_info["status"] = c.status 
+                            player_data_to_send.append(chara_client_info)
+                            
+
+                return_data['data'] = player_data_to_send
+                
+                json_data = json.dumps(return_data)
+                target_client.send_command_dict('JSN', {
+                    'json_data': json_data
+                })
+                
+                target_client.send_command_dict('LP', {
+                    'player_data_ao2_list': player_stuff
+                })
+        def broadcast_player_list_prompt(self):
+            """
+            Send the player list prompt packet to everyone in the area.
+            """
+            for target_client in self.clients:
+                target_client.broadcast_player_list_reason_auto()
 
         def broadcast_ooc(self, msg: str):
             """
@@ -279,7 +350,7 @@ class AreaManager(AssetManager):
                 return
 
             if cond is None:
-                cond = lambda _: True
+                def cond(_): return True
             for player in self.clients:
                 if player.is_deaf and player.is_blind:
                     continue
@@ -666,11 +737,10 @@ class AreaManager(AssetManager):
                 raise AreaError('The lights are already turned {}.'.format(status[new_lights]))
 
             self.lights = new_lights
-
             self.change_background(self.background, validate=False)  # Allow restoring custom bg.
 
             # Announce light status change
-            if initiator: # If a player initiated the change light sequence, send targeted messages
+            if initiator:  # If a player initiated the change light sequence, send targeted messages
                 if area is None:
                     if not initiator.is_blind:
                         initiator.send_ooc('You turned the lights {}.'.format(status[new_lights]))
@@ -689,8 +759,12 @@ class AreaManager(AssetManager):
                                           .format(initiator.displayname, initiator.id,
                                                   status[new_lights]),
                                           is_zstaff_flex=True, in_area=area if area else True)
-            else: # Otherwise, send generic message
+            else:  # Otherwise, send generic message
                 self.broadcast_ooc('The lights were turned {}.'.format(status[new_lights]))
+
+            self.broadcast_player_list_prompt()
+            
+            self.broadcast_player_list()
 
             # Notify the parties in the area that the lights have changed
             for party in self.parties:
@@ -731,7 +805,7 @@ class AreaManager(AssetManager):
 
         def play_track(self, name: str, client: ClientManager.Client,
                        raise_if_not_found: bool = False, reveal_sneaked: bool = False,
-                       force_same_restart : int = 1,
+                       force_same_restart: int = 1, fade_option: FadeOption = FadeOption.NO_FADE,
                        pargs: Dict[str, Any] = None):
             """
             Play a music track in an area.
@@ -755,6 +829,8 @@ class AreaManager(AssetManager):
                 If 0, the server allows a player's client to not restart their music if it happens
                 to be the case the client is already playing it. If 1, no such permission is given
                 and a track must always be restarted from the beginning. Defaults to 1.
+            fade_option: FadeOption, optional
+                See enum FadeOption
             pargs : dict of str to Any
                 If given, they are arguments to an MC packet that was given when the track was
                 requested, and will override any other arguments given. If not, this is ignored.
@@ -776,10 +852,12 @@ class AreaManager(AssetManager):
                 raise ServerError.FileInvalidNameError(info)
 
             try:
-                name, length, source = client.music_manager.get_music_data(name)
+                name, length, source = client.music_manager.get_music_data(
+                    name)
             except MusicError.MusicNotFoundError:
                 try:
-                    name, length, source = client.hub.music_manager.get_music_data(name)
+                    name, length, source = client.hub.music_manager.get_music_data(
+                        name)
                 except MusicError.MusicNotFoundError:
                     if raise_if_not_found:
                         raise
@@ -789,6 +867,8 @@ class AreaManager(AssetManager):
                 pargs['name'] = name
             if 'char_id' not in pargs:
                 pargs['char_id'] = client.char_id
+            if 'fade_option' not in pargs:
+                pargs['fade_option'] = fade_option.value
             pargs['showname'] = client.showname  # Ignore AO shownames
             if 'loop' not in pargs:
                 pargs['loop'] = -1
@@ -802,13 +882,13 @@ class AreaManager(AssetManager):
 
             def loop(zeroth_loop):
                 for player in self.clients:
-                    if zeroth_loop or not player.packet_handler.HAS_CLIENTSIDE_MUSIC_LOOPING:
+                    if zeroth_loop or self.legacy_jukebox or not player.packet_handler.HAS_CLIENTSIDE_MUSIC_LOOPING:
                         player.send_music(**loop_pargs)
 
                 if self.music_looper:
                     self.music_looper.cancel()
                 if length > 0:
-                    f = lambda: loop(False)
+                    def f(): return loop(False)
                     self.music_looper = asyncio.get_event_loop().call_later(length, f)
 
                 # Overwrite in case char_id changed (e.g., server looping)
@@ -1058,7 +1138,6 @@ class AreaManager(AssetManager):
             return (elevated, has_area_description, area_description,
                     has_other_players, player_description)
 
-
         def unlock(self):
             """
             Unlock the area so that non-authorized players may now join.
@@ -1267,7 +1346,7 @@ class AreaManager(AssetManager):
         areas = ValidateAreas().validate(source_file, extra_parameters={
             'server_character_list': self.hub.character_manager.get_characters(),
             'server_default_area_description': self.server.config['default_area_description']
-            })
+        })
         areas = self._load_areas(areas, source_file)
         self._check_structure()
 
@@ -1302,7 +1381,7 @@ class AreaManager(AssetManager):
         areas = ValidateAreas().validate_contents(yaml_contents, extra_parameters={
             'server_character_list': self.hub.character_manager.get_characters(),
             'server_default_area_description': self.server.config['default_area_description']
-            })
+        })
         areas = self._load_areas(areas, None)
         self._check_structure()
 
@@ -1544,7 +1623,7 @@ class AreaManager(AssetManager):
 
             # And make sure that non-authorized users cannot create passages they cannot see
             if ((not areas[1-i].name in areas[i].reachable_areas) and
-                not (client.is_staff() or areas[1-i].name in areas[i].visible_areas)):
+                    not (client.is_staff() or areas[1-i].name in areas[i].visible_areas)):
                 raise AreaError('You must be authorized to create a new passage from {} to '
                                 '{}.'.format(areas[i].name, areas[1-i].name))
 

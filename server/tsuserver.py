@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
 #           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
+#           (C) 2022 Tricky Leifa (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,7 +22,7 @@
 # This class will suffer major reworkings for 4.3
 
 from __future__ import annotations
-from typing import Any, Callable, Dict, List, Tuple, Type
+from typing import Any,             Callable, Dict, List, Tuple, Type
 
 import asyncio
 import errno
@@ -33,7 +34,8 @@ import ssl
 import sys
 import traceback
 import typing
-import urllib.request, urllib.error
+import urllib.request
+import urllib.error
 
 from server import logger
 from server.ban_manager import BanManager
@@ -65,10 +67,10 @@ class TsuserverDR:
         self._server = None  # Internal server object, changed to proper object later
 
         self.release = 5
-        self.major_version = 0
-        self.minor_version = 0
-        self.segment_version = 'post3'
-        self.internal_version = '221218a'
+        self.major_version = 4
+        self.minor_version = 1
+        self.segment_version = ''
+        self.internal_version = '250423a'
         version_string = self.get_version_string()
         self.software = 'TsuserverDR {}'.format(version_string)
         self.version = 'TsuserverDR {} ({})'.format(version_string, self.internal_version)
@@ -254,12 +256,12 @@ class TsuserverDR:
         self,
         transport: _ProactorSocketTransport,
         protocol: AOProtocol = None,
-        ) -> Tuple[ClientManager.Client, bool]:
+    ) -> Tuple[ClientManager.Client, bool]:
         c, valid = self.client_manager.new_client(
             hub=self.hub_manager.get_default_managee(),
             transport=transport,
             protocol=protocol,
-            )
+        )
         c.server = self
         c.area = self.hub_manager.get_default_managee().area_manager.default_area()
         c.area.new_client(c)
@@ -306,7 +308,7 @@ class TsuserverDR:
             'gmpass5',
             'gmpass6',
             'gmpass7',
-            ]
+        ]
 
         self.all_passwords = [self.config[password]
                               for password in passwords if self.config[password]]
@@ -334,7 +336,7 @@ class TsuserverDR:
             'music_change_floodguard': {'times_per_interval': 1,
                                         'interval_length': 0,
                                         'mute_length': 0}
-            }
+        }
 
         for (tag, value) in defaults_for_tags.items():
             if tag not in self.config:
@@ -494,7 +496,7 @@ class TsuserverDR:
                 'New Killer Choosen! Hold On!!',
                 'The cake killed Nether.',
                 'How you win Class Trials is simple, call your opposition cucks.',
-                ]
+            ]
             with Constants.fopen('config/gimp.yaml', 'w') as gimp:
                 Constants.yaml_dump(gimp_list, gimp)
             message = 'WARNING: File not found: config/gimp.yaml. Creating a new one...'
@@ -579,9 +581,9 @@ class TsuserverDR:
 
     def broadcast_global(self, client: ClientManager.Client, msg: str, as_mod: bool = False,
                          mtype: str = "<dollar>G",
-                         condition: Callable[[ClientManager.Client,], bool] = None):
+                         condition: Callable[[ClientManager.Client, ], bool] = None):
         if condition is None:
-            condition = lambda x: not x.muted_global
+            def condition(x): return not x.muted_global
 
         username = client.name
         ooc_name = '{}[{}][{}]'.format(mtype, client.area.id, username)

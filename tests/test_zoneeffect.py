@@ -1,5 +1,6 @@
 from .test_zonebasic import _TestZone
 
+
 class TestZoneEffect_01_Global(_TestZone):
     def test_01_wrongarguments(self):
         """
@@ -161,7 +162,7 @@ class TestZoneEffect_01_Global(_TestZone):
         self.c4.discard_all()
         self.c5.discard_all()
         self.c5.move_area(4)
-        self.c1.discard_all() # Discard mod notification for zone creation and C5 moving into zone
+        self.c1.discard_all()  # Discard mod notification for zone creation and C5 moving into zone
 
         self.c5.ooc('/zone_global c4!')
         self.c0.assert_no_packets()
@@ -240,6 +241,7 @@ class TestZoneEffect_01_Global(_TestZone):
         self.c4.assert_no_packets()
         self.c5.assert_no_packets()
 
+
 class TestZoneEffect_02_Play(_TestZone):
     def test_01_wrongarguments(self):
         """
@@ -279,29 +281,30 @@ class TestZoneEffect_02_Play(_TestZone):
         self.c5.discard_all()
 
         self.c1.ooc('/zone_play dro_dr1/BOX 15.opus')
-        self.c0.assert_packet('MC', ('dro_dr1/BOX 15.opus', 1, '', 1), over=True)
-        self.c1.assert_packet('MC', ('dro_dr1/BOX 15.opus', 1, '', 1))
+        self.c0.assert_packet('MC', ('dro_dr1/BOX 15.opus', 1, '', 1, 0), over=True)
+        self.c1.assert_packet('MC', ('dro_dr1/BOX 15.opus', 1, '', 1, 0))
         self.c1.assert_ooc('You have played track `dro_dr1/BOX 15.opus` in your zone.', over=True)
-        self.c2.assert_packet('MC', ('dro_dr1/BOX 15.opus', 1, '', 1), over=True)
-        self.c3.assert_packet('MC', ('dro_dr1/BOX 15.opus', 1, '', 1), over=True)
+        self.c2.assert_packet('MC', ('dro_dr1/BOX 15.opus', 1, '', 1, 0), over=True)
+        self.c3.assert_packet('MC', ('dro_dr1/BOX 15.opus', 1, '', 1, 0), over=True)
         self.c4.assert_no_packets()
         self.c5.assert_no_packets()
 
         self.c3.move_area(7)
         self.c5.move_area(5)
-        self.c1.discard_all() # Discard C3 moving out of zone and C5 moving into zone notifications
+        self.c1.discard_all()  # Discard C3 moving out of zone and C5 moving into zone notifications
 
         # Check invalid music name warning
         self.c1.ooc('/zone_play Is it you.opus')
-        self.c0.assert_packet('MC', ('Is it you.opus', 1, '', 1), over=True)
-        self.c1.assert_packet('MC', ('Is it you.opus', 1, '', 1))
+        self.c0.assert_packet('MC', ('Is it you.opus', 1, '', 1, 0), over=True)
+        self.c1.assert_packet('MC', ('Is it you.opus', 1, '', 1, 0))
         self.c1.assert_ooc('You have played track `Is it you.opus` in your zone.')
         self.c1.assert_ooc('(X) Warning: `Is it you.opus` is not a recognized track name, so the '
                            'server will not loop it.', over=True)
-        self.c2.assert_packet('MC', ('Is it you.opus', 1, '', 1), over=True)
+        self.c2.assert_packet('MC', ('Is it you.opus', 1, '', 1, 0), over=True)
         self.c3.assert_no_packets()
-        self.c5.assert_packet('MC', ('Is it you.opus', 1, '', 1), over=True)
+        self.c5.assert_packet('MC', ('Is it you.opus', 1, '', 1, 0), over=True)
         self.c4.assert_no_packets()
+
 
 class TestZoneEffect_03_RPNotifications(_TestZone):
     """
@@ -463,7 +466,7 @@ class TestZoneEffect_03_RPNotifications(_TestZone):
         self.c2.discard_all()
         self.c5.discard_all()
         self.c5.ooc('/zone')
-        self.c1.discard_all() # Discard mod notification for zone creation
+        self.c1.discard_all()  # Discard mod notification for zone creation
         self.c5.discard_all()
 
         self.c5.ooc('/iclock')

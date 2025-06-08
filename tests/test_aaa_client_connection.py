@@ -3,7 +3,7 @@ from .structures import _Unittest
 _standard_FL = ('yellowtext', 'customobjections', 'flipping', 'fastloading', 'noencryption',
                 'deskmod', 'evidence', 'cccc_ic_support', 'looping_sfx', 'additive', 'effects',
                 'y_offset', 'ackMS', 'showname', 'chrini', 'charscheck', 'v110')
-_standard_client_version = ('1', '2', '2')
+_standard_client_version = ('1', '3', '0')
 
 
 class TestAAA_ClientConnection(_Unittest):
@@ -12,13 +12,15 @@ class TestAAA_ClientConnection(_Unittest):
         Situation: Client selects the server on the lobby screen.
         """
 
-        self.clients[0] = self.server.make_test_client(attempts_to_fully_join=False)
+        self.clients[0] = self.server.make_test_client(
+            attempts_to_fully_join=False)
         c = self.clients[0]
         c.assert_packet('decryptor', 34)
         c.assert_packet('ID', (0, None, None))
         c.assert_packet('FL', _standard_FL)
         c.assert_packet('client_version', _standard_client_version)
-        c.assert_packet('PN', (0, self.server.config['playerlimit']), over=True)
+        c.assert_packet(
+            'PN', (0, self.server.config['playerlimit']), over=True)
         c.assert_no_ooc()
 
     def test_02_client1_connect(self):
@@ -26,13 +28,15 @@ class TestAAA_ClientConnection(_Unittest):
         Situation: Another client selects the server on the lobby screen.
         """
 
-        self.clients[1] = self.server.make_test_client(attempts_to_fully_join=False)
+        self.clients[1] = self.server.make_test_client(
+            attempts_to_fully_join=False)
         c = self.clients[1]
         c.assert_packet('decryptor', 34)
         c.assert_packet('ID', (1, None, None))
         c.assert_packet('FL', _standard_FL)
         c.assert_packet('client_version', _standard_client_version)
-        c.assert_packet('PN', (0, self.server.config['playerlimit']), over=True)
+        c.assert_packet(
+            'PN', (0, self.server.config['playerlimit']), over=True)
         c.assert_no_ooc()
 
     def test_03_clients0and1_disconnect(self):
@@ -49,7 +53,8 @@ class TestAAA_ClientConnection(_Unittest):
         num_clients = len(self.server.client_manager.clients)
         self.assertEqual(num_clients, 1)
         chard_clients = self.server.get_player_count()
-        self.assertEqual(chard_clients, 0)  # Should be zero as both clients on server select
+        # Should be zero as both clients on server select
+        self.assertEqual(chard_clients, 0)
 
         # Client 2
         c = self.clients[1]
@@ -60,7 +65,8 @@ class TestAAA_ClientConnection(_Unittest):
         num_clients = len(self.server.client_manager.clients)
         self.assertEqual(num_clients, 0)
         chard_clients = self.server.get_player_count()
-        self.assertEqual(chard_clients, 0)  # Should be zero as both clients on server select
+        # Should be zero as both clients on server select
+        self.assertEqual(chard_clients, 0)
 
         self.clients[0] = None
         self.clients[1] = None
@@ -71,18 +77,21 @@ class TestAAA_ClientConnection(_Unittest):
         """
 
         # Starts off as normal
-        self.clients[0] = self.server.make_test_client(attempts_to_fully_join=False)
+        self.clients[0] = self.server.make_test_client(
+            attempts_to_fully_join=False)
         c = self.clients[0]
         c.assert_packet('decryptor', 34)
         c.assert_packet('ID', (0, None, None))
         c.assert_packet('FL', _standard_FL)
         c.assert_packet('client_version', _standard_client_version)
-        c.assert_packet('PN', (0, self.server.config['playerlimit']), over=True)
+        c.assert_packet(
+            'PN', (0, self.server.config['playerlimit']), over=True)
         c.assert_no_ooc()
 
         # But then it carries on
         c.send_command_cts("askchaa#%")
-        c.assert_packet('SI', (len(c.hub.character_manager.get_characters()), None, None), over=True)
+        c.assert_packet(
+            'SI', (len(c.hub.character_manager.get_characters()), None, None), over=True)
         c.send_command_cts("RC#%")
         c.assert_packet('SC', None, over=True)
         c.send_command_cts("RM#%")
@@ -107,7 +116,7 @@ class TestAAA_ClientConnection(_Unittest):
         c.assert_ooc(None, check_CT_packet=False, over=True)
 
         # Since no char yet...
-        assert(c.get_char_name() == self.server.config['spectator_name'])
+        assert (c.get_char_name() == self.server.config['spectator_name'])
 
         # Check number of clients
         num_clients = len(self.server.client_manager.clients)
@@ -121,18 +130,21 @@ class TestAAA_ClientConnection(_Unittest):
         """
 
         # Starts off as normal
-        self.clients[1] = self.server.make_test_client(attempts_to_fully_join=False)
+        self.clients[1] = self.server.make_test_client(
+            attempts_to_fully_join=False)
         c = self.clients[1]
         c.assert_packet('decryptor', 34)
         c.assert_packet('ID', (1, None, None))
         c.assert_packet('FL', _standard_FL)
         c.assert_packet('client_version', _standard_client_version)
-        c.assert_packet('PN', (1, self.server.config['playerlimit']), over=True)
+        c.assert_packet(
+            'PN', (1, self.server.config['playerlimit']), over=True)
         c.assert_no_ooc()
 
         # Join server
         c.send_command_cts("askchaa#%")
-        c.assert_packet('SI', (len(c.hub.character_manager.get_characters()), None, None), over=True)
+        c.assert_packet(
+            'SI', (len(c.hub.character_manager.get_characters()), None, None), over=True)
         c.send_command_cts("RC#%")
         c.assert_packet('SC', None, over=True)
         c.send_command_cts("RM#%")
@@ -157,13 +169,14 @@ class TestAAA_ClientConnection(_Unittest):
         c.assert_ooc(None, check_CT_packet=False, over=True)
 
         # Since no char yet...
-        assert(c.get_char_name() == self.server.config['spectator_name'])
+        assert (c.get_char_name() == self.server.config['spectator_name'])
 
         # Only now pick char
         c.send_command_cts("CC#1#0#FAKEHDID#%")  # Pick char 0
         c.assert_packet('PV', (1, 'CID', 0))  # 1 because second client online
         c.assert_packet('GM', '', over=True)
-        assert(c.get_char_name() == c.hub.character_manager.get_characters()[0])
+        assert (c.get_char_name() ==
+                c.hub.character_manager.get_characters()[0])
 
         # Check number of clients
         num_clients = len(self.server.client_manager.clients)
@@ -178,13 +191,15 @@ class TestAAA_ClientConnection(_Unittest):
         """
 
         # Starts off as normal
-        self.clients[2] = self.server.make_test_client(attempts_to_fully_join=False)
+        self.clients[2] = self.server.make_test_client(
+            attempts_to_fully_join=False)
         c = self.clients[2]
         c.assert_packet('decryptor', 34)
         c.assert_packet('ID', (2, None, None))
         c.assert_packet('FL', _standard_FL)
         c.assert_packet('client_version', _standard_client_version)
-        c.assert_packet('PN', (2, self.server.config['playerlimit']), over=True)
+        c.assert_packet(
+            'PN', (2, self.server.config['playerlimit']), over=True)
         c.assert_no_ooc()
 
         # Join server
@@ -215,7 +230,7 @@ class TestAAA_ClientConnection(_Unittest):
         c.assert_ooc(None, check_CT_packet=False, over=True)
 
         # Since no char yet...
-        assert(c.get_char_name() == self.server.config['spectator_name'])
+        assert (c.get_char_name() == self.server.config['spectator_name'])
 
         # Only now pick char
         c.send_command_cts("CC#2#0#FAKEHDID#%")  # Attempt to pick char 0
@@ -223,7 +238,8 @@ class TestAAA_ClientConnection(_Unittest):
         c.send_command_cts("CC#2#1#FAKEHDID#%")  # Attempt to pick char 1
         c.assert_packet('PV', (2, 'CID', 1))  # 2 because third client online
         c.assert_packet('GM', '', over=True)
-        assert(c.get_char_name() == c.hub.character_manager.get_characters()[1])
+        assert (c.get_char_name() ==
+                c.hub.character_manager.get_characters()[1])
 
         # Check number of clients
         num_clients = len(self.server.client_manager.clients)
@@ -247,7 +263,8 @@ class TestAAA_ClientConnection(_Unittest):
         c.send_command_cts("CC#0#3#FAKEHDID#%")  # Attempt to pick char 3
         c.assert_packet('PV', (0, 'CID', 3))  # 0 because first client online
         c.assert_packet('GM', '', over=True)
-        assert(c.get_char_name() == c.hub.character_manager.get_characters()[3])
+        assert (c.get_char_name() ==
+                c.hub.character_manager.get_characters()[3])
 
         self.assertEqual(len(self.server.client_manager.clients), 3)
         self.assertEqual(self.server.get_player_count(), 3)

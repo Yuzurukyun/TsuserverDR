@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
 #           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
+#           (C) 2022 Tricky Leifa (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -48,6 +49,7 @@ from server.subscriber import Listener, Publisher
 if typing.TYPE_CHECKING:
     from server.client_manager import ClientManager
     from server.tsuserver import TsuserverDR
+
 
 class _Team(_PlayerGroup):
     """
@@ -141,6 +143,7 @@ class _Team(_PlayerGroup):
             raise PlayerGroupError.UserNotPlayerError
 
         super().add_player(user)
+
 
 class _GameTrivialInherited(_PlayerGroup):
     """
@@ -240,7 +243,7 @@ class _GameTrivialInherited(_PlayerGroup):
     def get_players(
         self,
         cond: Callable[[ClientManager.Client, ], bool] = None
-        ) -> Set[ClientManager.Client]:
+    ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of players of this game that satisfy a condition
         if given.
@@ -355,7 +358,7 @@ class _GameTrivialInherited(_PlayerGroup):
     def get_invitations(
         self,
         cond: Callable[[ClientManager.Client, ], bool] = None
-        ) -> Set[ClientManager.Client]:
+    ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of invited users of this game that satisfy a
         condition if given.
@@ -536,7 +539,7 @@ class _GameTrivialInherited(_PlayerGroup):
     def get_leaders(
         self,
         cond: Callable[[ClientManager.Client, ], bool] = None
-        ) -> Set[ClientManager.Client]:
+    ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of leaders of this game that satisfy a condition
         if given.
@@ -559,7 +562,7 @@ class _GameTrivialInherited(_PlayerGroup):
     def get_regulars(
         self,
         cond: Callable[[ClientManager.Client, ], bool] = None
-        ) -> Set[ClientManager.Client]:
+    ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of players of this game that are regulars and satisfy
         a condition if given.
@@ -936,7 +939,7 @@ class _Game(_GameTrivialInherited):
             'client_inbound_ms_check': self._on_client_inbound_ms_check,
             'client_change_character': self._on_client_change_character,
             'client_destroyed': self._on_client_destroyed,
-            })
+        })
 
     def get_type_name(self) -> str:
         """
@@ -1073,7 +1076,7 @@ class _Game(_GameTrivialInherited):
         max_value: Union[float, None] = None,
         auto_restart: bool = False,
         auto_destroy: bool = True
-        ) -> Timer:
+    ) -> Timer:
         """
         Create a new timer managed by this game with given parameters.
 
@@ -1140,7 +1143,7 @@ class _Game(_GameTrivialInherited):
         max_value: Union[float, None] = None,
         auto_restart: bool = False,
         auto_destroy: bool = True
-        ) -> Timer:
+    ) -> Timer:
         """
         Create a new timer managed by this game with given parameters.
 
@@ -1200,7 +1203,7 @@ class _Game(_GameTrivialInherited):
                 max_value=max_value,
                 auto_restart=auto_restart,
                 auto_destroy=auto_destroy
-                )
+            )
         except TimerError.ManagerTooManyTimersError:
             raise GameError.GameTooManyTimersError
 
@@ -1343,7 +1346,7 @@ class _Game(_GameTrivialInherited):
         require_invitations: bool = False,
         require_players: bool = True,
         require_leaders: bool = True
-        ) -> _Team:
+    ) -> _Team:
         """
         Create a new team managed by this game.
 
@@ -1405,7 +1408,7 @@ class _Game(_GameTrivialInherited):
         require_invitations: bool = False,
         require_players: bool = True,
         require_leaders: bool = True
-        ) -> _Team:
+    ) -> _Team:
         """
         Create a new team managed by this game.
 
@@ -1701,7 +1704,7 @@ class _Game(_GameTrivialInherited):
         self,
         player: ClientManager.Client,
         contents: Dict[str, Any] = None
-        ):
+    ):
         """
         Default callback for game player signaling it wants to check if sending an IC message
         is appropriate. The IC arguments can be passed by reference, so this also serves as an
@@ -1729,7 +1732,7 @@ class _Game(_GameTrivialInherited):
         self,
         player: ClientManager.Client,
         contents: Dict[str, Any] = None
-        ):
+    ):
         """
         Default callback for game player signaling it has sent an IC message.
         This callback is executed after the server is done making all modifications to the MS packet
@@ -1759,7 +1762,7 @@ class _Game(_GameTrivialInherited):
         old_char_name: str = '',
         new_char_id: int = -1,
         new_char_name: str = '',
-        ):
+    ):
         """
         Default callback for game player signaling it has changed character.
 
@@ -1841,7 +1844,7 @@ class _Game(_GameTrivialInherited):
             f'For game {self}, expected that every player in the set {team_players} of all players '
             f'in a team managed by the game is in the set {game_players} of players of the game, '
             f'found the following players that did not satisfy this: {team_not_in_game}'
-            )
+        )
 
         # 2.
         listener_parents = {obj.get_parent() for obj in self.listener.get_subscriptions()}
@@ -1849,7 +1852,7 @@ class _Game(_GameTrivialInherited):
             assert player in listener_parents, (
                 f'For game {self}, expected that its player {player} was among its '
                 f'subscriptions {listener_parents} found it was not.'
-                )
+            )
 
         # 3.
         if self._require_participant_characters:
@@ -1857,7 +1860,7 @@ class _Game(_GameTrivialInherited):
                 assert player.has_participant_character(), (
                     f'For game with areas {self} that expected all its players had participant '
                     f'characters, found player {player} did not have a participant character.'
-                    )
+                )
 
         # 4.
         self._timer_manager._check_structure()
@@ -1917,14 +1920,12 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
     This class should not be instantiated.
     """
 
-
-
     def __init__(
         self,
         server: TsuserverDR,
         managee_limit: Union[int, None] = None,
         default_managee_type: Type[_Game] = None,
-        ):
+    ):
         """
         Create a game manager object.
 
@@ -1976,7 +1977,7 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
         team_limit: Union[int, None] = None,
         timer_limit: Union[int, None] = None,
         **kwargs,
-        ) -> _Game:
+    ) -> _Game:
         """
         Create a new game managed by this manager.
 
@@ -2049,7 +2050,7 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
             team_limit=team_limit,
             timer_limit=timer_limit,
             **kwargs,
-            )
+        )
         self._check_structure()
         return game
 
@@ -2066,7 +2067,7 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
         team_limit: Union[int, None] = None,
         timer_limit: Union[int, None] = None,
         **kwargs,
-        ) -> _Game:
+    ) -> _Game:
         """
         Create a new game managed by this manager.
 
@@ -2142,7 +2143,7 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
                 team_limit=team_limit,
                 timer_limit=timer_limit,
                 **kwargs,
-                )
+            )
         except PlayerGroupError.ManagerTooManyGroupsError:
             raise GameError.ManagerTooManyGamesError
 
@@ -2174,7 +2175,7 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
     def unchecked_delete_managee(
         self,
         managee: _Game
-        ) -> Tuple[str, Set[ClientManager.Client]]:
+    ) -> Tuple[str, Set[ClientManager.Client]]:
         """
         Delete a game managed by this manager, so all its players no longer belong to this game.
 
@@ -2412,7 +2413,7 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
     def find_player_concurrent_limiting_managee(
         self,
         user: ClientManager.Client
-        ) -> Union[_Game, None]:
+    ) -> Union[_Game, None]:
         """
         For user `user`, find a game `most_restrictive_game` managed by this manager such
         that, if `user` were to join another game managed by this manager, they would
@@ -2434,6 +2435,7 @@ class _GameManagerTrivialInherited(PlayerGroupManager):
         """
 
         return super().find_player_concurrent_limiting_managee(user)
+
 
 class GameManager(_GameManagerTrivialInherited):
     """

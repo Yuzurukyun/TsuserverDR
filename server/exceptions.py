@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
 #           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
+#           (C) 2022 Tricky Leifa (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -100,6 +101,7 @@ class CharacterError(TsuserverException):
 class MusicError(TsuserverException):
     class MusicNotFoundError(TsuserverException):
         pass
+
 
 class ArgumentError(TsuserverException):
     pass
@@ -342,10 +344,12 @@ class GameWithAreasError(GameError):
     class AreaHitGameConcurrentLimitError(TsuserverException):
         pass
 
+
 @recreate_subexceptions
 class HubbedGameError(GameWithAreasError):
     class AreaNotInHubError(GameWithAreasError):
         pass
+
 
 @recreate_subexceptions
 class TrialError(HubbedGameError):
@@ -361,9 +365,11 @@ class TrialError(HubbedGameError):
     class FocusIsInvalidError(GameWithAreasError):
         pass
 
+
 @recreate_subexceptions
 class TrialMinigameError(HubbedGameError):
     pass
+
 
 @recreate_subexceptions
 class NonStopDebateError(TrialMinigameError):
@@ -379,10 +385,12 @@ class NonStopDebateError(TrialMinigameError):
     class TimersAlreadySetupError(TrialMinigameError):
         pass
 
+
 @recreate_subexceptions
 class HubError(GameWithAreasError):
     class ManagerCannotManageeNoManagees(GameWithAreasError):
         pass
+
 
 @recreate_subexceptions
 class TaskError(TsuserverException):

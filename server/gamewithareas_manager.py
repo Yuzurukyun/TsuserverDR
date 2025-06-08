@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
 #           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
+#           (C) 2022 Tricky Leifa (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -136,7 +137,7 @@ class _GameWithAreasTrivialInherited(_Game):
     def get_players(
         self,
         cond: Callable[[ClientManager.Client, ], bool] = None
-        ) -> Set[ClientManager.Client]:
+    ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of players of this game with areas that satisfy a
         condition if given.
@@ -289,7 +290,7 @@ class _GameWithAreasTrivialInherited(_Game):
     def get_invitations(
         self,
         cond: Callable[[ClientManager.Client, ], bool] = None
-        ) -> Set[ClientManager.Client]:
+    ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of invited users of this game with areas that satisfy a
         condition if given.
@@ -470,7 +471,7 @@ class _GameWithAreasTrivialInherited(_Game):
     def get_leaders(
         self,
         cond: Callable[[ClientManager.Client, ], bool] = None
-        ) -> Set[ClientManager.Client]:
+    ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of leaders of this game with areas that satisfy a condition
         if given.
@@ -493,7 +494,7 @@ class _GameWithAreasTrivialInherited(_Game):
     def get_regulars(
         self,
         cond: Callable[[ClientManager.Client, ], bool] = None
-        ) -> Set[ClientManager.Client]:
+    ) -> Set[ClientManager.Client]:
         """
         Return (a shallow copy of) the set of players of this game with areas that are regulars and
         satisfy a condition if given.
@@ -697,7 +698,7 @@ class _GameWithAreasTrivialInherited(_Game):
         max_value: Union[float, None] = None,
         auto_restart: bool = False,
         auto_destroy: bool = True
-        ) -> Timer:
+    ) -> Timer:
         """
         Create a new timer managed by this game with areas with given parameters.
 
@@ -764,7 +765,7 @@ class _GameWithAreasTrivialInherited(_Game):
         max_value: Union[float, None] = None,
         auto_restart: bool = False,
         auto_destroy: bool = True
-        ) -> Timer:
+    ) -> Timer:
         """
         Create a new timer managed by this game with areas with given parameters.
 
@@ -961,7 +962,7 @@ class _GameWithAreasTrivialInherited(_Game):
         require_invitations: bool = False,
         require_players: bool = True,
         require_leaders: bool = True
-        ) -> _Team:
+    ) -> _Team:
         """
         Create a new team managed by this game with areas.
 
@@ -1023,7 +1024,7 @@ class _GameWithAreasTrivialInherited(_Game):
         require_invitations: bool = False,
         require_players: bool = True,
         require_leaders: bool = True
-        ) -> _Team:
+    ) -> _Team:
         """
         Create a new team managed by this game with areas.
 
@@ -1318,7 +1319,7 @@ class _GameWithAreasTrivialInherited(_Game):
         self,
         player: ClientManager.Client,
         contents: Dict[str, Any] = None
-        ):
+    ):
         """
         Default callback for game with areas player signaling it wants to check if sending an IC
         message is appropriate. The IC arguments can be passed by reference, so this also serves as
@@ -1346,7 +1347,7 @@ class _GameWithAreasTrivialInherited(_Game):
         self,
         player: ClientManager.Client,
         contents: Dict[str, Any] = None
-        ):
+    ):
         """
         Default callback for game with areas player signaling it has sent an IC message.
         This callback is executed after the server is done making all modifications to the MS packet
@@ -1376,7 +1377,7 @@ class _GameWithAreasTrivialInherited(_Game):
         old_char_name: str = '',
         new_char_id: int = -1,
         new_char_name: str = '',
-        ):
+    ):
         """
         Default callback for game with areas player signaling it has changed character.
 
@@ -1437,6 +1438,7 @@ class _GameWithAreasTrivialInherited(_Game):
         """
 
         super()._on_client_destroyed(player)
+
 
 class _GameWithAreas(_GameWithAreasTrivialInherited):
     """
@@ -1612,7 +1614,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
             'area_client_entered_final': self._on_area_client_entered_final,
             'area_client_inbound_ms_check': self._on_area_client_inbound_ms_check,
             'area_destroyed': self._on_area_destroyed,
-            })
+        })
         self._ever_had_areas = False
 
         self.manager: GameWithAreasManager  # Setting for typing
@@ -2012,7 +2014,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
         old_displayname: str = None,
         ignore_bleeding: bool = False,
         ignore_autopass: bool = False,
-        ):
+    ):
         """
         Default callback for game with areas area signaling a client left. This is executed after
         all other actions related to moving the player to a new area have been executed:
@@ -2055,7 +2057,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
         old_displayname: str = None,
         ignore_bleeding: bool = False,
         ignore_autopass: bool = False,
-        ):
+    ):
         """
         Default callback for game with areas area signaling a client entered.
 
@@ -2094,7 +2096,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
         area: AreaManager.Area,
         client: ClientManager.Client = None,
         contents: Dict[str, Any] = None
-        ):
+    ):
         """
         Default callback for game with areas area signaling a client in the area sent an IC message.
         Unlike the ClientManager.Client callback for send_ic_check, this one is triggered
@@ -2156,7 +2158,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
             assert player.area in self._areas, (
                 f'For game with areas {self}, expected that its player {player} was in an part of '
                 f'the game with areas, found they were in area {player.area} instead.'
-                )
+            )
 
         # 2.
         if self.requires_invitations():
@@ -2164,14 +2166,14 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
                 f'For game with areas {self}, expected that it did not simultaneously require '
                 f'invitations for users to join while mandating users be automatically added '
                 f'if they enter an area of the game with areas, found it did.'
-                )
+            )
 
         # 3.
         if self._require_areas and self._ever_had_areas:
             assert self._areas or self.is_unmanaged(), (
                 f'For game with areas {self}, expected that it was scheduled for '
                 f'deletion after losing all its areas, but found it was not.'
-                )
+            )
 
         # 4.
         super()._check_structure()
@@ -2223,6 +2225,7 @@ class _GameWithAreas(_GameWithAreasTrivialInherited):
                 f'unmanaged={self.is_unmanaged()}), '
                 f')')
 
+
 class _GameWithAreasManagerTrivialInherited(GameManager):
     """
     This class should not be instantiated.
@@ -2246,7 +2249,7 @@ class _GameWithAreasManagerTrivialInherited(GameManager):
         autoadd_on_creation_existing_users: bool = False,
         require_areas: bool = True,
         **kwargs: Any,
-        ) -> _GameWithAreas:
+    ) -> _GameWithAreas:
         """
         Create a new game with areas managed by this manager.
 
@@ -2342,7 +2345,7 @@ class _GameWithAreasManagerTrivialInherited(GameManager):
             autoadd_on_creation_existing_users=autoadd_on_creation_existing_users,
             require_area=require_areas,
             **kwargs,
-            )
+        )
         self._check_structure()
         return game
 
@@ -2389,7 +2392,7 @@ class _GameWithAreasManagerTrivialInherited(GameManager):
     def unchecked_delete_managee(
         self,
         managee: _GameWithAreas
-        ) -> Tuple[str, Set[ClientManager.Client]]:
+    ) -> Tuple[str, Set[ClientManager.Client]]:
         """
         Delete a game with areas managed by this manager, so all its players no longer belong to
         this game with areas.
@@ -2628,7 +2631,7 @@ class _GameWithAreasManagerTrivialInherited(GameManager):
     def find_player_concurrent_limiting_managee(
         self,
         user: ClientManager.Client
-        ) -> Union[_GameWithAreas, None]:
+    ) -> Union[_GameWithAreas, None]:
         """
         For user `user`, find a game with areas `most_restrictive_game` managed by this manager such
         that, if `user` were to join another game with areas managed by this manager, they would
@@ -2650,6 +2653,7 @@ class _GameWithAreasManagerTrivialInherited(GameManager):
         """
 
         return super().find_player_concurrent_limiting_managee(user)
+
 
 class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
     """
@@ -2675,7 +2679,7 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
         server: TsuserverDR,
         managee_limit: Union[int, None] = None,
         default_managee_type: Type[_GameWithAreas] = None,
-        ):
+    ):
         """
         Create a game with areas manager object.
 
@@ -2719,8 +2723,7 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
         autoadd_on_creation_existing_users: bool = False,
         require_areas: bool = True,
         **kwargs: Any,
-        ) -> _GameWithAreas:
-
+    ) -> _GameWithAreas:
         """
         Create a new game with areas managed by this manager.
 
@@ -2909,7 +2912,7 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
     def find_area_concurrent_limiting_managee(
         self,
         area: AreaManager.Area
-        ) -> Union[_GameWithAreas, None]:
+    ) -> Union[_GameWithAreas, None]:
         """
         For area `area`, find a game with areas `most_restrictive_game` managed by this manager
         such that, if `area` were to be added to another game with areas managed by this manager,
@@ -2997,7 +3000,7 @@ class GameWithAreasManager(_GameWithAreasManagerTrivialInherited):
                     f'that game with areas of {limit} game {"s" if limit != 1 else ""} with areas, '
                     f'found it belonged to {membership} game{"s" if membership != 1 else ""} with '
                     f'areas. || {self}'
-                    )
+                )
 
         # Last
         super()._check_structure()

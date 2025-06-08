@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2016 argoneus <argoneuscze@gmail.com> (original tsuserver3)
 #           (C) 2018-22 Chrezm/Iuvee <thechrezm@gmail.com> (further additions)
+#           (C) 2022 Tricky Leifa (further additions)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -33,6 +34,7 @@ from server.constants import Constants
 if typing.TYPE_CHECKING:
     from server.client_manager import ClientManager
     from server.tsuserver import TsuserverDR
+
 
 def setup_logger(debug):
     logging.Formatter.converter = time.gmtime
@@ -82,6 +84,7 @@ def log_debug(msg: str, client: Union[ClientManager.Client, None] = None):
 def _print_exception(etype, evalue, etraceback):
     return f'\n{"".join(traceback.format_exception(etype, evalue, etraceback))}'
 
+
 def _log_error(server: TsuserverDR) -> str:
     msg = ''
 
@@ -113,7 +116,6 @@ def _log_error(server: TsuserverDR) -> str:
         etype, evalue, etraceback = sys.exc_info()
         msg += '\nError generating dump of clients.'
         msg += _print_exception(etype, evalue, etraceback)
-
 
     # Add list of hubs to error log
     try:
@@ -198,13 +200,13 @@ def _log_error(server: TsuserverDR) -> str:
                 msg += f'\nError generating dump of hub {hub.get_id()}.'
                 msg += _print_exception(etype, evalue, etraceback)
 
-
     except Exception:
         etype, evalue, etraceback = sys.exc_info()
         msg += '\nError generating dump of hubs.'
         msg += _print_exception(etype, evalue, etraceback)
 
     return msg
+
 
 def log_error(msg: str, server: Union[TsuserverDR, None], errortype='P') -> str:
     # errortype "C" if server raised an error as a result of a client packet.
