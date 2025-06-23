@@ -7345,8 +7345,7 @@ def ooc_cmd_play(client: ClientManager.Client, arg: str):
     try:
         client.music_manager.get_music_data(track_name)
     except MusicError.MusicNotFoundError:
-        client.send_ooc(f'Warning: `{track_name}` is not a recognized track name, so the server will not '
-                        f'loop it.')
+        client.send_ooc(f'Warning: `{track_name}` is not a recognized track name.')
 
 
 def ooc_cmd_pm(client: ClientManager.Client, arg: str):
@@ -8043,8 +8042,7 @@ def ooc_cmd_rplay(client: ClientManager.Client, arg: str):
     try:
         client.music_manager.get_music_data(track_name)
     except MusicError.MusicNotFoundError:
-        client.send_ooc(f'(X) Warning: `{track_name}` is not a recognized track name, so the server will '
-                        f'not loop it.')
+        client.send_ooc(f'(X) Warning: `{track_name}` is not a recognized track name.')
 
 
 def ooc_cmd_scream(client: ClientManager.Client, arg: str):
@@ -11992,8 +11990,7 @@ def ooc_cmd_zone_play(client: ClientManager.Client, arg: str):
     try:
         client.music_manager.get_music_data(track_name)
     except MusicError.MusicNotFoundError:
-        client.send_ooc(f'(X) Warning: `{track_name}` is not a recognized track name, so the server will '
-                        f'not loop it.')
+        client.send_ooc(f'(X) Warning: `{track_name}` is not a recognized track name.')
 
 
 def ooc_cmd_zone_set_legacy_jukebox(client: ClientManager.Client, arg: str):
